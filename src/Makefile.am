@@ -16,13 +16,13 @@ AM_CFLAGS= \
 bin_PROGRAMS= pandora
 noinst_HEADERS= \
 		JSON_parser.h \
-		addrfamily.h \
 		byteorder.h \
 		file.h \
 		hashtable.h \
 		macro.h \
 		proc.h \
 		slist.h \
+		strtable.h \
 		util.h \
 		wildmatch.h \
 		pandora-defs.h

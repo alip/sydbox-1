@@ -34,9 +34,9 @@
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
-#include "addrfamily.h"
 #include "file.h"
 #include "proc.h"
+#include "strtable.h"
 #include "util.h"
 #include "wildmatch.h"
 
