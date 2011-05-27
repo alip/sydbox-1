@@ -56,6 +56,8 @@ sys_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char 
 		return sys_connect(current, "connect");
 	case PINK_SOCKET_SUBCALL_SENDTO:
 		return sys_sendto(current, "sendto");
+	case PINK_SOCKET_SUBCALL_RECVFROM:
+		return sys_recvfrom(current, "recvfrom");
 	case PINK_SOCKET_SUBCALL_GETSOCKNAME:
 		return sys_getsockname(current, "getsockname");
 	default:
