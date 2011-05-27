@@ -170,10 +170,10 @@ dump_one_process(pink_easy_process_t *current, void *userdata)
 		return true;
 
 	fprintf(stderr, "--> Sandbox: {exec:%s read:%s write:%s sock:%s}\n",
-			data->config.sandbox_exec ? "true" : "false",
-			data->config.sandbox_read ? "true" : "false",
-			data->config.sandbox_write ? "true" : "false",
-			data->config.sandbox_sock ? "true" : "false");
+			sandbox_mode_to_string(data->config.sandbox_exec),
+			sandbox_mode_to_string(data->config.sandbox_read),
+			sandbox_mode_to_string(data->config.sandbox_write),
+			sandbox_mode_to_string(data->config.sandbox_sock));
 	fprintf(stderr, "    Magic Lock: %s\n", lock_state_to_string(data->config.magic_lock));
 	fprintf(stderr, "    Exec Whitelist:\n");
 	SLIST_FOREACH(node, &data->config.whitelist_exec, up)
