@@ -91,7 +91,7 @@ old_CPPFLAGS="${CPPFLAGS}"
 CPPFLAGS="${CPPFLAGS} ${pkg_cv_pinktrace_CFLAGS}"
 AC_PREPROC_IFELSE([AC_LANG_SOURCE([
 #include <pinktrace/pink.h>
-#ifndef PINKTRACE_LINUX
+#if !PINK_OS_LINUX
 #error nope
 #endif
 ])],
