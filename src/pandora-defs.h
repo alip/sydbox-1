@@ -154,6 +154,24 @@ static const char *const violation_decision_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(violation_decision, int)
 
+enum log_level {
+	LOG_LEVEL_FATAL,
+	LOG_LEVEL_WARNING,
+	LOG_LEVEL_INFO,
+	LOG_LEVEL_MESSAGE,
+	LOG_LEVEL_DEBUG,
+	LOG_LEVEL_TRACE,
+};
+static const char *const log_level_table[] = {
+	[LOG_LEVEL_FATAL] = "fatal",
+	[LOG_LEVEL_WARNING] = "warning",
+	[LOG_LEVEL_INFO] = "info",
+	[LOG_LEVEL_MESSAGE] = "message",
+	[LOG_LEVEL_DEBUG] = "debug",
+	[LOG_LEVEL_TRACE] = "trace",
+};
+DEFINE_STRING_TABLE_LOOKUP(log_level, int)
+
 enum magic_type {
 	MAGIC_TYPE_NONE,
 
