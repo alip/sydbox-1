@@ -30,18 +30,6 @@
 #include "macro.h"
 #include "util.h"
 
-static sandbox_t *box_current(pink_easy_process_t *current)
-{
-	proc_data_t *data;
-
-	if (current) {
-		data = pink_easy_process_get_userdata(current);
-		return &data->config;
-	}
-
-	return &pandora->config.child;
-}
-
 static slist_t *_box_whitelist_exec(pink_easy_process_t *current)
 {
 	sandbox_t *box = box_current(current);

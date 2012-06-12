@@ -583,6 +583,20 @@ int sysx_bind(pink_easy_process_t *current, const char *name);
 int sysx_getsockname(pink_easy_process_t *current, const char *name);
 
 inline
+static sandbox_t *
+box_current(pink_easy_process_t *current)
+{
+	proc_data_t *data;
+
+	if (current) {
+		data = pink_easy_process_get_userdata(current);
+		return &data->config;
+	}
+
+	return &pandora->config.child;
+}
+
+inline
 static void
 free_sock_info(void *data)
 {
