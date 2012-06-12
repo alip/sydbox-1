@@ -152,10 +152,11 @@ deny(pink_easy_process_t *current)
 	data->deny = true;
 	data->ret = errno2retval();
 
-	if (!pink_util_set_syscall(pid, bit, PINKTRACE_INVALID_SYSCALL)) {
+	if (!pink_util_set_syscall(pid, bit, PINK_SYSCALL_INVALID)) {
 		if (errno != ESRCH) {
-			warning("pink_util_set_syscall(%d, \"%s\", 0xbadca11): %d(%s)",
+			warning("pink_util_set_syscall(%d, \"%s\", %u): %d(%s)",
 					pid, pink_bitness_name(bit),
+					PINK_SYSCALL_INVALID,
 					errno, strerror(errno));
 			return panic(current);
 		}

@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -19,18 +19,17 @@
 
 #include "pandora-defs.h"
 
-#include <assert.h>
-#include <errno.h>
+#include <pinktrace/pink.h>
+#include <pinktrace/easy/pink.h>
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/queue.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
-#include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
 
 #include "file.h"
 #include "proc.h"
@@ -39,8 +38,7 @@
 #define NR_OPEN 1024
 #endif
 
-static int
-callback_child_error(pink_easy_child_error_t error)
+static int callback_child_error(pink_easy_child_error_t error)
 {
 	fprintf(stderr, "child error: %s (errno:%d %s)\n",
 			pink_easy_child_strerror(error),
@@ -48,12 +46,11 @@ callback_child_error(pink_easy_child_error_t error)
 	return -1;
 }
 
-static void
-callback_error(const pink_easy_context_t *ctx, ...)
+static void callback_error(const struct pink_easy_context *ctx, ...)
 {
-	int status;
-	pid_t pid;
 	va_list ap;
+	const char *errctx;
+	pid_t pid;
 	pink_easy_error_t error;
 	pink_easy_process_t *current;
 
@@ -61,66 +58,53 @@ callback_error(const pink_easy_context_t *ctx, ...)
 	va_start(ap, ctx);
 
 	switch (error) {
+	case PINK_EASY_ERROR_CALLBACK_ABORT:
+	case PINK_EASY_ERROR_WAIT:
+		fatal("error: %s (errno:%d %s)\n",
+				pink_easy_strerror(error),
+				errno, strerror(errno));
+		break;
 	case PINK_EASY_ERROR_ALLOC:
+	case PINK_EASY_ERROR_FORK:
+		errctx = va_arg(ap, const char *);
+		fatal("error: %s: %s (errno:%d %s)\n",
+				pink_easy_strerror(error),
+				errctx, errno, strerror(errno));
+		break;
 	case PINK_EASY_ERROR_ATTACH:
-	case PINK_EASY_ERROR_WAIT_ELDEST:
-	case PINK_EASY_ERROR_SETUP_ELDEST:
-	case PINK_EASY_ERROR_BITNESS_ELDEST:
-	case PINK_EASY_ERROR_GETEVENTMSG_EXIT:
 		pid = va_arg(ap, pid_t);
-		fatal("error (pid:%lu): %s (errno:%d %s)",
+		fatal("error: %s (process:%lu errno:%d %s)\n",
+				pink_easy_strerror(error),
 				(unsigned long)pid,
-				pink_easy_strerror(error),
 				errno, strerror(errno));
 		break;
-	case PINK_EASY_ERROR_STOP_ELDEST:
-		pid = va_arg(ap, pid_t);
-		status = va_arg(ap, int);
-		fatal("error (pid:%lu status:%#x): %s",
-				(unsigned long)pid,
-				(unsigned)status,
-				pink_easy_strerror(error));
-		break;
-	case PINK_EASY_ERROR_SETUP:
-	case PINK_EASY_ERROR_BITNESS:
-	case PINK_EASY_ERROR_STEP_INITIAL:
-	case PINK_EASY_ERROR_STEP_STOP:
-	case PINK_EASY_ERROR_STEP_TRAP:
-	case PINK_EASY_ERROR_STEP_SYSCALL:
-	case PINK_EASY_ERROR_STEP_FORK:
-	case PINK_EASY_ERROR_STEP_EXEC:
-	case PINK_EASY_ERROR_STEP_EXIT:
-	case PINK_EASY_ERROR_GETEVENTMSG_FORK:
+	case PINK_EASY_ERROR_TRACE:
+	case PINK_EASY_ERROR_PROCESS:
 		current = va_arg(ap, pink_easy_process_t *);
-		fatal("error (pid:%lu [%s]): %s (errno:%d %s)",
-				(unsigned long)pink_easy_process_get_pid(current),
-				pink_bitness_name(pink_easy_process_get_bitness(current)),
-				pink_easy_strerror(error),
-				errno, strerror(errno));
-		break;
-	case PINK_EASY_ERROR_STEP_SIGNAL:
-	case PINK_EASY_ERROR_EVENT_UNKNOWN:
-		current = va_arg(ap, pink_easy_process_t *);
-		status = va_arg(ap, int);
-		fatal("error (pid:%lu [%s] status:%#x): %s (errno:%d %s)",
-				(unsigned long)pink_easy_process_get_pid(current),
-				pink_bitness_name(pink_easy_process_get_bitness(current)),
-				status,
-				pink_easy_strerror(error),
-				errno, strerror(errno));
+		errctx = va_arg(ap, const char *);
+		if (error == PINK_EASY_ERROR_TRACE) { /* errno is set! */
+			fatal("error: %s (ctx:%s process:%lu [%s] errno:%d %s)",
+					pink_easy_strerror(error), errctx,
+					(unsigned long)pink_easy_process_get_pid(current),
+					pink_bitness_name(pink_easy_process_get_bitness(current)),
+					errno, strerror(errno));
+		} else { /* if (error == PINK_EASY_ERROR_PROCESS */
+			fatal("error: %s (process:%lu [%s])",
+					pink_easy_strerror(error),
+					(unsigned long)pink_easy_process_get_pid(current),
+					pink_bitness_name(pink_easy_process_get_bitness(current)));
+		}
 		break;
 	default:
-		fatal("error: %s (errno:%d %s)",
-				pink_easy_strerror(error),
-				errno, strerror(errno));
+		fatal("error: unknown:%u\n", error);
 		break;
 	}
 
 	va_end(ap);
 }
 
-static void
-callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_process_t *current, pink_easy_process_t *parent)
+static void callback_startup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
+		pink_easy_process_t *current, pink_easy_process_t *parent)
 {
 	int r;
 	pid_t pid;
@@ -134,34 +118,40 @@ callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy
 	bit = pink_easy_process_get_bitness(current);
 	data = xcalloc(1, sizeof(proc_data_t));
 
-	if (!parent) {
-		pandora->eldest = pid;
+	if (parent == NULL) {
+		bool attached = pink_easy_process_is_attached(current);
+		if (attached) {
+			/* Figure out process name */
+			if ((r = proc_comm(pid, &comm))) {
+				warning("failed to read the name of process:%lu [%s] (errno:%d %s)",
+						(unsigned long)pid, pink_bitness_name(bit),
+						-r, strerror(-r));
+				comm = xstrdup("???");
+			}
 
-		/* Figure out process name */
-		if ((r = proc_comm(pid, &comm))) {
-			warning("failed to read the name of process:%lu [%s] (errno:%d %s)",
+			/* Figure out the current working directory */
+			if ((r = proc_cwd(pid, &cwd))) {
+				warning("failed to get working directory of the initial "
+						"process:%lu [%s name:\"%s\"] (errno:%d %s)",
+						(unsigned long)pid, pink_bitness_name(bit), comm,
+						-r, strerror(-r));
+				free(data);
+				panic(current);
+				return;
+			}
+
+			info("initial process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 					(unsigned long)pid, pink_bitness_name(bit),
-					-r, strerror(-r));
-			comm = xstrdup("???");
+					comm, cwd);
+		} else {
+			cwd = xgetcwd();
+			comm = pandora->program_invocation_name;
+			pandora->program_invocation_name = NULL;
 		}
 
-		/* Figure out the current working directory */
-		if ((r = proc_cwd(pid, &cwd))) {
-			warning("failed to get working directory of the initial process:%lu [%s name:\"%s\"] (errno:%d %s)",
-					(unsigned long)pid, pink_bitness_name(bit), comm,
-					-r, strerror(-r));
-			free(data);
-			panic(current);
-			return;
-		}
-
-		info("initial process:%lu [%s name:\"%s\" cwd:\"%s\"]",
-				(unsigned long)pid, pink_bitness_name(bit),
-				comm, cwd);
-
+		pandora->eldest = pid;
 		inherit = &pandora->config.child;
-	}
-	else {
+	} else {
 		pdata = (proc_data_t *)pink_easy_process_get_userdata(parent);
 		comm = xstrdup(pdata->comm);
 		cwd = xstrdup(pdata->cwd);
@@ -231,8 +221,7 @@ callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy
 	pink_easy_process_set_userdata(current, data, free_proc);
 }
 
-static int
-callback_end(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, PINK_GCC_ATTR((unused)) bool echild)
+static int callback_cleanup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx)
 {
 	if (pandora->violation) {
 		if (pandora->config.violation_exit_code > 0)
@@ -243,50 +232,51 @@ callback_end(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, PINK_GCC_AT
 	return pandora->exit_code;
 }
 
-static int
-callback_pre_exit(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pid_t pid, unsigned long status)
+static int callback_exit(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
+		pid_t pid, int status)
 {
 	if (pid == pandora->eldest) {
 		/* Eldest child, keep return code */
 		if (WIFEXITED(status)) {
 			pandora->exit_code = WEXITSTATUS(status);
-			message("initial process:%lu exited with code:%d (status:%#lx)",
+			message("initial process:%lu exited with code:%d (status:%#x)",
 					(unsigned long)pid, pandora->exit_code,
-					status);
+					(unsigned)status);
 		}
 		else if (WIFSIGNALED(status)) {
 			pandora->exit_code = 128 + WTERMSIG(status);
-			message("initial process:%lu was terminated with signal:%d (status:%#lx)",
+			message("initial process:%lu was terminated with signal:%d (status:%#x)",
 					(unsigned long)pid, pandora->exit_code - 128,
-					status);
+					(unsigned)status);
 		}
 		else {
-			warning("initial process:%lu exited with unknown status:%#lx",
-					(unsigned long)pid, status);
+			warning("initial process:%lu exited with unknown status:%#x",
+					(unsigned long)pid, (unsigned)status);
 			warning("don't know how to determine exit code");
 		}
 	}
 	else {
 		if (WIFEXITED(status))
-			info("process:%lu exited with code:%d (status:%#lx)",
+			info("process:%lu exited with code:%d (status:%#x)",
 					(unsigned long)pid,
 					WEXITSTATUS(status),
-					status);
+					(unsigned)status);
 		else if (WIFSIGNALED(status))
-			info("process:%lu exited was terminated with signal:%d (status:%#lx)",
+			info("process:%lu exited was terminated with signal:%d (status:%#x)",
 					(unsigned long)pid,
 					WTERMSIG(status),
-					status);
+					(unsigned)status);
 		else
-			warning("process:%lu exited with unknown status:%#lx",
-					(unsigned long)pid, status);
+			warning("process:%lu exited with unknown status:%#x",
+					(unsigned long)pid, (unsigned)status);
 	}
 
 	return 0;
 }
 
-static int
-callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_process_t *current, PINK_GCC_ATTR((unused)) pink_bitness_t orig_bitness)
+static int callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
+		pink_easy_process_t *current,
+		PINK_GCC_ATTR((unused)) pink_bitness_t orig_bitness)
 {
 	int e, r;
 	char *comm;
@@ -303,6 +293,12 @@ callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_
 		data->config.magic_lock = LOCK_SET;
 	}
 
+	if (pandora->skip_initial_exec) {
+		/* Initial execve was successful, let the tracing begin! */
+		pandora->skip_initial_exec = false;
+		return 0;
+	}
+
 	if (!data->abspath) {
 		/* Nothing left to do */
 		return 0;
@@ -315,14 +311,14 @@ callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_
 		warning("killing process:%lu [%s cwd:\"%s\"]", (unsigned long)pid, pink_bitness_name(bit), data->cwd);
 		if (pink_easy_process_kill(current, SIGKILL) < 0)
 			warning("failed to kill process:%lu (errno:%d %s)", (unsigned long)pid, errno, strerror(errno));
-		r = PINK_EASY_CFLAG_DROP;
+		r |= PINK_EASY_CFLAG_DROP;
 	}
 	else if (box_match_path(data->abspath, &pandora->config.exec_resume_if_match, &match)) {
 		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("resuming process:%lu [%s cwd:\"%s\"]", (unsigned long)pid, pink_bitness_name(bit), data->cwd);
 		if (!pink_easy_process_resume(current, 0))
 			warning("failed to resume process:%lu (errno:%d %s)", (unsigned long)pid, errno, strerror(errno));
-		r = PINK_EASY_CFLAG_DROP;
+		r |= PINK_EASY_CFLAG_DROP;
 	}
 
 	/* Update process name */
@@ -332,11 +328,11 @@ callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_
 				data->comm, data->cwd,
 				-e, strerror(-e));
 		comm = xstrdup("???");
-	}
-	else if (strcmp(comm, data->comm))
+	} else if (strcmp(comm, data->comm)) {
 		info("updating name of process:%lu [%s name:\"%s\" cwd:\"%s\"] to \"%s\" due to execve()",
 				(unsigned long)pid, pink_bitness_name(bit),
 				data->comm, data->cwd, comm);
+	}
 
 	if (data->comm)
 		free(data->comm);
@@ -348,20 +344,19 @@ callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_
 	return r;
 }
 
-static int
-callback_syscall(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_process_t *current, bool entering)
+static int callback_syscall(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
+		pink_easy_process_t *current, bool entering)
 {
 	return entering ? sysenter(current) : sysexit(current);
 }
 
-void
-callback_init(void)
+void callback_init(void)
 {
 	memset(&pandora->callback_table, 0, sizeof(pink_easy_callback_table_t));
 
-	pandora->callback_table.birth = callback_birth;
-	pandora->callback_table.end = callback_end;
-	pandora->callback_table.pre_exit = callback_pre_exit;
+	pandora->callback_table.startup = callback_startup;
+	pandora->callback_table.cleanup = callback_cleanup;
+	pandora->callback_table.exit = callback_exit;
 	pandora->callback_table.exec = callback_exec;
 	pandora->callback_table.syscall = callback_syscall;
 	pandora->callback_table.error = callback_error;

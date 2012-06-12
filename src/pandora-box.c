@@ -129,7 +129,6 @@ box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolv
 	char *p;
 
 	p = NULL;
-#ifdef HAVE_PROC_SELF
 	/* Special case for /proc/self.
 	 * This symbolic link resolves to /proc/$pid, if we let
 	 * canonicalize_filename_mode() resolve this, we'll get a different result.
@@ -141,7 +140,6 @@ box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolv
 				return -errno;
 		}
 	}
-#endif /* HAVE_PROC_SELF */
 
 	r = canonicalize_filename_mode(p ? p : abspath, maycreat ? CAN_ALL_BUT_LAST : CAN_EXISTING, resolve, res);
 	if (p)

@@ -1,7 +1,7 @@
 dnl Program, version
 AC_PREREQ(2.59)
 
-AC_INIT([pandora], [1], [alip@exherbo.org] [pandora])
+AC_INIT([pandora], [1], [alip@exherbo.org], [pandora])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
@@ -128,7 +128,7 @@ if test x"$WANT_IPV6" = x"yes" ; then
 	CPPFLAGS="${CPPFLAGS} ${pkg_cv_pinktrace_CFLAGS}"
 	AC_PREPROC_IFELSE([AC_LANG_SOURCE([
 #include <pinktrace/pink.h>
-#if !PINKTRACE_HAVE_IPV6
+#if !PINK_HAVE_IPV6
 #error nope
 #endif
 	])],

@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -327,7 +327,7 @@ typedef struct {
 	long subcall;
 
 	/* Arguments of last system call */
-	long args[PINK_MAX_INDEX];
+	long args[PINK_MAX_ARGS];
 
 	/* Is the last system call denied? */
 	bool deny;
@@ -405,8 +405,14 @@ typedef struct {
 	/* Exit code */
 	int exit_code;
 
+	/* Skip initial execve() for magic */
+	bool skip_initial_exec;
+
 	/* This is true if an access violation has occured, false otherwise. */
 	bool violation;
+
+	/* Program invocation name (for the child) */
+	char *program_invocation_name;
 
 	/* Callback table */
 	pink_easy_callback_table_t callback_table;
@@ -458,6 +464,7 @@ void *xrealloc(void *ptr, size_t size);
 char *xstrdup(const char *src) PINK_GCC_ATTR((malloc));
 char *xstrndup(const char *src, size_t n) PINK_GCC_ATTR((malloc));
 int xasprintf(char **strp, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
+char *xgetcwd(void);
 
 #define LOG_DEFAULT_PREFIX PACKAGE
 #define LOG_DEFAULT_SUFFIX "\n"
@@ -685,7 +692,7 @@ clear_proc(void *data)
 	p->deny = false;
 	p->ret = 0;
 	p->subcall = 0;
-	for (unsigned i = 0; i < PINK_MAX_INDEX; i++)
+	for (unsigned i = 0; i < PINK_MAX_ARGS; i++)
 		p->args[i] = 0;
 
 	if (p->savebind)

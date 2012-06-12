@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -20,11 +20,12 @@
 #include "pandora-defs.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <errno.h>
 
 void
 die(int code, const char *fmt, ...)
@@ -143,4 +144,19 @@ xasprintf(char **strp, const char *fmt, ...)
 
 	*strp = dest;
 	return r;
+}
+
+char *
+xgetcwd(void)
+{
+	char *cwd;
+#ifdef _GNU_SOURCE
+	cwd = get_current_dir_name();
+#else
+	cwd = xmalloc(sizeof(char) * (PATH_MAX + 1));
+	cwd = getcwd(cwd, PATH_MAX + 1);
+#endif
+	if (cwd == NULL)
+		die_errno(-1, "getcwd");
+	return cwd;
 }

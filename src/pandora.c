@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -101,6 +101,7 @@ pandora_init(void)
 	pandora = xmalloc(sizeof(pandora_t));
 	pandora->eldest = -1;
 	pandora->exit_code = 0;
+	pandora->skip_initial_exec = false;
 	pandora->violation = false;
 	pandora->ctx = NULL;
 	config_init();
@@ -234,7 +235,7 @@ pandora_attach_all(pid_t pid)
 			if (parse_pid(de->d_name, &tid) < 0)
 				continue;
 			++ntid;
-			if (pink_easy_attach(pandora->ctx, tid, tid != pid ? pid : -1) < 0) {
+			if (!pink_easy_attach(pandora->ctx, tid, tid != pid ? pid : -1)) {
 				warning("failed to attach to tid:%lu (errno:%d %s)",
 						(unsigned long)tid,
 						errno, strerror(errno));
@@ -251,7 +252,7 @@ pandora_attach_all(pid_t pid)
 			(unsigned long)pid,
 			errno, strerror(errno));
 one:
-	if (pink_easy_attach(pandora->ctx, pid, -1) < 0) {
+	if (!pink_easy_attach(pandora->ctx, pid, -1)) {
 		warning("failed to attach process:%lu (errno:%d %s)",
 				(unsigned long)pid,
 				errno, strerror(errno));
@@ -334,17 +335,17 @@ main(int argc, char **argv)
 	systable_init();
 	sysinit();
 
-	ptrace_options = PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC | PINK_TRACE_OPTION_EXIT;
+	ptrace_options = PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC;
 	if (pandora->config.follow_fork)
 		ptrace_options |= (PINK_TRACE_OPTION_FORK | PINK_TRACE_OPTION_VFORK | PINK_TRACE_OPTION_CLONE);
 
 	if (!(pandora->ctx = pink_easy_context_new(ptrace_options, &pandora->callback_table, NULL, NULL)))
 		die_errno(-1, "pink_easy_context_new");
 
-	if (!pid_count) {
-		free(pid_list);
-
-		if (pink_easy_execvp(pandora->ctx, argv[optind], &argv[optind]))
+	if (pid_count == 0) {
+		pandora->skip_initial_exec = true;
+		pandora->program_invocation_name = xstrdup(argv[optind]);
+		if (!pink_easy_execvp(pandora->ctx, argv[optind], &argv[optind]))
 			die(1, "failed to execute child process");
 	}
 	else {
@@ -353,8 +354,8 @@ main(int argc, char **argv)
 			npid += pandora_attach_all(pid_list[i]);
 		if (!npid)
 			die(1, "failed to attach to any process");
-		free(pid_list);
 	}
+	free(pid_list);
 
 	/* Handle signals */
 	sigemptyset(&sa.sa_mask);
