@@ -110,21 +110,6 @@ static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_proces
 	return &pandora->config.filter_sock;
 }
 
-#define DEFINE_GLOBAL_UINT_SETTING_FUNC(name, setting)							\
-	static int _set_##name(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current) {	\
-		int dummy = PTR_TO_INT(val);								\
-		if (dummy < 0)										\
-			return MAGIC_ERROR_INVALID_VALUE;						\
-		setting = dummy;									\
-		return 0;										\
-	}
-
-#define DEFINE_GLOBAL_INT_SETTING_FUNC(name, setting)							\
-	static int _set_##name(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current) {	\
-		setting = PTR_TO_INT(val);								\
-		return 0;										\
-	}
-
 #define DEFINE_STRING_LIST_SETTING_FUNC(name, field)					\
 	static int _set_##name(const void *val, pink_easy_process_t *current)		\
 	{										\
@@ -228,8 +213,6 @@ static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_proces
 		return r;									\
 	}
 
-DEFINE_GLOBAL_INT_SETTING_FUNC(panic_exit_code, pandora->config.panic_exit_code)
-DEFINE_GLOBAL_INT_SETTING_FUNC(violation_exit_code, pandora->config.violation_exit_code)
 DEFINE_STRING_LIST_SETTING_FUNC(whitelist_exec, up)
 DEFINE_STRING_LIST_SETTING_FUNC(whitelist_read, up)
 DEFINE_STRING_LIST_SETTING_FUNC(whitelist_write, up)
@@ -536,7 +519,7 @@ static const struct key key_table[] = {
 			.lname  = "core.panic.exit_code",
 			.parent = MAGIC_KEY_CORE_PANIC,
 			.type   = MAGIC_TYPE_INTEGER,
-			.set    = _set_panic_exit_code,
+			.set    = magic_set_panic_exit_code,
 		},
 
 	[MAGIC_KEY_CORE_VIOLATION_DECISION] =
@@ -553,7 +536,7 @@ static const struct key key_table[] = {
 			.lname  = "core.violation.exit_code",
 			.parent = MAGIC_KEY_CORE_VIOLATION,
 			.type   = MAGIC_TYPE_INTEGER,
-			.set    = _set_violation_exit_code,
+			.set    = magic_set_violation_exit_code,
 		},
 	[MAGIC_KEY_CORE_VIOLATION_RAISE_FAIL] =
 		{

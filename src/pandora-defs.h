@@ -507,6 +507,8 @@ int sock_match_new_pink(const sock_info_t *src, sock_match_t **buf);
 sock_match_t *sock_match_xdup(const sock_match_t *src);
 int sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle);
 
+int magic_set_panic_exit_code(const void *val, pink_easy_process_t *current);
+int magic_set_violation_exit_code(const void *val, pink_easy_process_t *current);
 int magic_set_violation_raise_fail(const void *val, pink_easy_process_t *current);
 int magic_query_violation_raise_fail(pink_easy_process_t *current);
 int magic_set_violation_raise_safe(const void *val, pink_easy_process_t *current);
