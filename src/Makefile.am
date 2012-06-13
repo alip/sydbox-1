@@ -33,6 +33,8 @@ pandora_SOURCES= \
 		 proc.c \
 		 util.c \
 		 wildmatch.c \
+		 magic-log.c \
+		 magic-sandbox.c \
 		 pandora.c \
 		 pandora-box.c \
 		 pandora-callback.c \

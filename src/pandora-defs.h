@@ -507,6 +507,15 @@ int sock_match_new_pink(const sock_info_t *src, sock_match_t **buf);
 sock_match_t *sock_match_xdup(const sock_match_t *src);
 int sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle);
 
+int magic_set_log_file(const void *val, pink_easy_process_t *current);
+int magic_set_log_console_fd(const void *val, pink_easy_process_t *current);
+int magic_set_log_level(const void *val, pink_easy_process_t *current);
+int magic_set_log_timestamp(const void *val, pink_easy_process_t *current);
+int magic_query_log_timestamp(pink_easy_process_t *current);
+int magic_set_sandbox_exec(const void *val, pink_easy_process_t *current);
+int magic_set_sandbox_read(const void *val, pink_easy_process_t *current);
+int magic_set_sandbox_write(const void *val, pink_easy_process_t *current);
+int magic_set_sandbox_sock(const void *val, pink_easy_process_t *current);
 const char *magic_strerror(int error);
 const char *magic_strkey(enum magic_key key);
 unsigned magic_key_type(enum magic_key key);

@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -132,18 +132,6 @@ static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_proces
 	}												\
 	static int _query_##name(PINK_GCC_ATTR((unused)) pink_easy_process_t *current) {		\
 		return setting;										\
-	}
-
-#define DEFINE_SANDBOX_SETTING_FUNC(name)						\
-	static int _set_##name(const void *val, pink_easy_process_t *current) {		\
-		int m;									\
-		const char *str = val;							\
-		sandbox_t *box = box_current(current);					\
-											\
-		if ((m = sandbox_mode_from_string(str)) < 0)				\
-			return MAGIC_ERROR_INVALID_VALUE;				\
-		box->name = (enum sandbox_mode)m;					\
-		return 0;								\
 	}
 
 #define DEFINE_GLOBAL_IF_MATCH_SETTING_FUNC(name, head, field)						\
@@ -284,19 +272,12 @@ static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_proces
 		return r;									\
 	}
 
-DEFINE_GLOBAL_UINT_SETTING_FUNC(log_console_fd, pandora->config.log_console_fd)
-DEFINE_GLOBAL_UINT_SETTING_FUNC(log_level, pandora->config.log_level)
-DEFINE_GLOBAL_BOOL_SETTING_FUNC(log_timestamp, pandora->config.log_timestamp)
 DEFINE_GLOBAL_INT_SETTING_FUNC(panic_exit_code, pandora->config.panic_exit_code)
 DEFINE_GLOBAL_INT_SETTING_FUNC(violation_exit_code, pandora->config.violation_exit_code)
 DEFINE_GLOBAL_BOOL_SETTING_FUNC(violation_raise_fail, pandora->config.violation_raise_fail)
 DEFINE_GLOBAL_BOOL_SETTING_FUNC(violation_raise_safe, pandora->config.violation_raise_safe)
 DEFINE_GLOBAL_BOOL_SETTING_FUNC(trace_follow_fork, pandora->config.follow_fork)
 DEFINE_GLOBAL_BOOL_SETTING_FUNC(trace_exit_wait_all, pandora->config.exit_wait_all)
-DEFINE_SANDBOX_SETTING_FUNC(sandbox_exec)
-DEFINE_SANDBOX_SETTING_FUNC(sandbox_read)
-DEFINE_SANDBOX_SETTING_FUNC(sandbox_write)
-DEFINE_SANDBOX_SETTING_FUNC(sandbox_sock)
 DEFINE_GLOBAL_BOOL_SETTING_FUNC(whitelist_ppd, pandora->config.whitelist_per_process_directories)
 DEFINE_GLOBAL_BOOL_SETTING_FUNC(whitelist_sb, pandora->config.whitelist_successful_bind)
 DEFINE_GLOBAL_BOOL_SETTING_FUNC(whitelist_usf, pandora->config.whitelist_unsupported_socket_families)
@@ -316,32 +297,6 @@ DEFINE_STRING_LIST_SETTING_FUNC(filter_exec, up)
 DEFINE_STRING_LIST_SETTING_FUNC(filter_read, up)
 DEFINE_STRING_LIST_SETTING_FUNC(filter_write, up)
 DEFINE_SOCK_LIST_SETTING_FUNC(filter_sock, up)
-
-static int
-_set_log_file(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
-{
-	const char *str = val;
-
-	if (!str /* || !*str */)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	log_close();
-
-	if (!*str) {
-		if (pandora->config.log_file)
-			free(pandora->config.log_file);
-		pandora->config.log_file = NULL;
-		return 0;
-	}
-
-	if (pandora->config.log_file)
-		free(pandora->config.log_file);
-	pandora->config.log_file = xstrdup(str);
-
-	log_init();
-
-	return 0;
-}
 
 static int
 _set_abort_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
@@ -522,7 +477,7 @@ static const struct key key_table[] = {
 			.lname  = "core.log.console_fd",
 			.parent = MAGIC_KEY_CORE_LOG,
 			.type   = MAGIC_TYPE_INTEGER,
-			.set    = _set_log_console_fd,
+			.set    = magic_set_log_console_fd,
 		},
 	[MAGIC_KEY_CORE_LOG_FILE] =
 		{
@@ -530,7 +485,7 @@ static const struct key key_table[] = {
 			.lname  = "core.log.file",
 			.parent = MAGIC_KEY_CORE_LOG,
 			.type   = MAGIC_TYPE_STRING,
-			.set    = _set_log_file,
+			.set    = magic_set_log_file,
 		},
 	[MAGIC_KEY_CORE_LOG_LEVEL] =
 		{
@@ -538,7 +493,7 @@ static const struct key key_table[] = {
 			.lname  = "core.log.level",
 			.parent = MAGIC_KEY_CORE_LOG,
 			.type   = MAGIC_TYPE_INTEGER,
-			.set    = _set_log_level,
+			.set    = magic_set_log_level,
 		},
 	[MAGIC_KEY_CORE_LOG_TIMESTAMP] =
 		{
@@ -546,8 +501,8 @@ static const struct key key_table[] = {
 			.lname  = "core.log.timestamp",
 			.parent = MAGIC_KEY_CORE_LOG,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_log_timestamp,
-			.query  = _query_log_timestamp,
+			.set    = magic_set_log_timestamp,
+			.query  = magic_query_log_timestamp,
 		},
 
 	[MAGIC_KEY_CORE_SANDBOX_EXEC] =
@@ -556,7 +511,7 @@ static const struct key key_table[] = {
 			.lname  = "core.sandbox.exec",
 			.parent = MAGIC_KEY_CORE_SANDBOX,
 			.type   = MAGIC_TYPE_STRING,
-			.set    = _set_sandbox_exec,
+			.set    = magic_set_sandbox_exec,
 		},
 	[MAGIC_KEY_CORE_SANDBOX_READ] =
 		{
@@ -564,7 +519,7 @@ static const struct key key_table[] = {
 			.lname  = "core.sandbox.read",
 			.parent = MAGIC_KEY_CORE_SANDBOX,
 			.type   = MAGIC_TYPE_STRING,
-			.set    = _set_sandbox_read,
+			.set    = magic_set_sandbox_read,
 		},
 	[MAGIC_KEY_CORE_SANDBOX_WRITE] =
 		{
@@ -572,7 +527,7 @@ static const struct key key_table[] = {
 			.lname  = "core.sandbox.write",
 			.parent = MAGIC_KEY_CORE_SANDBOX,
 			.type   = MAGIC_TYPE_STRING,
-			.set    = _set_sandbox_write,
+			.set    = magic_set_sandbox_write,
 		},
 	[MAGIC_KEY_CORE_SANDBOX_SOCK] =
 		{
@@ -580,7 +535,7 @@ static const struct key key_table[] = {
 			.lname  = "core.sandbox.sock",
 			.parent = MAGIC_KEY_CORE_SANDBOX,
 			.type   = MAGIC_TYPE_STRING,
-			.set    = _set_sandbox_sock,
+			.set    = magic_set_sandbox_sock,
 		},
 
 	[MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES] =
