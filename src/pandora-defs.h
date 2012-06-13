@@ -537,6 +537,10 @@ int magic_set_whitelist_sock_connect(const void *val, pink_easy_process_t *curre
 int magic_set_blacklist_sock_bind(const void *val, pink_easy_process_t *current);
 int magic_set_blacklist_sock_connect(const void *val, pink_easy_process_t *current);
 int magic_set_filter_sock(const void *val, pink_easy_process_t *current);
+int magic_set_abort_decision(const void *val, pink_easy_process_t *current);
+int magic_set_panic_decision(const void *val, pink_easy_process_t *current);
+int magic_set_violation_decision(const void *val, pink_easy_process_t *current);
+int magic_set_trace_magic_lock(const void *val, pink_easy_process_t *current);
 int magic_set_log_file(const void *val, pink_easy_process_t *current);
 int magic_set_log_console_fd(const void *val, pink_easy_process_t *current);
 int magic_set_log_level(const void *val, pink_easy_process_t *current);

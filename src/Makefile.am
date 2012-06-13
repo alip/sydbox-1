@@ -37,6 +37,8 @@ pandora_SOURCES= \
 		 magic-int.c \
 		 magic-strlist.c \
 		 magic-socklist.c \
+		 magic-decision.c \
+		 magic-lock.c \
 		 magic-log.c \
 		 magic-sandbox.c \
 		 magic-if_match.c \

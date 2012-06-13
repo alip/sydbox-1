@@ -30,59 +30,6 @@
 #include "macro.h"
 #include "util.h"
 
-static int
-_set_abort_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
-{
-	int d;
-	const char *str = val;
-
-	if ((d = abort_decision_from_string(str)) < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	pandora->config.abort_decision = (enum abort_decision)d;
-	return 0;
-}
-
-static int
-_set_panic_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
-{
-	int d;
-	const char *str = val;
-
-	if ((d = panic_decision_from_string(str)) < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	pandora->config.panic_decision = (enum panic_decision)d;
-	return 0;
-}
-
-static int
-_set_violation_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
-{
-	int d;
-	const char *str = val;
-
-	if ((d = violation_decision_from_string(str)) < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	pandora->config.violation_decision = (enum violation_decision)d;
-	return 0;
-}
-
-static int
-_set_trace_magic_lock(const void *val, pink_easy_process_t *current)
-{
-	int l;
-	const char *str = val;
-	sandbox_t *box = box_current(current);
-
-	if ((l = lock_state_from_string(str)) < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	box->magic_lock = (enum lock_state)l;
-	return 0;
-}
-
 struct key {
 	const char *name;
 	const char *lname;
@@ -304,7 +251,7 @@ static const struct key key_table[] = {
 			.lname  = "core.abort.decision",
 			.parent = MAGIC_KEY_CORE_ABORT,
 			.type   = MAGIC_TYPE_STRING,
-			.set    = _set_abort_decision,
+			.set    = magic_set_abort_decision,
 		},
 
 	[MAGIC_KEY_CORE_PANIC_DECISION] =
@@ -313,7 +260,7 @@ static const struct key key_table[] = {
 			.lname  = "core.panic.decision",
 			.parent = MAGIC_KEY_CORE_PANIC,
 			.type   = MAGIC_TYPE_STRING,
-			.set    = _set_panic_decision,
+			.set    = magic_set_panic_decision,
 		},
 	[MAGIC_KEY_CORE_PANIC_EXIT_CODE] =
 		{
@@ -330,7 +277,7 @@ static const struct key key_table[] = {
 			.lname  = "core.violation.decision",
 			.parent = MAGIC_KEY_CORE_VIOLATION,
 			.type   = MAGIC_TYPE_STRING,
-			.set    = _set_violation_decision,
+			.set    = magic_set_violation_decision,
 		},
 	[MAGIC_KEY_CORE_VIOLATION_EXIT_CODE] =
 		{
@@ -383,7 +330,7 @@ static const struct key key_table[] = {
 			.lname  = "core.trace.magic_lock",
 			.parent = MAGIC_KEY_CORE_TRACE,
 			.type   = MAGIC_TYPE_STRING,
-			.set    = _set_trace_magic_lock,
+			.set    = magic_set_trace_magic_lock,
 		},
 
 	[MAGIC_KEY_EXEC_KILL_IF_MATCH] =
