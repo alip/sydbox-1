@@ -35,6 +35,7 @@ pandora_SOURCES= \
 		 wildmatch.c \
 		 magic-log.c \
 		 magic-sandbox.c \
+		 magic-if_match.c \
 		 pandora.c \
 		 pandora-box.c \
 		 pandora-callback.c \

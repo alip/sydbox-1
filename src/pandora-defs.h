@@ -516,6 +516,9 @@ int magic_set_sandbox_exec(const void *val, pink_easy_process_t *current);
 int magic_set_sandbox_read(const void *val, pink_easy_process_t *current);
 int magic_set_sandbox_write(const void *val, pink_easy_process_t *current);
 int magic_set_sandbox_sock(const void *val, pink_easy_process_t *current);
+int magic_set_exec_kill_if_match(const void *val, pink_easy_process_t *current);
+int magic_set_exec_resume_if_match(const void *val, pink_easy_process_t *current);
+
 const char *magic_strerror(int error);
 const char *magic_strkey(enum magic_key key);
 unsigned magic_key_type(enum magic_key key);

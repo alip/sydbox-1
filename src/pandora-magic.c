@@ -134,41 +134,6 @@ static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_proces
 		return setting;										\
 	}
 
-#define DEFINE_GLOBAL_IF_MATCH_SETTING_FUNC(name, head, field)						\
-	static int _set_##name(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)	\
-	{												\
-		char op;										\
-		const char *str = val;									\
-		struct snode *node;									\
-													\
-		if (!str || !*str || !*(str + 1))							\
-			return MAGIC_ERROR_INVALID_VALUE;						\
-		else {											\
-			op = *str;									\
-			++str;										\
-		}											\
-													\
-		switch (op) {										\
-		case PANDORA_MAGIC_ADD_CHAR:								\
-			node = xcalloc(1, sizeof(struct snode));					\
-			node->data = xstrdup(str);							\
-			SLIST_INSERT_HEAD(head, node, field);						\
-			return 0;									\
-		case PANDORA_MAGIC_REMOVE_CHAR:								\
-			SLIST_FOREACH(node, head, field) {						\
-				if (streq(node->data, str)) {						\
-					SLIST_REMOVE(head, node, snode, field);				\
-					free(node->data);						\
-					free(node);							\
-					break;								\
-				}									\
-			}										\
-			return 0;									\
-		default:										\
-			return MAGIC_ERROR_INVALID_OPERATION;						\
-		}											\
-	}
-
 #define DEFINE_STRING_LIST_SETTING_FUNC(name, field)					\
 	static int _set_##name(const void *val, pink_easy_process_t *current)		\
 	{										\
@@ -281,8 +246,6 @@ DEFINE_GLOBAL_BOOL_SETTING_FUNC(trace_exit_wait_all, pandora->config.exit_wait_a
 DEFINE_GLOBAL_BOOL_SETTING_FUNC(whitelist_ppd, pandora->config.whitelist_per_process_directories)
 DEFINE_GLOBAL_BOOL_SETTING_FUNC(whitelist_sb, pandora->config.whitelist_successful_bind)
 DEFINE_GLOBAL_BOOL_SETTING_FUNC(whitelist_usf, pandora->config.whitelist_unsupported_socket_families)
-DEFINE_GLOBAL_IF_MATCH_SETTING_FUNC(exec_kill_if_match, &pandora->config.exec_kill_if_match, up)
-DEFINE_GLOBAL_IF_MATCH_SETTING_FUNC(exec_resume_if_match, &pandora->config.exec_resume_if_match, up)
 DEFINE_STRING_LIST_SETTING_FUNC(whitelist_exec, up)
 DEFINE_STRING_LIST_SETTING_FUNC(whitelist_read, up)
 DEFINE_STRING_LIST_SETTING_FUNC(whitelist_write, up)
@@ -660,7 +623,7 @@ static const struct key key_table[] = {
 			.lname  = "exec.kill_if_match",
 			.parent = MAGIC_KEY_EXEC,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_exec_kill_if_match,
+			.set    = magic_set_exec_kill_if_match,
 		},
 	[MAGIC_KEY_EXEC_RESUME_IF_MATCH] =
 		{
@@ -668,7 +631,7 @@ static const struct key key_table[] = {
 			.lname  = "exec.resume_if_match",
 			.parent = MAGIC_KEY_EXEC,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_exec_resume_if_match,
+			.set    = magic_set_exec_resume_if_match,
 		},
 
 	[MAGIC_KEY_WHITELIST_EXEC] =
