@@ -30,107 +30,6 @@
 #include "macro.h"
 #include "util.h"
 
-static slist_t *_box_whitelist_sock_bind(pink_easy_process_t *current)
-{
-	sandbox_t *box = box_current(current);
-	return &box->whitelist_sock_bind;
-}
-
-static slist_t *_box_whitelist_sock_connect(pink_easy_process_t *current)
-{
-	sandbox_t *box = box_current(current);
-	return &box->whitelist_sock_connect;
-}
-
-static slist_t *_box_blacklist_sock_bind(pink_easy_process_t *current)
-{
-	sandbox_t *box = box_current(current);
-	return &box->blacklist_sock_bind;
-}
-
-static slist_t *_box_blacklist_sock_connect(pink_easy_process_t *current)
-{
-	sandbox_t *box = box_current(current);
-	return &box->blacklist_sock_connect;
-}
-
-static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
-{
-	return &pandora->config.filter_sock;
-}
-
-#define DEFINE_SOCK_LIST_SETTING_FUNC(name, field)					\
-	static int _set_##name(const void *val, pink_easy_process_t *current)			\
-	{											\
-		char op;									\
-		int c, f, r = 0;								\
-		const char *str = val;								\
-		char **list;									\
-		struct snode *node;								\
-		slist_t *head;									\
-		sock_match_t *match;								\
-												\
-		if (!str || !*str || !*(str + 1))						\
-			return MAGIC_ERROR_INVALID_VALUE;					\
-		else {										\
-			op = *str;								\
-			++str;									\
-		}										\
-												\
-		head = _box_##name(current);							\
-												\
-		/* Expand alias */								\
-		c = f = sock_match_expand(str, &list) - 1;					\
-		for (; c >= 0; c--) {								\
-			switch (op) {								\
-			case PANDORA_MAGIC_ADD_CHAR:						\
-				errno = 0;							\
-				if ((r = sock_match_new(list[c], &match)) < 0) {		\
-					warning("invalid address `%s' (errno:%d %s)",		\
-							list[c], -r, strerror(-r));		\
-					r = MAGIC_ERROR_INVALID_VALUE;				\
-					goto end;						\
-				}								\
-				if (errno == EAFNOSUPPORT) {					\
-					/* ipv6 support disabled? */				\
-					info("unsupported address `%s' ignoring", list[c]);	\
-					goto end;						\
-				}								\
-				node = xcalloc(1, sizeof(struct snode));			\
-				node->data = match;						\
-				SLIST_INSERT_HEAD(head, node, field);				\
-				break;								\
-			case PANDORA_MAGIC_REMOVE_CHAR:						\
-				SLIST_FOREACH(node, head, field) {				\
-					match = node->data;					\
-					if (streq(match->str, str)) {				\
-						SLIST_REMOVE(head, node, snode, field);		\
-						free_sock_match(match);				\
-						free(node);					\
-						break;						\
-					}							\
-				}								\
-				break;								\
-			default:								\
-				r = MAGIC_ERROR_INVALID_OPERATION;				\
-				break;								\
-			}									\
-		}										\
-												\
-	end:											\
-		for (; f >= 0; f--)								\
-			free(list[f]);								\
-		free(list);									\
-												\
-		return r;									\
-	}
-
-DEFINE_SOCK_LIST_SETTING_FUNC(whitelist_sock_bind, up)
-DEFINE_SOCK_LIST_SETTING_FUNC(whitelist_sock_connect, up)
-DEFINE_SOCK_LIST_SETTING_FUNC(blacklist_sock_bind, up)
-DEFINE_SOCK_LIST_SETTING_FUNC(blacklist_sock_connect, up)
-DEFINE_SOCK_LIST_SETTING_FUNC(filter_sock, up)
-
 static int
 _set_abort_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
@@ -534,7 +433,7 @@ static const struct key key_table[] = {
 			.lname  = "whitelist.sock.bind",
 			.parent = MAGIC_KEY_WHITELIST_SOCK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_whitelist_sock_bind,
+			.set    = magic_set_whitelist_sock_bind,
 		},
 	[MAGIC_KEY_WHITELIST_SOCK_CONNECT] =
 		{
@@ -542,7 +441,7 @@ static const struct key key_table[] = {
 			.lname  = "whitelist.sock.connect",
 			.parent = MAGIC_KEY_WHITELIST_SOCK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_whitelist_sock_connect,
+			.set    = magic_set_whitelist_sock_connect,
 		},
 
 	[MAGIC_KEY_BLACKLIST_EXEC] =
@@ -575,7 +474,7 @@ static const struct key key_table[] = {
 			.lname  = "blacklist.sock.bind",
 			.parent = MAGIC_KEY_BLACKLIST_SOCK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_blacklist_sock_bind,
+			.set    = magic_set_blacklist_sock_bind,
 		},
 	[MAGIC_KEY_BLACKLIST_SOCK_CONNECT] =
 		{
@@ -583,7 +482,7 @@ static const struct key key_table[] = {
 			.lname  = "blacklist.sock.connect",
 			.parent = MAGIC_KEY_BLACKLIST_SOCK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_blacklist_sock_connect,
+			.set    = magic_set_blacklist_sock_connect,
 		},
 
 	[MAGIC_KEY_FILTER_EXEC] =
@@ -616,7 +515,7 @@ static const struct key key_table[] = {
 			.lname  = "filter.sock",
 			.parent = MAGIC_KEY_FILTER,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_filter_sock,
+			.set    = magic_set_filter_sock,
 		},
 
 	[MAGIC_KEY_INVALID] =
