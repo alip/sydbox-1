@@ -226,7 +226,7 @@ static int callback_cleanup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *c
 	if (pandora->violation) {
 		if (pandora->config.violation_exit_code > 0)
 			return pandora->config.violation_exit_code;
-		else if (!pandora->config.violation_exit_code)
+		else if (pandora->config.violation_exit_code == 0)
 			return 128 + pandora->exit_code;
 	}
 	return pandora->exit_code;

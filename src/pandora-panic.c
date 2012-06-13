@@ -270,7 +270,7 @@ violation(pink_easy_process_t *current, const char *fmt, ...)
 	/* exit */
 	if (pandora->config.violation_exit_code > 0)
 		exit(pandora->config.violation_exit_code);
-	else if (!pandora->config.violation_exit_code)
+	else if (pandora->config.violation_exit_code == 0)
 		exit(128 + pandora->config.violation_exit_code);
 	exit(pandora->exit_code);
 }
