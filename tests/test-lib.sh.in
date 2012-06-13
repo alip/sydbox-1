@@ -1,24 +1,34 @@
 #!/bin/sh
-# vim: set sw=4 et ts=4 sts=4 tw=80 :
-# Copyright 2010 Ali Polatel <alip@exherbo.org>
-# Based in part upon git's test-lib.sh which is:
-#   Copyright (c) 2005 Junio C Hamano
-# Distributed under the terms of the GNU General Public License v2
+#
+# Copyright (c) 2005 Junio C Hamano
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see http://www.gnu.org/licenses/ .
 
 # if --tee was passed, write the output not only to the terminal, but
 # additionally to the file test-results/$BASENAME.out, too.
 case "$PANDORA_TEST_TEE_STARTED, $* " in
 done,*)
-    # do not redirect again
-    ;;
+	# do not redirect again
+	;;
 *' --tee '*|*' --va'*)
-    mkdir -p test-results
-    BASE=test-results/$(basename "$0" .sh)
-    (PANDORA_TEST_TEE_STARTED=done sh "$0" "$@" 2>&1;
-     echo $? > $BASE.exit) | tee $BASE.out
-    test "$(cat $BASE.exit)" = 0
-    exit
-    ;;
+	mkdir -p test-results
+	BASE=test-results/$(basename "$0" .sh)
+	(PANDORA_TEST_TEE_STARTED=done ${SHELL-sh} "$0" "$@" 2>&1;
+	 echo $? > $BASE.exit) | tee $BASE.out
+	test "$(cat $BASE.exit)" = 0
+	exit
+	;;
 esac
 
 # Keep the original TERM for say_color
@@ -27,14 +37,53 @@ ORIGINAL_TERM=$TERM
 # For repeatability, reset the environment to known value.
 LANG=C
 LC_ALL=C
-TERM=dumb
+PAGER=cat
 TZ=UTC
-export LANG LC_ALL TERM TZ
-unset PANDORA_CONFIG
+TERM=dumb
+export LANG LC_ALL PAGER TERM TZ
+EDITOR=:
+# A call to "unset" with no arguments causes at least Solaris 10
+# /usr/xpg4/bin/sh and /bin/ksh to bail out.  So keep the unsets
+# deriving from the command substitution clustered with the other
+# ones.
+unset VISUAL EMAIL LANGUAGE COLUMNS $(perl -e '
+	my @env = keys %ENV;
+	my $ok = join("|", qw(
+		TRACE
+		DEBUG
+		USE_LOOKUP
+		TEST
+		.*_TEST
+		PROVE
+		VALGRIND
+		PERF_AGGREGATING_LATER
+		CONFIG
+	));
+	my @vars = grep(/^PANDORA_/ && !/^PANDORA_($ok)/o, @env);
+	print join("\n", @vars);
+')
+export EDITOR
 
 # Protect ourselves from common misconfiguration to export
 # CDPATH into the environment
 unset CDPATH
+
+unset GREP_OPTIONS
+
+case $(echo $PANDORA_TRACE |tr "[A-Z]" "[a-z]") in
+	1|2|true)
+		echo "* warning: Some tests will not work if PANDORA_TRACE" \
+			"is set as to trace on STDERR ! *"
+		echo "* warning: Please set PANDORA_TRACE to something" \
+			"other than 1, 2 or true ! *"
+		;;
+esac
+
+# Line feed
+LF='
+'
+
+export LF
 
 # Each test should start with something like this, after copyright notices:
 #
@@ -43,76 +92,82 @@ unset CDPATH
 # '
 # . ./test-lib.sh
 [ "x$ORIGINAL_TERM" != "xdumb" ] && (
-        TERM=$ORIGINAL_TERM &&
-        export TERM &&
-        [ -t 1 ] &&
-        tput bold >/dev/null 2>&1 &&
-        tput setaf 1 >/dev/null 2>&1 &&
-        tput sgr0 >/dev/null 2>&1
-    ) &&
-    color=t
+		TERM=$ORIGINAL_TERM &&
+		export TERM &&
+		[ -t 1 ] &&
+		tput bold >/dev/null 2>&1 &&
+		tput setaf 1 >/dev/null 2>&1 &&
+		tput sgr0 >/dev/null 2>&1
+	) &&
+	color=t
 
 while test "$#" -ne 0
 do
-    case "$1" in
-    -h|--h|--he|--hel|--help)
-        help=t; shift ;;
-    -d|--d|--de|--deb|--debu|--debug)
-        debug=t; verbose=t; shift ;;
-    -i|--i|--im|--imm|--imme|--immed|--immedi|--immedia|--immediat|--immediate)
-        immediate=t; shift ;;
-    -q|--q|--qu|--qui|--quie|--quiet)
-        quiet=t; shift ;;
-    -v|--v|--ve|--ver|--verb|--verbo|--verbos|--verbose)
-        verbose=t; shift ;;
-    --no-color|no-colour)
-        color=; shift ;;
-    --va|--val|--valg|--valgr|--valgri|--valgrin|--valgrind)
-        valgrind=t; verbose=t; shift ;;
-    --tee)
-        shift ;; # was handled already
-    --root=*)
-        root=$(expr "z$1" : 'z[^=]*=\(.*\)')
-        shift ;;
-    *)
-        echo "error: unknown test option '$1'" >&2; exit 1 ;;
-    esac
+	case "$1" in
+	-d|--d|--de|--deb|--debu|--debug)
+		debug=t; shift ;;
+	-i|--i|--im|--imm|--imme|--immed|--immedi|--immedia|--immediat|--immediate)
+		immediate=t; shift ;;
+	-l|--l|--lo|--lon|--long|--long-|--long-t|--long-te|--long-tes|--long-test|--long-tests)
+		PANDORA_TEST_LONG=t; export PANDORA_TEST_LONG; shift ;;
+	-h|--h|--he|--hel|--help)
+		help=t; shift ;;
+	-v|--v|--ve|--ver|--verb|--verbo|--verbos|--verbose)
+		verbose=t; shift ;;
+	-q|--q|--qu|--qui|--quie|--quiet)
+		# Ignore --quiet under a TAP::Harness. Saying how many tests
+		# passed without the ok/not ok details is always an error.
+		test -z "$HARNESS_ACTIVE" && quiet=t; shift ;;
+	--with-dashes)
+		with_dashes=t; shift ;;
+	--no-color)
+		color=; shift ;;
+	--va|--val|--valg|--valgr|--valgri|--valgrin|--valgrind)
+		valgrind=t; verbose=t; shift ;;
+	--tee)
+		shift ;; # was handled already
+	--root=*)
+		root=$(expr "z$1" : 'z[^=]*=\(.*\)')
+		shift ;;
+	*)
+		echo "error: unknown test option '$1'" >&2; exit 1 ;;
+	esac
 done
 
 if test -n "$color"; then
-    say_color () {
-        (
-        TERM=$ORIGINAL_TERM
-        export TERM
-        case "$1" in
-            error) tput bold; tput setaf 1;; # bold red
-            skip)  tput bold; tput setaf 2;; # bold green
-            pass)  tput setaf 2;;        # green
-            info)  tput setaf 3;;        # brown
-            *) test -n "$quiet" && return;;
-        esac
-        shift
-        printf "%s" "$*"
-        tput sgr0
-        echo
-        )
-    }
+	say_color () {
+		(
+		TERM=$ORIGINAL_TERM
+		export TERM
+		case "$1" in
+			error) tput bold; tput setaf 1;; # bold red
+			skip)  tput bold; tput setaf 2;; # bold green
+			pass)  tput setaf 2;;            # green
+			info)  tput setaf 3;;            # brown
+			*) test -n "$quiet" && return;;
+		esac
+		shift
+		printf "%s" "$*"
+		tput sgr0
+		echo
+		)
+	}
 else
-    say_color() {
-        test -z "$1" && test -n "$quiet" && return
-        shift
-        echo "$*"
-    }
+	say_color() {
+		test -z "$1" && test -n "$quiet" && return
+		shift
+		echo "$*"
+	}
 fi
 
 error () {
-    say_color error "error: $*"
-    PANDORA_EXIT_OK=t
-    exit 1
+	say_color error "error: $*"
+	PANDORA_EXIT_OK=t
+	exit 1
 }
 
 say () {
-    say_color info "$*"
+	say_color info "$*"
 }
 
 test "${test_description}" != "" ||
@@ -120,16 +175,17 @@ error "Test script did not set test_description."
 
 if test "$help" = "t"
 then
-    echo "$test_description"
-    exit 0
+	echo "$test_description"
+	exit 0
 fi
 
 exec 5>&1
+exec 6<&0
 if test "$verbose" = "t"
 then
-    exec 4>&2 3>&1
+	exec 4>&2 3>&1
 else
-    exec 4>/dev/null 3>/dev/null
+	exec 4>/dev/null 3>/dev/null
 fi
 
 test_failure=0
@@ -138,539 +194,279 @@ test_fixed=0
 test_broken=0
 test_success=0
 
+test_external_has_tap=0
+
 die () {
-    code=$?
-    if test -n "$PANDORA_EXIT_OK"
-    then
-        exit $code
-    else
-        echo >&5 "FATAL: Unexpected exit with code $code"
-        exit 1
-    fi
+	code=$?
+	if test -n "$PANDORA_EXIT_OK"
+	then
+		exit $code
+	else
+		echo >&5 "FATAL: Unexpected exit with code $code"
+		exit 1
+	fi
 }
 
 PANDORA_EXIT_OK=
 trap 'die' EXIT
 
-# Use test_set_prereq to tell that a particular prerequisite is available.
-# The prerequisite can later be checked for in two ways:
-#
-# - Explicitly using test_have_prereq.
-#
-# - Implicitly by specifying the prerequisite tag in the calls to
-#   test_expect_{success,failure,code}.
-#
-# The single parameter is the prerequisite tag (a simple word, in all
-# capital letters by convention).
-
-test_set_prereq () {
-    satisfied="$satisfied$1 "
-}
-satisfied=" "
-
-test_have_prereq () {
-    # prerequisites can be concatenated with ','
-    save_IFS=$IFS
-    IFS=,
-    set -- $*
-    IFS=$save_IFS
-
-    total_prereq=0
-    ok_prereq=0
-    missing_prereq=
-
-    for prerequisite
-    do
-        total_prereq=$(($total_prereq + 1))
-        case $satisfied in
-        *" $prerequisite "*)
-            ok_prereq=$(($ok_prereq + 1))
-            ;;
-        *)
-            # Keep a list of missing prerequisites
-            if test -z "$missing_prereq"
-            then
-                missing_prereq=$prerequisite
-            else
-                missing_prereq="$prerequisite,$missing_prereq"
-            fi
-        esac
-    done
-
-    test $total_prereq = $ok_prereq
-}
+# The user-facing functions are loaded from a separate file so that
+# test_perf subshells can have them too
+. "${TEST_DIRECTORY:-.}"/test-lib-functions.sh
 
 # You are not expected to call test_ok_ and test_failure_ directly, use
 # the text_expect_* functions instead.
 
 test_ok_ () {
-    test_success=$(($test_success + 1))
-    say_color "" "ok $test_count - $@"
+	test_success=$(($test_success + 1))
+	say_color "" "ok $test_count - $@"
 }
 
 test_failure_ () {
-    test_failure=$(($test_failure + 1))
-    say_color error "not ok - $test_count $1"
-    shift
-    echo "$@" | sed -e 's/^/#   /'
-    test "$immediate" = "" || { PANDORA_EXIT_OK=t; exit 1; }
+	test_failure=$(($test_failure + 1))
+	say_color error "not ok - $test_count $1"
+	shift
+	echo "$@" | sed -e 's/^/#	/'
+	test "$immediate" = "" || { PANDORA_EXIT_OK=t; exit 1; }
 }
 
 test_known_broken_ok_ () {
-    test_fixed=$(($test_fixed+1))
-    say_color "" "ok $test_count - $@ # TODO known breakage"
+	test_fixed=$(($test_fixed+1))
+	say_color "" "ok $test_count - $@ # TODO known breakage"
 }
 
 test_known_broken_failure_ () {
-    test_broken=$(($test_broken+1))
-    say_color skip "not ok $test_count - $@ # TODO known breakage"
+	test_broken=$(($test_broken+1))
+	say_color skip "not ok $test_count - $@ # TODO known breakage"
 }
 
 test_debug () {
-    test "$debug" = "" || eval "$1"
+	test "$debug" = "" || eval "$1"
+}
+
+test_eval_ () {
+	# This is a separate function because some tests use
+	# "return" to end a test_expect_success block early.
+	eval </dev/null >&3 2>&4 "$*"
 }
 
 test_run_ () {
-    test_cleanup=:
-    eval >&3 2>&4 "$1"
-    eval_ret=$?
-    eval >&3 2>&4 "$test_cleanup"
-    if test "$verbose" = "t"; then
-        echo ""
-    fi
-    return 0
+	test_cleanup=:
+	expecting_failure=$2
+	test_eval_ "$1"
+	eval_ret=$?
+
+	if test -z "$immediate" || test $eval_ret = 0 || test -n "$expecting_failure"
+	then
+		test_eval_ "$test_cleanup"
+	fi
+	if test "$verbose" = "t" && test -n "$HARNESS_ACTIVE"; then
+		echo ""
+	fi
+	return "$eval_ret"
 }
 
 test_skip () {
-    test_count=$(($test_count+1))
-    to_skip=
-    for skp in $PANDORA_SKIP_TESTS
-    do
-        case $this_test.$test_count in
-        $skp)
-            to_skip=t
-            break
-        esac
-    done
-    if test -z "$to_skip" && test -n "$prereq" &&
-       ! test_have_prereq "$prereq"
-    then
-        to_skip=t
-    fi
-    case "$to_skip" in
-    t)
-        of_prereq=
-        if test "$missing_prereq" != "$prereq"
-        then
-            of_prereq=" of $prereq"
-        fi
+	test_count=$(($test_count+1))
+	to_skip=
+	for skp in $PANDORA_SKIP_TESTS
+	do
+		case $this_test.$test_count in
+		$skp)
+			to_skip=t
+			break
+		esac
+	done
+	if test -z "$to_skip" && test -n "$test_prereq" &&
+	   ! test_have_prereq "$test_prereq"
+	then
+		to_skip=t
+	fi
+	case "$to_skip" in
+	t)
+		of_prereq=
+		if test "$missing_prereq" != "$test_prereq"
+		then
+			of_prereq=" of $test_prereq"
+		fi
 
-        say_color skip >&3 "skipping test: $@"
-        say_color skip "ok $test_count # skip $1 (missing $missing_prereq${of_prereq})"
-        : true
-        ;;
-    *)
-        false
-        ;;
-    esac
+		say_color skip >&3 "skipping test: $@"
+		say_color skip "ok $test_count # skip $1 (missing $missing_prereq${of_prereq})"
+		: true
+		;;
+	*)
+		false
+		;;
+	esac
 }
 
-test_expect_failure () {
-    test "$#" = 3 && { prereq=$1; shift; } || prereq=
-    test "$#" = 2 ||
-    error "bug in the test script: not 2 or 3 parameters to test-expect-failure"
-    if ! test_skip "$@"
-    then
-        say >&3 "checking known breakage: $2"
-        test_run_ "$2"
-        if [ "$?" = 0 -a "$eval_ret" = 0 ]
-        then
-            test_known_broken_ok_ "$1"
-        else
-            test_known_broken_failure_ "$1"
-        fi
-    fi
-    echo >&3 ""
-}
-
-test_expect_success () {
-    test "$#" = 3 && { prereq=$1; shift; } || prereq=
-    test "$#" = 2 ||
-    error "bug in the test script: not 2 or 3 parameters to test-expect-success"
-    if ! test_skip "$@"
-    then
-        say >&3 "expecting success: $2"
-        test_run_ "$2"
-        if [ "$?" = 0 -a "$eval_ret" = 0 ]
-        then
-            test_ok_ "$1"
-        else
-            test_failure_ "$@"
-        fi
-    fi
-    echo >&3 ""
-}
-
-test_expect_code () {
-    test "$#" = 4 && { prereq=$1; shift; } || prereq=
-    test "$#" = 3 ||
-    error "bug in the test script: not 3 or 4 parameters to test-expect-code"
-    if ! test_skip "$@"
-    then
-        say >&3 "expecting exit code $1: $3"
-        test_run_ "$3"
-        if [ "$?" = 0 -a "$eval_ret" = "$1" ]
-        then
-            test_ok_ "$2"
-        else
-            test_failure_ "$@"
-        fi
-    fi
-    echo >&3 ""
-}
-
-# debugging-friendly alternatives to "test [-f|-d|-e]"
-# The commands test the existence or non-existence of $1. $2 can be
-# given to provide a more precise diagnosis.
-test_path_is_file () {
-    if ! [ -f "$1" ]
-    then
-        echo "File $1 doesn't exist. $*"
-        false
-    fi
-}
-
-test_path_is_dir () {
-    if ! [ -d "$1" ]
-    then
-        echo "Directory $1 doesn't exist. $*"
-        false
-    fi
-}
-
-test_path_is_fifo () {
-    if ! [ -p "$1" ]
-    then
-        echo "Fifo $1 doesn't exist. $*"
-        false
-    fi
-}
-
-test_path_is_readable () {
-    if ! [ -r "$1" ]
-    then
-        echo "Path $1 isn't readable. $*"
-        false
-    fi
-}
-
-test_path_is_writable () {
-    if ! [ -w "$1" ]
-    then
-        echo "Path $1 isn't writable. $*"
-        false
-    fi
-}
-
-test_path_is_not_readable () {
-    if [ -r "$1" ]
-    then
-        echo "Path $1 is readable. $*"
-        false
-    fi
-}
-
-test_path_is_not_writable () {
-    if [ -w "$1" ]
-    then
-        echo "Path $1 is writable. $*"
-        false
-    fi
-}
-
-test_path_is_missing () {
-    if [ -e "$1" ]
-    then
-        echo "Path exists:"
-        ls -ld "$1"
-        if [ $# -ge 1 ]; then
-            echo "$*"
-        fi
-        false
-    fi
-}
-
-test_path_is_empty () {
-    if [ -s "$1" ]
-    then
-        echo "Path isn't empty. $*"
-        false
-    fi
-}
-
-test_path_is_non_empty () {
-    if ! [ -s "$1" ]
-    then
-        echo "Path is empty. $*"
-        false
-    fi
-}
-
-test_must_violate () {
-    "$@"
-    exit_code=$?
-    if test $exit_code = 0; then
-        echo >&2 "test_must_violate: command succeeded: $*"
-        return 1
-    elif test $exit_code -ne 128; then
-        echo >&2 "test_must_violate: unknown exit code:$exit_code: $*"
-        return 1
-    fi
-    return 0
-}
-
-# This is not among top-level (test_expect_success | test_expect_failure)
-# but is a prefix that can be used in the test script, like:
-#
-#   test_expect_success 'complain and die' '
-#           do something &&
-#           do something else &&
-#       test_must_fail git checkout ../outerspace
-#   '
-#
-# Writing this as "! git checkout ../outerspace" is wrong, because
-# the failure could be due to a segv.  We want a controlled failure.
-
-test_must_fail () {
-    "$@"
-    exit_code=$?
-    if test $exit_code = 0; then
-        echo >&2 "test_must_fail: command succeeded: $*"
-        return 1
-    elif test $exit_code -gt 129 -a $exit_code -le 192; then
-        echo >&2 "test_must_fail: died by signal: $*"
-        return 1
-    elif test $exit_code = 127; then
-        echo >&2 "test_must_fail: command not found: $*"
-        return 1
-    fi
-    return 0
-}
-
-# Similar to test_must_fail, but tolerates success, too.  This is
-# meant to be used in contexts like:
-#
-#   test_expect_success 'some command works without configuration' '
-#       test_might_fail git config --unset all.configuration &&
-#       do something
-#   '
-#
-# Writing "git config --unset all.configuration || :" would be wrong,
-# because we want to notice if it fails due to segv.
-
-test_might_fail () {
-    "$@"
-    exit_code=$?
-    if test $exit_code -gt 129 -a $exit_code -le 192; then
-        echo >&2 "test_might_fail: died by signal: $*"
-        return 1
-    elif test $exit_code = 127; then
-        echo >&2 "test_might_fail: command not found: $*"
-        return 1
-    fi
-    return 0
-}
-
-# This function can be used to schedule some commands to be run
-# unconditionally at the end of the test to restore sanity:
-#
-#   test_expect_success 'test core.capslock' '
-#       git config core.capslock true &&
-#       test_when_finished "git config --unset core.capslock" &&
-#       hello world
-#   '
-#
-# That would be roughly equivalent to
-#
-#   test_expect_success 'test core.capslock' '
-#       git config core.capslock true &&
-#       hello world
-#       git config --unset core.capslock
-#   '
-#
-# except that the greeting and config --unset must both succeed for
-# the test to pass.
-
-test_when_finished () {
-    test_cleanup="{ $*
-        } && (exit \"\$eval_ret\"); eval_ret=\$?; $test_cleanup"
+# stub; perf-lib overrides it
+test_at_end_hook_ () {
+	:
 }
 
 test_done () {
-    PANDORA_EXIT_OK=t
+	PANDORA_EXIT_OK=t
 
-    test_results_dir="$TEST_DIRECTORY/test-results"
-    mkdir -p "$test_results_dir"
-    test_results_path="$test_results_dir/${0%.sh}-$$.counts"
+	if test -z "$HARNESS_ACTIVE"; then
+		test_results_dir="$TEST_OUTPUT_DIRECTORY/test-results"
+		mkdir -p "$test_results_dir"
+		#test_results_path="$test_results_dir/${0%.sh}-$$.counts"
+		test_results_path="$test_results_dir/$(basename $0 sh)-$$.counts"
 
-    echo "total $test_count" >> $test_results_path
-    echo "success $test_success" >> $test_results_path
-    echo "fixed $test_fixed" >> $test_results_path
-    echo "broken $test_broken" >> $test_results_path
-    echo "failed $test_failure" >> $test_results_path
-    echo "" >> $test_results_path
+		cat >>"$test_results_path" <<-EOF
+		total $test_count
+		success $test_success
+		fixed $test_fixed
+		broken $test_broken
+		failed $test_failure
 
-    if test "$test_fixed" != 0
-    then
-        say_color pass "# fixed $test_fixed known breakage(s)"
-    fi
-    if test "$test_broken" != 0
-    then
-        say_color error "# still have $test_broken known breakage(s)"
-        msg="remaining $(($test_count-$test_broken)) test(s)"
-    else
-        msg="$test_count test(s)"
-    fi
-    case "$test_failure" in
-    0)
-        # Maybe print SKIP message
-        [ -z "$skip_all" ] || skip_all=" # SKIP $skip_all"
+		EOF
+	fi
 
-        say_color pass "# passed all $msg"
-        say "1..$test_count$skip_all"
+	if test "$test_fixed" != 0
+	then
+		say_color pass "# fixed $test_fixed known breakage(s)"
+	fi
+	if test "$test_broken" != 0
+	then
+		say_color error "# still have $test_broken known breakage(s)"
+		msg="remaining $(($test_count-$test_broken)) test(s)"
+	else
+		msg="$test_count test(s)"
+	fi
+	case "$test_failure" in
+	0)
+		# Maybe print SKIP message
+		[ -z "$skip_all" ] || skip_all=" # SKIP $skip_all"
 
-        test -d "$remove_trash" &&
-        cd "$(dirname "$remove_trash")" &&
-        rm -rf "$(basename "$remove_trash")"
+		if test $test_external_has_tap -eq 0; then
+			say_color pass "# passed all $msg"
+			say "1..$test_count$skip_all"
+		fi
 
-        test -d "$remove_temp" &&
-        cd "$(dirname "$remove_temp")" &&
-        rm -rf "$(basename "$remove_temp")"
+		test -d "$remove_trash" &&
+		cd "$(dirname "$remove_trash")" &&
+		rm -rf "$(basename "$remove_trash")"
 
-        exit 0 ;;
+		test_at_end_hook_
 
-    *)
-        say_color error "# failed $test_failure among $msg"
-        say "1..$test_count"
+		exit 0 ;;
 
-        exit 1 ;;
+	*)
+		if test $test_external_has_tap -eq 0; then
+			say_color error "# failed $test_failure among $msg"
+			say "1..$test_count"
+		fi
 
-    esac
+		exit 1 ;;
+
+	esac
 }
 
 # Test the binaries we have just built.  The tests are kept in
 # t/ subdirectory and are run in 'trash directory' subdirectory.
 if test -z "$TEST_DIRECTORY"
 then
-    # We allow tests to override this, in case they want to run tests
-    # outside of t/, e.g. for running tests on the test library
-    # itself.
-    TEST_DIRECTORY=$(pwd)
+	# We allow tests to override this, in case they want to run tests
+	# outside of t/, e.g. for running tests on the test library
+	# itself.
+	TEST_DIRECTORY=$(pwd)
 fi
-TEST_DIRECTORY_ABSOLUTE=$(readlink -f "$TEST_DIRECTORY")
-
-PANDORA_BUILD_DIR="@TOP_BUILDDIR@"/src
-if test -n "$PANDORA_TEST_INSTALLED"
+if test -z "$TEST_OUTPUT_DIRECTORY"
 then
-    PANDORA="$PANDORA_TEST_INSTALLED"/pandora
-else
-    PANDORA="$PANDORA_BUILD_DIR"/pandora
+	# Similarly, override this to store the test-results subdir
+	# elsewhere
+	TEST_OUTPUT_DIRECTORY=$TEST_DIRECTORY
 fi
-export PANDORA
-
+PANDORA_BUILD_DIR="@TOP_BUILDDIR@/src"
+PANDORA="$PANDORA_BUILD_DIR"/pandora
 PANDORA_OPTIONS='
     -m core/violation/exit_code:0
     -m core/violation/raise_fail:1
     -m core/violation/raise_safe:1
 '
+
 if test "$verbose" = "t"
 then
-    PANDORA_OPTIONS="$PANDORA_OPTIONS -v"
+	PANDORA_OPTIONS="$PANDORA_OPTIONS -v"
 fi
-if test "$debug" = "t"
-then
-    PANDORA_OPTIONS="$PANDORA_OPTIONS -vvv"
-fi
-export PANDORA_OPTIONS
 
 if test -n "$valgrind"
 then
-    PANDORA_VALGRIND="$TEST_DIRECTORY"/valgrind
-    PATH=$PANDORA_VALGRIND:$PATH
-    export PANDORA_VALGRIND
-else
-    PATH=$TEST_DIRECTORY/bin-wrappers:$PATH
+	PANDORA_VALGRIND="$TEST_DIRECTORY"/valgrind
+	PANDORA_OPTIONS="$PANDORA_OPTIONS -vvv"
+	PATH=$PANDORA_VALGRIND/bin:$PATH
+	export PANDORA_VALGRIND
+#elif test -n "$PANDORA_TEST_INSTALLED" ; then
+#	PATH=$PANDORA_TEST_INSTALLED:$PANDORA_BUILD_DIR:$PATH
+else # normal case, use bin-wrappers
+	PATH="$TEST_DIRECTORY"/bin-wrappers:$PATH
+fi
+PATH="$TEST_DIRECTORY:$PATH"
+export PATH
+export PANDORA
+export PANDORA_OPTIONS
+
+if test -z "$PANDORA_TEST_CMP"
+then
+	if test -n "$PANDORA_TEST_CMP_USE_COPIED_CONTEXT"
+	then
+		PANDORA_TEST_CMP="$DIFF -c"
+	else
+		PANDORA_TEST_CMP="$DIFF -u"
+	fi
 fi
 
-# Test directory
+# Test repository
 test="trash directory.$(basename "$0" .sh)"
 test -n "$root" && test="$root/$test"
 case "$test" in
 /*) TRASH_DIRECTORY="$test" ;;
- *) TRASH_DIRECTORY="$TEST_DIRECTORY/$test" ;;
+ *) TRASH_DIRECTORY="$TEST_OUTPUT_DIRECTORY/$test" ;;
 esac
 test ! -z "$debug" || remove_trash=$TRASH_DIRECTORY
 rm -fr "$test" || {
-    PANDORA_EXIT_OK=t
-    echo >&5 "FATAL: Cannot prepare test area"
-    exit 1
+	PANDORA_EXIT_OK=t
+	echo >&5 "FATAL: Cannot prepare test area"
+	exit 1
 }
 
-# Create the directory
-mkdir -p "$test" || exit 1
+HOME="$TRASH_DIRECTORY"
+HOME_RESOLVED=$(readlink -f "$HOME")
+export HOME HOME_RESOLVED
 
-if test -z "$NO_MKTEMP"
-then
-    # Temporary directory (for mktemp)
-    temp="temporary directory.$(basename "$0" .sh)"
-    test -n "$root" && temp="$root/$temp"
-    case "$temp" in
-    /*) TEMPORARY_DIRECTORY="$temp" ;;
-     *) TEMPORARY_DIRECTORY="$TEST_DIRECTORY_ABSOLUTE/$temp" ;;
-    esac
-    test ! -z "$debug" || remove_temp=$TEMPORARY_DIRECTORY
-    rm -fr "$temp" || {
-        PANDORA_EXIT_OK=t
-        echo >&5 "FATAL: Cannot prepare temporary area"
-        exit 1
-    }
-
-    mkdir -p "$temp" || exit 1
-
-    mkstemp() {
-        mktemp --tmpdir="$TEMPORARY_DIRECTORY" "$@" $(basename "$0" .sh).XXXXXXXXXX
-    }
-
-    test_set_prereq MKTEMP
-else
-    mkstemp() {
-        error "bug in the test script: MKTEMP prerequirement not set"
-    }
-fi
-
+mkdir -p "$test"
 # Use -P to resolve symlinks in our working directory so that the cwd
-# in subprocesses like git equals our $PWD (for pathname comparisons).
+# in subprocesses like pandora equals our $PWD (for pathname comparisons).
 cd -P "$test" || exit 1
-
-HOME=$(pwd)
-export HOME
-
-HOME_ABSOLUTE="$(readlink -f "$HOME")"
-export HOME_ABSOLUTE
 
 this_test=${0##*/}
 this_test=${this_test%%-*}
 for skp in $PANDORA_SKIP_TESTS
 do
-    case "$this_test" in
-    $skp)
-        say_color skip >&3 "skipping test $this_test altogether"
-        skip_all="skip all tests in $this_test"
-        test_done
-    esac
+	case "$this_test" in
+	$skp)
+		say_color skip >&3 "skipping test $this_test altogether"
+		skip_all="skip all tests in $this_test"
+		test_done
+	esac
 done
 
-test -z "$PANDORA_TEST_NO_ATTACH" && test_set_prereq ATTACH
+# Provide an implementation of the 'yes' utility
+yes () {
+	if test $# = 0
+	then
+		y=y
+	else
+		y="$*"
+	fi
+
+	while echo "$y"
+	do
+		:
+	done
+}
 
 # test whether the filesystem supports fifos
 mknod x p 2>/dev/null && test -p x 2>/dev/null && test_set_prereq FIFOS
@@ -679,3 +475,7 @@ rm -f x
 # test whether the filesystem supports symbolic links
 ln -s x y 2>/dev/null && test -h y 2>/dev/null && test_set_prereq SYMLINKS
 rm -f y
+
+# When the tests are run as root, permission tests will report that
+# things are writable when they shouldn't be.
+test -w / || test_set_prereq SANITY

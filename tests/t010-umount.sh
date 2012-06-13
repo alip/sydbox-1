@@ -5,7 +5,7 @@
 
 test_description='sandbox umount(2)'
 . ./test-lib.sh
-prog="$TEST_DIRECTORY_ABSOLUTE"/t010_umount
+prog=t010_umount
 
 test_expect_success setup '
     mkdir mnt0 &&
@@ -36,20 +36,6 @@ test_expect_success SYMLINKS 'deny umount() for symbolic link' '
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-mnt2
-'
-
-## FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny umount() for symbolic link outside' '
-    (
-        d="$(mkstemp -d)"
-        test_path_is_dir "$d" &&
-        ln -sf "$d" symlink0-outside &&
-        test_must_violate pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$HOME_ABSOLUTE/**" \
-            -- $prog symlink0-outside
-    )
 '
 
 test_expect_success SYMLINKS 'deny umount() for dangling symbolic link' '

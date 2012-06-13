@@ -5,7 +5,7 @@
 
 test_description='sandbox chown(2)'
 . ./test-lib.sh
-prog="$TEST_DIRECTORY_ABSOLUTE"/t002_chown
+prog=t002_chown
 
 test_expect_success setup '
     rm -f file-non-existant &&
@@ -42,21 +42,6 @@ test_expect_success SYMLINKS 'deny chown() for symbolic link' '
         -- $prog symlink-file1
 '
 
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny chown() for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        s="symlink0-outside"
-        test -n "$f" &&
-        ln -sf "$f" $s &&
-        test_must_violate pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$HOME_ABSOLUTE/**" \
-            -- $prog $s
-    )
-'
-
 test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
@@ -67,7 +52,7 @@ test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
 test_expect_success 'allow chown()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/**" \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
         -- $prog file2
 '
 
@@ -75,23 +60,8 @@ test_expect_success SYMLINKS 'allow chown() for symbolic link' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/**" \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
         $prog symlink-file3
-'
-
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'allow chown() for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        s="symlink1-outside"
-        test -n "$f" &&
-        ln -sf "$f" $s &&
-        pandora \
-            -EPANDORA_TEST_SUCCESS=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$TEMPORARY_DIRECTORY/**" \
-            $prog $s
-    )
 '
 
 test_done

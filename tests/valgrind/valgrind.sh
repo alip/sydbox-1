@@ -1,5 +1,6 @@
 #!/bin/sh
-# vim: set sw=4 et ts=4 sts=4 tw=80 :
+
+base=$(basename "$0")
 
 TRACK_ORIGINS=
 
@@ -10,11 +11,12 @@ test 3 -gt "$VALGRIND_MAJOR" ||
 test 3 -eq "$VALGRIND_MAJOR" -a 4 -gt "$VALGRIND_MINOR" ||
 TRACK_ORIGINS=--track-origins=yes
 
-exec valgrind -q \
-    --error-exitcode=126 \
-    --leak-check=full \
-    $TRACK_ORIGINS \
-    --log-fd=4 \
-    --input-fd=4 \
-    $PANDORA_VALGRIND_OPTIONS \
-    "$PANDORA" $PANDORA_OPTIONS "$@"
+exec valgrind -q --error-exitcode=126 \
+	--leak-check=full \
+	--suppressions="$PANDORA_VALGRIND/default.supp" \
+	--gen-suppressions=all \
+	$TRACK_ORIGINS \
+	--log-fd=4 \
+	--input-fd=4 \
+	$PANDORA_VALGRIND_OPTIONS \
+	"$PANDORA" $PANDORA_OPTIONS "$@"

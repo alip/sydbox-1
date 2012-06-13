@@ -5,7 +5,7 @@
 
 test_description='sandbox utime(2)'
 . ./test-lib.sh
-prog="$TEST_DIRECTORY_ABSOLUTE"/t012_utime
+prog=t012_utime
 
 # No allow tests because of possible noatime, nomtime mount options
 
@@ -39,20 +39,6 @@ test_expect_success 'deny utime() for symbolic link' '
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-file1
-'
-
-test_expect_success 'deny utime() for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        s="symlink0-outside"
-        test -n "$f" &&
-        ln -sf "$f" $s &&
-        test_must_violate pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$HOME_ABSOLUTE/**" \
-            -- $prog $s
-    )
 '
 
 test_expect_success 'deny utime() for dangling symbolic link' '

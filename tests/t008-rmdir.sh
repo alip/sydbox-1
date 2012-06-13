@@ -5,7 +5,7 @@
 
 test_description='sandbox rmdir(2)'
 . ./test-lib.sh
-prog="$TEST_DIRECTORY_ABSOLUTE"/t008_rmdir
+prog=t008_rmdir
 
 test_expect_success setup '
     mkdir dir0 &&
@@ -30,7 +30,7 @@ test_expect_success 'deny rmdir() for non-existant directory' '
 test_expect_success 'allow rmdir()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/**" \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
         -- $prog dir2 &&
     test_path_is_missing dir2
 '

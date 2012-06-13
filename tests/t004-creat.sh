@@ -5,7 +5,7 @@
 
 test_description='sandbox creat(2)'
 . ./test-lib.sh
-prog="$TEST_DIRECTORY_ABSOLUTE"/t004_creat
+prog=t004_creat
 
 test_expect_success setup '
 '
@@ -30,43 +30,13 @@ test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
     test_path_is_missing file1-non-existant
 '
 
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny creat() for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        test_path_is_file "$f" &&
-        ln -sf "$f" symlink0-outside &&
-        test_must_violate pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$HOME_ABSOLUTE/**" \
-            -- $prog symlink0-outside "3" &&
-        test_path_is_empty "$f"
-    )
-'
-
 test_expect_success 'allow creat()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/*" \
+        -m "whitelist/write+$HOME_RESOLVED/*" \
         $TEST_DIRECTORY/t004_creat file2-non-existant "3" &&
     test_path_is_non_empty file2-non-existant
-'
-
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'allow creat() for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        test_path_is_file "$f" &&
-        ln -sf "$f" symlink1-outside &&
-        pandora \
-            -EPANDORA_TEST_SUCCESS=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$TEMPORARY_DIRECTORY/**" \
-            $prog symlink1-outside "3" &&
-        test_path_is_non_empty "$f"
-    )
 '
 
 test_done

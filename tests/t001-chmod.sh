@@ -5,7 +5,7 @@
 
 test_description='sandbox chmod()'
 . ./test-lib.sh
-prog="$TEST_DIRECTORY_ABSOLUTE"/t001_chmod
+prog=t001_chmod
 
 test_expect_success setup '
     rm -f file-non-existant &&
@@ -46,24 +46,6 @@ test_expect_success SYMLINKS 'deny chmod() for symbolic link' '
     test_path_is_writable file1
 '
 
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny chmod() for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        s="symlink0-outside"
-        test -n "$f" &&
-        chmod 600 "$f" &&
-        ln -sf "$f" $s &&
-        test_must_violate pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$HOME_ABSOLUTE/**" \
-            -- $prog $s &&
-            test_path_is_readable "$f" &&
-            test_path_is_writable "$f"
-    )
-'
-
 test_expect_success SYMLINKS 'deny chmod() for dangling symbolic link' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
@@ -74,7 +56,7 @@ test_expect_success SYMLINKS 'deny chmod() for dangling symbolic link' '
 test_expect_success 'allow chmod()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/**" \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
         -- $prog file2 &&
     test_path_is_not_readable file2 &&
     test_path_is_not_writable file2
@@ -84,28 +66,10 @@ test_expect_success SYMLINKS 'allow chmod() for symbolic link' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/**" \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
         $prog symlink-file3 &&
     test_path_is_not_readable file3 &&
     test_path_is_not_writable file3
-'
-
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'allow chmod() for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        s="symlink1-outside"
-        test -n "$f" &&
-        chmod 600 "$f" &&
-        ln -sf "$f" $s &&
-        pandora \
-            -EPANDORA_TEST_SUCCESS=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$TEMPORARY_DIRECTORY/**" \
-            $prog $s &&
-        test_path_is_not_readable "$f" &&
-        test_path_is_not_writable "$f"
-    )
 '
 
 test_done

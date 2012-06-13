@@ -30,8 +30,16 @@ wildtest_CFLAGS= \
 
 noinst_SCRIPTS= \
 		bin-wrappers/pandora \
-		valgrind/pandora
+		valgrind/analyze.sh \
+		valgrind/default.supp \
+		valgrind/valgrind.sh \
+		valgrind/bin/pandora
 
+.PHONY: check-valgrind
+check-valgrind:
+	$(MAKE) PANDORA_CHECK_OPTS="$(PANDORA_CHECK_OPTS) --valgrind" check
+
+TESTS_ENVIRONMENT= $(srcdir)/test-runner.sh
 TESTS= \
        t000-basic.sh \
        t001-chmod.sh \
@@ -59,7 +67,9 @@ TESTS= \
        t023-fchownat.sh \
        t024-unlinkat.sh \
        t027-linkat.sh
-EXTRA_DIST= $(TESTS)
+EXTRA_DIST= $(TESTS) \
+	    test-lib.sh.in \
+	    test-lib-functions.sh
 
 check_PROGRAMS= \
 		wildtest \

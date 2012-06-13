@@ -5,7 +5,7 @@
 
 test_description='sandbox lchown(2)'
 . ./test-lib.sh
-prog="$TEST_DIRECTORY_ABSOLUTE"/t005_lchown
+prog=t005_lchown
 
 test_expect_success SYMLINKS setup-symlinks '
     touch file0 &&
@@ -28,25 +28,11 @@ test_expect_success SYMLINKS 'deny lchown for non-existant file' '
         -- $prog file1-non-existant
 '
 
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny lchown() for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        test_path_is_file "$f" &&
-        ln -sf "$f" symlink0-outside &&
-        test_must_violate pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$TEMPORARY_DIRECTORY/**" \
-            -- $prog symlink0-outside
-    )
-'
-
 test_expect_success SYMLINKS 'allow lchown()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/**" \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
         -- $prog symlink-file2
 '
 

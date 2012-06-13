@@ -5,7 +5,7 @@
 
 test_description='sandbox open(2)'
 . ./test-lib.sh
-prog="$TEST_DIRECTORY_ABSOLUTE"/t003_open
+prog=t003_open
 
 test_expect_success setup '
     touch file0 &&
@@ -48,19 +48,6 @@ test_expect_success SYMLINKS 'allow O_RDONLY for symbolic link' '
         -- $prog symlink-file1 rdonly
 '
 
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'allow O_RDONLY for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        test -n "$f" &&
-        ln -sf "$f" symlink0-outside &&
-        pandora \
-            -EPANDORA_TEST_SUCCESS=1 \
-            -m core/sandbox/write:deny \
-            -- $prog symlink0-outside rdonly
-    )
-'
-
 test_expect_success 'deny O_RDONLY|O_CREAT' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
@@ -75,21 +62,6 @@ test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
         -m core/sandbox/write:deny \
         -- $prog symlink-file3 rdonly-creat &&
     test_path_is_missing file3-non-existant
-'
-
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link outside' '
-    (
-        f="$(mkstemp --dry-run)"
-        test -n "$f" &&
-        ln -sf "$f" symlink1-outside &&
-        test_must_violate pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$HOME_ABSOLUTE/**" \
-            -- $prog symlink1-outside rdonly-creat &&
-        test_path_is_missing "$f"
-    )
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
@@ -139,21 +111,6 @@ test_expect_success SYMLINKS 'deny O_WRONLY for symbolic link' '
     test_path_is_empty file9
 '
 
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        test -n "$f" &&
-        ln -sf "$f" symlink2-outside &&
-        test_must_violate pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$HOME_ABSOLUTE/**" \
-            -- $prog symlink2-outside wronly "3" &&
-        test_path_is_empty "$f"
-    )
-'
-
 test_expect_success 'deny O_WRONLY|O_CREAT' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
@@ -186,36 +143,6 @@ test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' 
     test_path_is_missing file13-non-existant
 '
 
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link outside' '
-    (
-        f="$(mkstemp)"
-        test -n "$f" &&
-        ln -sf "$f" symlink3-outside &&
-        test_must_violate pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$HOME_ABSOLUTE/**" \
-            -- $prog symlink3-outside wronly-creat "3" &&
-        test_path_is_empty "$f"
-    )
-'
-
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link outside' '
-    (
-        f="$(mkstemp --dry-run)"
-        test -n "$f" &&
-        ln -sf "$f" symlink4-outside &&
-        test_must_violate pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/write:deny \
-            -m "whitelist/write+$HOME_ABSOLUTE/**" \
-            -- $prog symlink4-outside wronly-creat "3" &&
-        test_path_is_missing "$f"
-    )
-'
-
 test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
@@ -236,7 +163,7 @@ test_expect_success 'allow O_WRONLY' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/*" \
+        -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file16 wronly "3" &&
     test_path_is_non_empty file16
 '
@@ -245,7 +172,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/*" \
+        -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file17-non-existant wronly-creat &&
     test_path_is_file file17-non-existant
 '
@@ -254,7 +181,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/*" \
+        -m "whitelist/write+$HOME_RESOLVED/*" \
         $prog file18-non-existant wronly-creat-excl &&
     test_path_is_file file18-non-existant
 '
@@ -263,7 +190,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL for existing file' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/*" \
+        -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file19 wronly-creat-excl
 '
 
@@ -303,7 +230,7 @@ test_expect_success 'allow O_RDWR' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/*" \
+        -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file24 rdwr "3" &&
     test_path_is_non_empty file24
 '
@@ -312,7 +239,7 @@ test_expect_success 'allow O_RDWR|O_CREAT' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/*" \
+        -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file25-non-existant rdwr-creat &&
     test_path_is_file file25-non-existant
 '
@@ -321,7 +248,7 @@ test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/*" \
+        -m "whitelist/write+$HOME_RESOLVED/*" \
         $prog file26-non-existant rdwr-creat-excl &&
     test_path_is_file file26-non-existant
 '
@@ -330,7 +257,7 @@ test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL for existing file' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_ABSOLUTE/*" \
+        -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file27 rdwr-creat-excl
 '
 
