@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -31,7 +31,8 @@ int
 sys_stat(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	int r;
-	char *path;
+	long addr;
+	char path[PANDORA_PATH_MAX];
 	struct stat buf;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -40,14 +41,15 @@ sys_stat(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 	if (data->config.magic_lock == LOCK_SET) /* No magic allowed! */
 		return 0;
 
-	errno = 0;
-	path = pink_decode_string_persistent(pid, bit, 0);
-	if (errno || !path) {
+	if (!pink_util_get_arg(pid, bit, 0, &addr)
+			|| !pink_easy_process_vm_readv(pid, addr,
+				path, PANDORA_PATH_MAX)) {
 		/* Don't bother denying the system call here.
 		 * Because this should not be a fatal error.
 		 */
 		return (errno == ESRCH) ? PINK_EASY_CFLAG_DROP : 0;
 	}
+	path[PANDORA_PATH_MAX-1] = '\0';
 
 	r = magic_cast_string(current, path, 1);
 	if (r < 0) {
@@ -73,13 +75,17 @@ sys_stat(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 		memset(&buf, 0, sizeof(struct stat));
 		buf.st_mode = S_IFCHR | (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH | S_IWOTH);
 		buf.st_rdev = 259; /* /dev/null */
-		buf.st_mtime = -842745600; /* ;) */
-		pink_encode_simple(pid, bit, 1, &buf, sizeof(struct stat));
+		/* Filled with random(!) numbers */
+		buf.st_atime = 505958400;
+		buf.st_mtime = -842745600;
+		buf.st_ctime = 558748800;
+
+		if (pink_util_get_arg(pid, bit, 1, &addr))
+			pink_easy_process_vm_writev(pid, addr, &buf, sizeof(struct stat));
 		info("magic \"%s\" accepted", path);
 		errno = (r > 1) ? ENOENT : 0;
 		r = deny(current);
 	}
 
-	free(path);
 	return r;
 }

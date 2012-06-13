@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -38,7 +38,8 @@
 int
 path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 {
-	char *path;
+	long addr;
+	char path[PANDORA_PATH_MAX];
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -46,16 +47,16 @@ path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 	assert(current);
 	assert(buf);
 
-	errno = 0;
-	path = pink_decode_string_persistent(pid, bit, ind);
-	if (errno) {
+	if (!pink_util_get_arg(pid, bit, ind, &addr)
+			|| !pink_easy_process_vm_readv(pid, addr,
+				path, PANDORA_PATH_MAX)) {
 		if (errno != ESRCH) {
-			warning("pink_decode_string_persistent(%lu, %s, %u) failed (errno:%d %s)",
+			warning("process_vm_readv(%lu, %s, %u) failed (errno:%d %s)",
 					(unsigned long)pid, pink_bitness_name(bit),
 					ind, errno, strerror(errno));
 			return panic(current);
 		}
-		debug("pink_decode_string_persistent(%lu, %s, %u) failed (errno:%d %s)",
+		debug("process_vm_readv(%lu, %s, %u) failed (errno:%d %s)",
 				(unsigned long)pid, pink_bitness_name(bit),
 				ind, errno, strerror(errno));
 		debug("dropping process:%lu [%s name:\"%s\" cwd:\"%s\"] from process tree",
@@ -63,15 +64,16 @@ path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 				data->comm, data->cwd);
 		return PINK_EASY_CFLAG_DROP;
 	}
-	else if (!path) {
-		debug("pink_decode_string_persistent(%lu, %s, %u) returned NULL",
+	else if (path[0] == '\0') {
+		debug("process_vm_readv(%lu, %s, %u) returned NULL",
 				(unsigned long)pid, pink_bitness_name(bit), ind);
 		*buf = NULL;
 		errno = EFAULT;
 		return -1;
 	}
 
-	*buf = path;
+	path[PANDORA_PATH_MAX-1] = '\0';
+	*buf = xstrdup(path);
 	return 0;
 }
 

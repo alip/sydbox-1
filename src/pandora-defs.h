@@ -36,6 +36,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <sys/queue.h>
 #include <sys/types.h>
 
@@ -51,6 +52,16 @@
 #include "util.h"
 
 /* Definitions */
+#ifndef PANDORA_PATH_MAX
+#if defined(PATH_MAX)
+#define PANDORA_PATH_MAX (PATH_MAX+1)
+#elif defined(MAXPATHLEN)
+#define PANDORA_PATH_MAX (MAXPATHLEN+1)
+#else
+#define PANDORA_PATH_MAX (256+1)
+#endif
+#endif
+
 #ifndef PANDORA_PROFILE_CHAR
 #define PANDORA_PROFILE_CHAR '@'
 #endif /* !PANDORA_PROFILE_CHAR */
