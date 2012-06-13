@@ -1,0 +1,1195 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+        "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<!--
+   Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
+
+   This file is part of Pandora's Box. pandora is free software;
+   you can redistribute it and/or modify it under the terms of the GNU General
+   Public License version 2, as published by the Free Software Foundation.
+
+   pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along with
+   this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+   Place, Suite 330, Boston, MA  02111-1307  USA
+-->
+
+<refentry id="pandora" lang="en">
+  <refentryinfo>
+    <title>pandora</title>
+    <productname>pandora</productname>
+
+    <authorgroup>
+      <author>
+        <contrib>Developer</contrib>
+        <firstname>Ali</firstname>
+        <surname>Polatel</surname>
+        <email>alip@exherbo.org</email>
+      </author>
+    </authorgroup>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>pandora</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">pandora</refmiscinfo>
+    <refmiscinfo class="manual">Pandora's Box</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>pandora</refname>
+    <refpurpose>Pandora's Box</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv id="synopsis">
+    <cmdsynopsis>
+      <command>pandora <arg choice="opt">-hVv</arg>
+                       <arg choice="opt" rep="repeat">-c pathspec</arg>
+                       <arg choice="opt" rep="repeat">-m magic</arg>
+                       <arg choice="req" rep="repeat">-p pid</arg>
+      </command>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>pandora <arg choice="opt">-hVv</arg>
+                       <arg choice="opt" rep="repeat">-c pathspec</arg>
+                       <arg choice="opt" rep="repeat">-m magic</arg>
+                       <arg choice="opt" rep="repeat">-E var=val</arg>
+                       <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg>
+      </command>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="description">
+    <title>Description</title>
+
+    <para>
+      <command>pandora</command> is a
+        <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+        based sandboxing utility for Linux.
+    </para>
+  </refsect1>
+
+  <refsect1 id="options">
+    <title>Options</title>
+
+    <simpara>
+      The following options are understood:
+    </simpara>
+
+    <variablelist>
+      <varlistentry>
+        <term><option>-h</option></term>
+        <listitem>
+          <simpara>
+            Show usage and exit
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-V</option></term>
+        <listitem>
+          <simpara>
+            Show version and exit
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-v</option></term>
+        <listitem>
+          <simpara>
+            Be verbose, may be repeated
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-c</option> <filename>pathspec</filename></term>
+        <listitem>
+          <simpara>
+            <filename>pathspec</filename> to the configuration file, may be repeated.
+            See <xref linkend="configuration"/> for more information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-m</option> <varname>magic</varname></term>
+        <listitem>
+          <simpara>
+            Run a magic command during init, may be repeated.
+            See <xref linkend="configuration"/> for more information.
+          </simpara>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1 id="configuration">
+    <title>Configuration</title>
+
+    <para role="summary">
+      Pandora is configured through the so-called <emphasis>magic</emphasis> commands.
+      There are three ways to supply magic commands:
+    </para>
+
+    <itemizedlist>
+      <listitem>
+        <para>
+          Pandora may be configured using a configuration file. The path to the configuration file is
+          speficied using the <option>-c</option> command line switch or the <envar>PANDORA_CONFIG</envar>
+          environment variable. More than one configuration file may be specified this way. However, only the
+          <emphasis role="bold">initial</emphasis> configuration file can change the <emphasis>core</emphasis>
+          configuration. If path to the configuration file is prefixed with the character
+          <emphasis role="bold">@</emphasis>, Pandora looks for this configuration file under
+          <filename class="directory"><varname>$sharedir</varname>/pandora/</filename>
+          where <varname>$sharedir</varname> is usually <filename class="directory">/usr/share</filename>.
+          The command line switch has precedence over the <envar>PANDORA_CONFIG</envar> environment variable.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          Pandora may be configured using the <option>-m</option> command line switch. This is a
+          handy way to specify configuration without having to write a configuration file or modify the configuration
+          slightly before each invocation.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          Pandora may be configured using magic
+          <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry> calls during runtime.
+          This is achieved by calling <function>stat()</function> system call on the special path
+          <filename>/dev/pandora</filename> followed by the magic command. Note that runtime configuration is only
+          possible if the magic lock is <emphasis>unset</emphasis>. The system call <function>stat()</function> was
+          chosen as the magic call because it is practical to invoke using builtin shell commands like:
+          <programlisting>
+            test -e /dev/pandora/core/sandbox/path:true
+          </programlisting>
+          which enables path sandboxing for a shell running under Pandora. It is also possible to
+          query boolean values using the return value of the magic <function>stat</function><manvolnum>2</manvolnum>:
+          <programlisting>
+            test -e '/dev/pandora/core/sandbox/path?' &amp;&amp; echo "path sandboxing on" || echo "path sandboxing off"
+          </programlisting>
+
+          <note>
+            Some of these shell builtins may actually call
+            <citerefentry><refentrytitle>lstat</refentrytitle><manvolnum>2</manvolnum></citerefentry> system call instead
+            of <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry> thus
+            Pandora makes sure to check <function>lstat()</function> system calls for magic commands
+            as well.
+          </note>
+        </para>
+      </listitem>
+    </itemizedlist>
+
+    <refsect2 id="command-types">
+      <title>Command Types</title>
+
+      <para role="summary">
+        Every <emphasis>magic</emphasis> command accepts an argument of a certain type.
+        The available types are listed below:
+      </para>
+
+      <variablelist>
+        <varlistentry>
+          <term><option>boolean</option></term>
+          <listitem>
+            <para>
+              A boolean type may have one of the two values,
+              <constant>true</constant> or <constant>false</constant>.
+              This corresponds to JSON's boolean type thus to set a boolean value using the configuration file, use one
+              of the aforementioned keywords. To specify boolean values when supplying <emphasis>magic</emphasis>
+              commands to Pandora, you may still use
+              <constant>true</constant> or <constant>false</constant>.
+              In addition you can use the short forms
+              <constant>t</constant> or <constant>f</constant>
+              and you can also use
+              <constant>1</constant> or <constant>0</constant>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>integer</option></term>
+          <listitem>
+            <para>
+              This type represents the basic integer type.
+              This corresponds to <emphasis>JSON</emphasis>'s integer type.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>string</option></term>
+          <listitem>
+            <para>
+              This type represents the basic string type.
+              This corresponds to <emphasis>JSON</emphasis>'s string type.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>string-array</option></term>
+          <listitem>
+            <para>
+              This type represents a list of strings.
+              Other types aren't allowed within this type.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsect2>
+
+    <refsect2 id="specifying-magic-commands">
+      <title>Specifying Magic Commands</title>
+
+      <para>
+        As mentioned in <xref linkend="configuration"/> Pandora may be configured using the so-called
+        <emphasis>magic</emphasis> commands. Format of the magic commands is simple and resembles the format of the
+        configuration file (which is <emphasis>JSON</emphasis>).
+        <programlisting>
+          ${PREFIX}/section/of/option${OPERATION_CHARACTER}value
+        </programlisting>
+        where <varname>${PREFIX}</varname> is <filename class="directory">/dev/pandora</filename>
+        by default (may be altered at compile-time using <varname>PANDORA_MAGIC_PREFIX</varname> definition).
+        This prefix is only required for magic <function>stat()</function>, not for <option>-m</option> command line
+        switch. Section of an option is very similar to the configuration file e.g.:
+        <programlisting>
+          { "core" : { "log" : { "console_fd" : 2 } } }
+        </programlisting>
+        maps to:
+        <programlisting>
+          core/log/console_fd
+        </programlisting>
+      </para>
+
+      <para role="summary">
+        <varname>${OPERATION_CHARACTER}</varname> determines the operation of the magic command.
+        Possible values are listed below:
+      </para>
+
+      <variablelist>
+        <varlistentry>
+          <term>:</term>
+          <listitem>
+            <simpara>
+              This term is used to set a value.
+              Value must be either a boolean, an integer or a string.
+            </simpara>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>?</term>
+          <listitem>
+            <simpara>
+              This term is used to query a boolean value.
+            </simpara>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>+</term>
+          <listitem>
+            <simpara>
+              This term is used to append to a string array.
+            </simpara>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>-</term>
+          <listitem>
+            <simpara>
+              This is used to remove an element from a string array.
+            </simpara>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsect2>
+
+    <refsect2 id="configuration-file-format">
+      <title>Configuration File Format</title>
+
+      <para role="summary">
+        Pandora's configuration file format is <emphasis>JSON</emphasis>. All configuration is specified as one
+        <emphasis>JSON</emphasis> object enclosed in curly braces. C style comments are allowed.
+        See <xref linkend="configuration-example"/> for an example configuration file.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>Commands</title>
+
+      <para role="summary">
+        Pandora recognizes the following magic commands:
+      </para>
+
+      <variablelist>
+        <varlistentry>
+          <term><option id="core-log-console_fd">core/log/console_fd</option></term>
+          <listitem>
+            <para>type: <type>integer</type></para>
+            <para>
+              An integer specifying the console log file descriptor.
+              Defaults to 2, standard error.
+              See <xref linkend="logging"/> for more information.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-log-file">core/log/file</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying the path to the log file.
+              Defaults to "" (empty string), no logging to file.
+              See <xref linkend="logging"/> for more information.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-log-level">core/log/level</option></term>
+          <listitem>
+            <para> type: <type>integer</type></para>
+            <para>
+              An integer specifying the level of messages to log.
+              Log messages lower than this level are discarded.
+              Defaults to 2, <option>message</option>
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-log-timestamp">core/log/timestamp</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether the messages should be prefixed with a timestamp.
+              Defaults to <constant>true</constant>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-sandbox-exec">core/sandbox/exec</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying how <function>execve</function><manvolnum>2</manvolnum> system call should be sandboxed.
+              Defaults to <constant>off</constant>.
+              See <xref linkend="execve-sandboxing"/> for more information.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-sandbox-read">core/sandbox/read</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying how path sandboxing should be done.
+              Defaults to <constant>off</constant>.
+              See <xref linkend="read-sandboxing"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-sandbox-write">core/sandbox/write</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying how write sandboxing should be done.
+              Defaults to <constant>off</constant>.
+              See <xref linkend="write-sandboxing"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-sandbox-sock">core/sandbox/sock</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying how network sandboxing should be done.
+              Defaults to <constant>off</constant>.
+              See <xref linkend="network-sandboxing"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-whitelist-ppd">core/whitelist/per_process_directories</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether per-process directories like
+              <filename class="directory">/proc/<envar>$pid</envar></filename>
+              should automatically be whitelisted.
+              Defaults to <constant>true</constant>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-whitelist-sb">core/whitelist/successful_bind</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether the socket address arguments of successful
+              <function>bind</function><manvolnum>2</manvolnum> calls should be whitelisted
+              for <function>connect</function><manvolnum>2</manvolnum> and
+              <function>sendto</function><manvolnum>2</manvolnum> system calls.
+              Defaults to <constant>true</constant>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-whitelist-usf">core/whitelist/unsupported_socket_families</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether unknown socket families should be allowed access when network sandboxing is on.
+              Defaults to <constant>true</constant>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-abort-decision">core/abort/decision</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying the decision to take when tracing is aborted (i.e via <constant>SIGINT</constant>
+              signal). Possible values are <constant>contall</constant> and <constant>killall</constant>.
+              The former is to resume all traced processes whereas the latter is to kill all traced processes.
+              Default is <constant>contall</constant>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-panic-decision">core/panic/decision</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying the decision to take when a panic condition like an unknown error occurs.
+              Possible values are <constant>cont</constant>, <constant>kill</constant>, <constant>contall</constant> and
+              <constant>killall</constant>. The first two operates on the guilty process responsible for the panic whereas
+              the other two works on all processes
+              Default is <constant>kill</constant>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-panic-exit_code">core/panic/exit_code</option></term>
+          <listitem>
+            <para>type: <type>integer</type></para>
+            <para>
+              This setting specifies the exit code if <option>core/panic/decision</option>
+              is one of <constant>contall</constant> or <constant>killall</constant>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-violation-decision">core/violation/decision</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying the decision to take when an access violation occurs. Possible values are
+              <constant>cont</constant>, <constant>kill</constant>, <constant>contall</constant>,
+              <constant>killall</constant> and <constant>deny</constant>.
+              Default is <constant>deny</constant> which means to deny the system call and resume execution.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-violation-exit_code">core/violation/exit_code</option></term>
+          <listitem>
+            <para>type: <type>integer</type></para>
+            <para>
+              An integer specifying the exit code in case <option>core/violation/decision</option> is one of
+              <constant>contall</constant> or <constant>killall</constant>.
+              As a special case, if this integer is equal to zero, pandora exits with <constant>128</constant> added to
+              the eldest process' exit value in case an access violation has occured. This special case is meant for
+              program tests to check whether an access violation has occured using the exit code.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-violation-raise_fail">core/violation/raise_fail</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether certain failures like errors during path resolution should be treated as
+              access violations. Note this is just a switch for reporting, the access to the system call is denied
+              nevertheless.
+              Defaults to <constant>false</constant>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-violation-raise_safe">core/violation/raise_safe</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether certain violations which are considered safe should be reported. For
+              example, <function>mkdir</function><manvolnum>2</manvolnum> is a system call which fails when it can not
+              create the directory. In this special case, pandora denies the system call with
+              <constant>EEXIST</constant> for consistency and does not raise an access violation in case
+              <option>core/violation/raise_safe</option> is set to <constant>false</constant>. Another example is the
+              <function>access</function><manvolnum>2</manvolnum> system call which is silently denied with
+              <constant>EACCES</constant> if this option is not set.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-trace-follow_fork">core/trace/follow_fork</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether Pandora should follow forks, vforks and clones.
+              Defaults to <constant>true</constant>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-trace-exit_wait_all">core/trace/exit_wait_all</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether all traced processes should be waited to exit before Pandora exits.
+              If this is <constant>false</constant>, Pandora resumes all the traced processes and exits when the eldest
+              process exits.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-trace-magic_lock">core/trace/magic_lock</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying the state of the magic lock. Possible values are <constant>on</constant>,
+              <constant>off</constant> and <constant>exec</constant>. If magic lock is <constant>on</constant> no magic
+              commands are allowed. Note, the magic lock is tracked per process. If <constant>exec</constant> is
+              specified, the magic lock is set to <constant>on</constant> when the process returns from the system call
+              <function>execve</function><manvolnum>2</manvolnum>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="exec-resume_if_match">exec/resume_if_match</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              This setting specifies a list of path patterns. If one of these patterns matches the resolved path of an
+              <function>execve</function><manvolnum>2</manvolnum> system call, the process in question is resumed. See
+              <xref linkend="pattern-matching"/> for more information on wildmatch patterns.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="exec-kill_if_match">exec/kill_if_match</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              This setting specifies a list of path patterns. If one of these patterns matches the resolved path of an
+              <function>execve</function><manvolnum>2</manvolnum> system call, the process in question is killed. See
+              <xref linkend="pattern-matching"/> for more information on wildmatch patterns.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="filter-exec">filter/exec</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of path patterns to filter for <function>execve</function><manvolnum>2</manvolnum>
+              sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="filter-read">filter/read</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of path patterns to filter for read sandboxing. See
+              <xref linkend="read-sandboxing"/> and <xref linkend="pattern-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="filter-write">filter/write</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of path patterns to filter for write sandboxing. See
+              <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="filter-sock">filter/sock</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of network addresses to filter for network sandboxing. See
+              <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="whitelist-exec">whitelist/exec</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of path patterns to whitelist for <function>execve</function><manvolnum>2</manvolnum>
+              sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="whitelist-read">whitelist/read</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of path patterns to whitelist for read sandboxing. See <xref linkend="read-sandboxing"/>
+              and <xref linkend="pattern-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="whitelist-write">whitelist/write</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of path patterns to whitelist for write sandboxing. See
+              <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="whitelist-sock-bind">whitelist/sock/bind</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of network addresses to whitelist for <function>bind</function><manvolnum>2</manvolnum>
+              network sandboxing. See <xref linkend="network-sandboxing"/> and
+              <xref linkend="address-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="whitelist-sock-connect">whitelist/sock/connect</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of network addresses to whitelist for
+              <function>connect</function><manvolnum>2</manvolnum> and
+              <function>connect</function><manvolnum>2</manvolnum> network sandboxing.
+              See <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="blacklist-exec">blacklist/exec</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of path patterns to blacklist for <function>execve</function><manvolnum>2</manvolnum>
+              sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="blacklist-read">blacklist/read</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of path patterns to blacklist for read sandboxing.
+              See <xref linkend="read-sandboxing"/> and <xref linkend="pattern-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="blacklist-write">blacklist/write</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of path patterns to blacklist for write sandboxing. See
+              <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="blacklist-sock-bind">blacklist/sock/bind</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of network addresses to blacklist for <function>bind</function><manvolnum>2</manvolnum>
+              network sandboxing. See <xref linkend="network-sandboxing"/> and
+              <xref linkend="address-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="blacklist-sock-connect">blacklist/sock/connect</option></term>
+          <listitem>
+            <para>type: <type>string-array</type></para>
+            <para>
+              Specifies a list of network addresses to blacklist for
+              <function>connect</function><manvolnum>2</manvolnum> and
+              <function>connect</function><manvolnum>2</manvolnum> network sandboxing.
+              See <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+      </variablelist>
+    </refsect2>
+  </refsect1>
+
+  <refsect1 id="logging">
+    <title>Logging</title>
+
+    <para>
+      Pandora has a simple logging infrastructure. There are two log targets, <option>core/log/console_fd</option> and
+      <option>core/log/file</option>. Messages with severity lower than <option>core/log/level</option> are discarded.
+      The rest are logged to <option>core/log/file</option> if specified and messages with log level higher than
+      <constant>message</constant> are logged to <option>core/log/console_fd</option> as well. Below is a list of log
+      levels and corresponding integers representing these levels:
+    </para>
+
+    <itemizedlist>
+      <listitem><para>0: fatal</para></listitem>
+      <listitem><para>1: warning</para></listitem>
+      <listitem><para>2: message</para></listitem>
+      <listitem><para>3: info</para></listitem>
+      <listitem><para>4: debug</para></listitem>
+      <listitem><para>5: trace</para></listitem>
+    </itemizedlist>
+  </refsect1>
+
+  <refsect1 id="sandboxing">
+    <title>Sandboxing</title>
+
+    <para>There are four sandboxing types:</para>
+
+    <orderedlist>
+      <listitem><para>Read sandboxing</para></listitem>
+      <listitem><para>Write sandboxing</para></listitem>
+      <listitem><para><citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry> sandboxing</para></listitem>
+      <listitem><para>Network sandboxing</para></listitem>
+    </orderedlist>
+
+    <para>Sandboxing may have three states:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><varname>off</varname></term>
+        <listitem>
+          <para>Sandboxing is off, none of the relevant system calls are checked and all access is allowed.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>deny</varname></term>
+        <listitem>
+          <para>Sandboxing defaults to deny, whitelists can be used to allow access.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>allow</varname></term>
+        <listitem>
+          <para>Sandboxing defaults to allow, blacklists can be used to deny access.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>
+      In addition, there are filters for every sandboxing to prevent Pandora from reporting an access violation.
+      Note, access is still denied in such cases.
+    </para>
+
+    <refsect2 id="write-sandboxing">
+      <title>Write Sandboxing</title>
+
+      <para>This sandboxing checks certain system calls for filesystem write access. If a system call tries to write,
+      modify or change attributes of a path, this attempt is reported and the system call is denied. There are two
+      ways to customize this behaviour. Pandora may be configured to "whitelist" some path patterns. If the path
+      argument of the system call which is subject to be modified matches a pattern in the list of whitelisted path
+      patterns, this attempt is not denied. Additionally, Pandora may be configured to "filter" some path patterns. In
+      this case a match will prevent Pandora from reporting a warning about the access violation, the system call is
+      still denied though.</para>
+
+      <para>List of observed system calls are:
+      <function>access</function><manvolnum>2</manvolnum>,
+      <function>faccessat</function><manvolnum>2</manvolnum>,
+      <function>chmod</function><manvolnum>2</manvolnum>,
+      <function>fchmodat</function><manvolnum>2</manvolnum>,
+      <function>chown</function><manvolnum>2</manvolnum>,
+      <function>chown32</function><manvolnum>2</manvolnum>,
+      <function>lchown</function><manvolnum>2</manvolnum>,
+      <function>lchown32</function><manvolnum>2</manvolnum>,
+      <function>fchownat</function><manvolnum>2</manvolnum>,
+      <function>open</function><manvolnum>2</manvolnum>,
+      <function>openat</function><manvolnum>2</manvolnum>,
+      <function>creat</function><manvolnum>2</manvolnum>,
+      <function>mkdir</function><manvolnum>2</manvolnum>,
+      <function>mkdirat</function><manvolnum>2</manvolnum>,
+      <function>mknod</function><manvolnum>2</manvolnum>,
+      <function>mknodat</function><manvolnum>2</manvolnum>,
+      <function>rmdir</function><manvolnum>2</manvolnum>,
+      <function>truncate</function><manvolnum>2</manvolnum>,
+      <function>truncate64</function><manvolnum>2</manvolnum>,
+      <function>mount</function><manvolnum>2</manvolnum>,
+      <function>umount</function><manvolnum>2</manvolnum>,
+      <function>umount2</function><manvolnum>2</manvolnum>,
+      <function>utime</function><manvolnum>2</manvolnum>,
+      <function>utimes</function><manvolnum>2</manvolnum>,
+      <function>utimensat</function><manvolnum>2</manvolnum>,
+      <function>futimesat</function><manvolnum>2</manvolnum>,
+      <function>unlink</function><manvolnum>2</manvolnum>,
+      <function>unlinkat</function><manvolnum>2</manvolnum>,
+      <function>link</function><manvolnum>2</manvolnum>,
+      <function>linkat</function><manvolnum>2</manvolnum>,
+      <function>rename</function><manvolnum>2</manvolnum>,
+      <function>renameat</function><manvolnum>2</manvolnum>,
+      <function>symlink</function><manvolnum>2</manvolnum>,
+      <function>symlinkat</function><manvolnum>2</manvolnum>,
+      <function>setxattr</function><manvolnum>2</manvolnum>,
+      <function>lsetxattr</function><manvolnum>2</manvolnum>,
+      <function>removexattr</function><manvolnum>2</manvolnum>, and
+      <function>lremovexattr</function><manvolnum>2</manvolnum>.
+      </para>
+    </refsect2>
+
+    <refsect2 id="read-sandboxing">
+      <title>Read Sandboxing</title>
+
+      <para>This sandboxing checks certain system calls for filesystem read access. If a system call tries to read
+      a path, this attempt is reported and the system call is denied. See <xref linkend="write-sandboxing"/> for more
+      information on how to customize this behaviour.</para>
+
+      <para>List of observed system calls are:
+      <function>access</function><manvolnum>2</manvolnum>,
+      <function>faccessat</function><manvolnum>2</manvolnum>,
+      <function>open</function><manvolnum>2</manvolnum> and
+      <function>openat</function><manvolnum>2</manvolnum>,
+      </para>
+    </refsect2>
+
+    <refsect2 id="execve-sandboxing">
+      <title>execve(2) Sandboxing</title>
+
+      <para>This sandboxing denies <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+      calls in case the path argument does not match one of the whitelisted patterns. Note, all
+      <citerefentry><refentrytitle>exec</refentrytitle><manvolnum>3</manvolnum></citerefentry> family functions are sandboxed
+      because these functions are just wrappers of the
+      <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry> system call.</para>
+    </refsect2>
+
+    <refsect2 id="network-sandboxing">
+      <title>Network Sandboxing</title>
+
+      <para>This sandboxing exposes a way to prevent unwanted network calls. The observed system calls are:
+      <function>bind</function><manvolnum>2</manvolnum>,
+      <function>connect</function><manvolnum>2</manvolnum>,
+      <function>recvfrom</function><manvolnum>2</manvolnum> and
+      <function>sendto</function><manvolnum>2</manvolnum>. To increase usability, these system calls are
+      observed in two groups: <emphasis>bind</emphasis> and <emphasis>connect</emphasis>.
+      <function>bind</function><manvolnum>2</manvolnum> belongs to the first group, whereas the other three
+      system calls belong to the <emphasis>connect</emphasis> group.
+      </para>
+    </refsect2>
+  </refsect1>
+
+  <refsect1 id="pattern-matching">
+    <title>Pattern Matching</title>
+
+    <para>Pandora uses shell-style pattern matching for whitelists and filters. The wildmatching code is borrowed from
+    rsync and behaves like:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>A '*' matches any path component, but it stops at slashes.</para>
+      </listitem>
+      <listitem>
+        <para>Use '**' to match anything, including slashes.</para>
+      </listitem>
+      <listitem>
+        <para>A '?' matches any character except a slash (/).</para>
+      </listitem>
+      <listitem>
+        <para>A "[" introduces a character class, such as [a-z] or [[:alpha:]].</para>
+      </listitem>
+      <listitem>
+        <para>In a wildcard pattern, a backslash can be used to escape a wildcard character, but it is matched literally
+        when no wildcards are present.</para>
+      </listitem>
+      <listitem>
+        <para>A trailing "dir_name/***" will match both the directory (as if "dir_name/" had been specified) and
+        everything  in  the  directory (as if "dir_name/**" had been specified).</para>
+      </listitem>
+    </itemizedlist>
+  </refsect1>
+
+  <refsect1 id="address-matching">
+    <title>Address Matching</title>
+
+    <para>Pandora has a simple address scheme to match network addresses. The addresses can be in the following
+    forms:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>unix:${PATTERN}</term>
+        <listitem>
+          <para>Specifies a UNIX socket path, <varname>${PATTERN}</varname> specifies a path pattern.
+          See <xref linkend="pattern-matching"/> for more information on path patterns.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>unix-abstract:${PATTERN}</term>
+        <listitem>
+          <para>Specifies an abstract UNIX socket path, <varname>${PATTERN}</varname> specifies a path pattern.
+          See <xref linkend="pattern-matching"/> for more information on path patterns.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>inet:${IPV4_ADDR}/${NETMASK}@${PORT_RANGE}</term>
+        <listitem>
+          <para>Specifies an IPV4 address. For more information, read the paragraph below.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>inet6:${IPV6_ADDR}/${NETMASK}@${PORT_RANGE}</term>
+        <listitem>
+          <para>Specifies an IPV6 address. For more information, read the paragraph below.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para><varname>/${NETMASK}</varname> may be omitted from <varname>inet:</varname> and <varname>inet6:</varname>
+    addresses and <varname>${PORT_RANGE}</varname> can either be an integer or a service name from the
+    <citerefentry><refentrytitle>services</refentrytitle><manvolnum>5</manvolnum></citerefentry> database in two forms.
+    Either as as a single entity or as a range in the form BEGIN-END.</para>
+
+    <para>In addition there are some aliases, you may use instead of specifying an address:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><varname>LOOPBACK</varname></term>
+        <listitem>
+          <para>Expanded to <varname>inet:127.0.0.0/8</varname></para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>LOOPBACK6</varname></term>
+        <listitem>
+          <para>Expanded to <varname>inet6:::1/8</varname></para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>LOCAL</varname></term>
+        <listitem>
+          <para>Expanded to four addresses as defined in RFC1918:</para>
+          <itemizedlist>
+            <listitem><para><varname>inet:127.0.0.0/8</varname></para></listitem>
+            <listitem><para><varname>inet:10.0.0.0/8</varname></para></listitem>
+            <listitem><para><varname>inet:172.16.0.0/12</varname></para></listitem>
+            <listitem><para><varname>inet:192.168.0.0/16</varname></para></listitem>
+          </itemizedlist>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>LOCAL6</varname></term>
+        <listitem>
+          <para>Expanded to four addresses:</para>
+          <itemizedlist>
+            <listitem><para><varname>inet6:::1</varname></para></listitem>
+            <listitem><para><varname>inet6:fe80::/7</varname></para></listitem>
+            <listitem><para><varname>inet6:fc00::/7</varname></para></listitem>
+            <listitem><para><varname>inet6:fec0::/7</varname></para></listitem>
+          </itemizedlist>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1 id="examples">
+    <title>Examples</title>
+
+    <para>Below are examples of invocation and configuration of Pandora's Box.</para>
+
+    <refsect2 id="invocation-examples">
+      <title>Invocation Examples</title>
+
+      <para>Below are some invocation examples:</para>
+
+      <para>Allow all reads, deny read access to <filename>/etc/shadow</filename>:
+      <programlisting>pandora -m core/sandbox/read:allow -m blacklist/read+/etc/shadow -- /bin/sh</programlisting>
+      </para>
+    </refsect2>
+
+    <refsect2 id="configuration-example">
+      <title>Configuration File Example</title>
+
+      <para>Below is a commented example configuration file:</para>
+
+      <programlisting>
+/* All configuration is specified in a JSON object enclosed in curly braces. */
+{
+    "core" :
+        { "log"       : { "fd"        : 2    /* Messages with level higher than message go to standard error as well. */
+                        , "file"      : ""   /* Specify a path or leave it empty for no file logging. */
+                        , "level"     : 2    /* 0:fatal 1:warning 2:message 3:info 4:debug 5:trace */
+                        , "timestamp" : true /* Prefix log messages with timestamp */
+                        }
+        , "sandbox"   : { "exec"  : "off" /* execve(2) sandboxing */
+                        , "read"  : "off" /* read sandboxing */
+                        , "write" : "off" /* write sandboxing */
+                        , "sock"  : "off" /* network sandboxing */
+                        }
+        , "allow"     : { "per_process_directories"     : true /* Allow per process directories like /proc/$pid */
+                        , "successful_bind"             : true /* Add successful bind() address to connect() whitelist */
+                        , "unsupported_socket_families" : true /* Allow unsupported socket families like AF_NETLINK */
+                        }
+        , "abort"     : { "decision" : "contall" /* Kill/Resume all children on fatal errors? (one of contall,killall) */
+                        }
+        , "panic"     : { "decision"  : "kill" /* What to do on panic? (one of cont,kill,contall,killall) */
+                        , "exit_code" : -1     /* If decision is contall or killall, specifies the exit code. */
+                        }
+        , "violation" : { "decision"    : "deny" /* What to do on access violations? (one of deny,cont,kill,contall,killall) */
+                        , "exit_code"   : -1     /* If decision is contall or killall, specifies the exit code. */
+                        , "raise_fail" : false   /* Raise access violations for simple failures like path resolution errors? */
+                        , "raise_safe" : false   /* Raise access violations for "safe" violations like -ENOTDIR for mkdir() */
+                        }
+        , "trace"     : { "followfork"    : true  /* Follow forks? */
+                        , "exit_wait_all" : true  /* Wait all children to exit before exiting? */
+                        , "magic_lock"    : "off" /* Initial state of the magic lock */
+                        }
+        },
+    "exec" : { "resume_if_match" : [ ]
+             , "kill_if_match"   : [ ]
+             },
+
+    "filter" :
+        { "exec"  : [ ]
+        , "read"  : [ ]
+        , "write" : [ ]
+        , "sock"  : [ ]
+        },
+
+    "whitelist" :
+        { "exec"  : [ ]
+        , "read"  : [ ]
+        , "write" : [ "/dev/stdout"
+                    , "/dev/stderr"
+                    , "/dev/zero"
+                    , "/dev/null"
+                    , "/dev/full"
+                    , "/dev/console"
+                    , "/dev/random"
+                    , "/dev/ptmx"
+                    , "/dev/fd/***"
+                    , "/dev/tty*"
+                    , "/dev/pty*"
+                    , "/dev/tts*"
+                    , "/dev/pts*"
+                    , "/proc/self/fd/***"
+                    , "/dev/shm/***"
+                    , "/selinux/context/***"
+                    , "/proc/self/attr/***"
+                    , "/proc/self/task/***"
+                    , "/tmp/***"
+                    , "/var/tmp/***"
+                    , "/var/cache/***"
+                    ]
+        , "sock" :
+            { "bind" : [ "LOOPBACK@0"
+                       , "LOOPBACK@1024-65535"
+                       , "LOOPBACK6@0"
+                       , "LOOPBACK6@1024-65535"
+                       ]
+            , "connect" : [ "unix:/var/run/nscd/socket"
+                          , "unix:/run/nscd/socket"
+                          ]
+            }
+        },
+    "blacklist" :
+        { "exec"  : [ ]
+        , "read"  : [ ]
+        , "write" : [ ]
+        , "sock"  : [ ]
+        }
+}
+      </programlisting>
+    </refsect2>
+  </refsect1>
+
+  <refsect1 id="bugs">
+    <title>Bugs</title>
+
+    <para>This is very unstable software and should be used with care.
+    Report bugs by direct mail to &lt;alip at exherbo dot org&gt; or by
+    using the issue tracker at https://github.com/alip/pandora/issues</para>
+  </refsect1>
+
+  <refsect1 id="security">
+    <title>Security</title>
+
+    <para>Pandora is not designed to be used as a security measure. There are many ways to circumvent the sandbox.
+    Use this for diagnosing or debugging.</para>
+  </refsect1>
+
+  <refsect1 id="see-also">
+    <title>See Also</title>
+    <para>
+      <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>strace</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+    </para>
+  </refsect1>
+
+  <refsect1 id="copyright">
+    <title>COPYRIGHT</title>
+
+    <simpara>Copyright &#169; 2010, 2011 Ali Polatel &lt;alip at exherbo dot org&gt;</simpara>
+  </refsect1>
+</refentry>
+<!-- vim: set ts=2 sts=2 sw=2 et tw=120 spell spelllang=en : -->

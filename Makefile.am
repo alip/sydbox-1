@@ -14,4 +14,4 @@ EXTRA_DIST= \
 	    autogen.sh \
 	    README.mkd
 
-SUBDIRS= src data tests .
+SUBDIRS= src data man tests .

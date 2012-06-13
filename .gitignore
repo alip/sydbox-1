@@ -69,8 +69,8 @@ Makefile.in
 Makefile
 
 # Specific ignores
-data/pandora.1
-data/pandora.html
+man/pandora.1
+man/pandora.html
 
 src/pandora
 
