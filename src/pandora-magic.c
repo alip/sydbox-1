@@ -125,15 +125,6 @@ static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_proces
 		return 0;										\
 	}
 
-#define DEFINE_GLOBAL_BOOL_SETTING_FUNC(name, setting)							\
-	static int _set_##name(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current) {	\
-		setting = PTR_TO_BOOL(val);								\
-		return 0;										\
-	}												\
-	static int _query_##name(PINK_GCC_ATTR((unused)) pink_easy_process_t *current) {		\
-		return setting;										\
-	}
-
 #define DEFINE_STRING_LIST_SETTING_FUNC(name, field)					\
 	static int _set_##name(const void *val, pink_easy_process_t *current)		\
 	{										\
@@ -239,13 +230,6 @@ static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_proces
 
 DEFINE_GLOBAL_INT_SETTING_FUNC(panic_exit_code, pandora->config.panic_exit_code)
 DEFINE_GLOBAL_INT_SETTING_FUNC(violation_exit_code, pandora->config.violation_exit_code)
-DEFINE_GLOBAL_BOOL_SETTING_FUNC(violation_raise_fail, pandora->config.violation_raise_fail)
-DEFINE_GLOBAL_BOOL_SETTING_FUNC(violation_raise_safe, pandora->config.violation_raise_safe)
-DEFINE_GLOBAL_BOOL_SETTING_FUNC(trace_follow_fork, pandora->config.follow_fork)
-DEFINE_GLOBAL_BOOL_SETTING_FUNC(trace_exit_wait_all, pandora->config.exit_wait_all)
-DEFINE_GLOBAL_BOOL_SETTING_FUNC(whitelist_ppd, pandora->config.whitelist_per_process_directories)
-DEFINE_GLOBAL_BOOL_SETTING_FUNC(whitelist_sb, pandora->config.whitelist_successful_bind)
-DEFINE_GLOBAL_BOOL_SETTING_FUNC(whitelist_usf, pandora->config.whitelist_unsupported_socket_families)
 DEFINE_STRING_LIST_SETTING_FUNC(whitelist_exec, up)
 DEFINE_STRING_LIST_SETTING_FUNC(whitelist_read, up)
 DEFINE_STRING_LIST_SETTING_FUNC(whitelist_write, up)
@@ -507,8 +491,8 @@ static const struct key key_table[] = {
 			.lname  = "core.whitelist.per_process_directories",
 			.parent = MAGIC_KEY_CORE_WHITELIST,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_whitelist_ppd,
-			.query  = _query_whitelist_ppd,
+			.set    = magic_set_whitelist_ppd,
+			.query  = magic_query_whitelist_ppd,
 		},
 	[MAGIC_KEY_CORE_WHITELIST_SUCCESSFUL_BIND] =
 		{
@@ -516,8 +500,8 @@ static const struct key key_table[] = {
 			.lname  = "core.whitelist.successful_bind",
 			.parent = MAGIC_KEY_CORE_WHITELIST,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_whitelist_sb,
-			.query  = _query_whitelist_sb,
+			.set    = magic_set_whitelist_sb,
+			.query  = magic_query_whitelist_sb,
 		},
 	[MAGIC_KEY_CORE_WHITELIST_UNSUPPORTED_SOCKET_FAMILIES] =
 		{
@@ -525,8 +509,8 @@ static const struct key key_table[] = {
 			.lname  = "core.whitelist.unsupported_socket_families",
 			.parent = MAGIC_KEY_CORE_WHITELIST,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_whitelist_usf,
-			.query  = _query_whitelist_usf,
+			.set    = magic_set_whitelist_usf,
+			.query  = magic_query_whitelist_usf,
 		},
 
 	[MAGIC_KEY_CORE_ABORT_DECISION] =
@@ -577,8 +561,8 @@ static const struct key key_table[] = {
 			.lname  = "core.violation.raise_fail",
 			.parent = MAGIC_KEY_CORE_VIOLATION,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_violation_raise_fail,
-			.query  = _query_violation_raise_fail,
+			.set    = magic_set_violation_raise_fail,
+			.query  = magic_query_violation_raise_fail,
 		},
 	[MAGIC_KEY_CORE_VIOLATION_RAISE_SAFE] =
 		{
@@ -586,8 +570,8 @@ static const struct key key_table[] = {
 			.lname  = "core.violation.raise_safe",
 			.parent = MAGIC_KEY_CORE_VIOLATION,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_violation_raise_safe,
-			.query  = _query_violation_raise_safe,
+			.set    = magic_set_violation_raise_safe,
+			.query  = magic_query_violation_raise_safe,
 		},
 
 	[MAGIC_KEY_CORE_TRACE_FOLLOW_FORK] =
@@ -596,8 +580,8 @@ static const struct key key_table[] = {
 			.lname  = "core.trace.follow_fork",
 			.parent = MAGIC_KEY_CORE_TRACE,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_trace_follow_fork,
-			.query  = _query_trace_follow_fork
+			.set    = magic_set_trace_follow_fork,
+			.query  = magic_query_trace_follow_fork
 		},
 	[MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL] =
 		{
@@ -605,8 +589,8 @@ static const struct key key_table[] = {
 			.lname  = "core.trace.exit_wait_all",
 			.parent = MAGIC_KEY_CORE_TRACE,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_trace_exit_wait_all,
-			.query  = _query_trace_exit_wait_all,
+			.set    = magic_set_trace_exit_wait_all,
+			.query  = magic_query_trace_exit_wait_all,
 		},
 	[MAGIC_KEY_CORE_TRACE_MAGIC_LOCK] =
 		{
