@@ -18,29 +18,29 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'deny umount()' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog mnt0
 '
 
 test_expect_success 'deny umount() for non-existant directory' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog mnt1-non-existant
 '
 
 test_expect_success SYMLINKS 'deny umount() for symbolic link' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-mnt2
 '
 
 test_expect_success SYMLINKS 'deny umount() for dangling symbolic link' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-dangling
 '

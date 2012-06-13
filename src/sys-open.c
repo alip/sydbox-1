@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -117,7 +117,7 @@ sys_open(pink_easy_process_t *current, const char *name)
 	if (!r && !data->deny && data->config.sandbox_read != SANDBOX_OFF) {
 		info.whitelisting = data->config.sandbox_read == SANDBOX_DENY;
 		info.wblist = data->config.sandbox_read == SANDBOX_DENY ? &data->config.whitelist_read : &data->config.blacklist_read;
-		info.filter = &pandora->config.filter_read;
+		info.filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
 
@@ -168,7 +168,7 @@ sys_openat(pink_easy_process_t *current, const char *name)
 	if (!r && !data->deny && data->config.sandbox_read != SANDBOX_OFF) {
 		info.whitelisting = data->config.sandbox_read == SANDBOX_DENY;
 		info.wblist = data->config.sandbox_read == SANDBOX_DENY ? &data->config.whitelist_read : &data->config.blacklist_read;
-		info.filter = &pandora->config.filter_read;
+		info.filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
 

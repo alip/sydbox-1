@@ -6,9 +6,9 @@
 test_description='basic sanity checks'
 . ./test-lib.sh
 
-test_expect_success 'pandora' '
-    type pandora &&
-    pandora -V
+test_expect_success 'sydbox' '
+    type sydbox &&
+    sydbox -V
 '
 
 test_expect_success 'wildmatch' '

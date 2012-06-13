@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <stdlib.h>
 
@@ -36,15 +36,15 @@ int magic_set_log_file(const void *val, PINK_GCC_ATTR((unused)) pink_easy_proces
 	log_close();
 
 	if (!*str) {
-		if (pandora->config.log_file)
-			free(pandora->config.log_file);
-		pandora->config.log_file = NULL;
+		if (sydbox->config.log_file)
+			free(sydbox->config.log_file);
+		sydbox->config.log_file = NULL;
 		return 0;
 	}
 
-	if (pandora->config.log_file)
-		free(pandora->config.log_file);
-	pandora->config.log_file = xstrdup(str);
+	if (sydbox->config.log_file)
+		free(sydbox->config.log_file);
+	sydbox->config.log_file = xstrdup(str);
 
 	log_init();
 
@@ -58,7 +58,7 @@ int magic_set_log_console_fd(const void *val, PINK_GCC_ATTR((unused)) pink_easy_
 	if (r < 0)
 		return MAGIC_ERROR_INVALID_VALUE;
 
-	pandora->config.log_console_fd = r;
+	sydbox->config.log_console_fd = r;
 	return 0;
 }
 
@@ -70,17 +70,17 @@ int magic_set_log_level(const void *val, PINK_GCC_ATTR((unused)) pink_easy_proce
 	if ((r = log_level_from_string(str)) < 0)
 		return MAGIC_ERROR_INVALID_VALUE;
 
-	pandora->config.log_level = r;
+	sydbox->config.log_level = r;
 	return 0;
 }
 
 int magic_set_log_timestamp(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.log_timestamp = PTR_TO_BOOL(val);
+	sydbox->config.log_timestamp = PTR_TO_BOOL(val);
 	return 0;
 }
 
 int magic_query_log_timestamp(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return pandora->config.log_timestamp;
+	return sydbox->config.log_timestamp;
 }

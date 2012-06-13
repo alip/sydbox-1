@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -549,7 +549,7 @@ magic_cast(pink_easy_process_t *current, enum magic_key key, enum magic_type typ
 	if (entry.type != type)
 		return MAGIC_ERROR_INVALID_TYPE;
 
-	if (!pandora->config.core) {
+	if (!sydbox->config.core) {
 		enum magic_key k = entry.parent;
 		do {
 			if (k == MAGIC_KEY_CORE)
@@ -599,18 +599,18 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 	struct key entry;
 
 	if (prefix) {
-		if (!startswith(magic, PANDORA_MAGIC_PREFIX)) {
+		if (!startswith(magic, SYDBOX_MAGIC_PREFIX)) {
 			/* No magic */
 			return 0;
 		}
 
-		cmd = magic + sizeof(PANDORA_MAGIC_PREFIX) - 1;
+		cmd = magic + sizeof(SYDBOX_MAGIC_PREFIX) - 1;
 		if (!*cmd) {
 			/* Magic without command */
 			return 1;
 		}
 		else if (*cmd != '/') {
-			/* No magic, e.g. /dev/pandoraFOO */
+			/* No magic, e.g. /dev/sydboxFOO */
 			return 0;
 		}
 		else
@@ -632,8 +632,8 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 				return MAGIC_ERROR_INVALID_KEY;
 			++cmd;
 			continue;
-		case PANDORA_MAGIC_ADD_CHAR:
-		case PANDORA_MAGIC_REMOVE_CHAR:
+		case SYDBOX_MAGIC_ADD_CHAR:
+		case SYDBOX_MAGIC_REMOVE_CHAR:
 			if (key_table[key].type != MAGIC_TYPE_STRING_ARRAY)
 				return MAGIC_ERROR_INVALID_OPERATION;
 			/* Don't skip the magic separator character for string
@@ -641,12 +641,12 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 			 * between add and remove operations.
 			 */
 			break;
-		case PANDORA_MAGIC_QUERY_CHAR:
+		case SYDBOX_MAGIC_QUERY_CHAR:
 			if (key_table[key].type != MAGIC_TYPE_BOOLEAN)
 				return MAGIC_ERROR_INVALID_QUERY;
 			query = true;
 			/* fall through */
-		case PANDORA_MAGIC_SEP_CHAR:
+		case SYDBOX_MAGIC_SEP_CHAR:
 			++cmd;
 			break;
 		case 0:

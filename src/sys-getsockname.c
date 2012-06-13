@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -38,7 +38,7 @@ sys_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_sock == SANDBOX_OFF || !pandora->config.whitelist_successful_bind)
+	if (data->config.sandbox_sock == SANDBOX_OFF || !sydbox->config.whitelist_successful_bind)
 		return 0;
 
 	if (!pink_decode_socket_fd(pid, bit, 0, &fd)) {
@@ -71,7 +71,7 @@ sysx_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const cha
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_sock == SANDBOX_OFF || !pandora->config.whitelist_successful_bind || !data->args[0])
+	if (data->config.sandbox_sock == SANDBOX_OFF || !sydbox->config.whitelist_successful_bind || !data->args[0])
 		return 0;
 
 	/* Check the return value */
@@ -118,7 +118,7 @@ sysx_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const cha
 		/* assert(port); */
 		m->match.sa_in.port[0] = m->match.sa_in.port[1] = port;
 		break;
-#if PANDORA_HAVE_IPV6
+#if SYDBOX_HAVE_IPV6
 	case AF_INET6:
 		port = ntohs(psa.u.sa6.sin6_port);
 		/* assert(port); */

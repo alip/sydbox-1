@@ -15,22 +15,22 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success SYMLINKS 'deny lchown()' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-file0
 '
 
 test_expect_success SYMLINKS 'deny lchown for non-existant file' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file1-non-existant
 '
 
 test_expect_success SYMLINKS 'allow lchown()' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
         -- $prog symlink-file2

@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -85,7 +85,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 	case JSON_T_OBJECT_END:
 		if (magic_key_type(state->key) != MAGIC_TYPE_OBJECT)
 			die(2, "unexpected object for %s in `%s'",
-					magic_strkey(state->key), pandora->config.state->filename);
+					magic_strkey(state->key), sydbox->config.state->filename);
 
 		if (type == JSON_T_OBJECT_END) {
 			--state->depth;
@@ -98,7 +98,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 	case JSON_T_ARRAY_END:
 		if (magic_key_type(state->key) != MAGIC_TYPE_STRING_ARRAY)
 			die(2, "unexpected array for %s in `%s'",
-					magic_strkey(state->key), pandora->config.state->filename);
+					magic_strkey(state->key), sydbox->config.state->filename);
 
 		if (type == JSON_T_ARRAY_BEGIN)
 			state->inarray = true;
@@ -116,7 +116,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 						UINT_TO_PTR(type == JSON_T_TRUE)) < 0))
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
-					pandora->config.state->filename,
+					sydbox->config.state->filename,
 					magic_strerror(ret));
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
@@ -128,7 +128,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 			 * and remove.
 			 */
 			str = malloc(sizeof(char) * (value->vu.str.length + 2));
-			sprintf(str, "%c%s", PANDORA_MAGIC_ADD_CHAR, value->vu.str.value);
+			sprintf(str, "%c%s", SYDBOX_MAGIC_ADD_CHAR, value->vu.str.value);
 		}
 		else
 			str = xstrndup(value->vu.str.value, value->vu.str.length + 1);
@@ -138,7 +138,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 						str)) < 0)
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
-					pandora->config.state->filename,
+					sydbox->config.state->filename,
 					magic_strerror(ret));
 		free(str);
 		if (!state->inarray)
@@ -148,7 +148,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_INTEGER, INT_TO_PTR(value->vu.integer_value))) < 0)
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
-					pandora->config.state->filename,
+					sydbox->config.state->filename,
 					magic_strerror(ret));
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
@@ -166,7 +166,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 	default:
 		die(2, "unexpected %s for %s in `%s'",
 				name, magic_strkey(state->key),
-				pandora->config.state->filename);
+				sydbox->config.state->filename);
 	}
 
 	return 1;
@@ -177,60 +177,60 @@ config_init(void)
 {
 	JSON_config jc;
 
-	assert(pandora);
+	assert(sydbox);
 
-	memset(&pandora->config, 0, sizeof(config_t));
-	pandora->config.core = true;
-	pandora->config.state = xcalloc(1, sizeof(config_state_t));
+	memset(&sydbox->config, 0, sizeof(config_t));
+	sydbox->config.core = true;
+	sydbox->config.state = xcalloc(1, sizeof(config_state_t));
 
 	/* Set sane defaults for configuration */
-	pandora->config.log_console_fd = STDERR_FILENO;
-	pandora->config.log_level = 2;
-	pandora->config.log_timestamp = true;
-	pandora->config.follow_fork = 1;
-	pandora->config.exit_wait_all = 1;
-	pandora->config.whitelist_per_process_directories = true;
-	pandora->config.whitelist_successful_bind = true;
-	pandora->config.whitelist_unsupported_socket_families = true;
-	pandora->config.abort_decision = ABORT_CONTALL;
-	pandora->config.panic_decision = PANIC_KILL;
-	pandora->config.panic_exit_code = -1;
-	pandora->config.violation_decision = VIOLATION_DENY;
-	pandora->config.violation_exit_code = -1;
-	pandora->config.child.magic_lock = LOCK_UNSET;
+	sydbox->config.log_console_fd = STDERR_FILENO;
+	sydbox->config.log_level = 2;
+	sydbox->config.log_timestamp = true;
+	sydbox->config.follow_fork = 1;
+	sydbox->config.exit_wait_all = 1;
+	sydbox->config.whitelist_per_process_directories = true;
+	sydbox->config.whitelist_successful_bind = true;
+	sydbox->config.whitelist_unsupported_socket_families = true;
+	sydbox->config.abort_decision = ABORT_CONTALL;
+	sydbox->config.panic_decision = PANIC_KILL;
+	sydbox->config.panic_exit_code = -1;
+	sydbox->config.violation_decision = VIOLATION_DENY;
+	sydbox->config.violation_exit_code = -1;
+	sydbox->config.child.magic_lock = LOCK_UNSET;
 
 	init_JSON_config(&jc);
 	jc.depth = -1;
 	jc.allow_comments = 1;
 	jc.handle_floats_manually = 0;
 	jc.callback = parser_callback;
-	jc.callback_ctx = pandora->config.state;
+	jc.callback_ctx = sydbox->config.state;
 
-	pandora->config.parser = new_JSON_parser(&jc);
+	sydbox->config.parser = new_JSON_parser(&jc);
 }
 
 void
 config_destroy(void)
 {
-	if (pandora->config.log_file) {
-		free(pandora->config.log_file);
-		pandora->config.log_file = NULL;
+	if (sydbox->config.log_file) {
+		free(sydbox->config.log_file);
+		sydbox->config.log_file = NULL;
 	}
-	if (pandora->config.state) {
-		free(pandora->config.state);
-		pandora->config.state = NULL;
+	if (sydbox->config.state) {
+		free(sydbox->config.state);
+		sydbox->config.state = NULL;
 	}
-	if (pandora->config.parser) {
-		delete_JSON_parser(pandora->config.parser);
-		pandora->config.parser = NULL;
+	if (sydbox->config.parser) {
+		delete_JSON_parser(sydbox->config.parser);
+		sydbox->config.parser = NULL;
 	}
 }
 
 void
 config_reset(void)
 {
-	JSON_parser_reset(pandora->config.parser);
-	memset(pandora->config.state, 0, sizeof(config_state_t));
+	JSON_parser_reset(sydbox->config.parser);
+	memset(sydbox->config.state, 0, sizeof(config_state_t));
 }
 
 void
@@ -241,12 +241,12 @@ config_parse_file(const char *filename)
 	unsigned count;
 	FILE *fp;
 
-	pandora->config.state->filename = filename;
+	sydbox->config.state->filename = filename;
 
 	if ((fp = fopen(filename, "r")) == NULL)
 		die_errno(2, "open(`%s')", filename);
 
-	debug = !!getenv(PANDORA_JSON_DEBUG_ENV);
+	debug = !!getenv(SYDBOX_JSON_DEBUG_ENV);
 	count = 0;
 	for (;; ++count) {
 		if ((c = fgetc(fp)) == EOF)
@@ -255,19 +255,19 @@ config_parse_file(const char *filename)
 			fputc(c, stderr);
 			fflush(stderr);
 		}
-		if (!JSON_parser_char(pandora->config.parser, c))
+		if (!JSON_parser_char(sydbox->config.parser, c))
 			die(2, "JSON_parser_char: byte %u, char:%#x in `%s': %s",
 					count, (unsigned)c, filename,
-					JSON_strerror(JSON_parser_get_last_error(pandora->config.parser)));
+					JSON_strerror(JSON_parser_get_last_error(sydbox->config.parser)));
 	}
 
-	if (!JSON_parser_done(pandora->config.parser))
+	if (!JSON_parser_done(sydbox->config.parser))
 		die(2, "JSON_parser_done: in `%s': %s",
 				filename,
-				JSON_strerror(JSON_parser_get_last_error(pandora->config.parser)));
+				JSON_strerror(JSON_parser_get_last_error(sydbox->config.parser)));
 
 	fclose(fp);
-	pandora->config.core = false;
+	sydbox->config.core = false;
 }
 
 void
@@ -276,7 +276,7 @@ config_parse_spec(const char *pathspec)
 	size_t len;
 	char *filename;
 
-	if (pathspec[0] == PANDORA_PROFILE_CHAR) {
+	if (pathspec[0] == SYDBOX_PROFILE_CHAR) {
 		++pathspec;
 		len = sizeof(DATADIR) + sizeof(PACKAGE) + strlen(pathspec);
 		filename = xcalloc(len, sizeof(char));

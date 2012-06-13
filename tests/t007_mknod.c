@@ -15,17 +15,17 @@ main(int argc, char **argv)
 		return 125;
 
 	if (mknod(argv[1], S_IFIFO, 0) < 0) {
-		if (getenv("PANDORA_TEST_SUCCESS")) {
+		if (getenv("SYDBOX_TEST_SUCCESS")) {
 			perror(__FILE__);
 			return 1;
 		}
-		else if (getenv("PANDORA_TEST_EPERM") && errno == EPERM)
+		else if (getenv("SYDBOX_TEST_EPERM") && errno == EPERM)
 			return 0;
-		else if (getenv("PANDORA_TEST_EEXIST") && errno == EEXIST)
+		else if (getenv("SYDBOX_TEST_EEXIST") && errno == EEXIST)
 			return 0;
 		perror(__FILE__);
 		return 1;
 	}
 
-	return getenv("PANDORA_TEST_SUCCESS") ? 0 : 2;
+	return getenv("SYDBOX_TEST_SUCCESS") ? 0 : 2;
 }

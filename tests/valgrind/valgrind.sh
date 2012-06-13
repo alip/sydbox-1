@@ -13,10 +13,10 @@ TRACK_ORIGINS=--track-origins=yes
 
 exec valgrind -q --error-exitcode=126 \
 	--leak-check=full \
-	--suppressions="$PANDORA_VALGRIND/default.supp" \
+	--suppressions="$SYDBOX_VALGRIND/default.supp" \
 	--gen-suppressions=all \
 	$TRACK_ORIGINS \
 	--log-fd=4 \
 	--input-fd=4 \
-	$PANDORA_VALGRIND_OPTIONS \
-	"$PANDORA" $PANDORA_OPTIONS "$@"
+	$SYDBOX_VALGRIND_OPTIONS \
+	"$SYDBOX" $SYDBOX_OPTIONS "$@"

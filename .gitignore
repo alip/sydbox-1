@@ -1,4 +1,4 @@
-# pandora's .gitignore
+# sydbox's .gitignore
 
 #
 # Normal rules
@@ -69,10 +69,10 @@ Makefile.in
 Makefile
 
 # Specific ignores
-man/pandora.1
-man/pandora.html
+man/sydbox.1
+man/sydbox.html
 
-src/pandora
+src/sydbox
 
 tests/test-lib.sh
 tests/test-results

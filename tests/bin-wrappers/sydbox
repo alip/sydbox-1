@@ -3,4 +3,4 @@
 # Copyright 2010 Ali Polatel <alip@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
-exec "$PANDORA" $PANDORA_OPTIONS "$@"
+exec "$SYDBOX" $SYDBOX_OPTIONS "$@"

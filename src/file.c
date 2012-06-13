@@ -13,11 +13,11 @@
  *   which is:
  *   Copyright 2010 Lennart Poettering
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -228,14 +228,14 @@ canonicalize_filename_mode(const char *name, can_mode_t mode, int resolve, char 
 					continue;
 
 				/* Protect against infinite loops */
-#ifndef PANDORA_MAXSYMLINKS
+#ifndef SYDBOX_MAXSYMLINKS
 #ifdef MAXSYMLINKS
-#define PANDORA_MAXSYMLINKS MAXSYMLINKS
+#define SYDBOX_MAXSYMLINKS MAXSYMLINKS
 #else
-#define PANDORA_MAXSYMLINKS 32
+#define SYDBOX_MAXSYMLINKS 32
 #endif
 #endif
-				if (linkcount++ > PANDORA_MAXSYMLINKS) {
+				if (linkcount++ > SYDBOX_MAXSYMLINKS) {
 					errno = ELOOP;
 					goto error;
 				}

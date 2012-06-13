@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -145,12 +145,12 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *
 					comm, cwd);
 		} else {
 			cwd = xgetcwd();
-			comm = pandora->program_invocation_name;
-			pandora->program_invocation_name = NULL;
+			comm = sydbox->program_invocation_name;
+			sydbox->program_invocation_name = NULL;
 		}
 
-		pandora->eldest = pid;
-		inherit = &pandora->config.child;
+		sydbox->eldest = pid;
+		inherit = &sydbox->config.child;
 	} else {
 		pdata = (proc_data_t *)pink_easy_process_get_userdata(parent);
 		comm = xstrdup(pdata->comm);
@@ -200,7 +200,7 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *
 	SLIST_COPY_ALL(node, &inherit->blacklist_sock_connect, up, &data->config.blacklist_sock_connect, newnode, sock_match_xdup);
 #undef SLIST_COPY_ALL
 
-	if (pandora->config.whitelist_per_process_directories) {
+	if (sydbox->config.whitelist_per_process_directories) {
 #define SLIST_ALLOW_PID(var, head, field, id)							\
 		do {										\
 			var = xcalloc(1, sizeof(struct snode));					\
@@ -223,30 +223,30 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *
 
 static int callback_cleanup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx)
 {
-	if (pandora->violation) {
-		if (pandora->config.violation_exit_code > 0)
-			return pandora->config.violation_exit_code;
-		else if (pandora->config.violation_exit_code == 0)
-			return 128 + pandora->exit_code;
+	if (sydbox->violation) {
+		if (sydbox->config.violation_exit_code > 0)
+			return sydbox->config.violation_exit_code;
+		else if (sydbox->config.violation_exit_code == 0)
+			return 128 + sydbox->exit_code;
 	}
-	return pandora->exit_code;
+	return sydbox->exit_code;
 }
 
 static int callback_exit(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
 		pid_t pid, int status)
 {
-	if (pid == pandora->eldest) {
+	if (pid == sydbox->eldest) {
 		/* Eldest child, keep return code */
 		if (WIFEXITED(status)) {
-			pandora->exit_code = WEXITSTATUS(status);
+			sydbox->exit_code = WEXITSTATUS(status);
 			message("initial process:%lu exited with code:%d (status:%#x)",
-					(unsigned long)pid, pandora->exit_code,
+					(unsigned long)pid, sydbox->exit_code,
 					(unsigned)status);
 		}
 		else if (WIFSIGNALED(status)) {
-			pandora->exit_code = 128 + WTERMSIG(status);
+			sydbox->exit_code = 128 + WTERMSIG(status);
 			message("initial process:%lu was terminated with signal:%d (status:%#x)",
-					(unsigned long)pid, pandora->exit_code - 128,
+					(unsigned long)pid, sydbox->exit_code - 128,
 					(unsigned)status);
 		}
 		else {
@@ -293,9 +293,9 @@ static int callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
 		data->config.magic_lock = LOCK_SET;
 	}
 
-	if (pandora->skip_initial_exec) {
+	if (sydbox->skip_initial_exec) {
 		/* Initial execve was successful, let the tracing begin! */
-		pandora->skip_initial_exec = false;
+		sydbox->skip_initial_exec = false;
 		return 0;
 	}
 
@@ -306,14 +306,14 @@ static int callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
 
 	/* kill_if_match and resume_if_match */
 	r = 0;
-	if (box_match_path(data->abspath, &pandora->config.exec_kill_if_match, &match)) {
+	if (box_match_path(data->abspath, &sydbox->config.exec_kill_if_match, &match)) {
 		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("killing process:%lu [%s cwd:\"%s\"]", (unsigned long)pid, pink_bitness_name(bit), data->cwd);
 		if (pink_easy_process_kill(current, SIGKILL) < 0)
 			warning("failed to kill process:%lu (errno:%d %s)", (unsigned long)pid, errno, strerror(errno));
 		r |= PINK_EASY_CFLAG_DROP;
 	}
-	else if (box_match_path(data->abspath, &pandora->config.exec_resume_if_match, &match)) {
+	else if (box_match_path(data->abspath, &sydbox->config.exec_resume_if_match, &match)) {
 		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("resuming process:%lu [%s cwd:\"%s\"]", (unsigned long)pid, pink_bitness_name(bit), data->cwd);
 		if (!pink_easy_process_resume(current, 0))
@@ -352,13 +352,13 @@ static int callback_syscall(PINK_GCC_ATTR((unused)) const pink_easy_context_t *c
 
 void callback_init(void)
 {
-	memset(&pandora->callback_table, 0, sizeof(pink_easy_callback_table_t));
+	memset(&sydbox->callback_table, 0, sizeof(pink_easy_callback_table_t));
 
-	pandora->callback_table.startup = callback_startup;
-	pandora->callback_table.cleanup = callback_cleanup;
-	pandora->callback_table.exit = callback_exit;
-	pandora->callback_table.exec = callback_exec;
-	pandora->callback_table.syscall = callback_syscall;
-	pandora->callback_table.error = callback_error;
-	pandora->callback_table.cerror = callback_child_error;
+	sydbox->callback_table.startup = callback_startup;
+	sydbox->callback_table.cleanup = callback_cleanup;
+	sydbox->callback_table.exit = callback_exit;
+	sydbox->callback_table.exec = callback_exec;
+	sydbox->callback_table.syscall = callback_syscall;
+	sydbox->callback_table.error = callback_error;
+	sydbox->callback_table.cerror = callback_child_error;
 }

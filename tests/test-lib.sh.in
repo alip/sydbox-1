@@ -17,14 +17,14 @@
 
 # if --tee was passed, write the output not only to the terminal, but
 # additionally to the file test-results/$BASENAME.out, too.
-case "$PANDORA_TEST_TEE_STARTED, $* " in
+case "$SYDBOX_TEST_TEE_STARTED, $* " in
 done,*)
 	# do not redirect again
 	;;
 *' --tee '*|*' --va'*)
 	mkdir -p test-results
 	BASE=test-results/$(basename "$0" .sh)
-	(PANDORA_TEST_TEE_STARTED=done ${SHELL-sh} "$0" "$@" 2>&1;
+	(SYDBOX_TEST_TEE_STARTED=done ${SHELL-sh} "$0" "$@" 2>&1;
 	 echo $? > $BASE.exit) | tee $BASE.out
 	test "$(cat $BASE.exit)" = 0
 	exit
@@ -59,7 +59,7 @@ unset VISUAL EMAIL LANGUAGE COLUMNS $(perl -e '
 		PERF_AGGREGATING_LATER
 		CONFIG
 	));
-	my @vars = grep(/^PANDORA_/ && !/^PANDORA_($ok)/o, @env);
+	my @vars = grep(/^SYDBOX_/ && !/^SYDBOX_($ok)/o, @env);
 	print join("\n", @vars);
 ')
 export EDITOR
@@ -70,11 +70,11 @@ unset CDPATH
 
 unset GREP_OPTIONS
 
-case $(echo $PANDORA_TRACE |tr "[A-Z]" "[a-z]") in
+case $(echo $SYDBOX_TRACE |tr "[A-Z]" "[a-z]") in
 	1|2|true)
-		echo "* warning: Some tests will not work if PANDORA_TRACE" \
+		echo "* warning: Some tests will not work if SYDBOX_TRACE" \
 			"is set as to trace on STDERR ! *"
-		echo "* warning: Please set PANDORA_TRACE to something" \
+		echo "* warning: Please set SYDBOX_TRACE to something" \
 			"other than 1, 2 or true ! *"
 		;;
 esac
@@ -109,7 +109,7 @@ do
 	-i|--i|--im|--imm|--imme|--immed|--immedi|--immedia|--immediat|--immediate)
 		immediate=t; shift ;;
 	-l|--l|--lo|--lon|--long|--long-|--long-t|--long-te|--long-tes|--long-test|--long-tests)
-		PANDORA_TEST_LONG=t; export PANDORA_TEST_LONG; shift ;;
+		SYDBOX_TEST_LONG=t; export SYDBOX_TEST_LONG; shift ;;
 	-h|--h|--he|--hel|--help)
 		help=t; shift ;;
 	-v|--v|--ve|--ver|--verb|--verbo|--verbos|--verbose)
@@ -162,7 +162,7 @@ fi
 
 error () {
 	say_color error "error: $*"
-	PANDORA_EXIT_OK=t
+	SYDBOX_EXIT_OK=t
 	exit 1
 }
 
@@ -198,7 +198,7 @@ test_external_has_tap=0
 
 die () {
 	code=$?
-	if test -n "$PANDORA_EXIT_OK"
+	if test -n "$SYDBOX_EXIT_OK"
 	then
 		exit $code
 	else
@@ -207,7 +207,7 @@ die () {
 	fi
 }
 
-PANDORA_EXIT_OK=
+SYDBOX_EXIT_OK=
 trap 'die' EXIT
 
 # The user-facing functions are loaded from a separate file so that
@@ -227,7 +227,7 @@ test_failure_ () {
 	say_color error "not ok - $test_count $1"
 	shift
 	echo "$@" | sed -e 's/^/#	/'
-	test "$immediate" = "" || { PANDORA_EXIT_OK=t; exit 1; }
+	test "$immediate" = "" || { SYDBOX_EXIT_OK=t; exit 1; }
 }
 
 test_known_broken_ok_ () {
@@ -269,7 +269,7 @@ test_run_ () {
 test_skip () {
 	test_count=$(($test_count+1))
 	to_skip=
-	for skp in $PANDORA_SKIP_TESTS
+	for skp in $SYDBOX_SKIP_TESTS
 	do
 		case $this_test.$test_count in
 		$skp)
@@ -306,7 +306,7 @@ test_at_end_hook_ () {
 }
 
 test_done () {
-	PANDORA_EXIT_OK=t
+	SYDBOX_EXIT_OK=t
 
 	if test -z "$HARNESS_ACTIVE"; then
 		test_results_dir="$TEST_OUTPUT_DIRECTORY/test-results"
@@ -379,9 +379,9 @@ then
 	# elsewhere
 	TEST_OUTPUT_DIRECTORY=$TEST_DIRECTORY
 fi
-PANDORA_BUILD_DIR="@TOP_BUILDDIR@/src"
-PANDORA="$PANDORA_BUILD_DIR"/pandora
-PANDORA_OPTIONS='
+SYDBOX_BUILD_DIR="@TOP_BUILDDIR@/src"
+SYDBOX="$SYDBOX_BUILD_DIR"/sydbox
+SYDBOX_OPTIONS='
     -m core/violation/exit_code:0
     -m core/violation/raise_fail:1
     -m core/violation/raise_safe:1
@@ -389,32 +389,32 @@ PANDORA_OPTIONS='
 
 if test "$verbose" = "t"
 then
-	PANDORA_OPTIONS="$PANDORA_OPTIONS -v"
+	SYDBOX_OPTIONS="$SYDBOX_OPTIONS -v"
 fi
 
 if test -n "$valgrind"
 then
-	PANDORA_VALGRIND="$TEST_DIRECTORY"/valgrind
-	PANDORA_OPTIONS="$PANDORA_OPTIONS -vvv"
-	PATH=$PANDORA_VALGRIND/bin:$PATH
-	export PANDORA_VALGRIND
-#elif test -n "$PANDORA_TEST_INSTALLED" ; then
-#	PATH=$PANDORA_TEST_INSTALLED:$PANDORA_BUILD_DIR:$PATH
+	SYDBOX_VALGRIND="$TEST_DIRECTORY"/valgrind
+	SYDBOX_OPTIONS="$SYDBOX_OPTIONS -vvv"
+	PATH=$SYDBOX_VALGRIND/bin:$PATH
+	export SYDBOX_VALGRIND
+#elif test -n "$SYDBOX_TEST_INSTALLED" ; then
+#	PATH=$SYDBOX_TEST_INSTALLED:$SYDBOX_BUILD_DIR:$PATH
 else # normal case, use bin-wrappers
 	PATH="$TEST_DIRECTORY"/bin-wrappers:$PATH
 fi
 PATH="$TEST_DIRECTORY:$PATH"
 export PATH
-export PANDORA
-export PANDORA_OPTIONS
+export SYDBOX
+export SYDBOX_OPTIONS
 
-if test -z "$PANDORA_TEST_CMP"
+if test -z "$SYDBOX_TEST_CMP"
 then
-	if test -n "$PANDORA_TEST_CMP_USE_COPIED_CONTEXT"
+	if test -n "$SYDBOX_TEST_CMP_USE_COPIED_CONTEXT"
 	then
-		PANDORA_TEST_CMP="$DIFF -c"
+		SYDBOX_TEST_CMP="$DIFF -c"
 	else
-		PANDORA_TEST_CMP="$DIFF -u"
+		SYDBOX_TEST_CMP="$DIFF -u"
 	fi
 fi
 
@@ -427,7 +427,7 @@ case "$test" in
 esac
 test ! -z "$debug" || remove_trash=$TRASH_DIRECTORY
 rm -fr "$test" || {
-	PANDORA_EXIT_OK=t
+	SYDBOX_EXIT_OK=t
 	echo >&5 "FATAL: Cannot prepare test area"
 	exit 1
 }
@@ -438,12 +438,12 @@ export HOME HOME_RESOLVED
 
 mkdir -p "$test"
 # Use -P to resolve symlinks in our working directory so that the cwd
-# in subprocesses like pandora equals our $PWD (for pathname comparisons).
+# in subprocesses like sydbox equals our $PWD (for pathname comparisons).
 cd -P "$test" || exit 1
 
 this_test=${0##*/}
 this_test=${this_test%%-*}
-for skp in $PANDORA_SKIP_TESTS
+for skp in $SYDBOX_SKIP_TESTS
 do
 	case "$this_test" in
 	$skp)

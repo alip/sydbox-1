@@ -15,24 +15,24 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'deny creat()' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file0-non-existant &&
     test_path_is_missing file0-non-existant
 '
 
 test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-file1 &&
     test_path_is_missing file1-non-existant
 '
 
 test_expect_success 'allow creat()' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/*" \
         $TEST_DIRECTORY/t004_creat file2-non-existant "3" &&

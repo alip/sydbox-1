@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <assert.h>
 #include <fcntl.h>
@@ -77,7 +77,7 @@ log_me(int fd, unsigned level, const char *fmt, va_list ap)
 
 	dprintf(fd, "%s", p);
 	if (prefix) {
-		if (pandora->config.log_timestamp)
+		if (sydbox->config.log_timestamp)
 			dprintf(fd, "%s@%lu: ", prefix, time(NULL));
 		else
 			dprintf(fd, "%s: ", prefix);
@@ -89,12 +89,12 @@ log_me(int fd, unsigned level, const char *fmt, va_list ap)
 void
 log_init(void)
 {
-	assert(pandora);
+	assert(sydbox);
 
-	if (pandora->config.log_file) {
-		logfd = open(pandora->config.log_file, O_WRONLY|O_APPEND|O_CREAT, 0640);
+	if (sydbox->config.log_file) {
+		logfd = open(sydbox->config.log_file, O_WRONLY|O_APPEND|O_CREAT, 0640);
 		if (logfd < 0)
-			die_errno(3, "failed to open log file `%s'", pandora->config.log_file);
+			die_errno(3, "failed to open log file `%s'", sydbox->config.log_file);
 	}
 }
 
@@ -121,16 +121,16 @@ log_suffix(const char *s)
 void
 log_msg_va(unsigned level, const char *fmt, va_list ap)
 {
-	if (level > pandora->config.log_level)
+	if (level > sydbox->config.log_level)
 		return;
 
 	if (logfd != -1) {
 		log_me(logfd, level, fmt, ap);
 		if (level < 2)
-			log_me(pandora->config.log_console_fd, level, fmt, ap);
+			log_me(sydbox->config.log_console_fd, level, fmt, ap);
 	}
 	else
-		log_me(pandora->config.log_console_fd, level, fmt, ap);
+		log_me(sydbox->config.log_console_fd, level, fmt, ap);
 }
 
 void

@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <errno.h>
 #include <string.h>
@@ -34,7 +34,7 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	pink_bitness_t bit;
 	proc_data_t *data;
 
-	if (pandora->skip_initial_exec) {
+	if (sydbox->skip_initial_exec) {
 		/* Do nothing until exec callback sets this variable to false,
 		 * which will indicate the initial execve(2) has been
 		 * successfull. */
@@ -60,7 +60,7 @@ sys_execve(pink_easy_process_t *current, const char *name)
 				-r, strerror(-r));
 		errno = -r;
 		r = deny(current);
-		if (pandora->config.violation_raise_fail)
+		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s(\"%s\")", name, path);
 		free(path);
 		return r;
@@ -94,7 +94,7 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	errno = EACCES;
 	r = deny(current);
 
-	if (!box_match_path(abspath, &pandora->config.filter_exec, NULL))
+	if (!box_match_path(abspath, &sydbox->config.filter_exec, NULL))
 		violation(current, "%s(\"%s\")", name, abspath);
 
 	free(abspath);

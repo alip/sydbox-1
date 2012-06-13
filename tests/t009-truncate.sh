@@ -21,37 +21,37 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'deny truncate()' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file0 &&
     test_path_is_non_empty file0
 '
 
 test_expect_success 'deny truncate() for non-existant file' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file1-non-existant
 '
 
 test_expect_success SYMLINKS 'deny truncate() for symbolic link' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-file2 &&
     test_path_is_non_empty file2
 '
 
 test_expect_success SYMLINKS 'deny truncate() for dangling symbolic link' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-dangling
 '
 
 test_expect_success 'allow truncate()' '
-    pandora -EPANDORA_TEST_SUCCESS=1 \
+    sydbox -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
         -- $prog file3 &&
@@ -59,8 +59,8 @@ test_expect_success 'allow truncate()' '
 '
 
 test_expect_success SYMLINKS 'allow truncate() for symbolic link' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
         $prog symlink-file4 &&

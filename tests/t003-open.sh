@@ -35,133 +35,133 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'allow O_RDONLY' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -- $prog file0 rdonly
 '
 
 test_expect_success SYMLINKS 'allow O_RDONLY for symbolic link' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-file1 rdonly
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file2-non-existant rdonly-creat &&
     test_path_is_missing file2-non-existant
 '
 
 test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-file3 rdonly-creat &&
     test_path_is_missing file3-non-existant
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file4-non-existant rdonly-creat-excl &&
     test_path_is_missing file4-non-existant
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EEXIST=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
         -- $prog file5 rdonly-creat-excl
 '
 
 test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EEXIST=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-file6 rdonly-creat-excl &&
     test_path_is_missing file6-non-existant
 '
 
 test_expect_success 'deny O_WRONLY' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file7 wronly "3" &&
     test_path_is_empty file7
 '
 
 test_expect_success 'deny O_WRONLY for non-existant file' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file8-non-existant wronly &&
     test_path_is_missing file8-non-existant
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY for symbolic link' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-file9 wronly "3" &&
     test_path_is_empty file9
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file10-non-existant wronly-creat &&
     test_path_is_missing file10-non-existant
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT for existing file' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file11 wronly-creat "3" &&
     test_path_is_empty file11
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-file12 wronly-creat "3" &&
     test_path_is_empty file12
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog symlink-file13 wronly-creat "3" &&
     test_path_is_missing file13-non-existant
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file14-non-existant wronly-creat-excl &&
     test_path_is_missing file14-non-existant
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL for existing file' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EEXIST=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
         -- $prog file15 wronly-creat-excl "3" &&
     test_path_is_empty file15
 '
 
 test_expect_success 'allow O_WRONLY' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file16 wronly "3" &&
@@ -169,8 +169,8 @@ test_expect_success 'allow O_WRONLY' '
 '
 
 test_expect_success 'allow O_WRONLY|O_CREAT' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file17-non-existant wronly-creat &&
@@ -178,8 +178,8 @@ test_expect_success 'allow O_WRONLY|O_CREAT' '
 '
 
 test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/*" \
         $prog file18-non-existant wronly-creat-excl &&
@@ -187,48 +187,48 @@ test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL' '
 '
 
 test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL for existing file' '
-    pandora \
-        -EPANDORA_TEST_EEXIST=1 \
+    sydbox \
+        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file19 wronly-creat-excl
 '
 
 test_expect_success 'deny O_RDWR' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file20 rdwr "3" &&
     test_path_is_empty file20
 '
 
 test_expect_success 'deny O_RDWR|O_CREAT' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file21-non-existant rdwr-creat &&
     test_path_is_missing file21-non-existant
 '
 
 test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog file22-non-existant rdwr-creat-excl &&
     test_path_is_missing file22-non-existant
 '
 
 test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL for existing file' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EEXIST=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
         -- $prog file23 rdwr-creat-excl "3" &&
     test_path_is_empty file23
 '
 
 test_expect_success 'allow O_RDWR' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file24 rdwr "3" &&
@@ -236,8 +236,8 @@ test_expect_success 'allow O_RDWR' '
 '
 
 test_expect_success 'allow O_RDWR|O_CREAT' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file25-non-existant rdwr-creat &&
@@ -245,8 +245,8 @@ test_expect_success 'allow O_RDWR|O_CREAT' '
 '
 
 test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/*" \
         $prog file26-non-existant rdwr-creat-excl &&
@@ -254,8 +254,8 @@ test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL' '
 '
 
 test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL for existing file' '
-    pandora \
-        -EPANDORA_TEST_EEXIST=1 \
+    sydbox \
+        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/*" \
         -- $prog file27 rdwr-creat-excl

@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -39,7 +39,7 @@ int
 path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 {
 	long addr;
-	char path[PANDORA_PATH_MAX];
+	char path[SYDBOX_PATH_MAX];
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -49,7 +49,7 @@ path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 
 	if (!pink_util_get_arg(pid, bit, ind, &addr)
 			|| !pink_easy_process_vm_readv(pid, addr,
-				path, PANDORA_PATH_MAX)) {
+				path, SYDBOX_PATH_MAX)) {
 		if (errno != ESRCH) {
 			warning("process_vm_readv(%lu, %s, %u) failed (errno:%d %s)",
 					(unsigned long)pid, pink_bitness_name(bit),
@@ -72,7 +72,7 @@ path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 		return -1;
 	}
 
-	path[PANDORA_PATH_MAX-1] = '\0';
+	path[SYDBOX_PATH_MAX-1] = '\0';
 	*buf = xstrdup(path);
 	return 0;
 }

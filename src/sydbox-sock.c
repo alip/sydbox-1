@@ -5,11 +5,11 @@
  * Based in part upon courier which is:
  *   Copyright 1998-2009 Double Precision, Inc
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -19,7 +19,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -171,7 +171,7 @@ sock_match_new(const char *src, sock_match_t **buf)
 		free(addr);
 	}
 	else if (startswith(src, "inet6:")) {
-#if !PANDORA_HAVE_IPV6
+#if !SYDBOX_HAVE_IPV6
 		errno = EAFNOSUPPORT;
 		r = 0;
 		goto fail;
@@ -285,7 +285,7 @@ sock_match_new_pink(const sock_info_t *src, sock_match_t **buf)
 		m->match.sa_in.netmask = 32;
 		memcpy(&m->match.sa_in.addr, &src->addr->u.sa_in.sin_addr, sizeof(struct in_addr));
 		break;
-#if PANDORA_HAVE_IPV6
+#if SYDBOX_HAVE_IPV6
 	case AF_INET6:
 		m->match.sa6.port[0] = m->match.sa6.port[1] = ntohs(src->addr->u.sa6.sin6_port);
 		m->match.sa6.netmask = 64;
@@ -320,7 +320,7 @@ sock_match_xdup(const sock_match_t *src)
 		m->match.sa_in.port[1] = src->match.sa_in.port[1];
 		memcpy(&m->match.sa_in.addr, &src->match.sa_in.addr, sizeof(struct in_addr));
 		break;
-#if PANDORA_HAVE_IPV6
+#if SYDBOX_HAVE_IPV6
 	case AF_INET6:
 		m->match.sa6.netmask = src->match.sa6.netmask;
 		m->match.sa6.port[0] = src->match.sa6.port[0];
@@ -367,7 +367,7 @@ sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle)
 		pmax = haystack->match.sa_in.port[1];
 		port = ntohs(needle->u.sa_in.sin_port);
 		break;
-#if PANDORA_HAVE_IPV6
+#if SYDBOX_HAVE_IPV6
 	case AF_INET6:
 		n = haystack->match.sa6.netmask;
 		ptr = (const unsigned char *)&needle->u.sa6.sin6_addr;

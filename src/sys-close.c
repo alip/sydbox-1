@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <sys/types.h>
 #include <assert.h>
@@ -37,7 +37,7 @@ sys_close(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_sock == SANDBOX_OFF || !pandora->config.whitelist_successful_bind)
+	if (data->config.sandbox_sock == SANDBOX_OFF || !sydbox->config.whitelist_successful_bind)
 		return 0;
 
 	if (!pink_util_get_arg(pid, bit, 0, &fd)) {
@@ -66,7 +66,7 @@ sysx_close(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *nam
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_sock == SANDBOX_OFF || !pandora->config.whitelist_successful_bind || !data->args[0])
+	if (data->config.sandbox_sock == SANDBOX_OFF || !sydbox->config.whitelist_successful_bind || !data->args[0])
 		return 0;
 
 	if (!pink_util_get_return(pid, &ret)) {

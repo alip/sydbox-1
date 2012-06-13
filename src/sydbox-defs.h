@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,8 +17,8 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef PANDORA_GUARD_DEFS_H
-#define PANDORA_GUARD_DEFS_H 1
+#ifndef SYDBOX_GUARD_DEFS_H
+#define SYDBOX_GUARD_DEFS_H 1
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -52,47 +52,47 @@
 #include "util.h"
 
 /* Definitions */
-#ifndef PANDORA_PATH_MAX
+#ifndef SYDBOX_PATH_MAX
 #if defined(PATH_MAX)
-#define PANDORA_PATH_MAX (PATH_MAX+1)
+#define SYDBOX_PATH_MAX (PATH_MAX+1)
 #elif defined(MAXPATHLEN)
-#define PANDORA_PATH_MAX (MAXPATHLEN+1)
+#define SYDBOX_PATH_MAX (MAXPATHLEN+1)
 #else
-#define PANDORA_PATH_MAX (256+1)
+#define SYDBOX_PATH_MAX (256+1)
 #endif
 #endif
 
-#ifndef PANDORA_PROFILE_CHAR
-#define PANDORA_PROFILE_CHAR '@'
-#endif /* !PANDORA_PROFILE_CHAR */
+#ifndef SYDBOX_PROFILE_CHAR
+#define SYDBOX_PROFILE_CHAR '@'
+#endif /* !SYDBOX_PROFILE_CHAR */
 
-#ifndef PANDORA_CONFIG_ENV
-#define PANDORA_CONFIG_ENV "PANDORA_CONFIG"
-#endif /* !PANDORA_CONFIG_ENV */
+#ifndef SYDBOX_CONFIG_ENV
+#define SYDBOX_CONFIG_ENV "SYDBOX_CONFIG"
+#endif /* !SYDBOX_CONFIG_ENV */
 
-#ifndef PANDORA_JSON_DEBUG_ENV
-#define PANDORA_JSON_DEBUG_ENV "PANDORA_JSON_DEBUG"
-#endif /* !PANDORA_JSON_DEBUG_ENV */
+#ifndef SYDBOX_JSON_DEBUG_ENV
+#define SYDBOX_JSON_DEBUG_ENV "SYDBOX_JSON_DEBUG"
+#endif /* !SYDBOX_JSON_DEBUG_ENV */
 
-#ifndef PANDORA_MAGIC_PREFIX
-#define PANDORA_MAGIC_PREFIX "/dev/pandora"
-#endif /* !PANDORA_MAGIC_PREFIX */
+#ifndef SYDBOX_MAGIC_PREFIX
+#define SYDBOX_MAGIC_PREFIX "/dev/sydbox"
+#endif /* !SYDBOX_MAGIC_PREFIX */
 
-#ifndef PANDORA_MAGIC_SEP_CHAR
-#define PANDORA_MAGIC_SEP_CHAR ':'
-#endif /* !PANDORA_MAGIC_SEP_CHAR */
+#ifndef SYDBOX_MAGIC_SEP_CHAR
+#define SYDBOX_MAGIC_SEP_CHAR ':'
+#endif /* !SYDBOX_MAGIC_SEP_CHAR */
 
-#ifndef PANDORA_MAGIC_QUERY_CHAR
-#define PANDORA_MAGIC_QUERY_CHAR '?'
-#endif /* !PANDORA_MAGIC_QUERY_CHAR */
+#ifndef SYDBOX_MAGIC_QUERY_CHAR
+#define SYDBOX_MAGIC_QUERY_CHAR '?'
+#endif /* !SYDBOX_MAGIC_QUERY_CHAR */
 
-#ifndef PANDORA_MAGIC_ADD_CHAR
-#define PANDORA_MAGIC_ADD_CHAR '+'
-#endif /* !PANDORA_MAGIC_ADD_CHAR */
+#ifndef SYDBOX_MAGIC_ADD_CHAR
+#define SYDBOX_MAGIC_ADD_CHAR '+'
+#endif /* !SYDBOX_MAGIC_ADD_CHAR */
 
-#ifndef PANDORA_MAGIC_REMOVE_CHAR
-#define PANDORA_MAGIC_REMOVE_CHAR '-'
-#endif /* !PANDORA_MAGIC_REMOVE_CHAR */
+#ifndef SYDBOX_MAGIC_REMOVE_CHAR
+#define SYDBOX_MAGIC_REMOVE_CHAR '-'
+#endif /* !SYDBOX_MAGIC_REMOVE_CHAR */
 
 /* Enumerations */
 enum sandbox_mode {
@@ -299,7 +299,7 @@ typedef struct {
 			struct in_addr addr;
 		} sa_in;
 
-#if PANDORA_HAVE_IPV6
+#if SYDBOX_HAVE_IPV6
 		struct {
 			unsigned netmask;
 			unsigned port[2];
@@ -433,7 +433,7 @@ typedef struct {
 
 	/* Global configuration */
 	config_t config;
-} pandora_t;
+} sydbox_t;
 
 typedef int (*sysfunc_t) (pink_easy_process_t *current, const char *name);
 
@@ -464,7 +464,7 @@ typedef struct {
 } sys_info_t;
 
 /* Global variables */
-extern pandora_t *pandora;
+extern sydbox_t *sydbox;
 
 /* Global functions */
 void die(int code, const char *fmt, ...) PINK_GCC_ATTR((noreturn, format (printf, 2, 3)));
@@ -657,7 +657,7 @@ box_current(pink_easy_process_t *current)
 		return &data->config;
 	}
 
-	return &pandora->config.child;
+	return &sydbox->config.child;
 }
 
 inline
@@ -757,4 +757,4 @@ clear_proc(void *data)
 	p->savebind = NULL;
 }
 
-#endif /* !PANDORA_GUARD_DEFS_H */
+#endif /* !SYDBOX_GUARD_DEFS_H */

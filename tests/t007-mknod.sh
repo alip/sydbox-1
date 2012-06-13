@@ -12,23 +12,23 @@ test_expect_success FIFOS setup '
 '
 
 test_expect_success FIFOS 'deny mknod()' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog fifo0-non-existant &&
     test_path_is_missing fifo0-non-existant
 '
 
 test_expect_success FIFOS 'deny mknod() for existant fifo' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EEXIST=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
         -- $prog fifo1
 '
 
 test_expect_success FIFOS 'allow mknod()' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
         -- $prog fifo2-non-existant &&

@@ -11,9 +11,9 @@ DEFS+= \
 AM_CFLAGS= \
 	   $(pinktrace_CFLAGS) \
 	   $(pinktrace_easy_CFLAGS) \
-	   @PANDORA_CFLAGS@
+	   @SYDBOX_CFLAGS@
 
-bin_PROGRAMS= pandora
+bin_PROGRAMS= sydbox
 noinst_HEADERS= \
 		JSON_parser.h \
 		byteorder.h \
@@ -25,8 +25,8 @@ noinst_HEADERS= \
 		strtable.h \
 		util.h \
 		wildmatch.h \
-		pandora-defs.h
-pandora_SOURCES= \
+		sydbox-defs.h
+sydbox_SOURCES= \
 		 JSON_parser.c \
 		 file.c \
 		 hashtable.c \
@@ -42,19 +42,18 @@ pandora_SOURCES= \
 		 magic-log.c \
 		 magic-sandbox.c \
 		 magic-if_match.c \
-		 pandora.c \
-		 pandora-box.c \
-		 pandora-callback.c \
-		 pandora-config.c \
-		 pandora-log.c \
-		 pandora-magic.c \
-		 pandora-panic.c \
-		 pandora-path.c \
-		 pandora-sock.c \
-		 pandora-sockinfo.c \
-		 pandora-syscall.c \
-		 pandora-systable.c \
-		 pandora-util.c \
+		 sydbox-box.c \
+		 sydbox-callback.c \
+		 sydbox-config.c \
+		 sydbox-log.c \
+		 sydbox-magic.c \
+		 sydbox-panic.c \
+		 sydbox-path.c \
+		 sydbox-sock.c \
+		 sydbox-sockinfo.c \
+		 sydbox-syscall.c \
+		 sydbox-systable.c \
+		 sydbox-util.c \
 		 sys-access.c \
 		 sys-chdir.c \
 		 sys-execve.c \
@@ -81,10 +80,11 @@ pandora_SOURCES= \
 		 sys-socketcall.c \
 		 sys-bind.c \
 		 sys-connect.c \
-		 sys-getsockname.c
-pandora_LDADD= \
-	       $(pinktrace_LIBS) \
-	       $(pinktrace_easy_LIBS)
+		 sys-getsockname.c \
+		 sydbox.c
+sydbox_LDADD= \
+	      $(pinktrace_LIBS) \
+	      $(pinktrace_easy_LIBS)
 
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \
@@ -97,7 +97,7 @@ SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \
 SPARSE_CPPFLAGS+= -D__x86_64__=1
 
 sparse-check:
-	for src in $(pandora_SOURCES); \
+	for src in $(sydbox_SOURCES); \
 	do \
 		$(SPARSE) $(DEFS) $(AM_CFLAGS) $(SPARSE_CPPFLAGS) $$src || exit 1; \
 	done

@@ -5,11 +5,11 @@
 <!--
    Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
 
-   This file is part of Pandora's Box. pandora is free software;
+   This file is part of Sydbox. sydbox is free software;
    you can redistribute it and/or modify it under the terms of the GNU General
    Public License version 2, as published by the Free Software Foundation.
 
-   pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+   sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
    FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
    details.
@@ -19,10 +19,10 @@
    Place, Suite 330, Boston, MA  02111-1307  USA
 -->
 
-<refentry id="pandora" lang="en">
+<refentry id="sydbox" lang="en">
   <refentryinfo>
-    <title>pandora</title>
-    <productname>pandora</productname>
+    <title>sydbox</title>
+    <productname>sydbox</productname>
 
     <authorgroup>
       <author>
@@ -35,32 +35,23 @@
   </refentryinfo>
 
   <refmeta>
-    <refentrytitle>pandora</refentrytitle>
+    <refentrytitle>sydbox</refentrytitle>
     <manvolnum>1</manvolnum>
-    <refmiscinfo class="source">pandora</refmiscinfo>
-    <refmiscinfo class="manual">Pandora's Box</refmiscinfo>
+    <refmiscinfo class="source">sydbox</refmiscinfo>
+    <refmiscinfo class="manual">Sydbox</refmiscinfo>
   </refmeta>
 
   <refnamediv>
-    <refname>pandora</refname>
-    <refpurpose>Pandora's Box</refpurpose>
+    <refname>sydbox</refname>
+    <refpurpose>ptrace based sandbox</refpurpose>
   </refnamediv>
 
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
-      <command>pandora <arg choice="opt">-hVv</arg>
-                       <arg choice="opt" rep="repeat">-c pathspec</arg>
-                       <arg choice="opt" rep="repeat">-m magic</arg>
-                       <arg choice="req" rep="repeat">-p pid</arg>
-      </command>
+      <command>sydbox <arg choice="opt">-hVv</arg><arg choice="opt" rep="repeat">-c pathspec</arg><arg choice="opt" rep="repeat">-m magic</arg><arg choice="req" rep="repeat">-p pid</arg></command>
     </cmdsynopsis>
     <cmdsynopsis>
-      <command>pandora <arg choice="opt">-hVv</arg>
-                       <arg choice="opt" rep="repeat">-c pathspec</arg>
-                       <arg choice="opt" rep="repeat">-m magic</arg>
-                       <arg choice="opt" rep="repeat">-E var=val</arg>
-                       <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg>
-      </command>
+      <command>sydbox <arg choice="opt">-hVv</arg><arg choice="opt" rep="repeat">-c pathspec</arg><arg choice="opt" rep="repeat">-m magic</arg><arg choice="opt" rep="repeat">-E var=val</arg><arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command>
     </cmdsynopsis>
   </refsynopsisdiv>
 
@@ -68,7 +59,7 @@
     <title>Description</title>
 
     <para>
-      <command>pandora</command> is a
+      <command>sydbox</command> is a
         <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>
         based sandboxing utility for Linux.
     </para>
@@ -120,7 +111,7 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-m</option> <varname>magic</varname></term>
+        <term><option>-m</option> <constant>magic</constant></term>
         <listitem>
           <simpara>
             Run a magic command during init, may be repeated.
@@ -135,54 +126,56 @@
     <title>Configuration</title>
 
     <para role="summary">
-      Pandora is configured through the so-called <emphasis>magic</emphasis> commands.
+      Sydbox is configured through the so-called <emphasis>magic</emphasis> commands.
       There are three ways to supply magic commands:
     </para>
 
     <itemizedlist>
       <listitem>
         <para>
-          Pandora may be configured using a configuration file. The path to the configuration file is
-          speficied using the <option>-c</option> command line switch or the <envar>PANDORA_CONFIG</envar>
+          Sydbox may be configured using a configuration file. The path to the configuration file is
+          speficied using the <option>-c</option> command line switch or the <envar>SYDBOX_CONFIG</envar>
           environment variable. More than one configuration file may be specified this way. However, only the
           <emphasis role="bold">initial</emphasis> configuration file can change the <emphasis>core</emphasis>
           configuration. If path to the configuration file is prefixed with the character
-          <emphasis role="bold">@</emphasis>, Pandora looks for this configuration file under
-          <filename class="directory"><varname>$sharedir</varname>/pandora/</filename>
+          <emphasis role="bold">@</emphasis>, Sydbox looks for this configuration file under
+          <filename class="directory"><varname>$sharedir</varname>/sydbox/</filename>
           where <varname>$sharedir</varname> is usually <filename class="directory">/usr/share</filename>.
-          The command line switch has precedence over the <envar>PANDORA_CONFIG</envar> environment variable.
+          The command line switch has precedence over the <envar>SYDBOX_CONFIG</envar> environment variable.
         </para>
       </listitem>
       <listitem>
         <para>
-          Pandora may be configured using the <option>-m</option> command line switch. This is a
+          Sydbox may be configured using the <option>-m</option> command line switch. This is a
           handy way to specify configuration without having to write a configuration file or modify the configuration
           slightly before each invocation.
         </para>
       </listitem>
       <listitem>
         <para>
-          Pandora may be configured using magic
+          Sydbox may be configured using magic
           <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry> calls during runtime.
           This is achieved by calling <function>stat()</function> system call on the special path
-          <filename>/dev/pandora</filename> followed by the magic command. Note that runtime configuration is only
+          <filename>/dev/sydbox</filename> followed by the magic command. Note that runtime configuration is only
           possible if the magic lock is <emphasis>unset</emphasis>. The system call <function>stat()</function> was
           chosen as the magic call because it is practical to invoke using builtin shell commands like:
           <programlisting>
-            test -e /dev/pandora/core/sandbox/path:true
+            test -e /dev/sydbox/core/sandbox/path:true
           </programlisting>
-          which enables path sandboxing for a shell running under Pandora. It is also possible to
+          which enables path sandboxing for a shell running under Sydbox. It is also possible to
           query boolean values using the return value of the magic <function>stat</function><manvolnum>2</manvolnum>:
           <programlisting>
-            test -e '/dev/pandora/core/sandbox/path?' &amp;&amp; echo "path sandboxing on" || echo "path sandboxing off"
+            test -e '/dev/sydbox/core/sandbox/path?' &amp;&amp; echo "path sandboxing on" || echo "path sandboxing off"
           </programlisting>
 
           <note>
-            Some of these shell builtins may actually call
-            <citerefentry><refentrytitle>lstat</refentrytitle><manvolnum>2</manvolnum></citerefentry> system call instead
-            of <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry> thus
-            Pandora makes sure to check <function>lstat()</function> system calls for magic commands
-            as well.
+            <para>
+              Some of these shell builtins may actually call
+              <citerefentry><refentrytitle>lstat</refentrytitle><manvolnum>2</manvolnum></citerefentry> system call instead
+              of <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry> thus
+              Sydbox makes sure to check <function>lstat()</function> system calls for magic commands
+              as well.
+            </para>
           </note>
         </para>
       </listitem>
@@ -205,7 +198,7 @@
               <constant>true</constant> or <constant>false</constant>.
               This corresponds to JSON's boolean type thus to set a boolean value using the configuration file, use one
               of the aforementioned keywords. To specify boolean values when supplying <emphasis>magic</emphasis>
-              commands to Pandora, you may still use
+              commands to Sydbox, you may still use
               <constant>true</constant> or <constant>false</constant>.
               In addition you can use the short forms
               <constant>t</constant> or <constant>f</constant>
@@ -251,14 +244,14 @@
       <title>Specifying Magic Commands</title>
 
       <para>
-        As mentioned in <xref linkend="configuration"/> Pandora may be configured using the so-called
+        As mentioned in <xref linkend="configuration"/> Sydbox may be configured using the so-called
         <emphasis>magic</emphasis> commands. Format of the magic commands is simple and resembles the format of the
         configuration file (which is <emphasis>JSON</emphasis>).
         <programlisting>
           ${PREFIX}/section/of/option${OPERATION_CHARACTER}value
         </programlisting>
-        where <varname>${PREFIX}</varname> is <filename class="directory">/dev/pandora</filename>
-        by default (may be altered at compile-time using <varname>PANDORA_MAGIC_PREFIX</varname> definition).
+        where <varname>${PREFIX}</varname> is <filename class="directory">/dev/sydbox</filename>
+        by default (may be altered at compile-time using <varname>SYDBOX_MAGIC_PREFIX</varname> definition).
         This prefix is only required for magic <function>stat()</function>, not for <option>-m</option> command line
         switch. Section of an option is very similar to the configuration file e.g.:
         <programlisting>
@@ -319,7 +312,7 @@
       <title>Configuration File Format</title>
 
       <para role="summary">
-        Pandora's configuration file format is <emphasis>JSON</emphasis>. All configuration is specified as one
+        Sydbox's configuration file format is <emphasis>JSON</emphasis>. All configuration is specified as one
         <emphasis>JSON</emphasis> object enclosed in curly braces. C style comments are allowed.
         See <xref linkend="configuration-example"/> for an example configuration file.
       </para>
@@ -329,7 +322,7 @@
       <title>Commands</title>
 
       <para role="summary">
-        Pandora recognizes the following magic commands:
+        Sydbox recognizes the following magic commands:
       </para>
 
       <variablelist>
@@ -518,7 +511,7 @@
             <para>
               An integer specifying the exit code in case <option>core/violation/decision</option> is one of
               <constant>contall</constant> or <constant>killall</constant>.
-              As a special case, if this integer is equal to zero, pandora exits with <constant>128</constant> added to
+              As a special case, if this integer is equal to zero, sydbox exits with <constant>128</constant> added to
               the eldest process' exit value in case an access violation has occured. This special case is meant for
               program tests to check whether an access violation has occured using the exit code.
             </para>
@@ -545,7 +538,7 @@
             <para>
               A boolean specifying whether certain violations which are considered safe should be reported. For
               example, <function>mkdir</function><manvolnum>2</manvolnum> is a system call which fails when it can not
-              create the directory. In this special case, pandora denies the system call with
+              create the directory. In this special case, sydbox denies the system call with
               <constant>EEXIST</constant> for consistency and does not raise an access violation in case
               <option>core/violation/raise_safe</option> is set to <constant>false</constant>. Another example is the
               <function>access</function><manvolnum>2</manvolnum> system call which is silently denied with
@@ -559,7 +552,7 @@
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>
-              A boolean specifying whether Pandora should follow forks, vforks and clones.
+              A boolean specifying whether Sydbox should follow forks, vforks and clones.
               Defaults to <constant>true</constant>.
             </para>
           </listitem>
@@ -570,8 +563,8 @@
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>
-              A boolean specifying whether all traced processes should be waited to exit before Pandora exits.
-              If this is <constant>false</constant>, Pandora resumes all the traced processes and exits when the eldest
+              A boolean specifying whether all traced processes should be waited to exit before Sydbox exits.
+              If this is <constant>false</constant>, Sydbox resumes all the traced processes and exits when the eldest
               process exits.
             </para>
           </listitem>
@@ -782,7 +775,7 @@
     <title>Logging</title>
 
     <para>
-      Pandora has a simple logging infrastructure. There are two log targets, <option>core/log/console_fd</option> and
+      Sydbox has a simple logging infrastructure. There are two log targets, <option>core/log/console_fd</option> and
       <option>core/log/file</option>. Messages with severity lower than <option>core/log/level</option> are discarded.
       The rest are logged to <option>core/log/file</option> if specified and messages with log level higher than
       <constant>message</constant> are logged to <option>core/log/console_fd</option> as well. Below is a list of log
@@ -837,7 +830,7 @@
     </variablelist>
 
     <para>
-      In addition, there are filters for every sandboxing to prevent Pandora from reporting an access violation.
+      In addition, there are filters for every sandboxing to prevent Sydbox from reporting an access violation.
       Note, access is still denied in such cases.
     </para>
 
@@ -846,10 +839,10 @@
 
       <para>This sandboxing checks certain system calls for filesystem write access. If a system call tries to write,
       modify or change attributes of a path, this attempt is reported and the system call is denied. There are two
-      ways to customize this behaviour. Pandora may be configured to "whitelist" some path patterns. If the path
+      ways to customize this behaviour. Sydbox may be configured to "whitelist" some path patterns. If the path
       argument of the system call which is subject to be modified matches a pattern in the list of whitelisted path
-      patterns, this attempt is not denied. Additionally, Pandora may be configured to "filter" some path patterns. In
-      this case a match will prevent Pandora from reporting a warning about the access violation, the system call is
+      patterns, this attempt is not denied. Additionally, Sydbox may be configured to "filter" some path patterns. In
+      this case a match will prevent Sydbox from reporting a warning about the access violation, the system call is
       still denied though.</para>
 
       <para>List of observed system calls are:
@@ -937,7 +930,7 @@
   <refsect1 id="pattern-matching">
     <title>Pattern Matching</title>
 
-    <para>Pandora uses shell-style pattern matching for whitelists and filters. The wildmatching code is borrowed from
+    <para>Sydbox uses shell-style pattern matching for whitelists and filters. The wildmatching code is borrowed from
     rsync and behaves like:</para>
 
     <itemizedlist>
@@ -967,7 +960,7 @@
   <refsect1 id="address-matching">
     <title>Address Matching</title>
 
-    <para>Pandora has a simple address scheme to match network addresses. The addresses can be in the following
+    <para>Sydbox has a simple address scheme to match network addresses. The addresses can be in the following
     forms:</para>
 
     <variablelist>
@@ -1055,7 +1048,7 @@
   <refsect1 id="examples">
     <title>Examples</title>
 
-    <para>Below are examples of invocation and configuration of Pandora's Box.</para>
+    <para>Below are examples of invocation and configuration of Sydbox.</para>
 
     <refsect2 id="invocation-examples">
       <title>Invocation Examples</title>
@@ -1063,7 +1056,7 @@
       <para>Below are some invocation examples:</para>
 
       <para>Allow all reads, deny read access to <filename>/etc/shadow</filename>:
-      <programlisting>pandora -m core/sandbox/read:allow -m blacklist/read+/etc/shadow -- /bin/sh</programlisting>
+      <programlisting>sydbox -m core/sandbox/read:allow -m blacklist/read+/etc/shadow -- /bin/sh</programlisting>
       </para>
     </refsect2>
 
@@ -1168,13 +1161,13 @@
 
     <para>This is very unstable software and should be used with care.
     Report bugs by direct mail to &lt;alip at exherbo dot org&gt; or by
-    using the issue tracker at https://github.com/alip/pandora/issues</para>
+    using the issue tracker at https://github.com/alip/sydbox/issues</para>
   </refsect1>
 
   <refsect1 id="security">
     <title>Security</title>
 
-    <para>Pandora is not designed to be used as a security measure. There are many ways to circumvent the sandbox.
+    <para>Sydbox is not designed to be used as a security measure. There are many ways to circumvent the sandbox.
     Use this for diagnosing or debugging.</para>
   </refsect1>
 
@@ -1192,4 +1185,4 @@
     <simpara>Copyright &#169; 2010, 2011 Ali Polatel &lt;alip at exherbo dot org&gt;</simpara>
   </refsect1>
 </refentry>
-<!-- vim: set ts=2 sts=2 sw=2 et tw=120 spell spelllang=en : -->
+<!-- vim: set ts=2 sts=2 sw=2 et tw=120 nowrap spell spelllang=en : -->

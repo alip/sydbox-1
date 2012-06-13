@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -18,7 +18,7 @@
  */
 
 /*
- * The function pandora_attach_all() is based in part upon strace which is:
+ * The function sydbox_attach_all() is based in part upon strace which is:
  *
  * Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  * Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -49,7 +49,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <assert.h>
 #include <dirent.h>
@@ -66,7 +66,33 @@
 #include "macro.h"
 #include "util.h"
 
-pandora_t *pandora = NULL;
+/* pink floyd */
+#define PINK_FLOYD	"       ..uu.                               \n" \
+			"       ?$\"\"`?i           z'              \n" \
+			"       `M  .@\"          x\"               \n" \
+			"       'Z :#\"  .   .    f 8M              \n" \
+			"       '&H?`  :$f U8   <  MP   x#'         \n" \
+			"       d#`    XM  $5.  $  M' xM\"          \n" \
+			"     .!\">     @  'f`$L:M  R.@!`           \n" \
+			"    +`  >     R  X  \"NXF  R\"*L           \n" \
+			"        k    'f  M   \"$$ :E  5.           \n" \
+			"        %%    `~  \"    `  'K  'M          \n" \
+			"            .uH          'E   `h           \n" \
+			"         .x*`             X     `          \n" \
+			"      .uf`                *                \n" \
+			"    .@8     .                              \n" \
+			"   'E9F  uf\"          ,     ,             \n" \
+			"     9h+\"   $M    eH. 8b. .8    .....     \n" \
+			"    .8`     $'   M 'E  `R;'   d?\"\"\"`\"# \n" \
+			"   ` E      @    b  d   9R    ?*     @     \n" \
+			"     >      K.zM `%%M'   9'    Xf   .f     \n" \
+			"    ;       R'          9     M  .=`       \n" \
+			"    t                   M     Mx~          \n" \
+			"    @                  lR    z\"           \n" \
+			"    @                  `   ;\"             \n" \
+			"                          `                \n"
+
+sydbox_t *sydbox = NULL;
 
 static void
 about(void)
@@ -79,7 +105,7 @@ static void
 usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITHEAD" -- Pandora's Box\n\
+"PACKAGE"-"VERSION GITHEAD" -- ptrace based sandbox\n\
 usage: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] {-p pid...}\n\
    or: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
@@ -89,46 +115,53 @@ usage: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] {-p pid...}\n\
 -m magic    -- run a magic command during init, may be repeated\n\
 -p pid      -- trace processes with process id, may be repeated\n\
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
--E var      -- remove var from the environment for command, may be repeated\n");
+-E var      -- remove var from the environment for command, may be repeated\n\
+\n\
+Hey you, out there beyond the wall,\n\
+Breaking bottles in the hall,\n\
+Can you help me?\n\
+\n\
+Send bug reports to \"" PACKAGE_BUGREPORT "\"\n\
+Attaching poems encourages consideration tremendously.\n");
 	exit(code);
 }
 
 static void
-pandora_init(void)
+sydbox_init(void)
 {
-	assert(!pandora);
+	assert(!sydbox);
 
-	pandora = xmalloc(sizeof(pandora_t));
-	pandora->eldest = -1;
-	pandora->exit_code = 0;
-	pandora->skip_initial_exec = false;
-	pandora->violation = false;
-	pandora->ctx = NULL;
+	sydbox = xmalloc(sizeof(sydbox_t));
+	sydbox->eldest = -1;
+	sydbox->exit_code = 0;
+	sydbox->skip_initial_exec = false;
+	sydbox->violation = false;
+	sydbox->ctx = NULL;
 	config_init();
 }
 
 static void
-pandora_destroy(void)
+sydbox_destroy(void)
 {
 	struct snode *node;
 
-	assert(pandora);
+	assert(sydbox);
 
 	/* Free the global configuration */
-	free_sandbox(&pandora->config.child);
+	free_sandbox(&sydbox->config.child);
 
-	SLIST_FLUSH(node, &pandora->config.exec_kill_if_match, up, free);
-	SLIST_FLUSH(node, &pandora->config.exec_resume_if_match, up, free);
+	SLIST_FLUSH(node, &sydbox->config.exec_kill_if_match, up, free);
+	SLIST_FLUSH(node, &sydbox->config.exec_resume_if_match, up, free);
 
-	SLIST_FLUSH(node, &pandora->config.filter_exec, up, free);
-	SLIST_FLUSH(node, &pandora->config.filter_read, up, free);
-	SLIST_FLUSH(node, &pandora->config.filter_write, up, free);
-	SLIST_FLUSH(node, &pandora->config.filter_sock, up, free_sock_match);
+	SLIST_FLUSH(node, &sydbox->config.filter_exec, up, free);
+	SLIST_FLUSH(node, &sydbox->config.filter_read, up, free);
+	SLIST_FLUSH(node, &sydbox->config.filter_write, up, free);
+	SLIST_FLUSH(node, &sydbox->config.filter_sock, up, free_sock_match);
 
-	pink_easy_context_destroy(pandora->ctx);
+	pink_easy_context_destroy(sydbox->ctx);
 
-	free(pandora);
-	pandora = NULL;
+	free(sydbox);
+	sydbox = NULL;
 
 	systable_free();
 	log_close();
@@ -197,11 +230,11 @@ sig_user(int signo)
 	unsigned c;
 	pink_easy_process_list_t *list;
 
-	if (!pandora)
+	if (!sydbox)
 		return;
 
 	cmpl = signo == SIGUSR2;
-	list = pink_easy_context_get_process_list(pandora->ctx);
+	list = pink_easy_context_get_process_list(sydbox->ctx);
 
 	fprintf(stderr, "\nReceived SIGUSR%s, dumping %sprocess tree\n",
 			cmpl ? "2" : "1",
@@ -211,12 +244,12 @@ sig_user(int signo)
 }
 
 static unsigned
-pandora_attach_all(pid_t pid)
+sydbox_attach_all(pid_t pid)
 {
 	char *ptask;
 	DIR *dir;
 
-	if (!pandora->config.follow_fork)
+	if (!sydbox->config.follow_fork)
 		goto one;
 
 	/* Read /proc/$pid/task and attach to all threads */
@@ -235,7 +268,7 @@ pandora_attach_all(pid_t pid)
 			if (parse_pid(de->d_name, &tid) < 0)
 				continue;
 			++ntid;
-			if (!pink_easy_attach(pandora->ctx, tid, tid != pid ? pid : -1)) {
+			if (!pink_easy_attach(sydbox->ctx, tid, tid != pid ? pid : -1)) {
 				warning("failed to attach to tid:%lu (errno:%d %s)",
 						(unsigned long)tid,
 						errno, strerror(errno));
@@ -252,7 +285,7 @@ pandora_attach_all(pid_t pid)
 			(unsigned long)pid,
 			errno, strerror(errno));
 one:
-	if (!pink_easy_attach(pandora->ctx, pid, -1)) {
+	if (!pink_easy_attach(sydbox->ctx, pid, -1)) {
 		warning("failed to attach process:%lu (errno:%d %s)",
 				(unsigned long)pid,
 				errno, strerror(errno));
@@ -271,8 +304,8 @@ main(int argc, char **argv)
 	const char *env;
 	struct sigaction sa;
 
-	/* Initialize Pandora */
-	pandora_init();
+	/* Initialize Sydbox */
+	sydbox_init();
 
 	/* Allocate pids array */
 	pid_count = 0;
@@ -286,7 +319,7 @@ main(int argc, char **argv)
 			about();
 			return 0;
 		case 'v':
-			++pandora->config.log_level;
+			sydbox->config.log_level++;
 			break;
 		case 'c':
 			config_reset();
@@ -319,7 +352,7 @@ main(int argc, char **argv)
 	if ((optind == argc) && !pid_count)
 		usage(stderr, 1);
 
-	if ((env = getenv(PANDORA_CONFIG_ENV))) {
+	if ((env = getenv(SYDBOX_CONFIG_ENV))) {
 		config_reset();
 		config_parse_spec(env);
 	}
@@ -339,22 +372,27 @@ main(int argc, char **argv)
 	sysinit();
 
 	ptrace_options = PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC;
-	if (pandora->config.follow_fork)
+	if (sydbox->config.follow_fork)
 		ptrace_options |= (PINK_TRACE_OPTION_FORK | PINK_TRACE_OPTION_VFORK | PINK_TRACE_OPTION_CLONE);
 
-	if (!(pandora->ctx = pink_easy_context_new(ptrace_options, &pandora->callback_table, NULL, NULL)))
+	if (!(sydbox->ctx = pink_easy_context_new(ptrace_options, &sydbox->callback_table, NULL, NULL)))
 		die_errno(-1, "pink_easy_context_new");
 
 	if (pid_count == 0) {
-		pandora->skip_initial_exec = true;
-		pandora->program_invocation_name = xstrdup(argv[optind]);
-		if (!pink_easy_execvp(pandora->ctx, argv[optind], &argv[optind]))
+		sydbox->skip_initial_exec = true;
+		sydbox->program_invocation_name = xstrdup(argv[optind]);
+
+		/* Poison! */
+		if (streq(argv[optind], "/bin/sh"))
+			fprintf(stderr, "[01;35m" PINK_FLOYD "[00;00m");
+
+		if (!pink_easy_execvp(sydbox->ctx, argv[optind], &argv[optind]))
 			die(1, "failed to execute child process");
 	}
 	else {
 		unsigned npid = 0;
 		for (unsigned i = 0; i < pid_count; i++)
-			npid += pandora_attach_all(pid_list[i]);
+			npid += sydbox_attach_all(pid_list[i]);
 		if (!npid)
 			die(1, "failed to attach to any process");
 	}
@@ -385,7 +423,7 @@ main(int argc, char **argv)
 	sa.sa_handler = SIG_DFL;
 	sigaction(SIGCHLD, &sa, NULL);
 
-	ret = pink_easy_loop(pandora->ctx);
-	pandora_destroy();
+	ret = pink_easy_loop(sydbox->ctx);
+	sydbox_destroy();
 	return ret;
 }

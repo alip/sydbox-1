@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -28,77 +28,77 @@
 
 int magic_set_violation_raise_fail(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.violation_raise_fail = PTR_TO_BOOL(val);
+	sydbox->config.violation_raise_fail = PTR_TO_BOOL(val);
 	return 0;
 }
 
 int magic_query_violation_raise_fail(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return pandora->config.violation_raise_fail;
+	return sydbox->config.violation_raise_fail;
 }
 
 int magic_set_violation_raise_safe(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.violation_raise_safe = PTR_TO_BOOL(val);
+	sydbox->config.violation_raise_safe = PTR_TO_BOOL(val);
 	return 0;
 }
 
 int magic_query_violation_raise_safe(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return pandora->config.violation_raise_safe;
+	return sydbox->config.violation_raise_safe;
 }
 
 int magic_set_trace_follow_fork(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.follow_fork = PTR_TO_BOOL(val);
+	sydbox->config.follow_fork = PTR_TO_BOOL(val);
 	return 0;
 }
 
 int magic_query_trace_follow_fork(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return pandora->config.follow_fork;
+	return sydbox->config.follow_fork;
 }
 
 int magic_set_trace_exit_wait_all(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.exit_wait_all = PTR_TO_BOOL(val);
+	sydbox->config.exit_wait_all = PTR_TO_BOOL(val);
 	return 0;
 }
 
 int magic_query_trace_exit_wait_all(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return pandora->config.exit_wait_all;
+	return sydbox->config.exit_wait_all;
 }
 
 int magic_set_whitelist_ppd(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.whitelist_per_process_directories = PTR_TO_BOOL(val);
+	sydbox->config.whitelist_per_process_directories = PTR_TO_BOOL(val);
 	return 0;
 }
 
 int magic_query_whitelist_ppd(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return pandora->config.whitelist_per_process_directories;
+	return sydbox->config.whitelist_per_process_directories;
 }
 
 int magic_set_whitelist_sb(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.whitelist_successful_bind = PTR_TO_BOOL(val);
+	sydbox->config.whitelist_successful_bind = PTR_TO_BOOL(val);
 	return 0;
 }
 
 int magic_query_whitelist_sb(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return pandora->config.whitelist_successful_bind;
+	return sydbox->config.whitelist_successful_bind;
 }
 
 int magic_set_whitelist_usf(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.whitelist_unsupported_socket_families = PTR_TO_BOOL(val);
+	sydbox->config.whitelist_unsupported_socket_families = PTR_TO_BOOL(val);
 	return 0;
 }
 
 int magic_query_whitelist_usf(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return pandora->config.whitelist_unsupported_socket_families;
+	return sydbox->config.whitelist_unsupported_socket_families;
 }

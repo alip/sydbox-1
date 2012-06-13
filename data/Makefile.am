@@ -1,3 +1,3 @@
-pandorasharedir= $(datadir)/$(PACKAGE)
-pandorashare_DATA= \
-		   paludis
+sydboxsharedir= $(datadir)/$(PACKAGE)
+sydboxshare_DATA= \
+		  paludis

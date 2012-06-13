@@ -13,23 +13,23 @@ test_expect_success setup '
 '
 
 test_expect_success 'deny mkdir()' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EPERM=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -- $prog dir0-non-existant &&
     test_path_is_missing dir0-non-existant
 '
 
 test_expect_success 'deny mkdir() for existant directory' '
-    test_must_violate pandora \
-        -EPANDORA_TEST_EEXIST=1 \
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
         -- $prog dir1
 '
 
 test_expect_success 'allow mkdir()' '
-    pandora \
-        -EPANDORA_TEST_SUCCESS=1 \
+    sydbox \
+        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
         -- $prog dir2-non-existant &&

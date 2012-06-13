@@ -1,7 +1,7 @@
 dnl Program, version
 AC_PREREQ(2.59)
 
-AC_INIT([pandora], [1], [alip@exherbo.org], [pandora])
+AC_INIT([sydbox], [1], [alip@exherbo.org], [sydbox])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
@@ -14,7 +14,7 @@ dnl Git revision
 if test -d "${GIT_DIR:-${ac_top_srcdir:-./}/.git}" ; then
 	GITHEAD=`git describe 2>/dev/null`
 	if test -z "${GITHEAD}" ; then
-		GITHEAD=`git rev-parse HEAD`
+		GITHEAD=`git rev-parse --short HEAD`
 	fi
 	if test -n "`git diff-index -m --name-only HEAD`" ; then
 		GITHEAD="${GITHEAD}-dirty"
@@ -33,12 +33,12 @@ AC_ARG_WITH([git-head],
 AC_MSG_RESULT([$GITHEAD])
 AC_SUBST([GITHEAD])
 
-PANDORA_CFLAGS=
+SYDBOX_CFLAGS=
 
 dnl toolchain checks
 AC_PROG_CC_C99
 if test x"$ac_cv_prog_cc_c99" = x"no"; then
-	AC_MSG_ERROR([pandora requires a C compiler that supports ISO C99!])
+	AC_MSG_ERROR([sydbox requires a C compiler that supports ISO C99!])
 fi
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_INSTALL
@@ -82,9 +82,9 @@ PINKTRACE_REQUIRED=0.2.0
 
 PKG_PROG_PKG_CONFIG([0.20.0])
 PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],,
-				  AC_MSG_ERROR([pandora requires pinktrace-$PINKTRACE_REQUIRED or newer]))
+				  AC_MSG_ERROR([sydbox requires pinktrace-$PINKTRACE_REQUIRED or newer]))
 PKG_CHECK_MODULES([pinktrace_easy], [pinktrace_easy >= $PINKTRACE_REQUIRED],,
-				  AC_MSG_ERROR([pandora requires pinktrace_easy-$PINKTRACE_REQUIRED]))
+				  AC_MSG_ERROR([sydbox requires pinktrace_easy-$PINKTRACE_REQUIRED]))
 
 dnl check for supported OS of pinktrace
 AC_MSG_CHECKING([for supported OS of pinktrace])
@@ -97,7 +97,7 @@ AC_PREPROC_IFELSE([AC_LANG_SOURCE([
 #endif
 ])],
 	[AC_MSG_RESULT([ok])],
-	[AC_MSG_ERROR([pandora only supports Linux])])
+	[AC_MSG_ERROR([sydbox only supports Linux])])
 CPPFLAGS="${old_CPPFLAGS}"
 dnl }}}
 
@@ -140,18 +140,18 @@ if test x"$WANT_IPV6" = x"yes" ; then
 	if test x"$pinktrace_have_ipv6" = x"no" ; then
 		AC_MSG_ERROR([--enable-ipv6 requires pinktrace IPV6 support])
 	fi
-	AC_DEFINE([PANDORA_HAVE_IPV6], 1, [Define for IPV6 support])
+	AC_DEFINE([SYDBOX_HAVE_IPV6], 1, [Define for IPV6 support])
 else
-	AC_DEFINE([PANDORA_HAVE_IPV6], 0, [Define for IPV6 support])
+	AC_DEFINE([SYDBOX_HAVE_IPV6], 0, [Define for IPV6 support])
 fi
 AM_CONDITIONAL(WANT_IPV6, test x"$WANT_IPV6" = x"yes")
 
 dnl Extra CFLAGS
 WANTED_CFLAGS="-pedantic -W -Wall -Wextra"
 for flag in $WANTED_CFLAGS ; do
-	AX_CHECK_COMPILER_FLAGS([$flag], [PANDORA_CFLAGS="$PANDORA_CFLAGS $flag"],)
+	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_CFLAGS="$SYDBOX_CFLAGS $flag"],)
 done
-AC_SUBST([PANDORA_CFLAGS])
+AC_SUBST([SYDBOX_CFLAGS])
 
 dnl Check for xsltproc
 AC_PATH_PROG([XSLTPROC], [xsltproc])

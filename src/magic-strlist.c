@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -40,12 +40,12 @@ static int magic_set_strlist(const void *val, slist_t *head)
 	}
 
 	switch (op) {
-	case PANDORA_MAGIC_ADD_CHAR:
+	case SYDBOX_MAGIC_ADD_CHAR:
 		node = xcalloc(1, sizeof(struct snode));
 		node->data = xstrdup(str);
 		SLIST_INSERT_HEAD(head, node, up);
 		return 0;
-	case PANDORA_MAGIC_REMOVE_CHAR:
+	case SYDBOX_MAGIC_REMOVE_CHAR:
 		SLIST_FOREACH(node, head, up) {
 			if (streq(node->data, str)) {
 				SLIST_REMOVE(head, node, snode, up);
@@ -98,15 +98,15 @@ int magic_set_blacklist_write(const void *val, pink_easy_process_t *current)
 
 int magic_set_filter_exec(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return magic_set_strlist(val, &pandora->config.filter_exec);
+	return magic_set_strlist(val, &sydbox->config.filter_exec);
 }
 
 int magic_set_filter_read(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return magic_set_strlist(val, &pandora->config.filter_read);
+	return magic_set_strlist(val, &sydbox->config.filter_read);
 }
 
 int magic_set_filter_write(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	return magic_set_strlist(val, &pandora->config.filter_write);
+	return magic_set_strlist(val, &sydbox->config.filter_write);
 }

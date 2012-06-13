@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <errno.h>
 #include <stdbool.h>
@@ -39,7 +39,7 @@ sys_connect(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sys_info_t));
 	info.whitelisting = data->config.sandbox_sock == SANDBOX_DENY;
 	info.wblist = data->config.sandbox_sock == SANDBOX_ALLOW ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
-	info.filter = &pandora->config.filter_sock;
+	info.filter = &sydbox->config.filter_sock;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 1;
@@ -60,7 +60,7 @@ sys_sendto(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sys_info_t));
 	info.whitelisting = data->config.sandbox_sock == SANDBOX_DENY;
 	info.wblist = data->config.sandbox_sock == SANDBOX_DENY ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
-	info.filter = &pandora->config.filter_sock;
+	info.filter = &sydbox->config.filter_sock;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 4;
@@ -81,7 +81,7 @@ sys_recvfrom(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sys_info_t));
 	info.whitelisting = data->config.sandbox_sock == SANDBOX_DENY;
 	info.wblist = data->config.sandbox_sock == SANDBOX_DENY ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
-	info.filter = &pandora->config.filter_sock;
+	info.filter = &sydbox->config.filter_sock;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 4;

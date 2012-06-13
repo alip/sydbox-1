@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -106,7 +106,7 @@ box_report_violation_sock(pink_easy_process_t *current, const sys_info_t *info, 
 				info->fd ? *info->fd : -1,
 				ip, ntohs(paddr->u.sa_in.sin_port));
 		break;
-#if PANDORA_HAVE_IPV6
+#if SYDBOX_HAVE_IPV6
 	case AF_INET6:
 		inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
 		violation(current, "%s(%ld, inet6:%s@%d)",
@@ -197,7 +197,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 		if (r < 0) {
 			errno = EPERM; /* or -r for the real errno */
 			r = deny(current);
-			if (pandora->config.violation_raise_fail)
+			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", name);
 		}
 		return r;
@@ -207,7 +207,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	if (r < 0) {
 		errno = EPERM; /* or -r for the real errno */
 		r = deny(current);
-		if (pandora->config.violation_raise_fail)
+		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s()", name);
 		goto end;
 	}
@@ -222,7 +222,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 				-r, strerror(-r));
 		errno = EPERM; /* or -r for the real errno */
 		r = deny(current);
-		if (pandora->config.violation_raise_fail)
+		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s()", name);
 		goto end;
 	}
@@ -257,7 +257,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 
 	errno = info->deny_errno ? info->deny_errno : EPERM;
 
-	if (info->safe && !pandora->config.violation_raise_safe) {
+	if (info->safe && !sydbox->config.violation_raise_safe) {
 		r = deny(current);
 		goto end;
 	}
@@ -279,7 +279,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			errno = EEXIST;
 			r = deny(current);
 
-			if (!pandora->config.violation_raise_safe)
+			if (!sydbox->config.violation_raise_safe)
 				goto end;
 		}
 		else
@@ -288,7 +288,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 
 	r = deny(current);
 
-	if (!box_match_path(abspath, info->filter ? info->filter : &pandora->config.filter_write, NULL)) {
+	if (!box_match_path(abspath, info->filter ? info->filter : &sydbox->config.filter_write, NULL)) {
 		if (info->at)
 			box_report_violation_path_at(current, name, info->index, path, prefix);
 		else
@@ -343,12 +343,12 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	switch (psa->family) {
 	case AF_UNIX:
 	case AF_INET:
-#if PANDORA_HAVE_IPV6
+#if SYDBOX_HAVE_IPV6
 	case AF_INET6:
 #endif
 		break;
 	default:
-		if (pandora->config.whitelist_unsupported_socket_families)
+		if (sydbox->config.whitelist_unsupported_socket_families)
 			goto end;
 		errno = EAFNOSUPPORT;
 		r = deny(current);
@@ -365,7 +365,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 					-r, strerror(-r));
 			errno = EPERM; /* or -r for the real errno */
 			r = deny(current);
-			if (pandora->config.violation_raise_fail)
+			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", name);
 			goto end;
 		}

@@ -3,11 +3,11 @@
 /*
  * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
- * This file is part of Pandora's Box. pandora is free software;
+ * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
  * Public License version 2, as published by the Free Software Foundation.
  *
- * pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+ * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
@@ -17,7 +17,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pandora-defs.h"
+#include "sydbox-defs.h"
 
 #include <sys/stat.h>
 #include <errno.h>
@@ -32,7 +32,7 @@ sys_stat(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	int r;
 	long addr;
-	char path[PANDORA_PATH_MAX];
+	char path[SYDBOX_PATH_MAX];
 	struct stat buf;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -43,13 +43,13 @@ sys_stat(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 
 	if (!pink_util_get_arg(pid, bit, 0, &addr)
 			|| !pink_easy_process_vm_readv(pid, addr,
-				path, PANDORA_PATH_MAX)) {
+				path, SYDBOX_PATH_MAX)) {
 		/* Don't bother denying the system call here.
 		 * Because this should not be a fatal error.
 		 */
 		return (errno == ESRCH) ? PINK_EASY_CFLAG_DROP : 0;
 	}
-	path[PANDORA_PATH_MAX-1] = '\0';
+	path[SYDBOX_PATH_MAX-1] = '\0';
 
 	r = magic_cast_string(current, path, 1);
 	if (r < 0) {

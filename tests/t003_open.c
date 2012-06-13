@@ -48,13 +48,13 @@ main(int argc, char **argv)
 
 	fd = open(argv[1], flags, 0644);
 	if (fd < 0) {
-		if (getenv("PANDORA_TEST_SUCCESS")) {
+		if (getenv("SYDBOX_TEST_SUCCESS")) {
 			perror(__FILE__);
 			return 1;
 		}
-		if (getenv("PANDORA_TEST_EEXIST") && errno == EEXIST)
+		if (getenv("SYDBOX_TEST_EEXIST") && errno == EEXIST)
 			return 0;
-		if (getenv("PANDORA_TEST_EPERM") && errno == EPERM)
+		if (getenv("SYDBOX_TEST_EPERM") && errno == EPERM)
 			return 0;
 		perror(__FILE__);
 		return 1;
@@ -63,5 +63,5 @@ main(int argc, char **argv)
 	if (!(flags & O_CREAT) && argc > 2)
 		write(fd, argv[3], strlen(argv[5]));
 	close(fd);
-	return getenv("PANDORA_TEST_SUCCESS") ? 0 : 2;
+	return getenv("SYDBOX_TEST_SUCCESS") ? 0 : 2;
 }

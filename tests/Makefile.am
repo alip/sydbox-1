@@ -12,7 +12,7 @@ DEFS+= \
 AM_CFLAGS= \
 	   $(pinktrace_CFLAGS) \
 	   $(pinktrace_easy_CFLAGS) \
-	   @PANDORA_CFLAGS@
+	   @SYDBOX_CFLAGS@
 
 test-lib.sh: test-lib.sh.in
 	$(AM_V_GEN)
@@ -29,15 +29,15 @@ wildtest_CFLAGS= \
 		 $(AM_CFLAGS)
 
 noinst_SCRIPTS= \
-		bin-wrappers/pandora \
+		bin-wrappers/sydbox \
 		valgrind/analyze.sh \
 		valgrind/default.supp \
 		valgrind/valgrind.sh \
-		valgrind/bin/pandora
+		valgrind/bin/sydbox
 
 .PHONY: check-valgrind
 check-valgrind:
-	$(MAKE) PANDORA_CHECK_OPTS="$(PANDORA_CHECK_OPTS) --valgrind" check
+	$(MAKE) SYDBOX_CHECK_OPTS="$(SYDBOX_CHECK_OPTS) --valgrind" check
 
 TESTS_ENVIRONMENT= $(srcdir)/test-runner.sh
 TESTS= \
