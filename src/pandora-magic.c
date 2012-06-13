@@ -30,42 +30,6 @@
 #include "macro.h"
 #include "util.h"
 
-static slist_t *_box_whitelist_exec(pink_easy_process_t *current)
-{
-	sandbox_t *box = box_current(current);
-	return &box->whitelist_exec;
-}
-
-static slist_t *_box_whitelist_read(pink_easy_process_t *current)
-{
-	sandbox_t *box = box_current(current);
-	return &box->whitelist_read;
-}
-
-static slist_t *_box_whitelist_write(pink_easy_process_t *current)
-{
-	sandbox_t *box = box_current(current);
-	return &box->whitelist_write;
-}
-
-static slist_t *_box_blacklist_exec(pink_easy_process_t *current)
-{
-	sandbox_t *box = box_current(current);
-	return &box->blacklist_exec;
-}
-
-static slist_t *_box_blacklist_read(pink_easy_process_t *current)
-{
-	sandbox_t *box = box_current(current);
-	return &box->blacklist_read;
-}
-
-static slist_t *_box_blacklist_write(pink_easy_process_t *current)
-{
-	sandbox_t *box = box_current(current);
-	return &box->blacklist_write;
-}
-
 static slist_t *_box_whitelist_sock_bind(pink_easy_process_t *current)
 {
 	sandbox_t *box = box_current(current);
@@ -90,62 +54,10 @@ static slist_t *_box_blacklist_sock_connect(pink_easy_process_t *current)
 	return &box->blacklist_sock_connect;
 }
 
-static inline slist_t *_box_filter_exec(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
-{
-	return &pandora->config.filter_exec;
-}
-
-static inline slist_t *_box_filter_read(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
-{
-	return &pandora->config.filter_read;
-}
-
-static inline slist_t *_box_filter_write(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
-{
-	return &pandora->config.filter_write;
-}
-
 static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
 	return &pandora->config.filter_sock;
 }
-
-#define DEFINE_STRING_LIST_SETTING_FUNC(name, field)					\
-	static int _set_##name(const void *val, pink_easy_process_t *current)		\
-	{										\
-		char op;								\
-		const char *str = val;							\
-		struct snode *node;							\
-		slist_t *head;								\
-		if (!str || !*str || !*(str + 1))					\
-			return MAGIC_ERROR_INVALID_VALUE;				\
-		else {									\
-			op = *str;							\
-			++str;								\
-		}									\
-											\
-		head = _box_##name(current);						\
-											\
-		switch (op) {								\
-		case PANDORA_MAGIC_ADD_CHAR:						\
-			node = xcalloc(1, sizeof(struct snode));			\
-			node->data = xstrdup(str);					\
-			SLIST_INSERT_HEAD(head, node, field);				\
-			return 0;							\
-		case PANDORA_MAGIC_REMOVE_CHAR:						\
-			SLIST_FOREACH(node, head, field) {				\
-				if (streq(node->data, str)) {				\
-					SLIST_REMOVE(head, node, snode, field);		\
-					free(node->data);				\
-					free(node);					\
-					break;						\
-				}							\
-			}								\
-			return 0;							\
-		default:								\
-			return MAGIC_ERROR_INVALID_OPERATION;				\
-		}									\
-	}
 
 #define DEFINE_SOCK_LIST_SETTING_FUNC(name, field)					\
 	static int _set_##name(const void *val, pink_easy_process_t *current)			\
@@ -213,19 +125,10 @@ static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_proces
 		return r;									\
 	}
 
-DEFINE_STRING_LIST_SETTING_FUNC(whitelist_exec, up)
-DEFINE_STRING_LIST_SETTING_FUNC(whitelist_read, up)
-DEFINE_STRING_LIST_SETTING_FUNC(whitelist_write, up)
-DEFINE_STRING_LIST_SETTING_FUNC(blacklist_exec, up)
-DEFINE_STRING_LIST_SETTING_FUNC(blacklist_read, up)
-DEFINE_STRING_LIST_SETTING_FUNC(blacklist_write, up)
 DEFINE_SOCK_LIST_SETTING_FUNC(whitelist_sock_bind, up)
 DEFINE_SOCK_LIST_SETTING_FUNC(whitelist_sock_connect, up)
 DEFINE_SOCK_LIST_SETTING_FUNC(blacklist_sock_bind, up)
 DEFINE_SOCK_LIST_SETTING_FUNC(blacklist_sock_connect, up)
-DEFINE_STRING_LIST_SETTING_FUNC(filter_exec, up)
-DEFINE_STRING_LIST_SETTING_FUNC(filter_read, up)
-DEFINE_STRING_LIST_SETTING_FUNC(filter_write, up)
 DEFINE_SOCK_LIST_SETTING_FUNC(filter_sock, up)
 
 static int
@@ -607,7 +510,7 @@ static const struct key key_table[] = {
 			.lname  = "whitelist.exec",
 			.parent = MAGIC_KEY_WHITELIST,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_whitelist_exec,
+			.set    = magic_set_whitelist_exec,
 		},
 	[MAGIC_KEY_WHITELIST_READ] =
 		{
@@ -615,7 +518,7 @@ static const struct key key_table[] = {
 			.lname  = "whitelist.read",
 			.parent = MAGIC_KEY_WHITELIST,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_whitelist_read,
+			.set    = magic_set_whitelist_read,
 		},
 	[MAGIC_KEY_WHITELIST_WRITE] =
 		{
@@ -623,7 +526,7 @@ static const struct key key_table[] = {
 			.lname  = "whitelist.write",
 			.parent = MAGIC_KEY_WHITELIST,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_whitelist_write,
+			.set    = magic_set_whitelist_write,
 		},
 	[MAGIC_KEY_WHITELIST_SOCK_BIND] =
 		{
@@ -648,7 +551,7 @@ static const struct key key_table[] = {
 			.lname  = "blacklist.exec",
 			.parent = MAGIC_KEY_BLACKLIST,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_blacklist_exec,
+			.set    = magic_set_blacklist_exec,
 		},
 	[MAGIC_KEY_BLACKLIST_READ] =
 		{
@@ -656,7 +559,7 @@ static const struct key key_table[] = {
 			.lname  = "blacklist.read",
 			.parent = MAGIC_KEY_BLACKLIST,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_blacklist_read,
+			.set    = magic_set_blacklist_read,
 		},
 	[MAGIC_KEY_BLACKLIST_WRITE] =
 		{
@@ -664,7 +567,7 @@ static const struct key key_table[] = {
 			.lname  = "blacklist.write",
 			.parent = MAGIC_KEY_BLACKLIST,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_blacklist_write,
+			.set    = magic_set_blacklist_write,
 		},
 	[MAGIC_KEY_BLACKLIST_SOCK_BIND] =
 		{
@@ -689,7 +592,7 @@ static const struct key key_table[] = {
 			.lname  = "filter.exec",
 			.parent = MAGIC_KEY_FILTER,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_filter_exec,
+			.set    = magic_set_filter_exec,
 		},
 	[MAGIC_KEY_FILTER_READ] =
 		{
@@ -697,7 +600,7 @@ static const struct key key_table[] = {
 			.lname  = "filter.read",
 			.parent = MAGIC_KEY_FILTER,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_filter_read,
+			.set    = magic_set_filter_read,
 		},
 	[MAGIC_KEY_FILTER_WRITE] =
 		{
@@ -705,7 +608,7 @@ static const struct key key_table[] = {
 			.lname  = "filter.write",
 			.parent = MAGIC_KEY_FILTER,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_filter_write,
+			.set    = magic_set_filter_write,
 		},
 	[MAGIC_KEY_FILTER_SOCK] =
 		{

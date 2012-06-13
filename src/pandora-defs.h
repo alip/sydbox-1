@@ -523,6 +523,15 @@ int magic_set_whitelist_sb(const void *val, pink_easy_process_t *current);
 int magic_query_whitelist_sb(pink_easy_process_t *current);
 int magic_set_whitelist_usf(const void *val, pink_easy_process_t *current);
 int magic_query_whitelist_usf(pink_easy_process_t *current);
+int magic_set_whitelist_exec(const void *val, pink_easy_process_t *current);
+int magic_set_whitelist_read(const void *val, pink_easy_process_t *current);
+int magic_set_whitelist_write(const void *val, pink_easy_process_t *current);
+int magic_set_blacklist_exec(const void *val, pink_easy_process_t *current);
+int magic_set_blacklist_read(const void *val, pink_easy_process_t *current);
+int magic_set_blacklist_write(const void *val, pink_easy_process_t *current);
+int magic_set_filter_exec(const void *val, pink_easy_process_t *current);
+int magic_set_filter_read(const void *val, pink_easy_process_t *current);
+int magic_set_filter_write(const void *val, pink_easy_process_t *current);
 int magic_set_log_file(const void *val, pink_easy_process_t *current);
 int magic_set_log_console_fd(const void *val, pink_easy_process_t *current);
 int magic_set_log_level(const void *val, pink_easy_process_t *current);
@@ -534,6 +543,7 @@ int magic_set_sandbox_write(const void *val, pink_easy_process_t *current);
 int magic_set_sandbox_sock(const void *val, pink_easy_process_t *current);
 int magic_set_exec_kill_if_match(const void *val, pink_easy_process_t *current);
 int magic_set_exec_resume_if_match(const void *val, pink_easy_process_t *current);
+
 
 const char *magic_strerror(int error);
 const char *magic_strkey(enum magic_key key);
