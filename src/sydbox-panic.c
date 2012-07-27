@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -33,10 +33,10 @@
 #include "macro.h"
 #include "proc.h"
 
-inline
-static int
-errno2retval(void)
+static inline int errno2retval(void)
 {
+#if 0
+#warning pink_ptrace() handles this oddity!
 	if (errno == EIO) {
 		/* Quoting ptrace(2):
 		 * There  was  an  attempt  to read from or write to an
@@ -54,55 +54,53 @@ errno2retval(void)
 		 */
 		return -EFAULT;
 	}
+#endif
 	return -errno;
 }
 
-static bool
-cont_one(pink_easy_process_t *proc, void *userdata)
+static bool cont_one(pink_easy_process_t *proc, void *userdata)
 {
-	pid_t pid = pink_easy_process_get_pid(proc);
+	pid_t tid = pink_easy_process_get_tid(proc);
 
 	if (PTR_TO_UINT(userdata))
-		warning("resuming process:%lu", (unsigned long)pid);
+		warning("resuming process:%lu", (unsigned long)tid);
 	else
-		fprintf(stderr, "resuming process:%lu\n", (unsigned long)pid);
+		fprintf(stderr, "resuming process:%lu\n", (unsigned long)tid);
 
 	if (!pink_easy_process_resume(proc, 0) && errno != ESRCH) {
 		if (PTR_TO_UINT(userdata))
 			warning("failed to resume process:%lu (errno:%d %s)",
-				(unsigned long)pid, errno, strerror(errno));
+				(unsigned long)tid, errno, strerror(errno));
 		else
 			fprintf(stderr, "failed to resume process:%lu (errno:%d %s)\n",
-					(unsigned long)pid, errno, strerror(errno));
+					(unsigned long)tid, errno, strerror(errno));
 	}
 
 	return true;
 }
 
-static bool
-kill_one(pink_easy_process_t *proc, void *userdata)
+static bool kill_one(pink_easy_process_t *proc, void *userdata)
 {
-	pid_t pid = pink_easy_process_get_pid(proc);
+	pid_t tid = pink_easy_process_get_tid(proc);
 
 	if (PTR_TO_UINT(userdata))
-		warning("killing process:%lu", (unsigned long)pid);
+		warning("killing process:%lu", (unsigned long)tid);
 	else
-		fprintf(stderr, "killing process:%lu\n", (unsigned long)pid);
+		fprintf(stderr, "killing process:%lu\n", (unsigned long)tid);
 
 	if (pink_easy_process_kill(proc, SIGKILL) < 0 && errno != ESRCH) {
 		if (PTR_TO_UINT(userdata))
 			warning("failed to kill process:%lu (errno:%d %s)",
-				(unsigned long)pid, errno, strerror(errno));
+				(unsigned long)tid, errno, strerror(errno));
 		else
 			fprintf(stderr, "failed to kill process:%lu (errno:%d %s)\n",
-					(unsigned long)pid, errno, strerror(errno));
+					(unsigned long)tid, errno, strerror(errno));
 	}
 
 	return true;
 }
 
-void
-abort_all(void)
+void abort_all(void)
 {
 	unsigned count;
 	pink_easy_process_list_t *list = pink_easy_context_get_process_list(sydbox->ctx);
@@ -122,19 +120,18 @@ abort_all(void)
 }
 
 PINK_GCC_ATTR((format (printf, 2, 0)))
-static void
-report(pink_easy_process_t *current, const char *fmt, va_list ap)
+static void report(pink_easy_process_t *current, const char *fmt, va_list ap)
 {
 	char *cmdline;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	warning("-- Access Violation! --");
-	warning("process id:%lu (%s name:\"%s\")", (unsigned long)pid, pink_bitness_name(bit), data->comm);
+	warning("process id:%lu (abi:%d name:\"%s\")", (unsigned long)tid, abi, data->comm);
 	warning("cwd: `%s'", data->cwd);
 
-	if (!proc_cmdline(pid, 128, &cmdline)) {
+	if (!proc_cmdline(tid, 128, &cmdline)) {
 		warning("cmdline: `%s'", cmdline);
 		free(cmdline);
 	}
@@ -142,20 +139,19 @@ report(pink_easy_process_t *current, const char *fmt, va_list ap)
 	log_msg_va(1, fmt, ap);
 }
 
-int
-deny(pink_easy_process_t *current)
+int deny(pink_easy_process_t *current)
 {
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	data->deny = true;
-	data->ret = errno2retval();
+	data->retval = errno2retval();
 
-	if (!pink_util_set_syscall(pid, bit, PINK_SYSCALL_INVALID)) {
+	if (!pink_write_syscall(tid, abi, PINK_SYSCALL_INVALID)) {
 		if (errno != ESRCH) {
-			warning("pink_util_set_syscall(%d, \"%s\", %u): %d(%s)",
-					pid, pink_bitness_name(bit),
+			warning("pink_write_syscall(%lu, %d, %u) failed (errno:%d %s)",
+					(unsigned long)tid, abi,
 					PINK_SYSCALL_INVALID,
 					errno, strerror(errno));
 			return panic(current);
@@ -166,38 +162,38 @@ deny(pink_easy_process_t *current)
 	return 0;
 }
 
-int
-restore(pink_easy_process_t *current)
+int restore(pink_easy_process_t *current)
 {
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	/* Restore system call number */
-	if (!pink_util_set_syscall(pid, bit, data->sno)) {
+	if (!pink_write_syscall(tid, abi, data->sno)) {
 		if (errno == ESRCH)
 			return PINK_EASY_CFLAG_DROP;
-		warning("pink_util_set_syscall(%lu, %s, %s): errno:%d (%s)",
-				(unsigned long)pid, pink_bitness_name(bit),
-				pink_name_syscall(data->sno, bit),
+		warning("pink_write_syscall(%lu, %d, %s) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				pink_syscall_name(data->sno, abi),
 				errno, strerror(errno));
 	}
 
 	/* Return the saved return value */
-	if (!pink_util_set_return(pid, data->ret)) {
+	if (!pink_write_retval(tid, abi,
+				(data->retval < 0) ? -1 : data->retval,
+				(data->retval < 0) ? -data->retval : 0)) {
 		if (errno == ESRCH)
 			return PINK_EASY_CFLAG_DROP;
-		warning("pink_util_set_return(%lu, %s, %s): errno:%d (%s)",
-				(unsigned long)pid, pink_bitness_name(bit),
-				pink_name_syscall(data->sno, bit),
+		warning("pink_write_retval(%lu, %d, %s) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				pink_syscall_name(data->sno, abi),
 				errno, strerror(errno));
 	}
 
 	return 0;
 }
 
-int
-panic(pink_easy_process_t *current)
+int panic(pink_easy_process_t *current)
 {
 	unsigned count;
 	pink_easy_process_list_t *list = pink_easy_context_get_process_list(sydbox->ctx);
@@ -229,8 +225,7 @@ panic(pink_easy_process_t *current)
 	exit(sydbox->config.panic_exit_code > 0 ? sydbox->config.panic_exit_code : sydbox->exit_code);
 }
 
-int
-violation(pink_easy_process_t *current, const char *fmt, ...)
+int violation(pink_easy_process_t *current, const char *fmt, ...)
 {
 	unsigned count;
 	va_list ap;

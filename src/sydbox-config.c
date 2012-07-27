@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -38,8 +38,7 @@ struct config_state {
 	const char *filename;
 };
 
-static const char *
-JSON_strerror(JSON_error error)
+static const char *JSON_strerror(JSON_error error)
 {
 	switch (error) {
 	case JSON_E_NONE:
@@ -69,8 +68,7 @@ JSON_strerror(JSON_error error)
 	}
 }
 
-static int
-parser_callback(void *ctx, int type, const JSON_value *value)
+static int parser_callback(void *ctx, int type, const JSON_value *value)
 {
 	int ret;
 	const char *name;
@@ -172,8 +170,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 	return 1;
 }
 
-void
-config_init(void)
+void config_init(void)
 {
 	JSON_config jc;
 
@@ -209,8 +206,7 @@ config_init(void)
 	sydbox->config.parser = new_JSON_parser(&jc);
 }
 
-void
-config_destroy(void)
+void config_destroy(void)
 {
 	if (sydbox->config.log_file) {
 		free(sydbox->config.log_file);
@@ -226,15 +222,13 @@ config_destroy(void)
 	}
 }
 
-void
-config_reset(void)
+void config_reset(void)
 {
 	JSON_parser_reset(sydbox->config.parser);
 	memset(sydbox->config.state, 0, sizeof(config_state_t));
 }
 
-void
-config_parse_file(const char *filename)
+void config_parse_file(const char *filename)
 {
 	bool debug;
 	int c;
@@ -270,8 +264,7 @@ config_parse_file(const char *filename)
 	sydbox->config.core = false;
 }
 
-void
-config_parse_spec(const char *pathspec)
+void config_parse_spec(const char *pathspec)
 {
 	size_t len;
 	char *filename;

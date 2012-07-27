@@ -126,8 +126,7 @@ Attaching poems encourages consideration tremendously.\n");
 	exit(code);
 }
 
-static void
-sydbox_init(void)
+static void sydbox_init(void)
 {
 	assert(!sydbox);
 
@@ -140,8 +139,7 @@ sydbox_init(void)
 	config_init();
 }
 
-static void
-sydbox_destroy(void)
+static void sydbox_destroy(void)
 {
 	struct snode *node;
 
@@ -167,8 +165,7 @@ sydbox_destroy(void)
 	log_close();
 }
 
-static void
-sig_cleanup(int signo)
+static void sig_cleanup(int signo)
 {
 	struct sigaction sa;
 
@@ -182,23 +179,21 @@ sig_cleanup(int signo)
 	raise(signo);
 }
 
-static bool
-dump_one_process(pink_easy_process_t *current, void *userdata)
+static bool dump_one_process(pink_easy_process_t *current, void *userdata)
 {
-	pid_t pid = pink_easy_process_get_pid(current);
-	pid_t ppid = pink_easy_process_get_ppid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pid_t tgid = pink_easy_process_get_tgid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	struct snode *node;
 
-	fprintf(stderr, "-- Process ID: %lu\n", (unsigned long)pid);
-	fprintf(stderr, "   Parent Process ID: %lu\n", ppid > 0 ? (unsigned long)ppid : 0UL);
-	fprintf(stderr, "   Bitness: %s\n", pink_bitness_name(bit));
+	fprintf(stderr, "-- Thread ID: %lu\n", (unsigned long)tid);
+	fprintf(stderr, "   Thread Group ID: %lu\n", tgid > 0 ? (unsigned long)tgid : 0UL);
 	fprintf(stderr, "   Attach: %s\n", pink_easy_process_is_attached(current) ? "true" : "false");
 	fprintf(stderr, "   Clone: %s\n", pink_easy_process_is_clone(current) ? "true" : "false");
 	fprintf(stderr, "   Comm: %s\n", data->comm);
 	fprintf(stderr, "   Cwd: %s\n", data->cwd);
-	fprintf(stderr, "   Syscall: {no:%lu name:%s}\n", data->sno, pink_name_syscall(data->sno, bit));
+	fprintf(stderr, "   Syscall: {no:%lu abi:%d name:%s}\n", data->sno, abi, pink_syscall_name(data->sno, abi));
 
 	if (!PTR_TO_UINT(userdata))
 		return true;
@@ -223,8 +218,7 @@ dump_one_process(pink_easy_process_t *current, void *userdata)
 	return true;
 }
 
-static void
-sig_user(int signo)
+static void sig_user(int signo)
 {
 	bool cmpl;
 	unsigned c;
@@ -243,8 +237,7 @@ sig_user(int signo)
 	fprintf(stderr, "Tracing %u process%s\n", c, c > 1 ? "es" : "");
 }
 
-static unsigned
-sydbox_attach_all(pid_t pid)
+static unsigned sydbox_attach_all(pid_t pid)
 {
 	char *ptask;
 	DIR *dir;
@@ -294,8 +287,7 @@ one:
 	return 1;
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int opt, ptrace_options, ret;
 	unsigned pid_count;

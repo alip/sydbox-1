@@ -86,37 +86,6 @@ PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],,
 PKG_CHECK_MODULES([pinktrace_easy], [pinktrace_easy >= $PINKTRACE_REQUIRED],,
 				  AC_MSG_ERROR([sydbox requires pinktrace_easy-$PINKTRACE_REQUIRED]))
 
-dnl check for supported OS of pinktrace
-AC_MSG_CHECKING([for supported OS of pinktrace])
-old_CPPFLAGS="${CPPFLAGS}"
-CPPFLAGS="${CPPFLAGS} ${pkg_cv_pinktrace_CFLAGS}"
-AC_PREPROC_IFELSE([AC_LANG_SOURCE([
-#include <pinktrace/pink.h>
-#if !PINK_OS_LINUX
-#error nope
-#endif
-])],
-	[AC_MSG_RESULT([ok])],
-	[AC_MSG_ERROR([sydbox only supports Linux])])
-CPPFLAGS="${old_CPPFLAGS}"
-dnl }}}
-
-dnl {{{ Check for supported bitness count of pinktrace
-AC_MSG_CHECKING([for supported bitness count of pinktrace])
-old_CPPFLAGS="${CPPFLAGS}"
-CPPFLAGS="${CPPFLAGS} ${pkg_cv_pinktrace_CFLAGS}"
-AC_PREPROC_IFELSE([AC_LANG_SOURCE([
-#include <pinktrace/pink.h>
-#if PINKTRACE_BITNESS_COUNT_SUPPORTED < 2
-#error nope
-#endif
-])],
-	[pinktrace_bitness_count_supported=2],
-	[pinktrace_bitness_count_supported=1])
-CPPFLAGS="${old_CPPFLAGS}"
-AC_MSG_RESULT([$pinktrace_bitness_count_supported])
-AM_CONDITIONAL(BITNESS_TWO, test x"$pinktrace_bitness_count_supported" = x"2")
-
 dnl check for IPV6 support
 AC_ARG_ENABLE([ipv6],
 			  [AS_HELP_STRING([--enable-ipv6],

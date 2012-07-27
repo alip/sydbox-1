@@ -183,8 +183,8 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 {
 	int r;
 	char *prefix, *path, *abspath;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	slist_t *wblist;
 
@@ -214,10 +214,15 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	else if (r /* > 0 */)
 		goto end;
 
-	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd, pid, info->create > 0, info->resolv, &abspath)) < 0) {
-		warning("resolving path:\"%s\" [%s() index:%u prefix:\"%s\"] failed for process:%lu [%s name:\"%s\" cwd:\"%s\"] (errno:%d %s)",
+	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd,
+					tid,
+					!!(info->create > 0),
+					info->resolv, &abspath)) < 0) {
+		warning("resolving path:\"%s\" [%s() index:%u prefix:\"%s\"]"
+				" failed for process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]"
+				" (errno:%d %s)",
 				path, name, info->index, prefix,
-				(unsigned long)pid, pink_bitness_name(bit),
+				(unsigned long)tid, abi,
 				data->comm, data->cwd,
 				-r, strerror(-r));
 		errno = EPERM; /* or -r for the real errno */
@@ -226,9 +231,10 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			violation(current, "%s()", name);
 		goto end;
 	}
-	debug("resolved path:\"%s\" to absolute path:\"%s\" [name=%s() create=%d resolv=%d] for process:%lu [%s name:\"%s\" cwd:\"%s\"]",
+	debug("resolved path:\"%s\" to absolute path:\"%s\" [name=%s() create=%d resolv=%d]"
+			" for process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
 			path, abspath, name, info->create, info->resolv,
-			(unsigned long)pid, pink_bitness_name(bit),
+			(unsigned long)tid, abi,
 			data->comm, data->cwd);
 
 	if (info->wblist)
@@ -262,25 +268,26 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 		goto end;
 	}
 
-	if (info->create == 2) {
+	if (info->create == MUST_CREATE) {
 		/* The system call *must* create the file */
 		int sr;
 		struct stat buf;
 
 		sr = info->resolv ? stat(abspath, &buf) : lstat(abspath, &buf);
-		if (!sr) {
+		if (sr == 0) {
 			/* Yet the file exists... */
-			debug("system call %s() must create existant path:\"%s\" for process:%lu [%s name:\"%s\" cwd:\"%s\"]",
+			debug("system call %s() must create existant path:\"%s\""
+					" for process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
 					name, abspath,
-					(unsigned long)pid, pink_bitness_name(bit),
+					(unsigned long)tid, abi,
 					data->comm, data->cwd);
 
 			debug("denying system call %s() with -EEXIST", name);
 			errno = EEXIST;
-			r = deny(current);
-
-			if (!sydbox->config.violation_raise_safe)
+			if (!sydbox->config.violation_raise_safe) {
+				r = deny(current);
 				goto end;
+			}
 		}
 		else
 			errno = info->deny_errno ? info->deny_errno : EPERM;
@@ -313,8 +320,8 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	char *abspath;
 	struct snode *node;
 	sock_match_t *m;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	pink_socket_address_t *psa;
 
@@ -325,11 +332,12 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	abspath = NULL;
 	psa = xmalloc(sizeof(pink_socket_address_t));
 
-	if (!pink_decode_socket_address(pid, bit, info->index, info->fd, psa)) {
+	if (!pink_read_socket_address(tid, abi, data->regs,
+				info->decode_socketcall,
+				info->index, info->fd, psa)) {
 		if (errno != ESRCH) {
-			warning("pink_decode_socket_address(%lu, \"%s\", %u) failed (errno:%d %s)",
-					(unsigned long)pid,
-					pink_bitness_name(bit),
+			warning("pink_read_socket_address(%lu, %d, %u) failed (errno:%d %s)",
+					(unsigned long)tid, abi,
 					info->index,
 					errno, strerror(errno));
 			r = panic(current);
@@ -357,10 +365,16 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket, resolve the path. */
-		if ((r = box_resolve_path(psa->u.sa_un.sun_path, data->cwd, pid, 1, info->resolv, &abspath)) < 0) {
-			warning("resolving path:\"%s\" [%s() index:%u] failed for process:%lu [%s name:\"%s\" cwd:\"%s\"] (errno:%d %s)",
+		if ((r = box_resolve_path(psa->u.sa_un.sun_path, data->cwd,
+						tid, 1,
+						info->resolv,
+						&abspath)) < 0) {
+			warning("resolving path:\"%s\" [%s() index:%u]"
+					" failed for process:%lu"
+					" [abi:%d name:\"%s\" cwd:\"%s\"]"
+					" (errno:%d %s)",
 					psa->u.sa_un.sun_path, name, info->index,
-					(unsigned long)pid, pink_bitness_name(bit),
+					(unsigned long)tid, abi,
 					data->comm, data->cwd,
 					-r, strerror(-r));
 			errno = EPERM; /* or -r for the real errno */

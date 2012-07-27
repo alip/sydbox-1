@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -24,17 +24,16 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int
-sys_rmdir(pink_easy_process_t *current, const char *name)
+int sys_rmdir(pink_easy_process_t *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_write == SANDBOX_OFF)
+	if (SANDBOX_WRITE_OFF(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = data->config.sandbox_write == SANDBOX_DENY;
+	info.whitelisting = SANDBOX_WRITE_DENY(data);
 
 	return box_check_path(current, name, &info);
 }

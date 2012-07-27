@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -27,65 +27,68 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int
-sys_connect(pink_easy_process_t *current, const char *name)
+int sys_connect(pink_easy_process_t *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_sock == SANDBOX_OFF)
+	if (SANDBOX_SOCK_OFF(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = data->config.sandbox_sock == SANDBOX_DENY;
-	info.wblist = data->config.sandbox_sock == SANDBOX_ALLOW ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
+	info.whitelisting = SANDBOX_SOCK_DENY(data);
+	info.wblist = SANDBOX_SOCK_DENY(data) ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
 	info.filter = &sydbox->config.filter_sock;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 1;
 	info.deny_errno = ECONNREFUSED;
+	if (data->subcall == PINK_SOCKET_SUBCALL_CONNECT)
+		info.decode_socketcall = true;
 
 	return box_check_sock(current, name, &info);
 }
 
-int
-sys_sendto(pink_easy_process_t *current, const char *name)
+int sys_sendto(pink_easy_process_t *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_sock == SANDBOX_OFF)
+	if (SANDBOX_SOCK_OFF(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = data->config.sandbox_sock == SANDBOX_DENY;
-	info.wblist = data->config.sandbox_sock == SANDBOX_DENY ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
+	info.whitelisting = SANDBOX_SOCK_DENY(data);
+	info.wblist = SANDBOX_SOCK_DENY(data) ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
 	info.filter = &sydbox->config.filter_sock;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 4;
 	info.deny_errno = ECONNREFUSED;
+	if (data->subcall == PINK_SOCKET_SUBCALL_SENDTO)
+		info.decode_socketcall = true;
 
 	return box_check_sock(current, name, &info);
 }
 
-int
-sys_recvfrom(pink_easy_process_t *current, const char *name)
+int sys_recvfrom(pink_easy_process_t *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_sock == SANDBOX_OFF)
+	if (SANDBOX_SOCK_OFF(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = data->config.sandbox_sock == SANDBOX_DENY;
-	info.wblist = data->config.sandbox_sock == SANDBOX_DENY ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
+	info.whitelisting = SANDBOX_SOCK_DENY(data);
+	info.wblist = SANDBOX_SOCK_DENY(data) ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
 	info.filter = &sydbox->config.filter_sock;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 4;
 	info.deny_errno = ECONNREFUSED;
+	if (data->subcall == PINK_SOCKET_SUBCALL_RECVFROM)
+		info.decode_socketcall = true;
 
 	return box_check_sock(current, name, &info);
 }

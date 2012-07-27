@@ -27,22 +27,21 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int
-sys_stat(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
+int sys_stat(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	int r;
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 	struct stat buf;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (data->config.magic_lock == LOCK_SET) /* No magic allowed! */
 		return 0;
 
-	if (!pink_util_get_arg(pid, bit, 0, &addr)
-			|| !pink_easy_process_vm_readv(pid, addr,
+	if (!pink_read_argument(tid, abi, data->regs, 0, &addr)
+			|| !pink_read_string(tid, abi, addr,
 				path, SYDBOX_PATH_MAX)) {
 		/* Don't bother denying the system call here.
 		 * Because this should not be a fatal error.
@@ -75,13 +74,13 @@ sys_stat(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 		memset(&buf, 0, sizeof(struct stat));
 		buf.st_mode = S_IFCHR | (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH | S_IWOTH);
 		buf.st_rdev = 259; /* /dev/null */
-		/* Filled with random(!) numbers */
+		/* Fill with random(!) numbers */
 		buf.st_atime = 505958400;
 		buf.st_mtime = -842745600;
 		buf.st_ctime = 558748800;
 
-		if (pink_util_get_arg(pid, bit, 1, &addr))
-			pink_easy_process_vm_writev(pid, addr, &buf, sizeof(struct stat));
+		if (pink_read_argument(tid, abi, data->regs, 1, &addr))
+			pink_write_vm_data(tid, abi, addr, (const char *)&buf, sizeof(struct stat));
 		info("magic \"%s\" accepted", path);
 		errno = (r > 1) ? ENOENT : 0;
 		r = deny(current);

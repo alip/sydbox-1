@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -25,8 +25,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-sock_info_t *
-sock_info_xdup(sock_info_t *src)
+sock_info_t *sock_info_xdup(sock_info_t *src)
 {
 	sock_info_t *dest;
 
@@ -38,7 +37,7 @@ sock_info_xdup(sock_info_t *src)
 	dest->addr = xmalloc(sizeof(pink_socket_address_t));
 	dest->addr->family = src->addr->family;
 	dest->addr->length = src->addr->length;
-	memcpy(&dest->addr->u._pad, src->addr->u._pad, sizeof(src->addr->u._pad));
+	memcpy(&dest->addr->u.pad, src->addr->u.pad, sizeof(src->addr->u.pad));
 
 	return dest;
 }

@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -25,22 +25,20 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int
-sys_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
+int sys_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	long subcall;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_sock == SANDBOX_OFF || !pink_has_socketcall(bit))
+	if (SANDBOX_SOCK_OFF(data))
 		return 0;
 
-	if (!pink_decode_socket_call(pid, bit, &subcall)) {
+	if (!pink_read_socket_subcall(tid, abi, data->regs, true, &subcall)) {
 		if (errno != ESRCH) {
-			warning("pink_decode_socketcall(%lu, \"%s\"): %d(%s)",
-					(unsigned long)pid,
-					pink_bitness_name(bit),
+			warning("pink_read_socket_subcall(%lu, %d, true) failed (errno:%d %s)",
+					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
@@ -65,13 +63,11 @@ sys_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char 
 	}
 }
 
-int
-sysx_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
+int sysx_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_sock == SANDBOX_OFF || !pink_has_socketcall(bit))
+	if (SANDBOX_SOCK_OFF(data))
 		return 0;
 
 	switch (data->subcall) {

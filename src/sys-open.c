@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -29,9 +29,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-inline
-static bool
-open_wr_check(long flags, enum create_mode *create, bool *resolv)
+static inline bool open_wr_check(long flags, enum create_mode *create, bool *resolv)
 {
 	enum create_mode c;
 	bool r;
@@ -74,28 +72,37 @@ open_wr_check(long flags, enum create_mode *create, bool *resolv)
 	 * - O_WRONLY
 	 * - O_RDWR
 	 */
-	return !!(flags & (O_RDONLY | O_CREAT) || flags & (O_WRONLY | O_RDWR));
+	switch (flags & O_ACCMODE) {
+	case O_RDONLY:
+		if (flags & O_CREAT)
+			return true;
+		break;
+	case O_WRONLY:
+	case O_RDWR:
+		return true;
+	}
+
+	return false;
 }
 
-int
-sys_open(pink_easy_process_t *current, const char *name)
+int sys_open(pink_easy_process_t *current, const char *name)
 {
 	int r;
 	bool resolv, wr;
 	enum create_mode create;
 	long flags;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (data->config.sandbox_read == SANDBOX_OFF && data->config.sandbox_write == SANDBOX_OFF)
+	if (SANDBOX_READ_OFF(data) && SANDBOX_WRITE_OFF(data))
 		return 0;
 
-	if (!pink_util_get_arg(pid, bit, 1, &flags)) {
+	if (!pink_read_argument(tid, abi, data->regs, 1, &flags)) {
 		if (errno != ESRCH) {
-			warning("pink_util_get_arg(%lu, \"%s\", 1) failed (errno:%d %s)",
-					(unsigned long)pid, pink_bitness_name(bit),
+			warning("pink_read_argument(%lu, %d, 1) failed (errno:%d %s)",
+					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
@@ -109,14 +116,14 @@ sys_open(pink_easy_process_t *current, const char *name)
 	info.resolv = resolv;
 
 	r = 0;
-	if (wr && data->config.sandbox_write != SANDBOX_OFF) {
-		info.whitelisting = data->config.sandbox_write == SANDBOX_DENY;
+	if (wr && !SANDBOX_WRITE_OFF(data)) {
+		info.whitelisting = SANDBOX_WRITE_DENY(data);
 		r = box_check_path(current, name, &info);
 	}
 
-	if (!r && !data->deny && data->config.sandbox_read != SANDBOX_OFF) {
-		info.whitelisting = data->config.sandbox_read == SANDBOX_DENY;
-		info.wblist = data->config.sandbox_read == SANDBOX_DENY ? &data->config.whitelist_read : &data->config.blacklist_read;
+	if (!r && !data->deny && !SANDBOX_READ_OFF(data)) {
+		info.whitelisting = SANDBOX_READ_DENY(data);
+		info.wblist = SANDBOX_READ_DENY(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
 		info.filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
@@ -124,27 +131,25 @@ sys_open(pink_easy_process_t *current, const char *name)
 	return r;
 }
 
-int
-sys_openat(pink_easy_process_t *current, const char *name)
+int sys_openat(pink_easy_process_t *current, const char *name)
 {
 	int r;
 	bool resolv, wr;
 	enum create_mode create;
 	long flags;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (data->config.sandbox_read == SANDBOX_OFF && data->config.sandbox_write == SANDBOX_OFF)
+	if (SANDBOX_READ_OFF(data) && SANDBOX_WRITE_OFF(data))
 		return 0;
 
 	/* Check mode argument first */
-	if (!pink_util_get_arg(pid, bit, 2, &flags)) {
+	if (!pink_read_argument(tid, abi, data->regs, 2, &flags)) {
 		if (errno != ESRCH) {
-			warning("pink_util_get_arg(%lu, \"%s\", 2): %d(%s)",
-					(unsigned long)pid,
-					pink_bitness_name(bit),
+			warning("pink_read_argument(%lu, %d, 2) failed (errno:%d %s)",
+					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
@@ -160,14 +165,14 @@ sys_openat(pink_easy_process_t *current, const char *name)
 	info.resolv = resolv;
 
 	r = 0;
-	if (wr && data->config.sandbox_write != SANDBOX_OFF) {
-		info.whitelisting = data->config.sandbox_write == SANDBOX_DENY;
+	if (wr && !SANDBOX_WRITE_OFF(data)) {
+		info.whitelisting = SANDBOX_WRITE_DENY(data);
 		r = box_check_path(current, name, &info);
 	}
 
-	if (!r && !data->deny && data->config.sandbox_read != SANDBOX_OFF) {
-		info.whitelisting = data->config.sandbox_read == SANDBOX_DENY;
-		info.wblist = data->config.sandbox_read == SANDBOX_DENY ? &data->config.whitelist_read : &data->config.blacklist_read;
+	if (!r && !data->deny && !SANDBOX_READ_OFF(data)) {
+		info.whitelisting = SANDBOX_READ_DENY(data);
+		info.wblist = SANDBOX_READ_DENY(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
 		info.filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}

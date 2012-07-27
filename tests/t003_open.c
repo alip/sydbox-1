@@ -60,6 +60,7 @@ main(int argc, char **argv)
 		return 1;
 	}
 
+	printf("fd:%d\n", fd);
 	if (!(flags & O_CREAT) && argc > 2)
 		write(fd, argv[3], strlen(argv[5]));
 	close(fd);

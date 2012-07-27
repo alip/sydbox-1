@@ -35,38 +35,37 @@
  *  0 : Successful run
  * >0 : PINK_EASY_CFLAG* flags
  */
-int
-path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
+int path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 {
 	long addr;
 	char path[SYDBOX_PATH_MAX];
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	assert(current);
 	assert(buf);
 
-	if (!pink_util_get_arg(pid, bit, ind, &addr)
-			|| !pink_easy_process_vm_readv(pid, addr,
+	if (!pink_read_argument(tid, abi, data->regs, ind, &addr)
+			|| !pink_read_string(tid, abi, addr,
 				path, SYDBOX_PATH_MAX)) {
 		if (errno != ESRCH) {
-			warning("process_vm_readv(%lu, %s, %u) failed (errno:%d %s)",
-					(unsigned long)pid, pink_bitness_name(bit),
+			warning("read_string(%lu, %d, %u) failed (errno:%d %s)",
+					(unsigned long)tid, abi,
 					ind, errno, strerror(errno));
 			return panic(current);
 		}
-		debug("process_vm_readv(%lu, %s, %u) failed (errno:%d %s)",
-				(unsigned long)pid, pink_bitness_name(bit),
+		debug("read_string(%lu, %d, %u) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
 				ind, errno, strerror(errno));
-		debug("dropping process:%lu [%s name:\"%s\" cwd:\"%s\"] from process tree",
-				(unsigned long)pid, pink_bitness_name(bit),
+		debug("dropping process:%lu [abi:%d name:\"%s\" cwd:\"%s\"] from process tree",
+				(unsigned long)tid, abi,
 				data->comm, data->cwd);
 		return PINK_EASY_CFLAG_DROP;
 	}
 	else if (path[0] == '\0') {
-		debug("process_vm_readv(%lu, %s, %u) returned NULL",
-				(unsigned long)pid, pink_bitness_name(bit), ind);
+		debug("read_string(%lu, %d, %u) returned NULL",
+				(unsigned long)tid, abi, ind);
 		*buf = NULL;
 		errno = EFAULT;
 		return -1;
@@ -85,36 +84,35 @@ path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
  *  0 : Successful run
  * >0 : PINK_EASY_CFLAG* flags
  */
-int
-path_prefix(pink_easy_process_t *current, unsigned ind, char **buf)
+int path_prefix(pink_easy_process_t *current, unsigned ind, char **buf)
 {
 	int r;
 	long fd;
 	char *prefix;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!pink_util_get_arg(pid, bit, ind, &fd)) {
+	if (!pink_read_argument(tid, abi, data->regs, ind, &fd)) {
 		if (errno != ESRCH) {
-			warning("pink_util_get_arg(%lu, \"%s\", %u) failed (errno:%d %s)",
-					(unsigned long)pid, pink_bitness_name(bit),
+			warning("pink_read_argument(%lu, %d, %u) failed (errno:%d %s)",
+					(unsigned long)tid, abi,
 					ind, errno, strerror(errno));
 			return panic(current);
 		}
-		debug("pink_util_get_arg(%lu, \"%s\", %u) failed (errno:%d %s)",
-				(unsigned long)pid, pink_bitness_name(bit),
+		debug("pink_read_argument(%lu, %d, %u) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
 				ind, errno, strerror(errno));
-		debug("dropping process:%lu [%s name:\"%s\" cwd:\"%s\"] from process tree",
-				(unsigned long)pid, pink_bitness_name(bit),
+		debug("dropping process:%lu [abi:%d name:\"%s\" cwd:\"%s\"] from process tree",
+				(unsigned long)tid, abi,
 				data->comm, data->cwd);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
 	if (fd != AT_FDCWD) {
-		if ((r = proc_fd(pid, fd, &prefix)) < 0) {
+		if ((r = proc_fd(tid, fd, &prefix)) < 0) {
 			warning("proc_fd(%lu, %ld) failed (errno:%d %s)",
-					(unsigned long)pid, fd,
+					(unsigned long)tid, fd,
 					-r, strerror(-r));
 			errno = r == -ENOENT ? EBADF : -r;
 			return -1;

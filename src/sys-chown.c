@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -28,55 +28,51 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int
-sys_chown(pink_easy_process_t *current, const char *name)
+int sys_chown(pink_easy_process_t *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_write == SANDBOX_OFF)
+	if (SANDBOX_WRITE_OFF(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
 	info.resolv = true;
-	info.whitelisting = data->config.sandbox_write == SANDBOX_DENY;
+	info.whitelisting = SANDBOX_WRITE_DENY(data);
 
 	return box_check_path(current, name, &info);
 }
 
-int
-sys_lchown(pink_easy_process_t *current, const char *name)
+int sys_lchown(pink_easy_process_t *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.sandbox_write == SANDBOX_OFF)
+	if (SANDBOX_WRITE_OFF(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = data->config.sandbox_write == SANDBOX_DENY;
+	info.whitelisting = SANDBOX_WRITE_DENY(data);
 
 	return box_check_path(current, name, &info);
 }
 
-int
-sys_fchownat(pink_easy_process_t *current, const char *name)
+int sys_fchownat(pink_easy_process_t *current, const char *name)
 {
 	long flags;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pid_t tid = pink_easy_process_get_tid(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (data->config.sandbox_write == SANDBOX_OFF)
+	if (SANDBOX_WRITE_OFF(data))
 		return 0;
 
 	/* Check for AT_SYMLINK_FOLLOW */
-	if (!pink_util_get_arg(pid, bit, 4, &flags)) {
+	if (!pink_read_argument(tid, abi, data->regs, 4, &flags)) {
 		if (errno != ESRCH) {
-			warning("pink_util_get_arg(%lu, \"%s\", 4): %d(%s)",
-					(unsigned long)pid,
-					pink_bitness_name(bit),
+			warning("pink_read_argument(%lu, %d, 4) failed (errno:%d %s)",
+					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
@@ -87,7 +83,7 @@ sys_fchownat(pink_easy_process_t *current, const char *name)
 	info.at     = true;
 	info.resolv = !!(flags & AT_SYMLINK_FOLLOW);
 	info.index  = 1;
-	info.whitelisting = data->config.sandbox_write == SANDBOX_DENY;
+	info.whitelisting = SANDBOX_WRITE_DENY(data);
 
 	return box_check_path(current, name, &info);
 }

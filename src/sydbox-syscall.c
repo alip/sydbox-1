@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -31,8 +31,7 @@
 
 #include "proc.h"
 
-void
-sysinit(void)
+void sysinit(void)
 {
 	systable_add("chdir", NULL, sysx_chdir);
 	systable_add("fchdir", NULL, sysx_chdir);
@@ -111,24 +110,23 @@ sysinit(void)
 	systable_add("getsockname", sys_getsockname, sysx_getsockname);
 }
 
-int
-sysenter(pink_easy_process_t *current)
+int sysenter(pink_easy_process_t *current)
 {
 	long no;
 	const char *name;
-	pid_t pid;
-	pink_bitness_t bit;
+	pid_t tid;
+	pink_abi_t abi;
 	proc_data_t *data;
 	const sysentry_t *entry;
 
-	pid = pink_easy_process_get_pid(current);
-	bit = pink_easy_process_get_bitness(current);
+	tid = pink_easy_process_get_tid(current);
+	abi = pink_easy_process_get_abi(current);
 	data = pink_easy_process_get_userdata(current);
 
-	if (!pink_util_get_syscall(pid, bit, &no)) {
+	if (!pink_read_syscall(tid, abi, data->regs, &no)) {
 		if (errno != ESRCH) {
-			warning("pink_util_get_syscall(%d, %s): %d(%s)",
-					pid, pink_bitness_name(bit),
+			warning("pink_read_syscall(%lu, %d) failed (errno:%d %s)",
+					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
@@ -136,27 +134,26 @@ sysenter(pink_easy_process_t *current)
 	}
 
 	data->sno = no;
-	entry = systable_lookup(no, bit);
+	entry = systable_lookup(no, abi);
 	if (entry)
 		debug("process:%lu is entering system call \"%s\"",
-				(unsigned long)pid,
+				(unsigned long)tid,
 				entry->name);
 	else {
-		name = pink_name_syscall(no, bit);
+		name = pink_syscall_name(no, abi);
 		trace("process:%lu is entering system call \"%s\"",
-				(unsigned long)pid,
+				(unsigned long)tid,
 				name ? name : "???");
 	}
 
 	return (entry && entry->enter) ? entry->enter(current, entry->name) : 0;
 }
 
-int
-sysexit(pink_easy_process_t *current)
+int sysexit(pink_easy_process_t *current)
 {
 	int r;
 	const sysentry_t *entry;
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (data->deny) {
@@ -164,7 +161,7 @@ sysexit(pink_easy_process_t *current)
 		goto end;
 	}
 
-	entry = systable_lookup(data->sno, bit);
+	entry = systable_lookup(data->sno, abi);
 	r = (entry && entry->exit) ? entry->exit(current, entry->name) : 0;
 end:
 	clear_proc(data);

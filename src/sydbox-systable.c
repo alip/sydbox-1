@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -28,15 +28,10 @@
 
 #include "hashtable.h"
 
-#if PINKTRACE_BITNESS_32_SUPPORTED
-static hashtable_t *systable32 = NULL;
-#endif
-#if PINKTRACE_BITNESS_64_SUPPORTED
-static hashtable_t *systable64 = NULL;
-#endif
+static hashtable_t *systable[PINK_ABIS_SUPPORTED];
 
-static void
-systable_add_full(long no, pink_bitness_t bit, const char *name, sysfunc_t fenter, sysfunc_t fexit)
+static void systable_add_full(long no, pink_abi_t abi, const char *name,
+		sysfunc_t fenter, sysfunc_t fexit)
 {
 	sysentry_t *entry;
 
@@ -45,93 +40,47 @@ systable_add_full(long no, pink_bitness_t bit, const char *name, sysfunc_t fente
 	entry->enter = fenter;
 	entry->exit = fexit;
 
-#if PINKTRACE_BITNESS_32_SUPPORTED
-	if (bit == PINK_BITNESS_32) {
-		ht_int32_node_t *node32 = hashtable_find(systable32, no, 1);
-		node32->data = entry;
-	}
-#endif
-#if PINKTRACE_BITNESS_64_SUPPORTED
-	if (bit == PINK_BITNESS_64) {
-		ht_int64_node_t *node64 = hashtable_find(systable64, no, 1);
-		node64->data = entry;
-	}
-#endif
+	ht_int32_node_t *node = hashtable_find(systable[abi], no, 1);
+	node->data = entry;
 }
 
-void
-systable_init(void)
+void systable_init(void)
 {
 	int r;
-#if PINKTRACE_BITNESS_32_SUPPORTED
-	if ((r = hashtable_create(64, 0, &systable32) < 0)) {
-		errno = -r;
-		die_errno(-1, "hashtable_create");
+
+	for (pink_abi_t abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
+		if ((r = hashtable_create(64, 0, &systable[abi])) < 0) {
+			errno = -r;
+			die_errno(-1, "hashtable_create");
+		}
 	}
-#endif
-#if PINKTRACE_BITNESS_64_SUPPORTED
-	if ((r = hashtable_create(64, 1, &systable64)) < 0) {
-		errno = -r;
-		die_errno(-1, "hashtable_create");
-	}
-#endif
 }
 
-void
-systable_free(void)
+void systable_free(void)
 {
-#if PINKTRACE_BITNESS_32_SUPPORTED
-	for (int i = 0; i < systable32->size; i++) {
-		ht_int32_node_t *node = HT_NODE(systable32, systable32->nodes, i);
-		if (node->data)
-			free(node->data);
+	for (pink_abi_t abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
+		for (int i = 0; i < systable[abi]->size; i++) {
+			ht_int32_node_t *node = HT_NODE(systable[abi], systable[abi]->nodes, i);
+			if (node->data)
+				free(node->data);
+		}
+		hashtable_destroy(systable[abi]);
 	}
-
-	hashtable_destroy(systable32);
-#endif
-#if PINKTRACE_BITNESS_64_SUPPORTED
-	for (int j = 0; j < systable64->size; j++) {
-		ht_int64_node_t *node = HT_NODE(systable64, systable64->nodes, j);
-		if (node->data)
-			free(node->data);
-	}
-
-	hashtable_destroy(systable64);
-#endif
 }
 
-void
-systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit)
+void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit)
 {
 	long no;
 
-#if PINKTRACE_BITNESS_32_SUPPORTED
-	no = pink_name_lookup(name, PINK_BITNESS_32);
-	if (no > 0)
-		systable_add_full(no, PINK_BITNESS_32, name, fenter, fexit);
-#endif /* PINKTRACE_BITNESS_32_SUPPORTED */
-
-#if PINKTRACE_BITNESS_64_SUPPORTED
-	no = pink_name_lookup(name, PINK_BITNESS_64);
-	if (no > 0)
-		systable_add_full(no, PINK_BITNESS_64, name, fenter, fexit);
-#endif /* PINKTRACE_BITNESS_64_SUPPORTED */
+	for (pink_abi_t abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
+		no = pink_syscall_lookup(name, abi);
+		if (no != -1)
+			systable_add_full(no, abi, name, fenter, fexit);
+	}
 }
 
-const sysentry_t *
-systable_lookup(long no, pink_bitness_t bit)
+const sysentry_t *systable_lookup(long no, pink_abi_t abi)
 {
-#if PINKTRACE_BITNESS_32_SUPPORTED
-	if (bit == PINK_BITNESS_32) {
-		ht_int32_node_t *node = hashtable_find(systable32, no, 0);
-		return node ? node->data : NULL;
-	}
-#endif
-#if PINKTRACE_BITNESS_64_SUPPORTED
-	if (bit == PINK_BITNESS_64) {
-		ht_int64_node_t *node = hashtable_find(systable64, no, 0);
-		return node ? node->data : NULL;
-	}
-#endif
-	return NULL;
+	ht_int32_node_t *node = hashtable_find(systable[abi], no, 0);
+	return node ? node->data : NULL;
 }

@@ -334,17 +334,20 @@ typedef struct {
 	/* Last system call */
 	unsigned long sno;
 
-	/* Last (socket) subcall */
-	long subcall;
+	/* Process registers */
+	const pink_regs_t *regs;
 
 	/* Arguments of last system call */
 	long args[PINK_MAX_ARGS];
+
+	/* Last (socket) subcall */
+	long subcall;
 
 	/* Is the last system call denied? */
 	bool deny;
 
 	/* Denied system call will return this value */
-	long ret;
+	long retval;
 
 	/* Resolved path argument for specially treated system calls like execve() */
 	char *abspath;
@@ -365,6 +368,22 @@ typedef struct {
 	/* Per-process configuration */
 	sandbox_t config;
 } proc_data_t;
+
+#define SANDBOX_EXEC_ON(data)		(!!((data)->config.sandbox_exec == SANDBOX_ON)))
+#define SANDBOX_EXEC_OFF(data)		(!!((data)->config.sandbox_exec == SANDBOX_OFF))
+#define SANDBOX_EXEC_DENY(data)		(!!((data)->config.sandbox_exec == SANDBOX_DENY))
+
+#define SANDBOX_READ_ON(data)		(!!((data)->config.sandbox_read == SANDBOX_ON))
+#define SANDBOX_READ_OFF(data)		(!!((data)->config.sandbox_read == SANDBOX_OFF))
+#define SANDBOX_READ_DENY(data)		(!!((data)->config.sandbox_read == SANDBOX_DENY))
+
+#define SANDBOX_WRITE_ON(data)		(!!((data)->config.sandbox_write == SANDBOX_ON))
+#define SANDBOX_WRITE_OFF(data)		(!!((data)->config.sandbox_write == SANDBOX_OFF))
+#define SANDBOX_WRITE_DENY(data)	(!!((data)->config.sandbox_write == SANDBOX_DENY))
+
+#define SANDBOX_SOCK_ON(data)		(!!((data)->config.sandbox_sock == SANDBOX_ON))
+#define SANDBOX_SOCK_OFF(data)		(!!((data)->config.sandbox_sock == SANDBOX_OFF))
+#define SANDBOX_SOCK_DENY(data)		(!!((data)->config.sandbox_sock == SANDBOX_DENY))
 
 typedef struct config_state config_state_t;
 
@@ -447,6 +466,7 @@ typedef struct {
 	unsigned index;
 
 	bool at;
+	bool decode_socketcall;
 	bool resolv;
 	enum create_mode create;
 
@@ -580,7 +600,7 @@ int path_prefix(pink_easy_process_t *current, unsigned ind, char **buf);
 void systable_init(void);
 void systable_free(void);
 void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit);
-const sysentry_t *systable_lookup(long no, pink_bitness_t bit);
+const sysentry_t *systable_lookup(long no, pink_abi_t abi);
 
 void sysinit(void);
 int sysenter(pink_easy_process_t *current);
@@ -747,7 +767,7 @@ clear_proc(void *data)
 	proc_data_t *p = data;
 
 	p->deny = false;
-	p->ret = 0;
+	p->retval = 0;
 	p->subcall = 0;
 	for (unsigned i = 0; i < PINK_MAX_ARGS; i++)
 		p->args[i] = 0;

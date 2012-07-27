@@ -25,13 +25,12 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int
-sys_execve(pink_easy_process_t *current, const char *name)
+int sys_execve(pink_easy_process_t *current, const char *name)
 {
 	int r;
 	char *path, *abspath;
-	pid_t pid;
-	pink_bitness_t bit;
+	pid_t tid;
+	pink_abi_t abi;
 	proc_data_t *data;
 
 	if (sydbox->skip_initial_exec) {
@@ -41,8 +40,8 @@ sys_execve(pink_easy_process_t *current, const char *name)
 		return 0;
 	}
 
-	pid = pink_easy_process_get_pid(current);
-	bit = pink_easy_process_get_bitness(current);
+	tid = pink_easy_process_get_tid(current);
+	abi = pink_easy_process_get_abi(current);
 	data = pink_easy_process_get_userdata(current);
 	path = abspath = NULL;
 
@@ -52,10 +51,12 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	else if (r /* > 0 */)
 		return r;
 
-	if ((r = box_resolve_path(path, data->cwd, pid, 0, 1, &abspath)) < 0) {
-		info("resolving path:\"%s\" [%s() index:0] failed for process:%lu [%s name:\"%s\" cwd:\"%s\"] (errno:%d %s)",
+	if ((r = box_resolve_path(path, data->cwd, tid, 0, 1, &abspath)) < 0) {
+		info("resolving path:\"%s\" [%s() index:0]"
+				" failed for process:%lu"
+				" [abi:%d name:\"%s\" cwd:\"%s\"] (errno:%d %s)",
 				path, name,
-				(unsigned long)pid, pink_bitness_name(bit),
+				(unsigned long)tid, abi,
 				data->comm, data->cwd,
 				-r, strerror(-r));
 		errno = -r;

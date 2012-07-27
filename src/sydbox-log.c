@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -40,9 +40,7 @@ static const char *suffix = LOG_DEFAULT_SUFFIX;
 static int logfd = -1;
 
 PINK_GCC_ATTR((format (printf, 3, 0)))
-inline
-static void
-log_me(int fd, unsigned level, const char *fmt, va_list ap)
+static inline void log_me(int fd, unsigned level, const char *fmt, va_list ap)
 {
 	int tty;
 	const char *p, *s;
@@ -86,8 +84,7 @@ log_me(int fd, unsigned level, const char *fmt, va_list ap)
 	dprintf(fd, "%s%s", s, suffix ? suffix : "");
 }
 
-void
-log_init(void)
+void log_init(void)
 {
 	assert(sydbox);
 
@@ -98,28 +95,24 @@ log_init(void)
 	}
 }
 
-void
-log_close(void)
+void log_close(void)
 {
 	if (logfd != -1)
 		close_nointr(logfd);
 	logfd = -1;
 }
 
-void
-log_prefix(const char *p)
+void log_prefix(const char *p)
 {
 	prefix = p;
 }
 
-void
-log_suffix(const char *s)
+void log_suffix(const char *s)
 {
 	suffix = s;
 }
 
-void
-log_msg_va(unsigned level, const char *fmt, va_list ap)
+void log_msg_va(unsigned level, const char *fmt, va_list ap)
 {
 	if (level > sydbox->config.log_level)
 		return;
@@ -133,8 +126,7 @@ log_msg_va(unsigned level, const char *fmt, va_list ap)
 		log_me(sydbox->config.log_console_fd, level, fmt, ap);
 }
 
-void
-log_msg(unsigned level, const char *fmt, ...)
+void log_msg(unsigned level, const char *fmt, ...)
 {
 	va_list ap;
 
