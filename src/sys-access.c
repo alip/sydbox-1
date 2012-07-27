@@ -39,7 +39,7 @@ int sys_access(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (SANDBOX_EXEC_OFF(data) && SANDBOX_READ_OFF(data) && SANDBOX_WRITE_OFF(data))
+	if (sandbox_exec_off(data) && sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
 
 	if (!pink_read_argument(tid, abi, data->regs, 1, &mode)) {
@@ -52,9 +52,9 @@ int sys_access(pink_easy_process_t *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	if (!((mode & R_OK) && SANDBOX_READ_OFF(data))
-		&& !((mode & W_OK) && SANDBOX_WRITE_OFF(data))
-		&& !((mode & X_OK) && SANDBOX_EXEC_OFF(data)))
+	if (!((mode & R_OK) && sandbox_read_off(data))
+		&& !((mode & W_OK) && sandbox_write_off(data))
+		&& !((mode & X_OK) && sandbox_exec_off(data)))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
@@ -63,21 +63,21 @@ int sys_access(pink_easy_process_t *current, const char *name)
 	info.deny_errno = EACCES;
 
 	r = 0;
-	if (!SANDBOX_WRITE_OFF(data) && mode & W_OK) {
-		info.whitelisting = SANDBOX_WRITE_DENY(data);
+	if (!sandbox_write_off(data) && mode & W_OK) {
+		info.whitelisting = sandbox_write_deny(data);
 		r = box_check_path(current, name, &info);
 	}
 
-	if (!r && !data->deny && !SANDBOX_READ_OFF(data) && mode & R_OK) {
-		info.whitelisting = SANDBOX_READ_DENY(data);
-		info.wblist = SANDBOX_READ_DENY(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
+	if (!r && !data->deny && !sandbox_read_off(data) && mode & R_OK) {
+		info.whitelisting = sandbox_read_deny(data);
+		info.wblist = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
 		info.filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
 
-	if (!r && !data->deny && !SANDBOX_EXEC_OFF(data) && mode & X_OK) {
-		info.whitelisting = SANDBOX_EXEC_DENY(data);
-		info.wblist = SANDBOX_EXEC_DENY(data) ? &data->config.whitelist_exec : &data->config.blacklist_exec;
+	if (!r && !data->deny && !sandbox_exec_off(data) && mode & X_OK) {
+		info.whitelisting = sandbox_exec_deny(data);
+		info.wblist = sandbox_exec_deny(data) ? &data->config.whitelist_exec : &data->config.blacklist_exec;
 		info.filter = &sydbox->config.filter_exec;
 		r = box_check_path(current, name, &info);
 	}
@@ -94,7 +94,7 @@ int sys_faccessat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (SANDBOX_EXEC_OFF(data) && SANDBOX_READ_OFF(data) && SANDBOX_WRITE_OFF(data))
+	if (sandbox_exec_off(data) && sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
 
 	/* Check mode argument first */
@@ -108,9 +108,9 @@ int sys_faccessat(pink_easy_process_t *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	if (!((mode & R_OK) && SANDBOX_READ_OFF(data))
-		&& !((mode & W_OK) && SANDBOX_WRITE_OFF(data))
-		&& !((mode & X_OK) && SANDBOX_EXEC_OFF(data)))
+	if (!((mode & R_OK) && sandbox_read_off(data))
+		&& !((mode & W_OK) && sandbox_write_off(data))
+		&& !((mode & X_OK) && sandbox_exec_off(data)))
 		return 0;
 
 	/* Check for AT_SYMLINK_NOFOLLOW */
@@ -132,21 +132,21 @@ int sys_faccessat(pink_easy_process_t *current, const char *name)
 	info.deny_errno = EACCES;
 
 	r = 0;
-	if (!SANDBOX_WRITE_OFF(data) && mode & W_OK) {
-		info.whitelisting = SANDBOX_WRITE_DENY(data);
+	if (!sandbox_write_off(data) && mode & W_OK) {
+		info.whitelisting = sandbox_write_deny(data);
 		r = box_check_path(current, name, &info);
 	}
 
-	if (!r && !data->deny && !SANDBOX_READ_OFF(data) && mode & R_OK) {
-		info.whitelisting = SANDBOX_READ_DENY(data);
-		info.wblist = SANDBOX_READ_DENY(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
+	if (!r && !data->deny && !sandbox_read_off(data) && mode & R_OK) {
+		info.whitelisting = sandbox_read_deny(data);
+		info.wblist = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
 		info.filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
 
-	if (!r && !data->deny && !SANDBOX_EXEC_OFF(data) && mode & X_OK) {
-		info.whitelisting = SANDBOX_EXEC_DENY(data);
-		info.wblist = SANDBOX_EXEC_DENY(data) ? &data->config.whitelist_exec : &data->config.blacklist_exec;
+	if (!r && !data->deny && !sandbox_exec_off(data) && mode & X_OK) {
+		info.whitelisting = sandbox_exec_deny(data);
+		info.wblist = sandbox_exec_deny(data) ? &data->config.whitelist_exec : &data->config.blacklist_exec;
 		info.filter = &sydbox->config.filter_exec;
 		r = box_check_path(current, name, &info);
 	}

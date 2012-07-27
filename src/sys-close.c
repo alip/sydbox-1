@@ -36,7 +36,7 @@ int sys_close(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *
 	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (SANDBOX_SOCK_OFF(data) || !sydbox->config.whitelist_successful_bind)
+	if (sandbox_sock_off(data) || !sydbox->config.whitelist_successful_bind)
 		return 0;
 
 	if (!pink_read_argument(tid, abi, data->regs, 0, &fd)) {
@@ -63,7 +63,7 @@ int sysx_close(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char 
 	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (SANDBOX_SOCK_OFF(data) || !sydbox->config.whitelist_successful_bind || !data->args[0])
+	if (sandbox_sock_off(data) || !sydbox->config.whitelist_successful_bind || !data->args[0])
 		return 0;
 
 	if (!pink_read_retval(tid, abi, data->regs, &retval, NULL)) {

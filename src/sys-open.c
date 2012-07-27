@@ -96,7 +96,7 @@ int sys_open(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (SANDBOX_READ_OFF(data) && SANDBOX_WRITE_OFF(data))
+	if (sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
 
 	if (!pink_read_argument(tid, abi, data->regs, 1, &flags)) {
@@ -116,14 +116,14 @@ int sys_open(pink_easy_process_t *current, const char *name)
 	info.resolv = resolv;
 
 	r = 0;
-	if (wr && !SANDBOX_WRITE_OFF(data)) {
-		info.whitelisting = SANDBOX_WRITE_DENY(data);
+	if (wr && !sandbox_write_off(data)) {
+		info.whitelisting = sandbox_write_deny(data);
 		r = box_check_path(current, name, &info);
 	}
 
-	if (!r && !data->deny && !SANDBOX_READ_OFF(data)) {
-		info.whitelisting = SANDBOX_READ_DENY(data);
-		info.wblist = SANDBOX_READ_DENY(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
+	if (!r && !data->deny && !sandbox_read_off(data)) {
+		info.whitelisting = sandbox_read_deny(data);
+		info.wblist = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
 		info.filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
@@ -142,7 +142,7 @@ int sys_openat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (SANDBOX_READ_OFF(data) && SANDBOX_WRITE_OFF(data))
+	if (sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
 
 	/* Check mode argument first */
@@ -165,14 +165,14 @@ int sys_openat(pink_easy_process_t *current, const char *name)
 	info.resolv = resolv;
 
 	r = 0;
-	if (wr && !SANDBOX_WRITE_OFF(data)) {
-		info.whitelisting = SANDBOX_WRITE_DENY(data);
+	if (wr && !sandbox_write_off(data)) {
+		info.whitelisting = sandbox_write_deny(data);
 		r = box_check_path(current, name, &info);
 	}
 
-	if (!r && !data->deny && !SANDBOX_READ_OFF(data)) {
-		info.whitelisting = SANDBOX_READ_DENY(data);
-		info.wblist = SANDBOX_READ_DENY(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
+	if (!r && !data->deny && !sandbox_read_off(data)) {
+		info.whitelisting = sandbox_read_deny(data);
+		info.wblist = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
 		info.filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}

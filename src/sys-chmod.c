@@ -33,12 +33,12 @@ int sys_chmod(pink_easy_process_t *current, const char *name)
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (SANDBOX_WRITE_OFF(data))
+	if (sandbox_write_off(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
 	info.resolv = true;
-	info.whitelisting = SANDBOX_WRITE_DENY(data);
+	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);
 }
@@ -51,7 +51,7 @@ int sys_fchmodat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (SANDBOX_WRITE_OFF(data))
+	if (sandbox_write_off(data))
 		return 0;
 
 	/* Check for AT_SYMLINK_NOFOLLOW */
@@ -69,7 +69,7 @@ int sys_fchmodat(pink_easy_process_t *current, const char *name)
 	info.at     = true;
 	info.resolv = !(flags & AT_SYMLINK_NOFOLLOW);
 	info.index  = 1;
-	info.whitelisting = SANDBOX_WRITE_DENY(data);
+	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);
 }

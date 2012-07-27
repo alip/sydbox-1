@@ -32,7 +32,7 @@ int sys_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const c
 	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (SANDBOX_SOCK_OFF(data))
+	if (sandbox_sock_off(data))
 		return 0;
 
 	if (!pink_read_socket_subcall(tid, abi, data->regs, true, &subcall)) {
@@ -67,7 +67,7 @@ int sysx_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const 
 {
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (SANDBOX_SOCK_OFF(data))
+	if (sandbox_sock_off(data))
 		return 0;
 
 	switch (data->subcall) {

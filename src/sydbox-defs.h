@@ -369,22 +369,6 @@ typedef struct {
 	sandbox_t config;
 } proc_data_t;
 
-#define SANDBOX_EXEC_ON(data)		(!!((data)->config.sandbox_exec == SANDBOX_ON)))
-#define SANDBOX_EXEC_OFF(data)		(!!((data)->config.sandbox_exec == SANDBOX_OFF))
-#define SANDBOX_EXEC_DENY(data)		(!!((data)->config.sandbox_exec == SANDBOX_DENY))
-
-#define SANDBOX_READ_ON(data)		(!!((data)->config.sandbox_read == SANDBOX_ON))
-#define SANDBOX_READ_OFF(data)		(!!((data)->config.sandbox_read == SANDBOX_OFF))
-#define SANDBOX_READ_DENY(data)		(!!((data)->config.sandbox_read == SANDBOX_DENY))
-
-#define SANDBOX_WRITE_ON(data)		(!!((data)->config.sandbox_write == SANDBOX_ON))
-#define SANDBOX_WRITE_OFF(data)		(!!((data)->config.sandbox_write == SANDBOX_OFF))
-#define SANDBOX_WRITE_DENY(data)	(!!((data)->config.sandbox_write == SANDBOX_DENY))
-
-#define SANDBOX_SOCK_ON(data)		(!!((data)->config.sandbox_sock == SANDBOX_ON))
-#define SANDBOX_SOCK_OFF(data)		(!!((data)->config.sandbox_sock == SANDBOX_OFF))
-#define SANDBOX_SOCK_DENY(data)		(!!((data)->config.sandbox_sock == SANDBOX_DENY))
-
 typedef struct config_state config_state_t;
 
 typedef struct {
@@ -666,9 +650,7 @@ int sysx_socketcall(pink_easy_process_t *current, const char *name);
 int sysx_bind(pink_easy_process_t *current, const char *name);
 int sysx_getsockname(pink_easy_process_t *current, const char *name);
 
-inline
-static sandbox_t *
-box_current(pink_easy_process_t *current)
+static inline sandbox_t *box_current(pink_easy_process_t *current)
 {
 	proc_data_t *data;
 
@@ -680,9 +662,7 @@ box_current(pink_easy_process_t *current)
 	return &sydbox->config.child;
 }
 
-inline
-static void
-free_sock_info(void *data)
+static inline void free_sock_info(void *data)
 {
 	sock_info_t *info = data;
 
@@ -692,9 +672,7 @@ free_sock_info(void *data)
 	free(info);
 }
 
-inline
-static void
-free_sock_match(void *data)
+static inline void free_sock_match(void *data)
 {
 	sock_match_t *m = data;
 
@@ -705,9 +683,7 @@ free_sock_match(void *data)
 	free(m);
 }
 
-inline
-static void
-free_sandbox(sandbox_t *box)
+static inline void free_sandbox(sandbox_t *box)
 {
 	struct snode *node;
 
@@ -724,9 +700,7 @@ free_sandbox(sandbox_t *box)
 	SLIST_FLUSH(node, &box->blacklist_sock_connect, up, free_sock_match);
 }
 
-inline
-static void
-free_proc(void *data)
+static inline void free_proc(void *data)
 {
 	proc_data_t *p = data;
 
@@ -760,9 +734,7 @@ free_proc(void *data)
 	free(p);
 }
 
-inline
-static void
-clear_proc(void *data)
+static inline void clear_proc(void *data)
 {
 	proc_data_t *p = data;
 
@@ -776,5 +748,21 @@ clear_proc(void *data)
 		free_sock_info(p->savebind);
 	p->savebind = NULL;
 }
+
+#define sandbox_exec_on(data)		(!!((data)->config.sandbox_exec == SANDBOX_ON))
+#define sandbox_exec_off(data)		(!!((data)->config.sandbox_exec == SANDBOX_OFF))
+#define sandbox_exec_deny(data)		(!!((data)->config.sandbox_exec == SANDBOX_DENY))
+
+#define sandbox_read_on(data)		(!!((data)->config.sandbox_read == SANDBOX_ON))
+#define sandbox_read_off(data)		(!!((data)->config.sandbox_read == SANDBOX_OFF))
+#define sandbox_read_deny(data)		(!!((data)->config.sandbox_read == SANDBOX_DENY))
+
+#define sandbox_write_on(data)		(!!((data)->config.sandbox_write == SANDBOX_ON))
+#define sandbox_write_off(data)		(!!((data)->config.sandbox_write == SANDBOX_OFF))
+#define sandbox_write_deny(data)	(!!((data)->config.sandbox_write == SANDBOX_DENY))
+
+#define sandbox_sock_on(data)		(!!((data)->config.sandbox_sock == SANDBOX_ON))
+#define sandbox_sock_off(data)		(!!((data)->config.sandbox_sock == SANDBOX_OFF))
+#define sandbox_sock_deny(data)		(!!((data)->config.sandbox_sock == SANDBOX_DENY))
 
 #endif /* !SYDBOX_GUARD_DEFS_H */

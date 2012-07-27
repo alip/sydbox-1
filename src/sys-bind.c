@@ -46,12 +46,12 @@ int sys_bind(pink_easy_process_t *current, const char *name)
 	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (SANDBOX_SOCK_OFF(data))
+	if (sandbox_sock_off(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
 	info.whitelisting = data->config.sandbox_sock == SANDBOX_DENY;
-	info.wblist = SANDBOX_SOCK_DENY(data) ? &data->config.whitelist_sock_bind : &data->config.blacklist_sock_bind;
+	info.wblist = sandbox_sock_deny(data) ? &data->config.whitelist_sock_bind : &data->config.blacklist_sock_bind;
 	info.filter = &sydbox->config.filter_sock;
 	info.resolv = true;
 	info.index  = 1;
@@ -116,7 +116,7 @@ int sysx_bind(pink_easy_process_t *current, const char *name)
 	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (SANDBOX_SOCK_OFF(data) || !sydbox->config.whitelist_successful_bind || !data->savebind)
+	if (sandbox_sock_off(data) || !sydbox->config.whitelist_successful_bind || !data->savebind)
 		return 0;
 
 	/* Check the return value */

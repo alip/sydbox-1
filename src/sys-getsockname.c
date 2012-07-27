@@ -38,7 +38,7 @@ int sys_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const 
 	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (SANDBOX_SOCK_OFF(data) || !sydbox->config.whitelist_successful_bind)
+	if (sandbox_sock_off(data) || !sydbox->config.whitelist_successful_bind)
 		return 0;
 
 	decode_socketcall = !!(data->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
@@ -73,7 +73,7 @@ int sysx_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const
 	pink_abi_t abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (SANDBOX_SOCK_OFF(data) || !sydbox->config.whitelist_successful_bind || !data->args[0])
+	if (sandbox_sock_off(data) || !sydbox->config.whitelist_successful_bind || !data->args[0])
 		return 0;
 
 	/* Check the return value */

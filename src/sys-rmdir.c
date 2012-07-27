@@ -29,11 +29,11 @@ int sys_rmdir(pink_easy_process_t *current, const char *name)
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (SANDBOX_WRITE_OFF(data))
+	if (sandbox_write_off(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = SANDBOX_WRITE_DENY(data);
+	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);
 }
