@@ -26,7 +26,7 @@
 
 #include "macro.h"
 
-int magic_set_trace_magic_lock(const void *val, pink_easy_process_t *current)
+int magic_set_trace_magic_lock(const void *val, struct pink_easy_process *current)
 {
 	int l;
 	const char *str = val;

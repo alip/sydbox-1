@@ -30,7 +30,7 @@
 
 static hashtable_t *systable[PINK_ABIS_SUPPORTED];
 
-static void systable_add_full(long no, pink_abi_t abi, const char *name,
+static void systable_add_full(long no, enum pink_abi abi, const char *name,
 		sysfunc_t fenter, sysfunc_t fexit)
 {
 	sysentry_t *entry;
@@ -48,7 +48,7 @@ void systable_init(void)
 {
 	int r;
 
-	for (pink_abi_t abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
+	for (enum pink_abi abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
 		if ((r = hashtable_create(64, 0, &systable[abi])) < 0) {
 			errno = -r;
 			die_errno(-1, "hashtable_create");
@@ -58,7 +58,7 @@ void systable_init(void)
 
 void systable_free(void)
 {
-	for (pink_abi_t abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
+	for (enum pink_abi abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
 		for (int i = 0; i < systable[abi]->size; i++) {
 			ht_int32_node_t *node = HT_NODE(systable[abi], systable[abi]->nodes, i);
 			if (node->data)
@@ -72,14 +72,14 @@ void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit)
 {
 	long no;
 
-	for (pink_abi_t abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
+	for (enum pink_abi abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
 		no = pink_syscall_lookup(name, abi);
 		if (no != -1)
 			systable_add_full(no, abi, name, fenter, fexit);
 	}
 }
 
-const sysentry_t *systable_lookup(long no, pink_abi_t abi)
+const sysentry_t *systable_lookup(long no, enum pink_abi abi)
 {
 	ht_int32_node_t *node = hashtable_find(systable[abi], no, 0);
 	return node ? node->data : NULL;

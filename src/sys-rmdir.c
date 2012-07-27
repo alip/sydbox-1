@@ -24,7 +24,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_rmdir(pink_easy_process_t *current, const char *name)
+int sys_rmdir(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);

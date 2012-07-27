@@ -26,13 +26,13 @@
 
 #include "macro.h"
 
-int magic_set_panic_exit_code(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_panic_exit_code(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	sydbox->config.panic_exit_code = PTR_TO_INT(val);
 	return 0;
 }
 
-int magic_set_violation_exit_code(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_violation_exit_code(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	sydbox->config.violation_exit_code = PTR_TO_INT(val);
 	return 0;

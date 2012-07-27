@@ -38,7 +38,7 @@
 #define NR_OPEN 1024
 #endif
 
-static int callback_child_error(pink_easy_child_error_t error)
+static int callback_child_error(enum pink_easy_child_error error)
 {
 	fprintf(stderr, "child error: %s (errno:%d %s)\n",
 			pink_easy_child_strerror(error),
@@ -51,8 +51,8 @@ static void callback_error(const struct pink_easy_context *ctx, ...)
 	va_list ap;
 	const char *errctx;
 	pid_t tid;
-	pink_easy_error_t error;
-	pink_easy_process_t *current;
+	enum pink_easy_error error;
+	struct pink_easy_process *current;
 
 	error = pink_easy_context_get_error(ctx);
 	va_start(ap, ctx);
@@ -80,7 +80,7 @@ static void callback_error(const struct pink_easy_context *ctx, ...)
 		break;
 	case PINK_EASY_ERROR_TRACE:
 	case PINK_EASY_ERROR_PROCESS:
-		current = va_arg(ap, pink_easy_process_t *);
+		current = va_arg(ap, struct pink_easy_process *);
 		errctx = va_arg(ap, const char *);
 		if (error == PINK_EASY_ERROR_TRACE) { /* errno is set! */
 			fatal("error: %s (ctx:%s process:%lu [abi:%d] errno:%d %s)",
@@ -103,12 +103,12 @@ static void callback_error(const struct pink_easy_context *ctx, ...)
 	va_end(ap);
 }
 
-static void callback_startup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
-		pink_easy_process_t *current, pink_easy_process_t *parent)
+static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx,
+		struct pink_easy_process *current, struct pink_easy_process *parent)
 {
 	int r;
 	pid_t tid;
-	pink_abi_t abi;
+	enum pink_abi abi;
 	char *cwd, *comm;
 	struct snode *node, *newnode;
 	proc_data_t *data, *pdata;
@@ -172,7 +172,7 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *
 	data->config.sandbox_exec = inherit->sandbox_exec;
 	data->config.sandbox_read = inherit->sandbox_read;
 	data->config.sandbox_write = inherit->sandbox_write;
-	data->config.sandbox_sock = inherit->sandbox_sock;
+	data->config.sandbox_network = inherit->sandbox_network;
 	data->config.magic_lock = inherit->magic_lock;
 	data->comm = comm;
 	data->cwd = cwd;
@@ -191,14 +191,14 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *
 	SLIST_COPY_ALL(node, &inherit->whitelist_exec, up, &data->config.whitelist_exec, newnode, xstrdup);
 	SLIST_COPY_ALL(node, &inherit->whitelist_read, up, &data->config.whitelist_read, newnode, xstrdup);
 	SLIST_COPY_ALL(node, &inherit->whitelist_write, up, &data->config.whitelist_write, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->whitelist_sock_bind, up, &data->config.whitelist_sock_bind, newnode, sock_match_xdup);
-	SLIST_COPY_ALL(node, &inherit->whitelist_sock_connect, up, &data->config.whitelist_sock_connect, newnode, sock_match_xdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_network_bind, up, &data->config.whitelist_network_bind, newnode, sock_match_xdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_network_connect, up, &data->config.whitelist_network_connect, newnode, sock_match_xdup);
 
 	SLIST_COPY_ALL(node, &inherit->blacklist_exec, up, &data->config.blacklist_exec, newnode, xstrdup);
 	SLIST_COPY_ALL(node, &inherit->blacklist_read, up, &data->config.blacklist_read, newnode, xstrdup);
 	SLIST_COPY_ALL(node, &inherit->blacklist_write, up, &data->config.blacklist_write, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->blacklist_sock_bind, up, &data->config.blacklist_sock_bind, newnode, sock_match_xdup);
-	SLIST_COPY_ALL(node, &inherit->blacklist_sock_connect, up, &data->config.blacklist_sock_connect, newnode, sock_match_xdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_network_bind, up, &data->config.blacklist_network_bind, newnode, sock_match_xdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_network_connect, up, &data->config.blacklist_network_connect, newnode, sock_match_xdup);
 #undef SLIST_COPY_ALL
 
 	if (sydbox->config.whitelist_per_process_directories) {
@@ -222,7 +222,7 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *
 	pink_easy_process_set_userdata(current, data, free_proc);
 }
 
-static int callback_cleanup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx)
+static int callback_cleanup(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx)
 {
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)
@@ -233,7 +233,7 @@ static int callback_cleanup(PINK_GCC_ATTR((unused)) const pink_easy_context_t *c
 	return sydbox->exit_code;
 }
 
-static int callback_exit(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
+static int callback_exit(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx,
 		pid_t tid, int status)
 {
 	if (tid == sydbox->eldest) {
@@ -275,16 +275,16 @@ static int callback_exit(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
 	return 0;
 }
 
-static int callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
-		pink_easy_process_t *current,
+static int callback_exec(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx,
+		struct pink_easy_process *current,
 		PINK_GCC_ATTR((unused)) const pink_regs_t *regs,
-		PINK_GCC_ATTR((unused)) pink_abi_t orig_abi)
+		PINK_GCC_ATTR((unused)) enum pink_abi orig_abi)
 {
 	int e, r;
 	char *comm;
 	const char *match;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (data->config.magic_lock == LOCK_PENDING) {
@@ -349,8 +349,8 @@ static int callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
 	return r;
 }
 
-static int callback_syscall(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx,
-		pink_easy_process_t *current,
+static int callback_syscall(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx,
+		struct pink_easy_process *current,
 		const pink_regs_t *regs,
 		bool entering)
 {
@@ -362,7 +362,7 @@ static int callback_syscall(PINK_GCC_ATTR((unused)) const pink_easy_context_t *c
 
 void callback_init(void)
 {
-	memset(&sydbox->callback_table, 0, sizeof(pink_easy_callback_table_t));
+	memset(&sydbox->callback_table, 0, sizeof(struct pink_easy_callback_table));
 
 	sydbox->callback_table.startup = callback_startup;
 	sydbox->callback_table.cleanup = callback_cleanup;

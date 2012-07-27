@@ -210,7 +210,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_SANDBOX_EXEC,
 	MAGIC_KEY_CORE_SANDBOX_READ,
 	MAGIC_KEY_CORE_SANDBOX_WRITE,
-	MAGIC_KEY_CORE_SANDBOX_SOCK,
+	MAGIC_KEY_CORE_SANDBOX_NETWORK,
 
 	MAGIC_KEY_CORE_WHITELIST,
 	MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES,
@@ -243,23 +243,23 @@ enum magic_key {
 	MAGIC_KEY_WHITELIST_EXEC,
 	MAGIC_KEY_WHITELIST_READ,
 	MAGIC_KEY_WHITELIST_WRITE,
-	MAGIC_KEY_WHITELIST_SOCK,
-	MAGIC_KEY_WHITELIST_SOCK_BIND,
-	MAGIC_KEY_WHITELIST_SOCK_CONNECT,
+	MAGIC_KEY_WHITELIST_NETWORK,
+	MAGIC_KEY_WHITELIST_NETWORK_BIND,
+	MAGIC_KEY_WHITELIST_NETWORK_CONNECT,
 
 	MAGIC_KEY_BLACKLIST,
 	MAGIC_KEY_BLACKLIST_EXEC,
 	MAGIC_KEY_BLACKLIST_READ,
 	MAGIC_KEY_BLACKLIST_WRITE,
-	MAGIC_KEY_BLACKLIST_SOCK,
-	MAGIC_KEY_BLACKLIST_SOCK_BIND,
-	MAGIC_KEY_BLACKLIST_SOCK_CONNECT,
+	MAGIC_KEY_BLACKLIST_NETWORK,
+	MAGIC_KEY_BLACKLIST_NETWORK_BIND,
+	MAGIC_KEY_BLACKLIST_NETWORK_CONNECT,
 
 	MAGIC_KEY_FILTER,
 	MAGIC_KEY_FILTER_EXEC,
 	MAGIC_KEY_FILTER_READ,
 	MAGIC_KEY_FILTER_WRITE,
-	MAGIC_KEY_FILTER_SOCK,
+	MAGIC_KEY_FILTER_NETWORK,
 
 	MAGIC_KEY_INVALID,
 };
@@ -278,7 +278,7 @@ enum magic_error {
 /* Type declarations */
 typedef struct {
 	char *path;
-	pink_socket_address_t *addr;
+	struct pink_sockaddr *addr;
 } sock_info_t;
 
 typedef struct {
@@ -313,21 +313,21 @@ typedef struct {
 	enum sandbox_mode sandbox_exec;
 	enum sandbox_mode sandbox_read;
 	enum sandbox_mode sandbox_write;
-	enum sandbox_mode sandbox_sock;
+	enum sandbox_mode sandbox_network;
 
 	enum lock_state magic_lock;
 
 	slist_t whitelist_exec;
 	slist_t whitelist_read;
 	slist_t whitelist_write;
-	slist_t whitelist_sock_bind;
-	slist_t whitelist_sock_connect;
+	slist_t whitelist_network_bind;
+	slist_t whitelist_network_connect;
 
 	slist_t blacklist_exec;
 	slist_t blacklist_read;
 	slist_t blacklist_write;
-	slist_t blacklist_sock_bind;
-	slist_t blacklist_sock_connect;
+	slist_t blacklist_network_bind;
+	slist_t blacklist_network_connect;
 } sandbox_t;
 
 typedef struct {
@@ -409,7 +409,7 @@ typedef struct {
 	slist_t filter_exec;
 	slist_t filter_read;
 	slist_t filter_write;
-	slist_t filter_sock;
+	slist_t filter_network;
 } config_t;
 
 typedef struct {
@@ -429,16 +429,16 @@ typedef struct {
 	char *program_invocation_name;
 
 	/* Callback table */
-	pink_easy_callback_table_t callback_table;
+	struct pink_easy_callback_table callback_table;
 
 	/* Tracing context */
-	pink_easy_context_t *ctx;
+	struct pink_easy_context *ctx;
 
 	/* Global configuration */
 	config_t config;
 } sydbox_t;
 
-typedef int (*sysfunc_t) (pink_easy_process_t *current, const char *name);
+typedef int (*sysfunc_t) (struct pink_easy_process *current, const char *name);
 
 typedef struct {
 	const char *name;
@@ -464,7 +464,7 @@ typedef struct {
 
 	long *fd;
 	char **abspath;
-	pink_socket_address_t **addr;
+	struct pink_sockaddr **addr;
 } sys_info_t;
 
 /* Global variables */
@@ -498,10 +498,10 @@ void log_msg(unsigned level, const char *fmt, ...) PINK_GCC_ATTR((format (printf
 #define trace(...)	log_msg(5, __VA_ARGS__)
 
 void abort_all(void);
-int deny(pink_easy_process_t *current);
-int restore(pink_easy_process_t *current);
-int panic(pink_easy_process_t *current);
-int violation(pink_easy_process_t *current, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
+int deny(struct pink_easy_process *current);
+int restore(struct pink_easy_process *current);
+int panic(struct pink_easy_process *current);
+int violation(struct pink_easy_process *current, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
 
 sock_info_t *sock_info_xdup(sock_info_t *src);
 
@@ -509,61 +509,61 @@ int sock_match_expand(const char *src, char ***buf);
 int sock_match_new(const char *src, sock_match_t **buf);
 int sock_match_new_pink(const sock_info_t *src, sock_match_t **buf);
 sock_match_t *sock_match_xdup(const sock_match_t *src);
-int sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle);
+int sock_match(const sock_match_t *haystack, const struct pink_sockaddr *needle);
 
-int magic_set_panic_exit_code(const void *val, pink_easy_process_t *current);
-int magic_set_violation_exit_code(const void *val, pink_easy_process_t *current);
-int magic_set_violation_raise_fail(const void *val, pink_easy_process_t *current);
-int magic_query_violation_raise_fail(pink_easy_process_t *current);
-int magic_set_violation_raise_safe(const void *val, pink_easy_process_t *current);
-int magic_query_violation_raise_safe(pink_easy_process_t *current);
-int magic_set_trace_follow_fork(const void *val, pink_easy_process_t *current);
-int magic_query_trace_follow_fork(pink_easy_process_t *current);
-int magic_set_trace_exit_wait_all(const void *val, pink_easy_process_t *current);
-int magic_query_trace_exit_wait_all(pink_easy_process_t *current);
-int magic_set_whitelist_ppd(const void *val, pink_easy_process_t *current);
-int magic_query_whitelist_ppd(pink_easy_process_t *current);
-int magic_set_whitelist_sb(const void *val, pink_easy_process_t *current);
-int magic_query_whitelist_sb(pink_easy_process_t *current);
-int magic_set_whitelist_usf(const void *val, pink_easy_process_t *current);
-int magic_query_whitelist_usf(pink_easy_process_t *current);
-int magic_set_whitelist_exec(const void *val, pink_easy_process_t *current);
-int magic_set_whitelist_read(const void *val, pink_easy_process_t *current);
-int magic_set_whitelist_write(const void *val, pink_easy_process_t *current);
-int magic_set_blacklist_exec(const void *val, pink_easy_process_t *current);
-int magic_set_blacklist_read(const void *val, pink_easy_process_t *current);
-int magic_set_blacklist_write(const void *val, pink_easy_process_t *current);
-int magic_set_filter_exec(const void *val, pink_easy_process_t *current);
-int magic_set_filter_read(const void *val, pink_easy_process_t *current);
-int magic_set_filter_write(const void *val, pink_easy_process_t *current);
-int magic_set_whitelist_sock_bind(const void *val, pink_easy_process_t *current);
-int magic_set_whitelist_sock_connect(const void *val, pink_easy_process_t *current);
-int magic_set_blacklist_sock_bind(const void *val, pink_easy_process_t *current);
-int magic_set_blacklist_sock_connect(const void *val, pink_easy_process_t *current);
-int magic_set_filter_sock(const void *val, pink_easy_process_t *current);
-int magic_set_abort_decision(const void *val, pink_easy_process_t *current);
-int magic_set_panic_decision(const void *val, pink_easy_process_t *current);
-int magic_set_violation_decision(const void *val, pink_easy_process_t *current);
-int magic_set_trace_magic_lock(const void *val, pink_easy_process_t *current);
-int magic_set_log_file(const void *val, pink_easy_process_t *current);
-int magic_set_log_console_fd(const void *val, pink_easy_process_t *current);
-int magic_set_log_level(const void *val, pink_easy_process_t *current);
-int magic_set_log_timestamp(const void *val, pink_easy_process_t *current);
-int magic_query_log_timestamp(pink_easy_process_t *current);
-int magic_set_sandbox_exec(const void *val, pink_easy_process_t *current);
-int magic_set_sandbox_read(const void *val, pink_easy_process_t *current);
-int magic_set_sandbox_write(const void *val, pink_easy_process_t *current);
-int magic_set_sandbox_sock(const void *val, pink_easy_process_t *current);
-int magic_set_exec_kill_if_match(const void *val, pink_easy_process_t *current);
-int magic_set_exec_resume_if_match(const void *val, pink_easy_process_t *current);
+int magic_set_panic_exit_code(const void *val, struct pink_easy_process *current);
+int magic_set_violation_exit_code(const void *val, struct pink_easy_process *current);
+int magic_set_violation_raise_fail(const void *val, struct pink_easy_process *current);
+int magic_query_violation_raise_fail(struct pink_easy_process *current);
+int magic_set_violation_raise_safe(const void *val, struct pink_easy_process *current);
+int magic_query_violation_raise_safe(struct pink_easy_process *current);
+int magic_set_trace_follow_fork(const void *val, struct pink_easy_process *current);
+int magic_query_trace_follow_fork(struct pink_easy_process *current);
+int magic_set_trace_exit_wait_all(const void *val, struct pink_easy_process *current);
+int magic_query_trace_exit_wait_all(struct pink_easy_process *current);
+int magic_set_whitelist_ppd(const void *val, struct pink_easy_process *current);
+int magic_query_whitelist_ppd(struct pink_easy_process *current);
+int magic_set_whitelist_sb(const void *val, struct pink_easy_process *current);
+int magic_query_whitelist_sb(struct pink_easy_process *current);
+int magic_set_whitelist_usf(const void *val, struct pink_easy_process *current);
+int magic_query_whitelist_usf(struct pink_easy_process *current);
+int magic_set_whitelist_exec(const void *val, struct pink_easy_process *current);
+int magic_set_whitelist_read(const void *val, struct pink_easy_process *current);
+int magic_set_whitelist_write(const void *val, struct pink_easy_process *current);
+int magic_set_blacklist_exec(const void *val, struct pink_easy_process *current);
+int magic_set_blacklist_read(const void *val, struct pink_easy_process *current);
+int magic_set_blacklist_write(const void *val, struct pink_easy_process *current);
+int magic_set_filter_exec(const void *val, struct pink_easy_process *current);
+int magic_set_filter_read(const void *val, struct pink_easy_process *current);
+int magic_set_filter_write(const void *val, struct pink_easy_process *current);
+int magic_set_whitelist_network_bind(const void *val, struct pink_easy_process *current);
+int magic_set_whitelist_network_connect(const void *val, struct pink_easy_process *current);
+int magic_set_blacklist_network_bind(const void *val, struct pink_easy_process *current);
+int magic_set_blacklist_network_connect(const void *val, struct pink_easy_process *current);
+int magic_set_filter_network(const void *val, struct pink_easy_process *current);
+int magic_set_abort_decision(const void *val, struct pink_easy_process *current);
+int magic_set_panic_decision(const void *val, struct pink_easy_process *current);
+int magic_set_violation_decision(const void *val, struct pink_easy_process *current);
+int magic_set_trace_magic_lock(const void *val, struct pink_easy_process *current);
+int magic_set_log_file(const void *val, struct pink_easy_process *current);
+int magic_set_log_console_fd(const void *val, struct pink_easy_process *current);
+int magic_set_log_level(const void *val, struct pink_easy_process *current);
+int magic_set_log_timestamp(const void *val, struct pink_easy_process *current);
+int magic_query_log_timestamp(struct pink_easy_process *current);
+int magic_set_sandbox_exec(const void *val, struct pink_easy_process *current);
+int magic_set_sandbox_read(const void *val, struct pink_easy_process *current);
+int magic_set_sandbox_write(const void *val, struct pink_easy_process *current);
+int magic_set_sandbox_network(const void *val, struct pink_easy_process *current);
+int magic_set_exec_kill_if_match(const void *val, struct pink_easy_process *current);
+int magic_set_exec_resume_if_match(const void *val, struct pink_easy_process *current);
 
 const char *magic_strerror(int error);
 const char *magic_strkey(enum magic_key key);
 unsigned magic_key_type(enum magic_key key);
 unsigned magic_key_parent(enum magic_key key);
 unsigned magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len);
-int magic_cast(pink_easy_process_t *current, enum magic_key key, enum magic_type type, const void *val);
-int magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix);
+int magic_cast(struct pink_easy_process *current, enum magic_key key, enum magic_type type, const void *val);
+int magic_cast_string(struct pink_easy_process *current, const char *magic, int prefix);
 
 void config_init(void);
 void config_destroy(void);
@@ -575,82 +575,82 @@ void callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res);
 int box_match_path(const char *path, const slist_t *patterns, const char **match);
-int box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info);
-int box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info);
+int box_check_path(struct pink_easy_process *current, const char *name, sys_info_t *info);
+int box_check_sock(struct pink_easy_process *current, const char *name, sys_info_t *info);
 
-int path_decode(pink_easy_process_t *current, unsigned ind, char **buf);
-int path_prefix(pink_easy_process_t *current, unsigned ind, char **buf);
+int path_decode(struct pink_easy_process *current, unsigned ind, char **buf);
+int path_prefix(struct pink_easy_process *current, unsigned ind, char **buf);
 
 void systable_init(void);
 void systable_free(void);
 void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit);
-const sysentry_t *systable_lookup(long no, pink_abi_t abi);
+const sysentry_t *systable_lookup(long no, enum pink_abi abi);
 
 void sysinit(void);
-int sysenter(pink_easy_process_t *current);
-int sysexit(pink_easy_process_t *current);
+int sysenter(struct pink_easy_process *current);
+int sysexit(struct pink_easy_process *current);
 
-int sys_chmod(pink_easy_process_t *current, const char *name);
-int sys_fchmodat(pink_easy_process_t *current, const char *name);
-int sys_chown(pink_easy_process_t *current, const char *name);
-int sys_lchown(pink_easy_process_t *current, const char *name);
-int sys_fchownat(pink_easy_process_t *current, const char *name);
-int sys_open(pink_easy_process_t *current, const char *name);
-int sys_openat(pink_easy_process_t *current, const char *name);
-int sys_creat(pink_easy_process_t *current, const char *name);
-int sys_close(pink_easy_process_t *current, const char *name);
-int sys_mkdir(pink_easy_process_t *current, const char *name);
-int sys_mkdirat(pink_easy_process_t *current, const char *name);
-int sys_mknod(pink_easy_process_t *current, const char *name);
-int sys_mknodat(pink_easy_process_t *current, const char *name);
-int sys_rmdir(pink_easy_process_t *current, const char *name);
-int sys_truncate(pink_easy_process_t *current, const char *name);
-int sys_mount(pink_easy_process_t *current, const char *name);
-int sys_umount(pink_easy_process_t *current, const char *name);
-int sys_umount2(pink_easy_process_t *current, const char *name);
-int sys_utime(pink_easy_process_t *current, const char *name);
-int sys_utimes(pink_easy_process_t *current, const char *name);
-int sys_utimensat(pink_easy_process_t *current, const char *name);
-int sys_futimesat(pink_easy_process_t *current, const char *name);
-int sys_unlink(pink_easy_process_t *current, const char *name);
-int sys_unlinkat(pink_easy_process_t *current, const char *name);
-int sys_link(pink_easy_process_t *current, const char *name);
-int sys_linkat(pink_easy_process_t *current, const char *name);
-int sys_rename(pink_easy_process_t *current, const char *name);
-int sys_renameat(pink_easy_process_t *current, const char *name);
-int sys_symlink(pink_easy_process_t *current, const char *name);
-int sys_symlinkat(pink_easy_process_t *current, const char *name);
-int sys_setxattr(pink_easy_process_t *current, const char *name);
-int sys_lsetxattr(pink_easy_process_t *current, const char *name);
-int sys_removexattr(pink_easy_process_t *current, const char *name);
-int sys_lremovexattr(pink_easy_process_t *current, const char *name);
+int sys_chmod(struct pink_easy_process *current, const char *name);
+int sys_fchmodat(struct pink_easy_process *current, const char *name);
+int sys_chown(struct pink_easy_process *current, const char *name);
+int sys_lchown(struct pink_easy_process *current, const char *name);
+int sys_fchownat(struct pink_easy_process *current, const char *name);
+int sys_open(struct pink_easy_process *current, const char *name);
+int sys_openat(struct pink_easy_process *current, const char *name);
+int sys_creat(struct pink_easy_process *current, const char *name);
+int sys_close(struct pink_easy_process *current, const char *name);
+int sys_mkdir(struct pink_easy_process *current, const char *name);
+int sys_mkdirat(struct pink_easy_process *current, const char *name);
+int sys_mknod(struct pink_easy_process *current, const char *name);
+int sys_mknodat(struct pink_easy_process *current, const char *name);
+int sys_rmdir(struct pink_easy_process *current, const char *name);
+int sys_truncate(struct pink_easy_process *current, const char *name);
+int sys_mount(struct pink_easy_process *current, const char *name);
+int sys_umount(struct pink_easy_process *current, const char *name);
+int sys_umount2(struct pink_easy_process *current, const char *name);
+int sys_utime(struct pink_easy_process *current, const char *name);
+int sys_utimes(struct pink_easy_process *current, const char *name);
+int sys_utimensat(struct pink_easy_process *current, const char *name);
+int sys_futimesat(struct pink_easy_process *current, const char *name);
+int sys_unlink(struct pink_easy_process *current, const char *name);
+int sys_unlinkat(struct pink_easy_process *current, const char *name);
+int sys_link(struct pink_easy_process *current, const char *name);
+int sys_linkat(struct pink_easy_process *current, const char *name);
+int sys_rename(struct pink_easy_process *current, const char *name);
+int sys_renameat(struct pink_easy_process *current, const char *name);
+int sys_symlink(struct pink_easy_process *current, const char *name);
+int sys_symlinkat(struct pink_easy_process *current, const char *name);
+int sys_setxattr(struct pink_easy_process *current, const char *name);
+int sys_lsetxattr(struct pink_easy_process *current, const char *name);
+int sys_removexattr(struct pink_easy_process *current, const char *name);
+int sys_lremovexattr(struct pink_easy_process *current, const char *name);
 
-int sys_access(pink_easy_process_t *current, const char *name);
-int sys_faccessat(pink_easy_process_t *current, const char *name);
+int sys_access(struct pink_easy_process *current, const char *name);
+int sys_faccessat(struct pink_easy_process *current, const char *name);
 
-int sys_dup(pink_easy_process_t *current, const char *name);
-int sys_dup3(pink_easy_process_t *current, const char *name);
-int sys_fcntl(pink_easy_process_t *current, const char *name);
+int sys_dup(struct pink_easy_process *current, const char *name);
+int sys_dup3(struct pink_easy_process *current, const char *name);
+int sys_fcntl(struct pink_easy_process *current, const char *name);
 
-int sys_execve(pink_easy_process_t *current, const char *name);
-int sys_stat(pink_easy_process_t *current, const char *name);
+int sys_execve(struct pink_easy_process *current, const char *name);
+int sys_stat(struct pink_easy_process *current, const char *name);
 
-int sys_socketcall(pink_easy_process_t *current, const char *name);
-int sys_bind(pink_easy_process_t *current, const char *name);
-int sys_connect(pink_easy_process_t *current, const char *name);
-int sys_sendto(pink_easy_process_t *current, const char *name);
-int sys_recvfrom(pink_easy_process_t *current, const char *name);
-int sys_getsockname(pink_easy_process_t *current, const char *name);
+int sys_socketcall(struct pink_easy_process *current, const char *name);
+int sys_bind(struct pink_easy_process *current, const char *name);
+int sys_connect(struct pink_easy_process *current, const char *name);
+int sys_sendto(struct pink_easy_process *current, const char *name);
+int sys_recvfrom(struct pink_easy_process *current, const char *name);
+int sys_getsockname(struct pink_easy_process *current, const char *name);
 
-int sysx_chdir(pink_easy_process_t *current, const char *name);
-int sysx_close(pink_easy_process_t *current, const char *name);
-int sysx_dup(pink_easy_process_t *current, const char *name);
-int sysx_fcntl(pink_easy_process_t *current, const char *name);
-int sysx_socketcall(pink_easy_process_t *current, const char *name);
-int sysx_bind(pink_easy_process_t *current, const char *name);
-int sysx_getsockname(pink_easy_process_t *current, const char *name);
+int sysx_chdir(struct pink_easy_process *current, const char *name);
+int sysx_close(struct pink_easy_process *current, const char *name);
+int sysx_dup(struct pink_easy_process *current, const char *name);
+int sysx_fcntl(struct pink_easy_process *current, const char *name);
+int sysx_socketcall(struct pink_easy_process *current, const char *name);
+int sysx_bind(struct pink_easy_process *current, const char *name);
+int sysx_getsockname(struct pink_easy_process *current, const char *name);
 
-static inline sandbox_t *box_current(pink_easy_process_t *current)
+static inline sandbox_t *box_current(struct pink_easy_process *current)
 {
 	proc_data_t *data;
 
@@ -690,14 +690,14 @@ static inline void free_sandbox(sandbox_t *box)
 	SLIST_FLUSH(node, &box->whitelist_exec, up, free);
 	SLIST_FLUSH(node, &box->whitelist_read, up, free);
 	SLIST_FLUSH(node, &box->whitelist_write, up, free);
-	SLIST_FLUSH(node, &box->whitelist_sock_bind, up, free_sock_match);
-	SLIST_FLUSH(node, &box->whitelist_sock_connect, up, free_sock_match);
+	SLIST_FLUSH(node, &box->whitelist_network_bind, up, free_sock_match);
+	SLIST_FLUSH(node, &box->whitelist_network_connect, up, free_sock_match);
 
 	SLIST_FLUSH(node, &box->blacklist_exec, up, free);
 	SLIST_FLUSH(node, &box->blacklist_read, up, free);
 	SLIST_FLUSH(node, &box->blacklist_write, up, free);
-	SLIST_FLUSH(node, &box->blacklist_sock_bind, up, free_sock_match);
-	SLIST_FLUSH(node, &box->blacklist_sock_connect, up, free_sock_match);
+	SLIST_FLUSH(node, &box->blacklist_network_bind, up, free_sock_match);
+	SLIST_FLUSH(node, &box->blacklist_network_connect, up, free_sock_match);
 }
 
 static inline void free_proc(void *data)
@@ -761,8 +761,8 @@ static inline void clear_proc(void *data)
 #define sandbox_write_off(data)		(!!((data)->config.sandbox_write == SANDBOX_OFF))
 #define sandbox_write_deny(data)	(!!((data)->config.sandbox_write == SANDBOX_DENY))
 
-#define sandbox_sock_on(data)		(!!((data)->config.sandbox_sock == SANDBOX_ON))
-#define sandbox_sock_off(data)		(!!((data)->config.sandbox_sock == SANDBOX_OFF))
-#define sandbox_sock_deny(data)		(!!((data)->config.sandbox_sock == SANDBOX_DENY))
+#define sandbox_network_on(data)	(!!((data)->config.sandbox_network == SANDBOX_ON))
+#define sandbox_network_off(data)	(!!((data)->config.sandbox_network == SANDBOX_OFF))
+#define sandbox_network_deny(data)	(!!((data)->config.sandbox_network == SANDBOX_DENY))
 
 #endif /* !SYDBOX_GUARD_DEFS_H */

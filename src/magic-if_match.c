@@ -60,12 +60,12 @@ static int magic_set_global_if_match(const void *val, slist_t *if_match)
 	}
 }
 
-int magic_set_exec_kill_if_match(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_exec_kill_if_match(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	return magic_set_global_if_match(val, &sydbox->config.exec_kill_if_match);
 }
 
-int magic_set_exec_resume_if_match(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_exec_resume_if_match(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	return magic_set_global_if_match(val, &sydbox->config.exec_resume_if_match);
 }

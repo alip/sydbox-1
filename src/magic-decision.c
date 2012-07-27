@@ -26,7 +26,7 @@
 
 #include "macro.h"
 
-int magic_set_abort_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_abort_decision(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	int d;
 	const char *str = val;
@@ -38,7 +38,7 @@ int magic_set_abort_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_
 	return 0;
 }
 
-int magic_set_panic_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_panic_decision(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	int d;
 	const char *str = val;
@@ -50,7 +50,7 @@ int magic_set_panic_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_
 	return 0;
 }
 
-int magic_set_violation_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_violation_decision(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	int d;
 	const char *str = val;

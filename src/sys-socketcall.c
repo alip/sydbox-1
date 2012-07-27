@@ -25,14 +25,14 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
+int sys_socketcall(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	long subcall;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data))
+	if (sandbox_network_off(data))
 		return 0;
 
 	if (!pink_read_socket_subcall(tid, abi, data->regs, true, &subcall)) {
@@ -63,11 +63,11 @@ int sys_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const c
 	}
 }
 
-int sysx_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
+int sysx_socketcall(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data))
+	if (sandbox_network_off(data))
 		return 0;
 
 	switch (data->subcall) {

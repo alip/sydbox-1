@@ -34,7 +34,7 @@ sock_info_t *sock_info_xdup(sock_info_t *src)
 	dest = xmalloc(sizeof(sock_info_t));
 	dest->path = src->path ? xstrdup(src->path) : NULL;
 
-	dest->addr = xmalloc(sizeof(pink_socket_address_t));
+	dest->addr = xmalloc(sizeof(struct pink_sockaddr));
 	dest->addr->family = src->addr->family;
 	dest->addr->length = src->addr->length;
 	memcpy(&dest->addr->u.pad, src->addr->u.pad, sizeof(src->addr->u.pad));

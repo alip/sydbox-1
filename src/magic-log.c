@@ -26,7 +26,7 @@
 
 #include "macro.h"
 
-int magic_set_log_file(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_log_file(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	const char *str = val;
 
@@ -51,7 +51,7 @@ int magic_set_log_file(const void *val, PINK_GCC_ATTR((unused)) pink_easy_proces
 	return 0;
 }
 
-int magic_set_log_console_fd(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_log_console_fd(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	int r = PTR_TO_INT(val);
 
@@ -62,7 +62,7 @@ int magic_set_log_console_fd(const void *val, PINK_GCC_ATTR((unused)) pink_easy_
 	return 0;
 }
 
-int magic_set_log_level(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_log_level(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	int r;
 	const char *str = val;
@@ -74,13 +74,13 @@ int magic_set_log_level(const void *val, PINK_GCC_ATTR((unused)) pink_easy_proce
 	return 0;
 }
 
-int magic_set_log_timestamp(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_log_timestamp(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	sydbox->config.log_timestamp = PTR_TO_BOOL(val);
 	return 0;
 }
 
-int magic_query_log_timestamp(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_query_log_timestamp(PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	return sydbox->config.log_timestamp;
 }

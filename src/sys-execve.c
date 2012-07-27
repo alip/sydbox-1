@@ -25,12 +25,12 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_execve(pink_easy_process_t *current, const char *name)
+int sys_execve(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	char *path, *abspath;
 	pid_t tid;
-	pink_abi_t abi;
+	enum pink_abi abi;
 	proc_data_t *data;
 
 	if (sydbox->skip_initial_exec) {

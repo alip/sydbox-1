@@ -25,7 +25,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_removexattr(pink_easy_process_t *current, const char *name)
+int sys_removexattr(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -40,7 +40,7 @@ int sys_removexattr(pink_easy_process_t *current, const char *name)
 	return box_check_path(current, name, &info);
 }
 
-int sys_lremovexattr(pink_easy_process_t *current, const char *name)
+int sys_lremovexattr(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);

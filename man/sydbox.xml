@@ -408,7 +408,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-sandbox-sock">core/sandbox/sock</option></term>
+          <term><option id="core-sandbox-network">core/sandbox/network</option></term>
           <listitem>
             <para>type: <type>string</type></para>
             <para>
@@ -641,7 +641,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="filter-sock">filter/sock</option></term>
+          <term><option id="filter-network">filter/network</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>
@@ -685,7 +685,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="whitelist-sock-bind">whitelist/sock/bind</option></term>
+          <term><option id="whitelist-network-bind">whitelist/network/bind</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>
@@ -697,7 +697,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="whitelist-sock-connect">whitelist/sock/connect</option></term>
+          <term><option id="whitelist-network-connect">whitelist/network/connect</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>
@@ -743,7 +743,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="blacklist-sock-bind">blacklist/sock/bind</option></term>
+          <term><option id="blacklist-network-bind">blacklist/network/bind</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>
@@ -755,7 +755,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="blacklist-sock-connect">blacklist/sock/connect</option></term>
+          <term><option id="blacklist-network-connect">blacklist/network/connect</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
             <para>
@@ -1074,10 +1074,10 @@
                         , "level"     : 2    /* 0:fatal 1:warning 2:message 3:info 4:debug 5:trace */
                         , "timestamp" : true /* Prefix log messages with timestamp */
                         }
-        , "sandbox"   : { "exec"  : "off" /* execve(2) sandboxing */
-                        , "read"  : "off" /* read sandboxing */
-                        , "write" : "off" /* write sandboxing */
-                        , "sock"  : "off" /* network sandboxing */
+        , "sandbox"   : { "exec"    : "off" /* execve(2) sandboxing */
+                        , "read"    : "off" /* read sandboxing */
+                        , "write"   : "off" /* write sandboxing */
+                        , "network" : "off" /* network sandboxing */
                         }
         , "allow"     : { "per_process_directories"     : true /* Allow per process directories like /proc/$pid */
                         , "successful_bind"             : true /* Add successful bind() address to connect() whitelist */
@@ -1103,10 +1103,10 @@
              },
 
     "filter" :
-        { "exec"  : [ ]
-        , "read"  : [ ]
-        , "write" : [ ]
-        , "sock"  : [ ]
+        { "exec"    : [ ]
+        , "read"    : [ ]
+        , "write"   : [ ]
+        , "network" : [ ]
         },
 
     "whitelist" :
@@ -1134,7 +1134,7 @@
                     , "/var/tmp/***"
                     , "/var/cache/***"
                     ]
-        , "sock" :
+        , "network" :
             { "bind" : [ "LOOPBACK@0"
                        , "LOOPBACK@1024-65535"
                        , "LOOPBACK6@0"
@@ -1146,10 +1146,10 @@
             }
         },
     "blacklist" :
-        { "exec"  : [ ]
-        , "read"  : [ ]
-        , "write" : [ ]
-        , "sock"  : [ ]
+        { "exec"    : [ ]
+        , "read"    : [ ]
+        , "write"   : [ ]
+        , "network" : [ ]
         }
 }
       </programlisting>

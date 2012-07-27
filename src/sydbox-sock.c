@@ -336,7 +336,7 @@ sock_match_xdup(const sock_match_t *src)
 }
 
 int
-sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle)
+sock_match(const sock_match_t *haystack, const struct pink_sockaddr *needle)
 {
 	int n, mask;
 	unsigned pmin, pmax, port;

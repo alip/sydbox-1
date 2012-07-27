@@ -27,14 +27,14 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_fcntl(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
+int sys_fcntl(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	long fd, cmd;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data) || !sydbox->config.whitelist_successful_bind)
+	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind)
 		return 0;
 
 	/* Read the command */
@@ -78,15 +78,15 @@ int sys_fcntl(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *
 	return 0;
 }
 
-int sysx_fcntl(pink_easy_process_t *current, const char *name)
+int sysx_fcntl(struct pink_easy_process *current, const char *name)
 {
 	long retval;
 	ht_int64_node_t *old_node, *new_node;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data) || !sydbox->config.whitelist_successful_bind || !data->args[0])
+	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind || !data->args[0])
 		return 0;
 
 	/* Read the return value */

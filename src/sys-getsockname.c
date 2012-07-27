@@ -30,15 +30,15 @@
 
 #include "hashtable.h"
 
-int sys_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
+int sys_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	bool decode_socketcall;
 	long fd;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data) || !sydbox->config.whitelist_successful_bind)
+	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind)
 		return 0;
 
 	decode_socketcall = !!(data->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
@@ -61,19 +61,19 @@ int sys_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const 
 	return 0;
 }
 
-int sysx_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
+int sysx_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	bool decode_socketcall;
 	unsigned port;
 	long retval;
-	pink_socket_address_t psa;
+	struct pink_sockaddr psa;
 	struct snode *snode;
 	sock_match_t *m;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data) || !sydbox->config.whitelist_successful_bind || !data->args[0])
+	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind || !data->args[0])
 		return 0;
 
 	/* Check the return value */
@@ -137,6 +137,6 @@ int sysx_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const
 
 	snode = xcalloc(1, sizeof(struct snode));
 	snode->data = m;
-	SLIST_INSERT_HEAD(&data->config.whitelist_sock_connect, snode, up);
+	SLIST_INSERT_HEAD(&data->config.whitelist_network_connect, snode, up);
 	return 0;
 }

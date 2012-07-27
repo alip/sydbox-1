@@ -35,8 +35,8 @@ struct key {
 	const char *lname;
 	unsigned parent;
 	enum magic_type type;
-	int (*set) (const void *val, pink_easy_process_t *current);
-	int (*query) (pink_easy_process_t *current);
+	int (*set) (const void *val, struct pink_easy_process *current);
+	int (*query) (struct pink_easy_process *current);
 };
 
 static const struct key key_table[] = {
@@ -127,10 +127,10 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_NONE,
 			.type   = MAGIC_TYPE_OBJECT,
 		},
-	[MAGIC_KEY_WHITELIST_SOCK] =
+	[MAGIC_KEY_WHITELIST_NETWORK] =
 		{
-			.name   = "sock",
-			.lname  = "whitelist.sock",
+			.name   = "network",
+			.lname  = "whitelist.network",
 			.parent = MAGIC_KEY_WHITELIST,
 			.type   = MAGIC_TYPE_OBJECT,
 		},
@@ -142,10 +142,10 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_NONE,
 			.type   = MAGIC_TYPE_OBJECT,
 		},
-	[MAGIC_KEY_BLACKLIST_SOCK] =
+	[MAGIC_KEY_BLACKLIST_NETWORK] =
 		{
-			.name   = "sock",
-			.lname  = "blacklist.sock",
+			.name   = "network",
+			.lname  = "blacklist.network",
 			.parent = MAGIC_KEY_BLACKLIST,
 			.type   = MAGIC_TYPE_OBJECT,
 		},
@@ -208,13 +208,13 @@ static const struct key key_table[] = {
 			.type   = MAGIC_TYPE_STRING,
 			.set    = magic_set_sandbox_write,
 		},
-	[MAGIC_KEY_CORE_SANDBOX_SOCK] =
+	[MAGIC_KEY_CORE_SANDBOX_NETWORK] =
 		{
-			.name   = "sock",
-			.lname  = "core.sandbox.sock",
+			.name   = "network",
+			.lname  = "core.sandbox.network",
 			.parent = MAGIC_KEY_CORE_SANDBOX,
 			.type   = MAGIC_TYPE_STRING,
-			.set    = magic_set_sandbox_sock,
+			.set    = magic_set_sandbox_network,
 		},
 
 	[MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES] =
@@ -374,21 +374,21 @@ static const struct key key_table[] = {
 			.type   = MAGIC_TYPE_STRING_ARRAY,
 			.set    = magic_set_whitelist_write,
 		},
-	[MAGIC_KEY_WHITELIST_SOCK_BIND] =
+	[MAGIC_KEY_WHITELIST_NETWORK_BIND] =
 		{
 			.name   = "bind",
-			.lname  = "whitelist.sock.bind",
-			.parent = MAGIC_KEY_WHITELIST_SOCK,
+			.lname  = "whitelist.network.bind",
+			.parent = MAGIC_KEY_WHITELIST_NETWORK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = magic_set_whitelist_sock_bind,
+			.set    = magic_set_whitelist_network_bind,
 		},
-	[MAGIC_KEY_WHITELIST_SOCK_CONNECT] =
+	[MAGIC_KEY_WHITELIST_NETWORK_CONNECT] =
 		{
 			.name   = "connect",
-			.lname  = "whitelist.sock.connect",
-			.parent = MAGIC_KEY_WHITELIST_SOCK,
+			.lname  = "whitelist.network.connect",
+			.parent = MAGIC_KEY_WHITELIST_NETWORK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = magic_set_whitelist_sock_connect,
+			.set    = magic_set_whitelist_network_connect,
 		},
 
 	[MAGIC_KEY_BLACKLIST_EXEC] =
@@ -415,21 +415,21 @@ static const struct key key_table[] = {
 			.type   = MAGIC_TYPE_STRING_ARRAY,
 			.set    = magic_set_blacklist_write,
 		},
-	[MAGIC_KEY_BLACKLIST_SOCK_BIND] =
+	[MAGIC_KEY_BLACKLIST_NETWORK_BIND] =
 		{
 			.name   = "bind",
-			.lname  = "blacklist.sock.bind",
-			.parent = MAGIC_KEY_BLACKLIST_SOCK,
+			.lname  = "blacklist.network.bind",
+			.parent = MAGIC_KEY_BLACKLIST_NETWORK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = magic_set_blacklist_sock_bind,
+			.set    = magic_set_blacklist_network_bind,
 		},
-	[MAGIC_KEY_BLACKLIST_SOCK_CONNECT] =
+	[MAGIC_KEY_BLACKLIST_NETWORK_CONNECT] =
 		{
 			.name   = "connect",
-			.lname  = "blacklist.sock.connect",
-			.parent = MAGIC_KEY_BLACKLIST_SOCK,
+			.lname  = "blacklist.network.connect",
+			.parent = MAGIC_KEY_BLACKLIST_NETWORK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = magic_set_blacklist_sock_connect,
+			.set    = magic_set_blacklist_network_connect,
 		},
 
 	[MAGIC_KEY_FILTER_EXEC] =
@@ -456,13 +456,13 @@ static const struct key key_table[] = {
 			.type   = MAGIC_TYPE_STRING_ARRAY,
 			.set    = magic_set_filter_write,
 		},
-	[MAGIC_KEY_FILTER_SOCK] =
+	[MAGIC_KEY_FILTER_NETWORK] =
 		{
-			.name   = "sock",
-			.lname  = "filter.sock",
+			.name   = "network",
+			.lname  = "filter.network",
 			.parent = MAGIC_KEY_FILTER,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = magic_set_filter_sock,
+			.set    = magic_set_filter_network,
 		},
 
 	[MAGIC_KEY_INVALID] =
@@ -538,7 +538,7 @@ magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len)
 }
 
 int
-magic_cast(pink_easy_process_t *current, enum magic_key key, enum magic_type type, const void *val)
+magic_cast(struct pink_easy_process *current, enum magic_key key, enum magic_type type, const void *val)
 {
 	struct key entry;
 
@@ -562,7 +562,7 @@ magic_cast(pink_easy_process_t *current, enum magic_key key, enum magic_type typ
 }
 
 static int
-magic_query(pink_easy_process_t *current, enum magic_key key)
+magic_query(struct pink_easy_process *current, enum magic_key key)
 {
 	struct key entry;
 
@@ -590,7 +590,7 @@ magic_next_key(const char *magic, enum magic_key key)
 }
 
 int
-magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
+magic_cast_string(struct pink_easy_process *current, const char *magic, int prefix)
 {
 	bool query = false, bval;
 	int ret, ival;

@@ -89,31 +89,31 @@ end:
 	return r;
 }
 
-int magic_set_whitelist_sock_bind(const void *val, pink_easy_process_t *current)
+int magic_set_whitelist_network_bind(const void *val, struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_set_socklist(val, &box->whitelist_sock_bind);
+	return magic_set_socklist(val, &box->whitelist_network_bind);
 }
 
-int magic_set_whitelist_sock_connect(const void *val, pink_easy_process_t *current)
+int magic_set_whitelist_network_connect(const void *val, struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_set_socklist(val, &box->whitelist_sock_connect);
+	return magic_set_socklist(val, &box->whitelist_network_connect);
 }
 
-int magic_set_blacklist_sock_bind(const void *val, pink_easy_process_t *current)
+int magic_set_blacklist_network_bind(const void *val, struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_set_socklist(val, &box->blacklist_sock_bind);
+	return magic_set_socklist(val, &box->blacklist_network_bind);
 }
 
-int magic_set_blacklist_sock_connect(const void *val, pink_easy_process_t *current)
+int magic_set_blacklist_network_connect(const void *val, struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_set_socklist(val, &box->blacklist_sock_connect);
+	return magic_set_socklist(val, &box->blacklist_network_connect);
 }
 
-int magic_set_filter_sock(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_filter_network(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
-	return magic_set_socklist(val, &sydbox->config.filter_sock);
+	return magic_set_socklist(val, &sydbox->config.filter_network);
 }

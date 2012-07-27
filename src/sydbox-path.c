@@ -35,12 +35,12 @@
  *  0 : Successful run
  * >0 : PINK_EASY_CFLAG* flags
  */
-int path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
+int path_decode(struct pink_easy_process *current, unsigned ind, char **buf)
 {
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	assert(current);
@@ -84,13 +84,13 @@ int path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
  *  0 : Successful run
  * >0 : PINK_EASY_CFLAG* flags
  */
-int path_prefix(pink_easy_process_t *current, unsigned ind, char **buf)
+int path_prefix(struct pink_easy_process *current, unsigned ind, char **buf)
 {
 	int r;
 	long fd;
 	char *prefix;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (!pink_read_argument(tid, abi, data->regs, ind, &fd)) {

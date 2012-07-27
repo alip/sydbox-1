@@ -27,14 +27,14 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_stat(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
+int sys_stat(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	int r;
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 	struct stat buf;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (data->config.magic_lock == LOCK_SET) /* No magic allowed! */

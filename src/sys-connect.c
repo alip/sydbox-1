@@ -27,18 +27,18 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_connect(pink_easy_process_t *current, const char *name)
+int sys_connect(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data))
+	if (sandbox_network_off(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = sandbox_sock_deny(data);
-	info.wblist = sandbox_sock_deny(data) ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
-	info.filter = &sydbox->config.filter_sock;
+	info.whitelisting = sandbox_network_deny(data);
+	info.wblist = sandbox_network_deny(data) ? &data->config.whitelist_network_connect : &data->config.blacklist_network_connect;
+	info.filter = &sydbox->config.filter_network;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 1;
@@ -49,18 +49,18 @@ int sys_connect(pink_easy_process_t *current, const char *name)
 	return box_check_sock(current, name, &info);
 }
 
-int sys_sendto(pink_easy_process_t *current, const char *name)
+int sys_sendto(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data))
+	if (sandbox_network_off(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = sandbox_sock_deny(data);
-	info.wblist = sandbox_sock_deny(data) ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
-	info.filter = &sydbox->config.filter_sock;
+	info.whitelisting = sandbox_network_deny(data);
+	info.wblist = sandbox_network_deny(data) ? &data->config.whitelist_network_connect : &data->config.blacklist_network_connect;
+	info.filter = &sydbox->config.filter_network;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 4;
@@ -71,18 +71,18 @@ int sys_sendto(pink_easy_process_t *current, const char *name)
 	return box_check_sock(current, name, &info);
 }
 
-int sys_recvfrom(pink_easy_process_t *current, const char *name)
+int sys_recvfrom(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data))
+	if (sandbox_network_off(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = sandbox_sock_deny(data);
-	info.wblist = sandbox_sock_deny(data) ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
-	info.filter = &sydbox->config.filter_sock;
+	info.whitelisting = sandbox_network_deny(data);
+	info.wblist = sandbox_network_deny(data) ? &data->config.whitelist_network_connect : &data->config.blacklist_network_connect;
+	info.filter = &sydbox->config.filter_network;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 4;

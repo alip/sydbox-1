@@ -85,14 +85,14 @@ static inline bool open_wr_check(long flags, enum create_mode *create, bool *res
 	return false;
 }
 
-int sys_open(pink_easy_process_t *current, const char *name)
+int sys_open(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	bool resolv, wr;
 	enum create_mode create;
 	long flags;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
@@ -131,14 +131,14 @@ int sys_open(pink_easy_process_t *current, const char *name)
 	return r;
 }
 
-int sys_openat(pink_easy_process_t *current, const char *name)
+int sys_openat(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	bool resolv, wr;
 	enum create_mode create;
 	long flags;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 

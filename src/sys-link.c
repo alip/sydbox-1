@@ -28,7 +28,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_link(pink_easy_process_t *current, const char *name)
+int sys_link(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	sys_info_t info;
@@ -50,12 +50,12 @@ int sys_link(pink_easy_process_t *current, const char *name)
 	return r;
 }
 
-int sys_linkat(pink_easy_process_t *current, const char *name)
+int sys_linkat(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	long flags;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 

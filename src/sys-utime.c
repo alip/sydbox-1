@@ -28,7 +28,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_utime(pink_easy_process_t *current, const char *name)
+int sys_utime(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -44,7 +44,7 @@ int sys_utime(pink_easy_process_t *current, const char *name)
 }
 
 int
-sys_utimes(pink_easy_process_t *current, const char *name)
+sys_utimes(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -59,11 +59,11 @@ sys_utimes(pink_easy_process_t *current, const char *name)
 	return box_check_path(current, name, &info);
 }
 
-int sys_utimensat(pink_easy_process_t *current, const char *name)
+int sys_utimensat(struct pink_easy_process *current, const char *name)
 {
 	long flags;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
@@ -90,7 +90,7 @@ int sys_utimensat(pink_easy_process_t *current, const char *name)
 	return box_check_path(current, name, &info);
 }
 
-int sys_futimesat(pink_easy_process_t *current, const char *name)
+int sys_futimesat(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);

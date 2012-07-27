@@ -154,7 +154,7 @@ static void sydbox_destroy(void)
 	SLIST_FLUSH(node, &sydbox->config.filter_exec, up, free);
 	SLIST_FLUSH(node, &sydbox->config.filter_read, up, free);
 	SLIST_FLUSH(node, &sydbox->config.filter_write, up, free);
-	SLIST_FLUSH(node, &sydbox->config.filter_sock, up, free_sock_match);
+	SLIST_FLUSH(node, &sydbox->config.filter_network, up, free_sock_match);
 
 	pink_easy_context_destroy(sydbox->ctx);
 
@@ -179,11 +179,11 @@ static void sig_cleanup(int signo)
 	raise(signo);
 }
 
-static bool dump_one_process(pink_easy_process_t *current, void *userdata)
+static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 {
 	pid_t tid = pink_easy_process_get_tid(current);
 	pid_t tgid = pink_easy_process_get_tgid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	struct snode *node;
 
@@ -202,7 +202,7 @@ static bool dump_one_process(pink_easy_process_t *current, void *userdata)
 			sandbox_mode_to_string(data->config.sandbox_exec),
 			sandbox_mode_to_string(data->config.sandbox_read),
 			sandbox_mode_to_string(data->config.sandbox_write),
-			sandbox_mode_to_string(data->config.sandbox_sock));
+			sandbox_mode_to_string(data->config.sandbox_network));
 	fprintf(stderr, "    Magic Lock: %s\n", lock_state_to_string(data->config.magic_lock));
 	fprintf(stderr, "    Exec Whitelist:\n");
 	SLIST_FOREACH(node, &data->config.whitelist_exec, up)
@@ -222,7 +222,7 @@ static void sig_user(int signo)
 {
 	bool cmpl;
 	unsigned c;
-	pink_easy_process_list_t *list;
+	struct pink_easy_process_list *list;
 
 	if (!sydbox)
 		return;

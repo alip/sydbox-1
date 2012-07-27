@@ -30,10 +30,10 @@ enum sandbox_type {
 	SANDBOX_EXEC,
 	SANDBOX_READ,
 	SANDBOX_WRITE,
-	SANDBOX_SOCK,
+	SANDBOX_NETWORK,
 };
 
-static int magic_set_sandbox(enum sandbox_type t, const char *str, pink_easy_process_t *current)
+static int magic_set_sandbox(enum sandbox_type t, const char *str, struct pink_easy_process *current)
 {
 	int r;
 	sandbox_t *box;
@@ -52,8 +52,8 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str, pink_easy_pro
 	case SANDBOX_WRITE:
 		box->sandbox_write = r;
 		break;
-	case SANDBOX_SOCK:
-		box->sandbox_sock = r;
+	case SANDBOX_NETWORK:
+		box->sandbox_network = r;
 		break;
 	default:
 		abort();
@@ -62,22 +62,22 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str, pink_easy_pro
 	return 0;
 }
 
-int magic_set_sandbox_exec(const void *val, pink_easy_process_t *current)
+int magic_set_sandbox_exec(const void *val, struct pink_easy_process *current)
 {
 	return magic_set_sandbox(SANDBOX_EXEC, val, current);
 }
 
-int magic_set_sandbox_read(const void *val, pink_easy_process_t *current)
+int magic_set_sandbox_read(const void *val, struct pink_easy_process *current)
 {
 	return magic_set_sandbox(SANDBOX_READ, val, current);
 }
 
-int magic_set_sandbox_write(const void *val, pink_easy_process_t *current)
+int magic_set_sandbox_write(const void *val, struct pink_easy_process *current)
 {
 	return magic_set_sandbox(SANDBOX_WRITE, val, current);
 }
 
-int magic_set_sandbox_sock(const void *val, pink_easy_process_t *current)
+int magic_set_sandbox_network(const void *val, struct pink_easy_process *current)
 {
-	return magic_set_sandbox(SANDBOX_SOCK, val, current);
+	return magic_set_sandbox(SANDBOX_NETWORK, val, current);
 }

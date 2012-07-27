@@ -35,24 +35,24 @@
 
 #include "hashtable.h"
 
-int sys_bind(pink_easy_process_t *current, const char *name)
+int sys_bind(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	long fd;
 	char *unix_abspath;
-	pink_socket_address_t *psa;
+	struct pink_sockaddr *psa;
 	sys_info_t info;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data))
+	if (sandbox_network_off(data))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = data->config.sandbox_sock == SANDBOX_DENY;
-	info.wblist = sandbox_sock_deny(data) ? &data->config.whitelist_sock_bind : &data->config.blacklist_sock_bind;
-	info.filter = &sydbox->config.filter_sock;
+	info.whitelisting = data->config.sandbox_network == SANDBOX_DENY;
+	info.wblist = sandbox_network_deny(data) ? &data->config.whitelist_network_bind : &data->config.blacklist_network_bind;
+	info.filter = &sydbox->config.filter_network;
 	info.resolv = true;
 	info.index  = 1;
 	info.create = MAY_CREATE;
@@ -106,17 +106,17 @@ int sys_bind(pink_easy_process_t *current, const char *name)
 	return r;
 }
 
-int sysx_bind(pink_easy_process_t *current, const char *name)
+int sysx_bind(struct pink_easy_process *current, const char *name)
 {
 	long retval;
 	struct snode *snode;
 	ht_int64_node_t *node;
 	sock_match_t *m;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_sock_off(data) || !sydbox->config.whitelist_successful_bind || !data->savebind)
+	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind || !data->savebind)
 		return 0;
 
 	/* Check the return value */
@@ -151,7 +151,7 @@ int sysx_bind(pink_easy_process_t *current, const char *name)
 	snode = xcalloc(1, sizeof(struct snode));
 	sock_match_new_pink(data->savebind, &m);
 	snode->data = m;
-	SLIST_INSERT_HEAD(&data->config.whitelist_sock_connect, snode, up);
+	SLIST_INSERT_HEAD(&data->config.whitelist_network_connect, snode, up);
 	return 0;
 zero:
 	node = hashtable_find(data->sockmap, data->args[0] + 1, 1);

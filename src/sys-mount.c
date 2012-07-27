@@ -28,7 +28,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_mount(pink_easy_process_t *current, const char *name)
+int sys_mount(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -44,7 +44,7 @@ int sys_mount(pink_easy_process_t *current, const char *name)
 	return box_check_path(current, name, &info);
 }
 
-int sys_umount(pink_easy_process_t *current, const char *name)
+int sys_umount(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -59,12 +59,12 @@ int sys_umount(pink_easy_process_t *current, const char *name)
 	return box_check_path(current, name, &info);
 }
 
-int sys_umount2(pink_easy_process_t *current, const char *name)
+int sys_umount2(struct pink_easy_process *current, const char *name)
 {
 #ifdef UMOUNT_NOFOLLOW
 	long flags;
 	pid_t tid;
-	pink_abi_t abi;
+	enum pink_abi abi;
 #endif
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);

@@ -30,13 +30,13 @@
 #include "proc.h"
 #include "util.h"
 
-int sysx_chdir(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
+int sysx_chdir(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	int r;
 	long retval;
 	char *cwd;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (!pink_read_retval(tid, abi, data->regs, &retval, NULL)) {

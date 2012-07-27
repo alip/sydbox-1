@@ -30,12 +30,12 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_access(pink_easy_process_t *current, const char *name)
+int sys_access(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	long mode;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
@@ -85,12 +85,12 @@ int sys_access(pink_easy_process_t *current, const char *name)
 	return r;
 }
 
-int sys_faccessat(pink_easy_process_t *current, const char *name)
+int sys_faccessat(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	long mode, flags;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 

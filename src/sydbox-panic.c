@@ -58,7 +58,7 @@ static inline int errno2retval(void)
 	return -errno;
 }
 
-static bool cont_one(pink_easy_process_t *proc, void *userdata)
+static bool cont_one(struct pink_easy_process *proc, void *userdata)
 {
 	pid_t tid = pink_easy_process_get_tid(proc);
 
@@ -79,7 +79,7 @@ static bool cont_one(pink_easy_process_t *proc, void *userdata)
 	return true;
 }
 
-static bool kill_one(pink_easy_process_t *proc, void *userdata)
+static bool kill_one(struct pink_easy_process *proc, void *userdata)
 {
 	pid_t tid = pink_easy_process_get_tid(proc);
 
@@ -103,7 +103,7 @@ static bool kill_one(pink_easy_process_t *proc, void *userdata)
 void abort_all(void)
 {
 	unsigned count;
-	pink_easy_process_list_t *list = pink_easy_context_get_process_list(sydbox->ctx);
+	struct pink_easy_process_list *list = pink_easy_context_get_process_list(sydbox->ctx);
 
 	switch (sydbox->config.abort_decision) {
 	case ABORT_CONTALL:
@@ -120,11 +120,11 @@ void abort_all(void)
 }
 
 PINK_GCC_ATTR((format (printf, 2, 0)))
-static void report(pink_easy_process_t *current, const char *fmt, va_list ap)
+static void report(struct pink_easy_process *current, const char *fmt, va_list ap)
 {
 	char *cmdline;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	warning("-- Access Violation! --");
@@ -139,10 +139,10 @@ static void report(pink_easy_process_t *current, const char *fmt, va_list ap)
 	log_msg_va(1, fmt, ap);
 }
 
-int deny(pink_easy_process_t *current)
+int deny(struct pink_easy_process *current)
 {
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	data->deny = true;
@@ -162,10 +162,10 @@ int deny(pink_easy_process_t *current)
 	return 0;
 }
 
-int restore(pink_easy_process_t *current)
+int restore(struct pink_easy_process *current)
 {
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	/* Restore system call number */
@@ -193,10 +193,10 @@ int restore(pink_easy_process_t *current)
 	return 0;
 }
 
-int panic(pink_easy_process_t *current)
+int panic(struct pink_easy_process *current)
 {
 	unsigned count;
-	pink_easy_process_list_t *list = pink_easy_context_get_process_list(sydbox->ctx);
+	struct pink_easy_process_list *list = pink_easy_context_get_process_list(sydbox->ctx);
 
 	switch (sydbox->config.panic_decision) {
 	case PANIC_KILL:
@@ -225,11 +225,11 @@ int panic(pink_easy_process_t *current)
 	exit(sydbox->config.panic_exit_code > 0 ? sydbox->config.panic_exit_code : sydbox->exit_code);
 }
 
-int violation(pink_easy_process_t *current, const char *fmt, ...)
+int violation(struct pink_easy_process *current, const char *fmt, ...)
 {
 	unsigned count;
 	va_list ap;
-	pink_easy_process_list_t *list = pink_easy_context_get_process_list(sydbox->ctx);
+	struct pink_easy_process_list *list = pink_easy_context_get_process_list(sydbox->ctx);
 
 	sydbox->violation = true;
 

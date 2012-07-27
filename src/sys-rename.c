@@ -25,7 +25,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-int sys_rename(pink_easy_process_t *current, const char *name)
+int sys_rename(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	sys_info_t info;
@@ -47,7 +47,7 @@ int sys_rename(pink_easy_process_t *current, const char *name)
 	return r;
 }
 
-int sys_renameat(pink_easy_process_t *current, const char *name)
+int sys_renameat(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	sys_info_t info;

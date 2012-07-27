@@ -110,12 +110,12 @@ void sysinit(void)
 	systable_add("getsockname", sys_getsockname, sysx_getsockname);
 }
 
-int sysenter(pink_easy_process_t *current)
+int sysenter(struct pink_easy_process *current)
 {
 	long no;
 	const char *name;
 	pid_t tid;
-	pink_abi_t abi;
+	enum pink_abi abi;
 	proc_data_t *data;
 	const sysentry_t *entry;
 
@@ -149,11 +149,11 @@ int sysenter(pink_easy_process_t *current)
 	return (entry && entry->enter) ? entry->enter(current, entry->name) : 0;
 }
 
-int sysexit(pink_easy_process_t *current)
+int sysexit(struct pink_easy_process *current)
 {
 	int r;
 	const sysentry_t *entry;
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (data->deny) {

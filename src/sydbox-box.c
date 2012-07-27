@@ -42,7 +42,7 @@
 
 inline
 static void
-box_report_violation_path(pink_easy_process_t *current, const char *name, unsigned ind, const char *path)
+box_report_violation_path(struct pink_easy_process *current, const char *name, unsigned ind, const char *path)
 {
 	switch (ind) {
 	case 0:
@@ -65,7 +65,7 @@ box_report_violation_path(pink_easy_process_t *current, const char *name, unsign
 
 inline
 static void
-box_report_violation_path_at(pink_easy_process_t *current, const char *name, unsigned ind, const char *path, const char *prefix)
+box_report_violation_path_at(struct pink_easy_process *current, const char *name, unsigned ind, const char *path, const char *prefix)
 {
 	switch (ind) {
 	case 1:
@@ -84,7 +84,7 @@ box_report_violation_path_at(pink_easy_process_t *current, const char *name, uns
 }
 
 static void
-box_report_violation_sock(pink_easy_process_t *current, const sys_info_t *info, const char *name, const pink_socket_address_t *paddr)
+box_report_violation_sock(struct pink_easy_process *current, const sys_info_t *info, const char *name, const struct pink_sockaddr *paddr)
 {
 	char ip[64];
 	const char *f;
@@ -179,12 +179,12 @@ box_match_path(const char *path, const slist_t *patterns, const char **match)
 }
 
 int
-box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
+box_check_path(struct pink_easy_process *current, const char *name, sys_info_t *info)
 {
 	int r;
 	char *prefix, *path, *abspath;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	slist_t *wblist;
 
@@ -314,23 +314,23 @@ end:
 }
 
 int
-box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
+box_check_sock(struct pink_easy_process *current, const char *name, sys_info_t *info)
 {
 	int r;
 	char *abspath;
 	struct snode *node;
 	sock_match_t *m;
 	pid_t tid = pink_easy_process_get_tid(current);
-	pink_abi_t abi = pink_easy_process_get_abi(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	pink_socket_address_t *psa;
+	struct pink_sockaddr *psa;
 
 	assert(current);
 	assert(info);
 
 	r = 0;
 	abspath = NULL;
-	psa = xmalloc(sizeof(pink_socket_address_t));
+	psa = xmalloc(sizeof(struct pink_sockaddr));
 
 	if (!pink_read_socket_address(tid, abi, data->regs,
 				info->decode_socketcall,

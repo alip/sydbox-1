@@ -60,53 +60,53 @@ static int magic_set_strlist(const void *val, slist_t *head)
 	}
 }
 
-int magic_set_whitelist_exec(const void *val, pink_easy_process_t *current)
+int magic_set_whitelist_exec(const void *val, struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->whitelist_exec);
 }
 
-int magic_set_whitelist_read(const void *val, pink_easy_process_t *current)
+int magic_set_whitelist_read(const void *val, struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->whitelist_read);
 }
 
-int magic_set_whitelist_write(const void *val, pink_easy_process_t *current)
+int magic_set_whitelist_write(const void *val, struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->whitelist_write);
 }
 
-int magic_set_blacklist_exec(const void *val, pink_easy_process_t *current)
+int magic_set_blacklist_exec(const void *val, struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->blacklist_exec);
 }
 
-int magic_set_blacklist_read(const void *val, pink_easy_process_t *current)
+int magic_set_blacklist_read(const void *val, struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->blacklist_read);
 }
 
-int magic_set_blacklist_write(const void *val, pink_easy_process_t *current)
+int magic_set_blacklist_write(const void *val, struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->blacklist_write);
 }
 
-int magic_set_filter_exec(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_filter_exec(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	return magic_set_strlist(val, &sydbox->config.filter_exec);
 }
 
-int magic_set_filter_read(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_filter_read(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	return magic_set_strlist(val, &sydbox->config.filter_read);
 }
 
-int magic_set_filter_write(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+int magic_set_filter_write(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	return magic_set_strlist(val, &sydbox->config.filter_write);
 }
