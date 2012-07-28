@@ -64,10 +64,9 @@ int magic_set_log_console_fd(const void *val, PINK_GCC_ATTR((unused)) struct pin
 
 int magic_set_log_level(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
-	int r;
-	const char *str = val;
+	int r = PTR_TO_INT(val);
 
-	if ((r = log_level_from_string(str)) < 0)
+	if (r < 0 || r > 5)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	sydbox->config.log_level = r;
