@@ -1156,12 +1156,19 @@
     </refsect2>
   </refsect1>
 
+  <refsect1 id="signals">
+    <title>Signals</title>
+
+    <para>Sydbox dumps information about the traced process tree to standard error upon receiving the SIGUSR1 signal.
+      Send SIGUSR2 signal for more verbose process information.</para>
+  </refsect1>
+
   <refsect1 id="bugs">
     <title>Bugs</title>
 
-    <para>This is very unstable software and should be used with care.
-    Report bugs by direct mail to &lt;alip at exherbo dot org&gt; or by
-    using the issue tracker at https://github.com/alip/sydbox/issues</para>
+    <para>This is unstable software and should be used with care.
+    Report bugs by direct mail to &lt;alip at exherbo dot org&gt;.
+    Attaching poems encourages consideration tremendously.</para>
   </refsect1>
 
   <refsect1 id="security">
