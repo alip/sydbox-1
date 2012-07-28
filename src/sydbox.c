@@ -188,6 +188,10 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 	struct snode *node;
 
 	fprintf(stderr, "-- Thread ID: %lu\n", (unsigned long)tid);
+	if (pink_easy_process_is_starting(current)) {
+		fprintf(stderr, "  Thread is suspended at startup!\n");
+		return true;
+	}
 	fprintf(stderr, "   Thread Group ID: %lu\n", tgid > 0 ? (unsigned long)tgid : 0UL);
 	fprintf(stderr, "   Attach: %s\n", pink_easy_process_is_attached(current) ? "true" : "false");
 	fprintf(stderr, "   Clone: %s\n", pink_easy_process_is_clone(current) ? "true" : "false");
