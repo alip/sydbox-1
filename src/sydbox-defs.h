@@ -198,6 +198,8 @@ enum magic_type {
 enum magic_key {
 	MAGIC_KEY_NONE,
 
+	MAGIC_KEY_VERSION,
+
 	MAGIC_KEY_CORE,
 
 	MAGIC_KEY_CORE_LOG,

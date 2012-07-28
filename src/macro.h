@@ -51,4 +51,7 @@
 #define STRLEN_LITERAL(s) (sizeof((s)) - 1)
 #define STRCMP_LITERAL(s,l) (strncmp((s), (l), sizeof((l)) - 1))
 
+#define STRINGIFY(s) STRINGIFY_(s)
+#define STRINGIFY_(s) #s
+
 #endif /* !MACRO_H */

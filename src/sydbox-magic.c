@@ -47,6 +47,14 @@ static const struct key key_table[] = {
 			.type   = MAGIC_TYPE_OBJECT,
 		},
 
+	[MAGIC_KEY_VERSION] =
+		{
+			.name = STRINGIFY(SYDBOX_VERSION_MAJOR),
+			.lname = STRINGIFY(SYDBOX_VERSION_MAJOR),
+			.parent = MAGIC_KEY_NONE,
+			.type = MAGIC_TYPE_NONE,
+		},
+
 	[MAGIC_KEY_CORE] =
 		{
 			.name   = "core",
@@ -472,8 +480,7 @@ static const struct key key_table[] = {
 		},
 };
 
-const char *
-magic_strerror(enum magic_error error)
+const char *magic_strerror(enum magic_error error)
 {
 	switch (error) {
 	case MAGIC_ERROR_SUCCESS:
@@ -497,26 +504,22 @@ magic_strerror(enum magic_error error)
 	}
 }
 
-const char *
-magic_strkey(enum magic_key key)
+const char *magic_strkey(enum magic_key key)
 {
 	return (key >= MAGIC_KEY_INVALID) ? "invalid" : key_table[key].lname;
 }
 
-unsigned
-magic_key_parent(enum magic_key key)
+unsigned magic_key_parent(enum magic_key key)
 {
 	return (key >= MAGIC_KEY_INVALID) ? MAGIC_KEY_INVALID : key_table[key].parent;
 }
 
-unsigned
-magic_key_type(enum magic_key key)
+unsigned magic_key_type(enum magic_key key)
 {
 	return (key >= MAGIC_KEY_INVALID) ? MAGIC_TYPE_NONE : key_table[key].type;
 }
 
-unsigned
-magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len)
+unsigned magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len)
 {
 	if (key >= MAGIC_KEY_INVALID)
 		return MAGIC_KEY_INVALID;
@@ -537,8 +540,7 @@ magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len)
 	return MAGIC_KEY_INVALID;
 }
 
-int
-magic_cast(struct pink_easy_process *current, enum magic_key key, enum magic_type type, const void *val)
+int magic_cast(struct pink_easy_process *current, enum magic_key key, enum magic_type type, const void *val)
 {
 	struct key entry;
 
@@ -561,8 +563,7 @@ magic_cast(struct pink_easy_process *current, enum magic_key key, enum magic_typ
 	return entry.set(val, current);
 }
 
-static int
-magic_query(struct pink_easy_process *current, enum magic_key key)
+static int magic_query(struct pink_easy_process *current, enum magic_key key)
 {
 	struct key entry;
 
@@ -573,9 +574,7 @@ magic_query(struct pink_easy_process *current, enum magic_key key)
 	return entry.query ? entry.query(current) : MAGIC_ERROR_INVALID_QUERY;
 }
 
-inline
-static enum magic_key
-magic_next_key(const char *magic, enum magic_key key)
+static inline enum magic_key magic_next_key(const char *magic, enum magic_key key)
 {
 	int r;
 
@@ -589,8 +588,7 @@ magic_next_key(const char *magic, enum magic_key key)
 	return MAGIC_KEY_INVALID;
 }
 
-int
-magic_cast_string(struct pink_easy_process *current, const char *magic, int prefix)
+int magic_cast_string(struct pink_easy_process *current, const char *magic, int prefix)
 {
 	bool query = false, bval;
 	int ret, ival;
@@ -650,6 +648,11 @@ magic_cast_string(struct pink_easy_process *current, const char *magic, int pref
 			++cmd;
 			break;
 		case 0:
+			if (key_table[key].type == MAGIC_TYPE_NONE) {
+				/* Special path, i.e /dev/sydbox/${version_major} */
+				return 1;
+			}
+			/* fall through */
 		default:
 			return MAGIC_ERROR_INVALID_KEY;
 		}

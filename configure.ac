@@ -1,9 +1,22 @@
 dnl Program, version
 AC_PREREQ(2.59)
 
-AC_INIT([sydbox], [1], [alip@exherbo.org], [sydbox])
+dnl Versioning
+dnl major: User interface changes (magic commands, configuration format)
+dnl minor: Major changes without UI breakage
+dnl micro: Every other change increases micro version
+dnl suffix: For prerelease, alpha, beta versions
+m4_define([sydbox_version_major],  [1])
+m4_define([sydbox_version_minor],  [0])
+m4_define([sydbox_version_micro],  [0])
+m4_define([sydbox_version_suffix], [])
+m4_define([sydbox_version_full],   [sydbox_version_major.sydbox_version_minor.sydbox_version_micro[]sydbox_version_suffix])
+m4_define([sydbox_version],        [sydbox_version_full])
+
+AC_INIT([sydbox], [sydbox_version], [alip@exherbo.org], [sydbox])
 
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_SRCDIR([src/sydbox.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
@@ -33,14 +46,14 @@ AC_ARG_WITH([git-head],
 AC_MSG_RESULT([$GITHEAD])
 AC_SUBST([GITHEAD])
 
-SYDBOX_CFLAGS=
+SYDBOX_CFLAGS='-DSYDBOX_VERSION_MAJOR=sydbox_version_major'
 
 dnl toolchain checks
+AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC_C99
 if test x"$ac_cv_prog_cc_c99" = x"no"; then
 	AC_MSG_ERROR([sydbox requires a C compiler that supports ISO C99!])
 fi
-AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 AC_PROG_SED
@@ -81,17 +94,19 @@ dnl check for libraries
 PINKTRACE_REQUIRED=0.2.0
 
 PKG_PROG_PKG_CONFIG([0.20.0])
-PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],,
-				  AC_MSG_ERROR([sydbox requires pinktrace-$PINKTRACE_REQUIRED or newer]))
-PKG_CHECK_MODULES([pinktrace_easy], [pinktrace_easy >= $PINKTRACE_REQUIRED],,
-				  AC_MSG_ERROR([sydbox requires pinktrace_easy-$PINKTRACE_REQUIRED]))
+PKG_CHECK_MODULES([pinktrace],
+		  [pinktrace >= $PINKTRACE_REQUIRED],,
+		  [AC_MSG_ERROR([sydbox requires pinktrace-$PINKTRACE_REQUIRED or newer])])
+PKG_CHECK_MODULES([pinktrace_easy],
+		  [pinktrace_easy >= $PINKTRACE_REQUIRED],,
+		  [AC_MSG_ERROR([sydbox requires pinktrace_easy-$PINKTRACE_REQUIRED])])
 
 dnl check for IPV6 support
 AC_ARG_ENABLE([ipv6],
-			  [AS_HELP_STRING([--enable-ipv6],
-							  [enable IPV6 support])],
-			  WANT_IPV6="$enableval",
-			  WANT_IPV6="no")
+	      [AS_HELP_STRING([--enable-ipv6],
+			      [enable IPV6 support])],
+			      [WANT_IPV6="$enableval"],
+			      [WANT_IPV6="no"])
 if test x"$WANT_IPV6" = x"yes" ; then
 	AC_MSG_CHECKING([whether pinktrace was compiled with IPV6 support])
 	old_CPPFLAGS="${CPPFLAGS}"
@@ -127,11 +142,9 @@ AC_PATH_PROG([XSLTPROC], [xsltproc])
 AM_CONDITIONAL([HAVE_XSLTPROC], test x"$XSLTPROC" != x"")
 
 dnl Output
-AC_CONFIG_FILES([
-		 Makefile
+AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 tests/Makefile
 		 data/Makefile
-		 man/Makefile
-])
+		 man/Makefile])
 AC_OUTPUT
