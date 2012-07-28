@@ -421,8 +421,8 @@ typedef struct {
 	/* Exit code */
 	int exit_code;
 
-	/* Skip initial execve() for magic */
-	bool skip_initial_exec;
+	/* Wait until the first execve() is successful to start sandboxing. */
+	unsigned wait_execve;
 
 	/* This is true if an access violation has occured, false otherwise. */
 	bool violation;

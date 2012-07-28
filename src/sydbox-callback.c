@@ -149,8 +149,7 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 			}
 		} else {
 			cwd = xgetcwd();
-			comm = sydbox->program_invocation_name;
-			sydbox->program_invocation_name = NULL;
+			comm = xstrdup(sydbox->program_invocation_name);
 		}
 
 		sydbox->eldest = tid;
@@ -298,10 +297,10 @@ static int callback_exec(PINK_GCC_ATTR((unused)) const struct pink_easy_context 
 		data->config.magic_lock = LOCK_SET;
 	}
 
-	if (sydbox->skip_initial_exec) {
-		/* Initial execve was successful, let the tracing begin! */
-		sydbox->skip_initial_exec = false;
-		info("exec: skipped initial successful execve()");
+	if (sydbox->wait_execve == 2) {
+		/* Initial execve was successful. */
+		sydbox->wait_execve--;
+		info("exec: skipped successful execve()");
 		return 0;
 	}
 
@@ -358,6 +357,16 @@ static int callback_syscall(PINK_GCC_ATTR((unused)) const struct pink_easy_conte
 		const pink_regs_t *regs,
 		bool entering)
 {
+	switch (sydbox->wait_execve) {
+	case 2:
+		return 0;
+	case 1:
+		sydbox->wait_execve = 0;
+		info("syscall: skipped successful execve() return");
+		info("syscall: started sandboxing");
+		return 0;
+	}
+
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	data->regs = regs;
 

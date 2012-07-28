@@ -33,13 +33,6 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 	enum pink_abi abi;
 	proc_data_t *data;
 
-	if (sydbox->skip_initial_exec) {
-		/* Do nothing until exec callback sets this variable to false,
-		 * which will indicate the initial execve(2) has been
-		 * successfull. */
-		return 0;
-	}
-
 	tid = pink_easy_process_get_tid(current);
 	abi = pink_easy_process_get_abi(current);
 	data = pink_easy_process_get_userdata(current);

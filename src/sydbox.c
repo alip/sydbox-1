@@ -133,7 +133,7 @@ static void sydbox_init(void)
 	sydbox = xmalloc(sizeof(sydbox_t));
 	sydbox->eldest = -1;
 	sydbox->exit_code = 0;
-	sydbox->skip_initial_exec = false;
+	sydbox->wait_execve = 0;
 	sydbox->violation = false;
 	sydbox->ctx = NULL;
 	config_init();
@@ -188,8 +188,8 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 	struct snode *node;
 
 	fprintf(stderr, "-- Thread ID: %lu\n", (unsigned long)tid);
-	if (pink_easy_process_is_starting(current)) {
-		fprintf(stderr, "  Thread is suspended at startup!\n");
+	if (pink_easy_process_is_suspended(current)) {
+		fprintf(stderr, "   Thread is suspended at startup!\n");
 		return true;
 	}
 	fprintf(stderr, "   Thread Group ID: %lu\n", tgid > 0 ? (unsigned long)tgid : 0UL);
@@ -375,7 +375,11 @@ int main(int argc, char **argv)
 		die_errno(-1, "pink_easy_context_new");
 
 	if (pid_count == 0) {
-		sydbox->skip_initial_exec = true;
+		/* Ignore two execve(2) related events
+		 * 1. PTRACE_EVENT_EXEC
+		 * 2. SIGTRAP | 0x80 (stop after execve system call)
+		 */
+		sydbox->wait_execve = 2;
 		sydbox->program_invocation_name = xstrdup(argv[optind]);
 
 		/* Poison! */
