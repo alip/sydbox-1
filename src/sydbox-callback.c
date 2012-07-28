@@ -109,6 +109,7 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 	int r;
 	pid_t tid;
 	enum pink_abi abi;
+	bool attached;
 	char *cwd, *comm;
 	struct snode *node, *newnode;
 	proc_data_t *data, *pdata;
@@ -117,9 +118,15 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 	tid = pink_easy_process_get_tid(current);
 	abi = pink_easy_process_get_abi(current);
 	data = xcalloc(1, sizeof(proc_data_t));
+	attached = false;
 
-	if (parent == NULL) {
-		bool attached = pink_easy_process_is_attached(current);
+	if (parent) {
+		pdata = (proc_data_t *)pink_easy_process_get_userdata(parent);
+		comm = xstrdup(pdata->comm);
+		cwd = xstrdup(pdata->cwd);
+		inherit = &pdata->config;
+	} else {
+		attached = pink_easy_process_is_attached(current);
 		if (attached) {
 			/* Figure out process name */
 			if ((r = proc_comm(tid, &comm))) {
@@ -140,10 +147,6 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 				panic(current);
 				return;
 			}
-
-			info("initial process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
-					(unsigned long)tid, abi,
-					comm, cwd);
 		} else {
 			cwd = xgetcwd();
 			comm = sydbox->program_invocation_name;
@@ -152,20 +155,6 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 
 		sydbox->eldest = tid;
 		inherit = &sydbox->config.child;
-	} else {
-		pdata = (proc_data_t *)pink_easy_process_get_userdata(parent);
-		comm = xstrdup(pdata->comm);
-		cwd = xstrdup(pdata->cwd);
-
-		info("new process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
-				(unsigned long)tid, abi,
-				comm, cwd);
-		info("parent process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
-				(unsigned long)pink_easy_process_get_tid(parent),
-				pink_easy_process_get_abi(parent),
-				comm, cwd);
-
-		inherit = &pdata->config;
 	}
 
 	/* Copy the configuration */
@@ -220,27 +209,41 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 	}
 
 	pink_easy_process_set_userdata(current, data, free_proc);
+
+	info("startup: %s process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
+			(!parent && !attached) ? "initial" : "new",
+			(unsigned long)tid, abi, comm, cwd);
+	if (parent)
+		info("startup: process:%lu has parent:%lu", (unsigned long)tid,
+				(unsigned long)pink_easy_process_get_tid(parent));
+	else
+		info("startup: process:%lu has no parent", (unsigned long)tid);
 }
 
 static int callback_cleanup(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx)
 {
+	int r = sydbox->exit_code;
+
 	if (sydbox->violation) {
 		if (sydbox->config.violation_exit_code > 0)
-			return sydbox->config.violation_exit_code;
+			r = sydbox->config.violation_exit_code;
 		else if (sydbox->config.violation_exit_code == 0)
-			return 128 + sydbox->exit_code;
+			r = 128 + sydbox->exit_code;
 	}
-	return sydbox->exit_code;
+
+	info("cleanup: return value %d (%s access violations)",
+			r, sydbox->violation ? "due to" : "no");
+	return r;
 }
 
 static int callback_exit(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx,
 		pid_t tid, int status)
 {
 	if (tid == sydbox->eldest) {
-		/* Eldest child, keep return code */
+		/* Eldest process, keep return code */
 		if (WIFEXITED(status)) {
 			sydbox->exit_code = WEXITSTATUS(status);
-			message("initial process:%lu exited with code:%d (status:%#x)",
+			info("initial process:%lu exited with code:%d (status:%#x)",
 					(unsigned long)tid, sydbox->exit_code,
 					(unsigned)status);
 		}
@@ -298,6 +301,7 @@ static int callback_exec(PINK_GCC_ATTR((unused)) const struct pink_easy_context 
 	if (sydbox->skip_initial_exec) {
 		/* Initial execve was successful, let the tracing begin! */
 		sydbox->skip_initial_exec = false;
+		info("exec: skipped initial successful execve()");
 		return 0;
 	}
 
