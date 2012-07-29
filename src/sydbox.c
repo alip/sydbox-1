@@ -158,6 +158,7 @@ static void sydbox_destroy(void)
 
 	pink_easy_context_destroy(sydbox->ctx);
 
+	free(sydbox->program_invocation_name);
 	free(sydbox);
 	sydbox = NULL;
 

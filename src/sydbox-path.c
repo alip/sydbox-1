@@ -46,34 +46,38 @@ int path_decode(struct pink_easy_process *current, unsigned ind, char **buf)
 	assert(current);
 	assert(buf);
 
-	if (!pink_read_argument(tid, abi, data->regs, ind, &addr)
-			|| !pink_read_string(tid, abi, addr,
-				path, SYDBOX_PATH_MAX)) {
-		if (errno != ESRCH) {
-			warning("read_string(%lu, %d, %u) failed (errno:%d %s)",
-					(unsigned long)tid, abi,
-					ind, errno, strerror(errno));
-			return panic(current);
-		}
-		debug("read_string(%lu, %d, %u) failed (errno:%d %s)",
-				(unsigned long)tid, abi,
-				ind, errno, strerror(errno));
-		debug("dropping process:%lu [abi:%d name:\"%s\" cwd:\"%s\"] from process tree",
-				(unsigned long)tid, abi,
-				data->comm, data->cwd);
-		return PINK_EASY_CFLAG_DROP;
-	}
-	else if (path[0] == '\0') {
+	if (!pink_read_argument(tid, abi, data->regs, ind, &addr))
+		goto fail;
+	path[0] = '\0';
+	if (!pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX))
+		goto fail;
+	if (path[0] == '\0') {
 		debug("read_string(%lu, %d, %u) returned NULL",
 				(unsigned long)tid, abi, ind);
-		*buf = NULL;
 		errno = EFAULT;
+		*buf = NULL;
 		return -1;
+	} else {
+		path[SYDBOX_PATH_MAX-1] = '\0';
+		*buf = xstrdup(path);
+		return 0;
 	}
-
-	path[SYDBOX_PATH_MAX-1] = '\0';
-	*buf = xstrdup(path);
-	return 0;
+fail:
+	if (errno != ESRCH) {
+		warning("read_string(%lu, %d, %u) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				ind, errno, strerror(errno));
+		return panic(current);
+	}
+	debug("read_string(%lu, %d, %u) failed (errno:%d %s)",
+			(unsigned long)tid, abi,
+			ind, errno, strerror(errno));
+	debug("dropping process:%lu"
+			" [abi:%d name:\"%s\" cwd:\"%s\"]"
+			" from process tree",
+			(unsigned long)tid, abi,
+			data->comm, data->cwd);
+	return PINK_EASY_CFLAG_DROP;
 }
 
 /*
