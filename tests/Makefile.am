@@ -87,4 +87,5 @@ check_PROGRAMS= \
 		t011_umount2 \
 		t012_utime \
 		t013_utimes \
-		t014_unlink
+		t014_unlink \
+		t015_link
