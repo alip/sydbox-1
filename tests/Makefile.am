@@ -85,4 +85,5 @@ check_PROGRAMS= \
 		t009_truncate \
 		t010_umount \
 		t011_umount2 \
-		t012_utime
+		t012_utime \
+		t013_utimes
