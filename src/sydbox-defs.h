@@ -183,6 +183,9 @@ static const char *const log_level_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(log_level, int)
 
+#define MAGIC_QUERY_TRUE	1
+#define MAGIC_QUERY_FALSE	2
+
 enum magic_type {
 	MAGIC_TYPE_NONE,
 
@@ -552,6 +555,10 @@ int magic_set_log_console_fd(const void *val, struct pink_easy_process *current)
 int magic_set_log_level(const void *val, struct pink_easy_process *current);
 int magic_set_log_timestamp(const void *val, struct pink_easy_process *current);
 int magic_query_log_timestamp(struct pink_easy_process *current);
+int magic_query_sandbox_exec(struct pink_easy_process *current);
+int magic_query_sandbox_read(struct pink_easy_process *current);
+int magic_query_sandbox_write(struct pink_easy_process *current);
+int magic_query_sandbox_network(struct pink_easy_process *current);
 int magic_set_sandbox_exec(const void *val, struct pink_easy_process *current);
 int magic_set_sandbox_read(const void *val, struct pink_easy_process *current);
 int magic_set_sandbox_write(const void *val, struct pink_easy_process *current);

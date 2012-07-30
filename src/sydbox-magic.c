@@ -199,6 +199,7 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_CORE_SANDBOX,
 			.type   = MAGIC_TYPE_STRING,
 			.set    = magic_set_sandbox_exec,
+			.query  = magic_query_sandbox_exec,
 		},
 	[MAGIC_KEY_CORE_SANDBOX_READ] =
 		{
@@ -207,6 +208,7 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_CORE_SANDBOX,
 			.type   = MAGIC_TYPE_STRING,
 			.set    = magic_set_sandbox_read,
+			.query  = magic_query_sandbox_read,
 		},
 	[MAGIC_KEY_CORE_SANDBOX_WRITE] =
 		{
@@ -215,6 +217,7 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_CORE_SANDBOX,
 			.type   = MAGIC_TYPE_STRING,
 			.set    = magic_set_sandbox_write,
+			.query  = magic_query_sandbox_write,
 		},
 	[MAGIC_KEY_CORE_SANDBOX_NETWORK] =
 		{
@@ -223,6 +226,7 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_CORE_SANDBOX,
 			.type   = MAGIC_TYPE_STRING,
 			.set    = magic_set_sandbox_network,
+			.query  = magic_query_sandbox_network,
 		},
 
 	[MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES] =
@@ -640,7 +644,7 @@ int magic_cast_string(struct pink_easy_process *current, const char *magic, int 
 			 */
 			break;
 		case SYDBOX_MAGIC_QUERY_CHAR:
-			if (key_table[key].type != MAGIC_TYPE_BOOLEAN)
+			if (key_table[key].query == NULL)
 				return MAGIC_ERROR_INVALID_QUERY;
 			query = true;
 			/* fall through */
@@ -660,12 +664,13 @@ int magic_cast_string(struct pink_easy_process *current, const char *magic, int 
 	}
 
 	entry = key_table[key];
+	if (query) {
+		ret = magic_query(current, key);
+		return ret < 0 ? ret : ret == 0 ? MAGIC_QUERY_FALSE : MAGIC_QUERY_TRUE;
+	}
+
 	switch (entry.type) {
 	case MAGIC_TYPE_BOOLEAN:
-		if (query) {
-			ret = magic_query(current, key);
-			return ret < 0 ? ret : ret == 0 ? 2 : 1;
-		}
 		if ((ret = parse_boolean(cmd, &bval)) < 0)
 			return MAGIC_ERROR_INVALID_VALUE;
 		if ((ret = magic_cast(current, key, MAGIC_TYPE_BOOLEAN, BOOL_TO_PTR(bval))) < 0)

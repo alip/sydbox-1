@@ -289,19 +289,19 @@ static int callback_exec(PINK_GCC_ATTR((unused)) const struct pink_easy_context 
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
+	if (sydbox->wait_execve == 2) {
+		/* Initial execve was successful. */
+		sydbox->wait_execve--;
+		info("exec: skipped successful execve()");
+		return 0;
+	}
+
 	if (data->config.magic_lock == LOCK_PENDING) {
 		info("locking magic commands for"
 				" process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
 				(unsigned long)tid, abi,
 				data->comm, data->cwd);
 		data->config.magic_lock = LOCK_SET;
-	}
-
-	if (sydbox->wait_execve == 2) {
-		/* Initial execve was successful. */
-		sydbox->wait_execve--;
-		info("exec: skipped successful execve()");
-		return 0;
 	}
 
 	if (!data->abspath) {

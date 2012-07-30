@@ -160,12 +160,12 @@
           possible if the magic lock is <emphasis>unset</emphasis>. The system call <function>stat()</function> was
           chosen as the magic call because it is practical to invoke using builtin shell commands like:
           <programlisting>
-            test -e /dev/sydbox/core/sandbox/path:true
+            test -e /dev/sydbox/core/sandbox/read:deny
           </programlisting>
           which enables path sandboxing for a shell running under Sydbox. It is also possible to
-          query boolean values using the return value of the magic <function>stat</function><manvolnum>2</manvolnum>:
+          query certain values using the return value of the magic <function>stat</function><manvolnum>2</manvolnum>:
           <programlisting>
-            test -e '/dev/sydbox/core/sandbox/path?' &amp;&amp; echo "path sandboxing on" || echo "path sandboxing off"
+            test -e '/dev/sydbox/core/sandbox/read?' &amp;&amp; echo "read sandboxing on" || echo "read sandboxing off"
           </programlisting>
 
           <note>
@@ -283,7 +283,7 @@
           <term>?</term>
           <listitem>
             <simpara>
-              This term is used to query a boolean value.
+              This term is used to query a value. Boolean values and certain other values may be queried.
             </simpara>
           </listitem>
         </varlistentry>
@@ -379,7 +379,7 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying how <function>execve</function><manvolnum>2</manvolnum> system call should be sandboxed.
-              Defaults to <constant>off</constant>.
+              Defaults to <constant>off</constant>. This value may be queried.
               See <xref linkend="execve-sandboxing"/> for more information.
             </para>
           </listitem>
@@ -391,7 +391,7 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying how path sandboxing should be done.
-              Defaults to <constant>off</constant>.
+              Defaults to <constant>off</constant>. This value may be queried.
               See <xref linkend="read-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -402,7 +402,7 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying how write sandboxing should be done.
-              Defaults to <constant>off</constant>.
+              Defaults to <constant>off</constant>. This value may be queried.
               See <xref linkend="write-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -413,7 +413,7 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying how network sandboxing should be done.
-              Defaults to <constant>off</constant>.
+              Defaults to <constant>off</constant>. This value may be queried.
               See <xref linkend="network-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>

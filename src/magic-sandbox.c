@@ -33,6 +33,32 @@ enum sandbox_type {
 	SANDBOX_NETWORK,
 };
 
+static int magic_query_sandbox(enum sandbox_type t, struct pink_easy_process *current)
+{
+	enum sandbox_mode mode;
+	sandbox_t *box;
+
+	box = box_current(current);
+	switch (t) {
+	case SANDBOX_EXEC:
+		mode = box->sandbox_exec;
+		break;
+	case SANDBOX_READ:
+		mode = box->sandbox_read;
+		break;
+	case SANDBOX_WRITE:
+		mode = box->sandbox_write;
+		break;
+	case SANDBOX_NETWORK:
+		mode = box->sandbox_network;
+		break;
+	default:
+		abort();
+	}
+
+	return mode == SANDBOX_OFF ? 0 : 1;
+}
+
 static int magic_set_sandbox(enum sandbox_type t, const char *str, struct pink_easy_process *current)
 {
 	int r;
@@ -60,6 +86,26 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str, struct pink_e
 	}
 
 	return 0;
+}
+
+int magic_query_sandbox_exec(struct pink_easy_process *current)
+{
+	return magic_query_sandbox(SANDBOX_EXEC, current);
+}
+
+int magic_query_sandbox_read(struct pink_easy_process *current)
+{
+	return magic_query_sandbox(SANDBOX_READ, current);
+}
+
+int magic_query_sandbox_write(struct pink_easy_process *current)
+{
+	return magic_query_sandbox(SANDBOX_WRITE, current);
+}
+
+int magic_query_sandbox_network(struct pink_easy_process *current)
+{
+	return magic_query_sandbox(SANDBOX_NETWORK, current);
 }
 
 int magic_set_sandbox_exec(const void *val, struct pink_easy_process *current)

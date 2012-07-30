@@ -82,7 +82,7 @@ int sys_stat(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const ch
 		if (pink_read_argument(tid, abi, data->regs, 1, &addr))
 			pink_write_vm_data(tid, abi, addr, (const char *)&buf, sizeof(struct stat));
 		info("magic \"%s\" accepted", path);
-		errno = (r > 1) ? ENOENT : 0;
+		errno = (r == MAGIC_QUERY_FALSE) ? ENOENT : 0;
 		r = deny(current);
 	}
 
