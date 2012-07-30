@@ -255,11 +255,11 @@
         This prefix is only required for magic <function>stat()</function>, not for <option>-m</option> command line
         switch. Section of an option is very similar to the configuration file e.g.:
         <programlisting>
-          { "core" : { "log" : { "console_fd" : 2 } } }
+          { "core" : { "sandbox" : { "write" : "off" } } }
         </programlisting>
         maps to:
         <programlisting>
-          core/log/console_fd
+          core/sandbox/write
         </programlisting>
       </para>
 
@@ -326,53 +326,6 @@
       </para>
 
       <variablelist>
-        <varlistentry>
-          <term><option id="core-log-console_fd">core/log/console_fd</option></term>
-          <listitem>
-            <para>type: <type>integer</type></para>
-            <para>
-              An integer specifying the console log file descriptor.
-              Defaults to 2, standard error.
-              See <xref linkend="logging"/> for more information.
-            </para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="core-log-file">core/log/file</option></term>
-          <listitem>
-            <para>type: <type>string</type></para>
-            <para>
-              A string specifying the path to the log file.
-              Defaults to "" (empty string), no logging to file.
-              See <xref linkend="logging"/> for more information.
-            </para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="core-log-level">core/log/level</option></term>
-          <listitem>
-            <para> type: <type>integer</type></para>
-            <para>
-              An integer specifying the level of messages to log.
-              Log messages lower than this level are discarded.
-              Defaults to 2, <option>message</option>
-            </para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="core-log-timestamp">core/log/timestamp</option></term>
-          <listitem>
-            <para>type: <type>boolean</type></para>
-            <para>
-              A boolean specifying whether the messages should be prefixed with a timestamp.
-              Defaults to <constant>true</constant>.
-            </para>
-          </listitem>
-        </varlistentry>
-
         <varlistentry>
           <term><option id="core-sandbox-exec">core/sandbox/exec</option></term>
           <listitem>
@@ -580,6 +533,53 @@
               commands are allowed. Note, the magic lock is tracked per process. If <constant>exec</constant> is
               specified, the magic lock is set to <constant>on</constant> when the process returns from the system call
               <function>execve</function><manvolnum>2</manvolnum>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="log-console_fd">log/console_fd</option></term>
+          <listitem>
+            <para>type: <type>integer</type></para>
+            <para>
+              An integer specifying the console log file descriptor.
+              Defaults to 2, standard error.
+              See <xref linkend="logging"/> for more information.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="log-file">log/file</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying the path to the log file.
+              Defaults to "" (empty string), no logging to file.
+              See <xref linkend="logging"/> for more information.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="log-level">log/level</option></term>
+          <listitem>
+            <para> type: <type>integer</type></para>
+            <para>
+              An integer specifying the level of messages to log.
+              Log messages lower than this level are discarded.
+              Defaults to 2, <option>message</option>
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="log-timestamp">log/timestamp</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether the messages should be prefixed with a timestamp.
+              Defaults to <constant>true</constant>.
+            </para>
           </listitem>
         </varlistentry>
 
@@ -1068,88 +1068,92 @@
       <programlisting>
 /* All configuration is specified in a JSON object enclosed in curly braces. */
 {
-    "core" :
-        { "log"       : { "fd"        : 2    /* Messages with level higher than message go to standard error as well. */
-                        , "file"      : ""   /* Specify a path or leave it empty for no file logging. */
-                        , "level"     : 2    /* 0:fatal 1:warning 2:message 3:info 4:debug 5:trace */
-                        , "timestamp" : true /* Prefix log messages with timestamp */
-                        }
-        , "sandbox"   : { "exec"    : "off" /* execve(2) sandboxing */
-                        , "read"    : "off" /* read sandboxing */
-                        , "write"   : "off" /* write sandboxing */
-                        , "network" : "off" /* network sandboxing */
-                        }
-        , "allow"     : { "per_process_directories"     : true /* Allow per process directories like /proc/$pid */
-                        , "successful_bind"             : true /* Add successful bind() address to connect() whitelist */
-                        , "unsupported_socket_families" : true /* Allow unsupported socket families like AF_NETLINK */
-                        }
-        , "abort"     : { "decision" : "contall" /* Kill/Resume all children on fatal errors? (one of contall,killall) */
-                        }
-        , "panic"     : { "decision"  : "kill" /* What to do on panic? (one of cont,kill,contall,killall) */
-                        , "exit_code" : -1     /* If decision is contall or killall, specifies the exit code. */
-                        }
-        , "violation" : { "decision"    : "deny" /* What to do on access violations? (one of deny,cont,kill,contall,killall) */
-                        , "exit_code"   : -1     /* If decision is contall or killall, specifies the exit code. */
-                        , "raise_fail" : false   /* Raise access violations for simple failures like path resolution errors? */
-                        , "raise_safe" : false   /* Raise access violations for "safe" violations like -ENOTDIR for mkdir() */
-                        }
-        , "trace"     : { "followfork"    : true  /* Follow forks? */
-                        , "exit_wait_all" : true  /* Wait all children to exit before exiting? */
-                        , "magic_lock"    : "off" /* Initial state of the magic lock */
-                        }
+    "core" : {
+        "sandbox" : { "exec"    : "off", /* execve(2) sandboxing */
+                      "read"    : "off", /* read sandboxing */
+                      "write"   : "deny", /* write sandboxing */
+                      "network" : "deny" /* network sandboxing */
         },
-    "exec" : { "resume_if_match" : [ ]
-             , "kill_if_match"   : [ ]
+        "whitelist" : { "per_process_directories"     : true, /* Allow per process directories like /proc/$pid */
+                        "successful_bind"             : true, /* Add successful bind() address to connect() whitelist */
+                        "unsupported_socket_families" : true /* Allow unsupported socket families like AF_NETLINK */
+        },
+        "abort" : { "decision"  : "contall" /* Kill/Resume all children on fatal errors? (one of contall,killall) */
+        },
+        "panic" : { "decision"  : "kill", /* What to do on panic? (one of cont,kill,contall,killall) */
+                    "exit_code" : -1 /* If decision is contall or killall, specifies the exit code. */
+        },
+        "violation" : { "decision"    : "deny", /* What to do on access violations? (one of deny,cont,kill,contall,killall) */
+                        "exit_code"   : -1, /* If decision is contall or killall, specifies the exit code. */
+                        "raise_fail" : false, /* Raise access violations for simple failures like path resolution errors? */
+                        "raise_safe" : false /* Raise access violations for "safe" violations like -EEXIST for mkdir() */
+        },
+        "trace" : { "follow_fork"       : true, /* Follow forks? */
+                    "exit_wait_all"     : true, /* Wait all children to exit before exiting? */
+                    "magic_lock"        : "off" /* Initial state of the magic lock */
+        }
+    },
+
+    "log" : { "console_fd" : 2, /* Messages with level higher than message go to standard error as well. */
+              "file"       : "", /* Specify a path or leave it empty for no file logging. */
+              "level"      : 2, /* 0:fatal 1:warning 2:message 3:info 4:debug 5:trace */
+              "timestamp"  : true /* Prefix log messages with timestamp */
+            },
+
+    "exec" : { "resume_if_match" : [ ],
+               "kill_if_match"   : [ ]
              },
 
     "filter" :
-        { "exec"    : [ ]
-        , "read"    : [ ]
-        , "write"   : [ ]
-        , "network" : [ ]
+        { "exec"    : [ ],
+          "read"    : [ ],
+          "write"   : [ ],
+          "network" : [ ]
         },
 
     "whitelist" :
-        { "exec"  : [ ]
-        , "read"  : [ ]
-        , "write" : [ "/dev/stdout"
-                    , "/dev/stderr"
-                    , "/dev/zero"
-                    , "/dev/null"
-                    , "/dev/full"
-                    , "/dev/console"
-                    , "/dev/random"
-                    , "/dev/ptmx"
-                    , "/dev/fd/***"
-                    , "/dev/tty*"
-                    , "/dev/pty*"
-                    , "/dev/tts*"
-                    , "/dev/pts*"
-                    , "/proc/self/fd/***"
-                    , "/dev/shm/***"
-                    , "/selinux/context/***"
-                    , "/proc/self/attr/***"
-                    , "/proc/self/task/***"
-                    , "/tmp/***"
-                    , "/var/tmp/***"
-                    , "/var/cache/***"
-                    ]
-        , "network" :
-            { "bind" : [ "LOOPBACK@0"
-                       , "LOOPBACK@1024-65535"
-                       , "LOOPBACK6@0"
-                       , "LOOPBACK6@1024-65535"
-                       ]
-            , "connect" : [ "unix:/var/run/nscd/socket"
-                          , "unix:/run/nscd/socket"
+        { "exec" : [ ],
+          "read" : [ ],
+          "write" : [ "/dev/stdout",
+                      "/dev/stderr",
+                      "/dev/zero",
+                      "/dev/null",
+                      "/dev/full",
+                      "/dev/console",
+                      "/dev/random",
+                      "/dev/ptmx",
+                      "/dev/fd/***",
+                      "/dev/tty*",
+                      "/dev/pty*",
+                      "/dev/tts*",
+                      "/dev/pts*",
+                      "/proc/self/fd/***",
+                      "/dev/shm/***",
+                      "/selinux/context/***",
+                      "/proc/self/attr/***",
+                      "/proc/self/task/***",
+                      "/tmp/***",
+                      "/var/tmp/***",
+                      "/var/cache/***"
+                    ],
+          "network" :
+            { "bind" : [ "LOOPBACK@0",
+                         "LOOPBACK@1024-65535",
+                         "LOOPBACK6@0",
+                         "LOOPBACK6@1024-65535"
+                       ],
+              "connect" : [ "unix:/var/run/nscd/socket",
+                            "unix:/run/nscd/socket"
                           ]
             }
         },
     "blacklist" :
-        { "exec"    : [ ]
-        , "read"    : [ ]
-        , "write"   : [ ]
-        , "network" : [ ]
+        { "exec"    : [ ],
+          "read"    : [ ],
+          "write"   : [ ],
+          "network" : { "bind"    : [ ],
+                        "connect" : [ ]
+                      }
         }
 }
       </programlisting>

@@ -62,13 +62,6 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_NONE,
 			.type   = MAGIC_TYPE_OBJECT,
 		},
-	[MAGIC_KEY_CORE_LOG] =
-		{
-			.name   = "log",
-			.lname  = "core.log",
-			.parent = MAGIC_KEY_CORE,
-			.type   = MAGIC_TYPE_OBJECT,
-		},
 	[MAGIC_KEY_CORE_SANDBOX] =
 		{
 			.name   = "sandbox",
@@ -109,6 +102,14 @@ static const struct key key_table[] = {
 			.name   = "trace",
 			.lname  = "core.trace",
 			.parent = MAGIC_KEY_CORE,
+			.type   = MAGIC_TYPE_OBJECT,
+		},
+
+	[MAGIC_KEY_LOG] =
+		{
+			.name   = "log",
+			.lname  = "log",
+			.parent = MAGIC_KEY_NONE,
 			.type   = MAGIC_TYPE_OBJECT,
 		},
 
@@ -156,40 +157,6 @@ static const struct key key_table[] = {
 			.lname  = "blacklist.network",
 			.parent = MAGIC_KEY_BLACKLIST,
 			.type   = MAGIC_TYPE_OBJECT,
-		},
-
-	[MAGIC_KEY_CORE_LOG_CONSOLE_FD] =
-		{
-			.name   = "console_fd",
-			.lname  = "core.log.console_fd",
-			.parent = MAGIC_KEY_CORE_LOG,
-			.type   = MAGIC_TYPE_INTEGER,
-			.set    = magic_set_log_console_fd,
-		},
-	[MAGIC_KEY_CORE_LOG_FILE] =
-		{
-			.name   = "file",
-			.lname  = "core.log.file",
-			.parent = MAGIC_KEY_CORE_LOG,
-			.type   = MAGIC_TYPE_STRING,
-			.set    = magic_set_log_file,
-		},
-	[MAGIC_KEY_CORE_LOG_LEVEL] =
-		{
-			.name   = "level",
-			.lname  = "core.log.level",
-			.parent = MAGIC_KEY_CORE_LOG,
-			.type   = MAGIC_TYPE_INTEGER,
-			.set    = magic_set_log_level,
-		},
-	[MAGIC_KEY_CORE_LOG_TIMESTAMP] =
-		{
-			.name   = "timestamp",
-			.lname  = "core.log.timestamp",
-			.parent = MAGIC_KEY_CORE_LOG,
-			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = magic_set_log_timestamp,
-			.query  = magic_query_log_timestamp,
 		},
 
 	[MAGIC_KEY_CORE_SANDBOX_EXEC] =
@@ -343,6 +310,40 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_CORE_TRACE,
 			.type   = MAGIC_TYPE_STRING,
 			.set    = magic_set_trace_magic_lock,
+		},
+
+	[MAGIC_KEY_LOG_CONSOLE_FD] =
+		{
+			.name   = "console_fd",
+			.lname  = "log.console_fd",
+			.parent = MAGIC_KEY_LOG,
+			.type   = MAGIC_TYPE_INTEGER,
+			.set    = magic_set_log_console_fd,
+		},
+	[MAGIC_KEY_LOG_FILE] =
+		{
+			.name   = "file",
+			.lname  = "log.file",
+			.parent = MAGIC_KEY_LOG,
+			.type   = MAGIC_TYPE_STRING,
+			.set    = magic_set_log_file,
+		},
+	[MAGIC_KEY_LOG_LEVEL] =
+		{
+			.name   = "level",
+			.lname  = "log.level",
+			.parent = MAGIC_KEY_LOG,
+			.type   = MAGIC_TYPE_INTEGER,
+			.set    = magic_set_log_level,
+		},
+	[MAGIC_KEY_LOG_TIMESTAMP] =
+		{
+			.name   = "timestamp",
+			.lname  = "log.timestamp",
+			.parent = MAGIC_KEY_LOG,
+			.type   = MAGIC_TYPE_BOOLEAN,
+			.set    = magic_set_log_timestamp,
+			.query  = magic_query_log_timestamp,
 		},
 
 	[MAGIC_KEY_EXEC_KILL_IF_MATCH] =
