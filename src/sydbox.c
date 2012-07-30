@@ -52,16 +52,17 @@
 #include "sydbox-defs.h"
 
 #include <assert.h>
-#include <dirent.h>
-#include <errno.h>
-#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
+#include <dirent.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/queue.h>
+#include <getopt.h>
 
 #include "macro.h"
 #include "util.h"
@@ -94,15 +95,13 @@
 
 sydbox_t *sydbox = NULL;
 
-static void
-about(void)
+static void about(void)
 {
 	printf(PACKAGE"-"VERSION GITHEAD"\n");
 }
 
 PINK_GCC_ATTR((noreturn))
-static void
-usage(FILE *outfp, int code)
+static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITHEAD" -- ptrace based sandbox\n\
@@ -300,6 +299,17 @@ int main(int argc, char **argv)
 	pid_t *pid_list;
 	const char *env;
 	struct sigaction sa;
+	/* Long options are present for compatibility with sydbox-0.
+	 * Thus they are not documented!
+	 */
+	int options_index;
+	char *profile_name;
+	struct option long_options[] = {
+		{"help",	no_argument,		NULL,	'h'},
+		{"version",	no_argument,		NULL,	'V'},
+		{"profile",	required_argument,	NULL,	0},
+		{NULL,		0,		NULL,	0},
+	};
 
 	/* Initialize Sydbox */
 	sydbox_init();
@@ -308,8 +318,19 @@ int main(int argc, char **argv)
 	pid_count = 0;
 	pid_list = xmalloc(argc * sizeof(pid_t));
 
-	while ((opt = getopt(argc, argv, "hVvc:m:p:E:")) != EOF) {
+	while ((opt = getopt_long(argc, argv, "hVvc:m:p:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
+		case 0:
+			if (streq(long_options[options_index].name, "profile")) {
+				profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 1));
+				profile_name[0] = SYDBOX_PROFILE_CHAR;
+				strcat(profile_name, optarg);
+				config_reset();
+				config_parse_spec(profile_name);
+				free(profile_name);
+				break;
+			}
+			usage(stderr, 1);
 		case 'h':
 			usage(stdout, 0);
 		case 'V':
