@@ -375,16 +375,9 @@ int main(int argc, char **argv)
 		config_parse_spec(env);
 	}
 
-	/* Initialize pinktrace-easy */
 	pink_easy_init();
-
-	/* Initialize logging */
 	log_init();
-
-	/* Configuration is done */
-	config_destroy();
-
-	/* Initialize callbacks */
+	config_done();
 	callback_init();
 	systable_init();
 	sysinit();

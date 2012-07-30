@@ -73,11 +73,9 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 	int ret;
 	const char *name;
 	char *str;
-	slist_t **slist;
 	config_state_t *state = ctx;
 
 	name = NULL;
-	slist = NULL;
 	switch (type) {
 	case JSON_T_OBJECT_BEGIN:
 	case JSON_T_OBJECT_END:
@@ -177,7 +175,6 @@ void config_init(void)
 	assert(sydbox);
 
 	memset(&sydbox->config, 0, sizeof(config_t));
-	sydbox->config.core = true;
 	sydbox->config.state = xcalloc(1, sizeof(config_state_t));
 
 	/* Set sane defaults for configuration */
@@ -206,7 +203,7 @@ void config_init(void)
 	sydbox->config.parser = new_JSON_parser(&jc);
 }
 
-void config_destroy(void)
+void config_done(void)
 {
 	if (sydbox->config.log_file) {
 		free(sydbox->config.log_file);
@@ -220,6 +217,7 @@ void config_destroy(void)
 		delete_JSON_parser(sydbox->config.parser);
 		sydbox->config.parser = NULL;
 	}
+	sydbox->config.core_disallow = false;
 }
 
 void config_reset(void)
@@ -261,7 +259,7 @@ void config_parse_file(const char *filename)
 				JSON_strerror(JSON_parser_get_last_error(sydbox->config.parser)));
 
 	fclose(fp);
-	sydbox->config.core = false;
+	sydbox->config.core_disallow = true;
 }
 
 void config_parse_spec(const char *pathspec)

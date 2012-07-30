@@ -555,7 +555,7 @@ int magic_cast(struct pink_easy_process *current, enum magic_key key, enum magic
 	if (entry.type != type)
 		return MAGIC_ERROR_INVALID_TYPE;
 
-	if (!sydbox->config.core) {
+	if (sydbox->config.core_disallow) {
 		enum magic_key k = entry.parent;
 		do {
 			if (k == MAGIC_KEY_CORE)

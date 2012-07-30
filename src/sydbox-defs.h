@@ -378,7 +378,7 @@ typedef struct config_state config_state_t;
 
 typedef struct {
 	/* Config parser & state */
-	bool core;
+	bool core_disallow;
 	JSON_parser parser;
 	config_state_t *state;
 
@@ -575,7 +575,7 @@ int magic_cast(struct pink_easy_process *current, enum magic_key key, enum magic
 int magic_cast_string(struct pink_easy_process *current, const char *magic, int prefix);
 
 void config_init(void);
-void config_destroy(void);
+void config_done(void);
 void config_reset(void);
 void config_parse_file(const char *filename) PINK_GCC_ATTR((nonnull(1)));
 void config_parse_spec(const char *filename) PINK_GCC_ATTR((nonnull(1)));
