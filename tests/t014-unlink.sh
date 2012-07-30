@@ -5,18 +5,21 @@
 
 test_description='sandbox unlink(2)'
 . ./test-lib.sh
-prog=t014_unlink
 
 test_expect_success setup '
     touch file0 &&
     touch file2
 '
 
+test_expect_success 'deny unlink(NULL) with EFAULT' '
+    sydbox -ESYDBOX_TEST_EFAULT=1 -- emily unlink
+'
+
 test_expect_success 'deny unlink()' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- $prog file0 &&
+        -- emily unlink file0 &&
     test_path_is_file file0
 '
 
@@ -24,14 +27,14 @@ test_expect_success 'deny unlink() for non-existant file' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        $prog file1-non-existant
+        -- emily unlink file1-non-existant
 '
 
 test_expect_success 'allow unlink()' '
     sydbox -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- $prog file2 &&
+        -- emily unlink file2 &&
     test_path_is_missing file2
 '
 

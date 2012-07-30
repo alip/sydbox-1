@@ -5,11 +5,14 @@
 
 test_description='sandbox link(2)'
 . ./test-lib.sh
-prog=t015_link
 
 test_expect_success setup '
     mkdir dir0 &&
     touch dir0/file0
+'
+
+test_expect_success 'deny link(NULL, NULL) with EFAULT' '
+    sydbox -ESYDBOX_TEST_EFAULT=1 -- emily link
 '
 
 test_expect_success 'deny link()' '
@@ -17,7 +20,7 @@ test_expect_success 'deny link()' '
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/dir0/**" \
-        -- $prog dir0/file0 file1-non-existant &&
+        -- emily link dir0/file0 file1-non-existant &&
     test_path_is_missing file1-non-existant
 '
 
@@ -25,7 +28,7 @@ test_expect_success 'allow link()' '
     sydbox -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- $prog dir0/file0 file2 &&
+        -- emily link dir0/file0 file2 &&
     test_path_is_file file2
 '
 

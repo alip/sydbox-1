@@ -74,18 +74,5 @@ EXTRA_DIST= $(TESTS) \
 check_PROGRAMS= \
 		wildtest \
 		test-lib.sh \
-		t001_chmod \
-		t002_chown \
-		t003_open \
-		t004_creat \
-		t005_lchown \
-		t006_mkdir \
-		t007_mknod \
-		t008_rmdir \
-		t009_truncate \
-		t010_umount \
-		t011_umount2 \
-		t012_utime \
-		t013_utimes \
-		t014_unlink \
-		t015_link
+		emily
+

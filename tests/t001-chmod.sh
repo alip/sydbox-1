@@ -1,11 +1,10 @@
 #!/bin/sh
 # vim: set sw=4 et ts=4 sts=4 tw=80 :
-# Copyright 2010 Ali Polatel <alip@exherbo.org>
+# Copyright 2010, 2012 Ali Polatel <alip@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
 test_description='sandbox chmod()'
 . ./test-lib.sh
-prog=t001_chmod
 
 test_expect_success setup '
     rm -f file-non-existant &&
@@ -21,11 +20,15 @@ test_expect_success SYMLINKS setup-symlinks '
     ln -sf file3 symlink-file3
 '
 
+test_expect_success 'deny chmod(NULL) with EFAULT' '
+    sydbox -ESYDBOX_TEST_EFAULT=1 -- emily chmod
+'
+
 test_expect_success 'deny chmod()' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- $prog file0 &&
+        -- emily chmod file0 &&
     test_path_is_readable file0 &&
     test_path_is_writable file0
 '
@@ -34,14 +37,14 @@ test_expect_success 'deny chmod() for non-existant file' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- $prog file-non-existant
+        -- emily chmod file-non-existant
 '
 
 test_expect_success SYMLINKS 'deny chmod() for symbolic link' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- $prog symlink-file1 &&
+        -- emily chmod symlink-file1 &&
     test_path_is_readable file1 &&
     test_path_is_writable file1
 '
@@ -50,24 +53,23 @@ test_expect_success SYMLINKS 'deny chmod() for dangling symbolic link' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- $prog symlink-dangling
+        -- emily chmod symlink-dangling
 '
 
 test_expect_success 'allow chmod()' '
-    sydbox -ESYDBOX_TEST_SUCCESS=1 \
+    sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- $prog file2 &&
+        -- emily chmod file2 &&
     test_path_is_not_readable file2 &&
     test_path_is_not_writable file2
 '
 
 test_expect_success SYMLINKS 'allow chmod() for symbolic link' '
     sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        $prog symlink-file3 &&
+        -- emily chmod symlink-file3 &&
     test_path_is_not_readable file3 &&
     test_path_is_not_writable file3
 '

@@ -1,6 +1,6 @@
 #!/bin/sh
 # vim: set sw=4 et ts=4 sts=4 tw=80 :
-# Copyright 2010 Ali Polatel <alip@exherbo.org>
+# Copyright 2010, 2012 Ali Polatel <alip@exherbo.org>
 # Distributed under the terms of the GNU General Public License v2
 
 test_description='sandbox lchown(2)'
@@ -14,18 +14,22 @@ test_expect_success SYMLINKS setup-symlinks '
     ln -sf file2 symlink-file2
 '
 
+test_expect_success 'deny lchown(NULL) with EFAULT' '
+    sydbox -ESYDBOX_TEST_EFAULT=1 -- emily lchown
+'
+
 test_expect_success SYMLINKS 'deny lchown()' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- $prog symlink-file0
+        -- emily lchown symlink-file0
 '
 
 test_expect_success SYMLINKS 'deny lchown for non-existant file' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- $prog file1-non-existant
+        -- emily lchown file1-non-existant
 '
 
 test_expect_success SYMLINKS 'allow lchown()' '
@@ -33,7 +37,7 @@ test_expect_success SYMLINKS 'allow lchown()' '
         -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- $prog symlink-file2
+        -- emily lchown symlink-file2
 '
 
 test_done
