@@ -112,26 +112,6 @@ int readlink_alloc(const char *path, char **buf)
 	}
 }
 
-inline int path_is_absolute(const char *p)
-{
-	return p[0] == '/';
-}
-
-/* Makes every item in the list an absolute path by prepending
- * the prefix, if specified and necessary */
-char *path_make_absolute(const char *p, const char *prefix)
-{
-	char *r;
-
-	if (path_is_absolute(p) || !prefix)
-		return strdup(p);
-
-	if (asprintf(&r, "%s/%s", prefix, p) < 0)
-		return NULL;
-
-	return r;
-}
-
 int read_one_line_file(const char *fn, char **line)
 {
 	int r;

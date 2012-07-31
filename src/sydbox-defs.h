@@ -113,6 +113,16 @@ enum create_mode {
 	MUST_CREATE,
 };
 
+enum no_wildcard_mode {
+	NO_WILDCARD_LITERAL,
+	NO_WILDCARD_PREFIX,
+};
+static const char *const no_wildcard_mode_table[] = {
+	[NO_WILDCARD_LITERAL] = "literal",
+	[NO_WILDCARD_PREFIX] = "prefix",
+};
+DEFINE_STRING_TABLE_LOOKUP(no_wildcard_mode, int)
+
 enum lock_state {
 	LOCK_UNSET,
 	LOCK_SET,
@@ -204,6 +214,10 @@ enum magic_key {
 	MAGIC_KEY_VERSION,
 
 	MAGIC_KEY_CORE,
+
+	MAGIC_KEY_CORE_MATCH,
+	MAGIC_KEY_CORE_MATCH_CASE_SENSITIVE,
+	MAGIC_KEY_CORE_MATCH_NO_WILDCARD,
 
 	MAGIC_KEY_CORE_SANDBOX,
 	MAGIC_KEY_CORE_SANDBOX_EXEC,
@@ -386,10 +400,8 @@ typedef struct {
 	sandbox_t child;
 
 	/* Non-inherited, "global" configuration data */
-	unsigned log_console_fd;
-	unsigned log_level;
-	bool log_timestamp;
-	char *log_file;
+	bool match_case_sensitive;
+	enum no_wildcard_mode match_no_wildcard;
 
 	bool whitelist_per_process_directories;
 	bool whitelist_successful_bind;
@@ -407,6 +419,11 @@ typedef struct {
 
 	bool follow_fork;
 	bool exit_wait_all;
+
+	unsigned log_console_fd;
+	unsigned log_level;
+	bool log_timestamp;
+	char *log_file;
 
 	slist_t exec_kill_if_match;
 	slist_t exec_resume_if_match;
@@ -508,6 +525,7 @@ int restore(struct pink_easy_process *current);
 int panic(struct pink_easy_process *current);
 int violation(struct pink_easy_process *current, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
 
+int wildmatch_syd(const char *pattern, const char *text);
 int wildmatch_expand(const char *pattern, char ***buf);
 
 sock_info_t *sock_info_xdup(sock_info_t *src);
@@ -567,6 +585,9 @@ int magic_set_sandbox_write(const void *val, struct pink_easy_process *current);
 int magic_set_sandbox_network(const void *val, struct pink_easy_process *current);
 int magic_set_exec_kill_if_match(const void *val, struct pink_easy_process *current);
 int magic_set_exec_resume_if_match(const void *val, struct pink_easy_process *current);
+int magic_query_match_case_sensitive(struct pink_easy_process *current);
+int magic_set_match_case_sensitive(const void *val, struct pink_easy_process *current);
+int magic_set_match_no_wildcard(const void *val, struct pink_easy_process *current);
 
 const char *magic_strerror(int error);
 const char *magic_strkey(enum magic_key key);

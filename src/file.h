@@ -24,10 +24,6 @@ char *truncate_nl(char *s);
 
 int basename_alloc(const char *path, char **buf);
 int readlink_alloc(const char *path, char **buf);
-
-int path_is_absolute(const char *p);
-char *path_make_absolute(const char *p, const char *prefix);
-
 int read_one_line_file(const char *fn, char **line);
 
 #endif /* !FILE_H */

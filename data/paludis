@@ -24,6 +24,9 @@
         "trace" : { "follow_fork"       : true, /* Follow forks? */
                     "exit_wait_all"     : true, /* Wait all children to exit before exiting? */
                     "magic_lock"        : "off" /* Initial state of the magic lock */
+        },
+        "match" : { "case_sensitive" : true, /* Case sensitive matching */
+                    "no_wildcard"    : "prefix" /* Append '/***' to the end of patterns with no '*' or '?' in them */
         }
     },
 

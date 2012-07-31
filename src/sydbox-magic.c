@@ -62,6 +62,13 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_NONE,
 			.type   = MAGIC_TYPE_OBJECT,
 		},
+	[MAGIC_KEY_CORE_MATCH] =
+		{
+			.name   = "match",
+			.lname  = "core.match",
+			.parent = MAGIC_KEY_CORE,
+			.type   = MAGIC_TYPE_OBJECT,
+		},
 	[MAGIC_KEY_CORE_SANDBOX] =
 		{
 			.name   = "sandbox",
@@ -157,6 +164,24 @@ static const struct key key_table[] = {
 			.lname  = "blacklist.network",
 			.parent = MAGIC_KEY_BLACKLIST,
 			.type   = MAGIC_TYPE_OBJECT,
+		},
+
+	[MAGIC_KEY_CORE_MATCH_CASE_SENSITIVE] =
+		{
+			.name   = "case_sensitive",
+			.lname  = "core.match.case_sensitive",
+			.parent = MAGIC_KEY_CORE_MATCH,
+			.type   = MAGIC_TYPE_BOOLEAN,
+			.set    = magic_set_match_case_sensitive,
+			.query  = magic_query_match_case_sensitive,
+		},
+	[MAGIC_KEY_CORE_MATCH_NO_WILDCARD] =
+		{
+			.name   = "no_wildcard",
+			.lname  = "core.match.no_wildcard",
+			.parent = MAGIC_KEY_CORE_MATCH,
+			.type   = MAGIC_TYPE_STRING,
+			.set    = magic_set_match_no_wildcard,
 		},
 
 	[MAGIC_KEY_CORE_SANDBOX_EXEC] =

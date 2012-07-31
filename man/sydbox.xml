@@ -537,6 +537,36 @@
         </varlistentry>
 
         <varlistentry>
+          <term><option id="core-match-case-sensitive">core/match/case_sensitive</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying the case sensitivity of pattern matching.
+              Defaults to <constant>true</constant>, case sensitive matching.
+            </para>
+            <para>See <xref linkend="pattern-matching"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-match-no-wildcard">core/match/no_wildcard</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying how to match patterns with no
+              <emphasis role="bold">*</emphasis> or
+              <emphasis role="bold">?</emphasis> characters in them.
+              Possible values are <option>literal</option> and <option>prefix</option>.
+              With <option>literal</option> such patterns are matched literally, whereas
+              with <option>prefix</option> Sydbox appends <constant>/***</constant> to the
+              end of such patterns to make them a prefix match. Implemented mostly to provide
+              compatibility with sydbox-0 patterns.
+            </para>
+            <para>See <xref linkend="pattern-matching"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
           <term><option id="log-console_fd">log/console_fd</option></term>
           <listitem>
             <para>type: <type>integer</type></para>
@@ -1091,6 +1121,9 @@
         "trace" : { "follow_fork"       : true, /* Follow forks? */
                     "exit_wait_all"     : true, /* Wait all children to exit before exiting? */
                     "magic_lock"        : "off" /* Initial state of the magic lock */
+        },
+        "match" : { "case_sensitive" : true, /* Case sensitive matching */
+                    "no_wildcard"    : "prefix" /* Append /*** to the end of patterns with no '*' or '?' in them */
         }
     },
 

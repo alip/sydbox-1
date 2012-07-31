@@ -178,11 +178,10 @@ void config_init(void)
 	sydbox->config.state = xcalloc(1, sizeof(config_state_t));
 
 	/* Set sane defaults for configuration */
-	sydbox->config.log_console_fd = STDERR_FILENO;
-	sydbox->config.log_level = 2;
-	sydbox->config.log_timestamp = true;
-	sydbox->config.follow_fork = 1;
-	sydbox->config.exit_wait_all = 1;
+	sydbox->config.match_case_sensitive = true;
+	sydbox->config.match_no_wildcard = NO_WILDCARD_LITERAL;
+	sydbox->config.follow_fork = true;
+	sydbox->config.exit_wait_all = true;
 	sydbox->config.whitelist_per_process_directories = true;
 	sydbox->config.whitelist_successful_bind = true;
 	sydbox->config.whitelist_unsupported_socket_families = true;
@@ -192,6 +191,9 @@ void config_init(void)
 	sydbox->config.violation_decision = VIOLATION_DENY;
 	sydbox->config.violation_exit_code = -1;
 	sydbox->config.child.magic_lock = LOCK_UNSET;
+	sydbox->config.log_console_fd = STDERR_FILENO;
+	sydbox->config.log_level = 2;
+	sydbox->config.log_timestamp = true;
 
 	init_JSON_config(&jc);
 	jc.depth = -1;

@@ -21,6 +21,7 @@ noinst_HEADERS= \
 		file.h \
 		hashtable.h \
 		macro.h \
+		path.h
 		proc.h \
 		slist.h \
 		strtable.h \
@@ -32,6 +33,7 @@ sydbox_SOURCES= \
 		 canonicalize.c \
 		 file.c \
 		 hashtable.c \
+		 path.c \
 		 proc.c \
 		 util.c \
 		 wildmatch.c \
@@ -42,6 +44,7 @@ sydbox_SOURCES= \
 		 magic-decision.c \
 		 magic-lock.c \
 		 magic-log.c \
+		 magic-match.c \
 		 magic-sandbox.c \
 		 magic-if_match.c \
 		 sydbox-box.c \

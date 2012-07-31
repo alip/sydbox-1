@@ -35,11 +35,10 @@
 
 #include "macro.h"
 #include "canonicalize.h"
-#include "file.h"
+#include "path.h"
 #include "proc.h"
 #include "strtable.h"
 #include "util.h"
-#include "wildmatch.h"
 
 static inline void box_report_violation_path(struct pink_easy_process *current,
 		const char *name, unsigned ind, const char *path)
@@ -172,7 +171,7 @@ int box_match_path(const char *path, const slist_t *patterns, const char **match
 	struct snode *node;
 
 	SLIST_FOREACH(node, patterns, up) {
-		if (wildmatch(node->data, path)) {
+		if (wildmatch_syd(node->data, path)) {
 			debug("match: pattern='%s', path='%s'",
 					(char *)node->data,
 					path);
@@ -399,10 +398,10 @@ int box_check_sock(struct pink_easy_process *current, const char *name, sys_info
 			m = node->data;
 			if (m->family == AF_UNIX && !m->match.sa_un.abstract) {
 				if (info->whitelisting) {
-					if (wildmatch(m->match.sa_un.path, abspath))
+					if (wildmatch_syd(m->match.sa_un.path, abspath))
 						goto end;
 				}
-				else if (!wildmatch(m->match.sa_un.path, abspath))
+				else if (!wildmatch_syd(m->match.sa_un.path, abspath))
 					goto end;
 			}
 		}
@@ -431,7 +430,7 @@ filter:
 			m = node->data;
 			if (m->family == AF_UNIX
 					&& !m->match.sa_un.abstract
-					&& wildmatch(m->match.sa_un.path, abspath))
+					&& wildmatch_syd(m->match.sa_un.path, abspath))
 				goto end;
 		}
 	}
