@@ -397,6 +397,10 @@ int main(int argc, char **argv)
 		sydbox->wait_execve = 2;
 		sydbox->program_invocation_name = xstrdup(argv[optind]);
 
+		/* Set useful environment variables for children */
+		setenv("SYDBOX_ACTIVE", "1", 1);
+		setenv("SYDBOX_VERSION", VERSION, 1);
+
 		/* Poison! */
 		if (streq(argv[optind], "/bin/sh"))
 			fprintf(stderr, "[01;35m" PINK_FLOYD "[00;00m");
