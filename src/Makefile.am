@@ -17,6 +17,7 @@ bin_PROGRAMS= sydbox
 noinst_HEADERS= \
 		JSON_parser.h \
 		byteorder.h \
+		canonicalize.h \
 		file.h \
 		hashtable.h \
 		macro.h \
@@ -28,6 +29,7 @@ noinst_HEADERS= \
 		sydbox-defs.h
 sydbox_SOURCES= \
 		 JSON_parser.c \
+		 canonicalize.c \
 		 file.c \
 		 hashtable.c \
 		 proc.c \

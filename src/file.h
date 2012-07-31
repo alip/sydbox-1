@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -20,13 +20,6 @@
 #ifndef FILE_H
 #define FILE_H 1
 
-#include <stddef.h>
-
-typedef enum {
-	CAN_EXISTING = 0,
-	CAN_ALL_BUT_LAST,
-} can_mode_t;
-
 char *truncate_nl(char *s);
 
 int basename_alloc(const char *path, char **buf);
@@ -34,7 +27,6 @@ int readlink_alloc(const char *path, char **buf);
 
 int path_is_absolute(const char *p);
 char *path_make_absolute(const char *p, const char *prefix);
-int canonicalize_filename_mode(const char *name, can_mode_t mode, int resolve, char **path);
 
 int read_one_line_file(const char *fn, char **line);
 

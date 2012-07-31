@@ -34,6 +34,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
+#include "canonicalize.h"
 #include "file.h"
 #include "proc.h"
 #include "strtable.h"
@@ -127,6 +128,7 @@ static int box_resolve_path_helper(const char *abspath, pid_t pid,
 {
 	int r;
 	char *p;
+	can_mode_t can_mode;
 
 	p = NULL;
 	/* Special case for /proc/self.
@@ -141,7 +143,10 @@ static int box_resolve_path_helper(const char *abspath, pid_t pid,
 		}
 	}
 
-	r = canonicalize_filename_mode(p ? p : abspath, maycreat ? CAN_ALL_BUT_LAST : CAN_EXISTING, resolve, res);
+	can_mode = maycreat ? CAN_ALL_BUT_LAST : CAN_EXISTING;
+	if (!resolve)
+		can_mode |= CAN_NOLINKS;
+	r = canonicalize_filename_mode(p ? p : abspath, can_mode, res);
 	if (p)
 		free(p);
 	return r;
