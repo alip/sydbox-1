@@ -45,16 +45,16 @@ static inline void box_report_violation_path(struct pink_easy_process *current,
 {
 	switch (ind) {
 	case 0:
-		violation(current, "%s(\"%s\")", name, path);
+		violation(current, "%s('%s')", name, path);
 		break;
 	case 1:
-		violation(current, "%s(?, \"%s\")", name, path);
+		violation(current, "%s(?, '%s')", name, path);
 		break;
 	case 2:
-		violation(current, "%s(?, ?, \"%s\")", name, path);
+		violation(current, "%s(?, ?, '%s')", name, path);
 		break;
 	case 3:
-		violation(current, "%s(?, ?, ?, \"%s\")", name, path);
+		violation(current, "%s(?, ?, ?, '%s')", name, path);
 		break;
 	default:
 		violation(current, "%s(?)", name);
@@ -68,13 +68,13 @@ static inline void box_report_violation_path_at(struct pink_easy_process *curren
 {
 	switch (ind) {
 	case 1:
-		violation(current, "%s(\"%s\", prefix=\"%s\")", name, path, prefix);
+		violation(current, "%s('%s', prefix='%s')", name, path, prefix);
 		break;
 	case 2:
-		violation(current, "%s(?, \"%s\", prefix=\"%s\")", name, path, prefix);
+		violation(current, "%s(?, '%s', prefix='%s')", name, path, prefix);
 		break;
 	case 3:
-		violation(current, "%s(?, ?, \"%s\", prefix=\"%s\")", name, path, prefix);
+		violation(current, "%s(?, ?, '%s', prefix='%s')", name, path, prefix);
 		break;
 	default:
 		violation(current, "%s(?)", name);
@@ -168,10 +168,16 @@ int box_match_path(const char *path, const slist_t *patterns, const char **match
 
 	SLIST_FOREACH(node, patterns, up) {
 		if (wildmatch(node->data, path)) {
+			debug("match: pattern='%s', path='%s'",
+					(char *)node->data,
+					path);
 			if (match)
 				*match = node->data;
 			return 1;
 		}
+		debug("nomatch: pattern='%s', path='%s'",
+				(char *)node->data,
+				path);
 	}
 
 	return 0;
@@ -217,8 +223,8 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 					tid,
 					!!(info->create > 0),
 					info->resolv, &abspath)) < 0) {
-		warning("resolving path:\"%s\" [%s() index:%u prefix:\"%s\"]"
-				" failed for process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]"
+		warning("resolving path:'%s' [%s() index:%u prefix:'%s']"
+				" failed for process:%lu [abi:%d name:'%s' cwd:'%s']"
 				" (errno:%d %s)",
 				path, name, info->index, prefix,
 				(unsigned long)tid, abi,
@@ -230,8 +236,8 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 			violation(current, "%s()", name);
 		goto end;
 	}
-	debug("resolved path:\"%s\" to absolute path:\"%s\" [name=%s() create=%d resolv=%d]"
-			" for process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
+	debug("resolved path:'%s' to absolute path:'%s' [name=%s() create=%d resolv=%d]"
+			" for process:%lu [abi:%d name:'%s' cwd:'%s']",
 			path, abspath, name, info->create, info->resolv,
 			(unsigned long)tid, abi,
 			data->comm, data->cwd);
@@ -245,18 +251,21 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 
 	if (info->whitelisting) {
 		if (box_match_path(abspath, wblist, NULL)) {
-			/* Path matches one of the whitelisted path patterns.
-			 * Allow access!
-			 */
 			r = 0;
+			debug("path:'%s' matches one of the whitelisted patterns,"
+					" access granted",
+					abspath);
 			goto end;
 		}
 	}
 	else if (!box_match_path(abspath, wblist, NULL)) {
 		/* Path does not match one of the blacklisted path patterns.
-		 * Allow access
+		 * Allow access.
 		 */
 		r = 0;
+		debug("path:'%s' does not match any of the blacklisted patterns,"
+				" access granted",
+				abspath);
 		goto end;
 	}
 
@@ -275,13 +284,12 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 		sr = info->resolv ? stat(abspath, &buf) : lstat(abspath, &buf);
 		if (sr == 0) {
 			/* Yet the file exists... */
-			debug("system call %s() must create existant path:\"%s\""
-					" for process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
+			debug("system call %s() must create existant path:'%s'"
+					" for process:%lu [abi:%d name:'%s' cwd:'%s']",
 					name, abspath,
 					(unsigned long)tid, abi,
 					data->comm, data->cwd);
-
-			debug("denying system call %s() with -EEXIST", name);
+			debug("denied access to system call %s() with EEXIST", name);
 			errno = EEXIST;
 			if (!sydbox->config.violation_raise_safe) {
 				r = deny(current);
@@ -367,9 +375,9 @@ int box_check_sock(struct pink_easy_process *current, const char *name, sys_info
 						tid, 1,
 						info->resolv,
 						&abspath)) < 0) {
-			warning("resolving path:\"%s\" [%s() index:%u]"
+			warning("resolving path:'%s' [%s() index:%u]"
 					" failed for process:%lu"
-					" [abi:%d name:\"%s\" cwd:\"%s\"]"
+					" [abi:%d name:'%s' cwd:'%s']"
 					" (errno:%d %s)",
 					psa->u.sa_un.sun_path, name, info->index,
 					(unsigned long)tid, abi,
