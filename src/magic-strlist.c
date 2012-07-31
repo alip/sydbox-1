@@ -28,8 +28,10 @@
 
 static int magic_set_strlist(const void *val, slist_t *head)
 {
+	int c, f, r = 0;
 	char op;
 	const char *str = val;
+	char **list;
 	struct snode *node;
 
 	if (!str || !*str || !*(str + 1))
@@ -39,25 +41,36 @@ static int magic_set_strlist(const void *val, slist_t *head)
 		++str;
 	}
 
-	switch (op) {
-	case SYDBOX_MAGIC_ADD_CHAR:
-		node = xcalloc(1, sizeof(struct snode));
-		node->data = xstrdup(str);
-		SLIST_INSERT_HEAD(head, node, up);
-		return 0;
-	case SYDBOX_MAGIC_REMOVE_CHAR:
-		SLIST_FOREACH(node, head, up) {
-			if (streq(node->data, str)) {
-				SLIST_REMOVE(head, node, snode, up);
-				free(node->data);
-				free(node);
-				break;
+	/* Expand pattern */
+	c = f = wildmatch_expand(str, &list) - 1;
+	for (; c >= 0; c--) {
+		switch (op) {
+		case SYDBOX_MAGIC_ADD_CHAR:
+			node = xcalloc(1, sizeof(struct snode));
+			node->data = xstrdup(list[c]);
+			SLIST_INSERT_HEAD(head, node, up);
+			break;
+		case SYDBOX_MAGIC_REMOVE_CHAR:
+			SLIST_FOREACH(node, head, up) {
+				if (streq(node->data, list[c])) {
+					SLIST_REMOVE(head, node, snode, up);
+					free(node->data);
+					free(node);
+					break;
+				}
 			}
+			break;
+		default:
+			r = MAGIC_ERROR_INVALID_OPERATION;
+			break;
 		}
-		return 0;
-	default:
-		return MAGIC_ERROR_INVALID_OPERATION;
 	}
+
+	for (; f >= 0; f--)
+		free(list[f]);
+	free(list);
+
+	return r;
 }
 
 int magic_set_whitelist_exec(const void *val, struct pink_easy_process *current)

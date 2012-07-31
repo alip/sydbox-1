@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * Based in part upon courier which is:
  *   Copyright 1998-2009 Double Precision, Inc
  *
@@ -37,27 +37,27 @@
 #include "util.h"
 #include "wildmatch.h"
 
-int
-sock_match_expand(const char *src, char ***buf)
+int sock_match_expand(const char *src, char ***buf)
 {
 	const char *port;
 	char **list;
 
 	assert(buf);
 
-	if (startswith(src, "LOOPBACK@")) {
+	/* Expand network aliases and unix wildmatch patterns */
+	if (startswith(src, "unix:") || startswith(src, "unix-abstract:")) {
+		return wildmatch_expand(src, buf);
+	} else if (startswith(src, "LOOPBACK@")) {
 		list = xmalloc(sizeof(char *));
 		xasprintf(&list[0], "inet:127.0.0.0/8@%s", src + STRLEN_LITERAL("LOOPBACK@"));
 		*buf = list;
 		return 1;
-	}
-	else if (startswith(src, "LOOPBACK6@")) {
+	} else if (startswith(src, "LOOPBACK6@")) {
 		list = xmalloc(sizeof(char *));
 		xasprintf(&list[0], "inet6:::1@%s", src + STRLEN_LITERAL("LOOPBACK6@"));
 		*buf = list;
 		return 1;
-	}
-	else if (startswith(src, "LOCAL@")) {
+	} else if (startswith(src, "LOCAL@")) {
 		port = src + STRLEN_LITERAL("LOCAL@");
 		list = xmalloc(4 * sizeof(char *));
 		xasprintf(&list[0], "inet:127.0.0.0/8@%s", port);
@@ -66,8 +66,7 @@ sock_match_expand(const char *src, char ***buf)
 		xasprintf(&list[3], "inet:192.168.0.0/16@%s", port);
 		*buf = list;
 		return 4;
-	}
-	else if (startswith(src, "LOCAL6@")) {
+	} else if (startswith(src, "LOCAL6@")) {
 		port = src + STRLEN_LITERAL("LOCAL6@");
 		list = xmalloc(4 * sizeof(char *));
 		xasprintf(&list[0], "inet6:::1@%s", port);
@@ -76,16 +75,15 @@ sock_match_expand(const char *src, char ***buf)
 		xasprintf(&list[3], "inet6:fec0::/7@%s", port);
 		*buf = list;
 		return 4;
+	} else {
+		list = xmalloc(sizeof(char *));
+		list[0] = xstrdup(src);
+		*buf = list;
+		return 1;
 	}
-
-	list = xmalloc(sizeof(char *));
-	list[0] = xstrdup(src);
-	*buf = list;
-	return 1;
 }
 
-int
-sock_match_new(const char *src, sock_match_t **buf)
+int sock_match_new(const char *src, sock_match_t **buf)
 {
 	int r;
 	char *addr, *netmask, *range, *d, *p;
@@ -254,8 +252,7 @@ fail:
 	return r;
 }
 
-int
-sock_match_new_pink(const sock_info_t *src, sock_match_t **buf)
+int sock_match_new_pink(const sock_info_t *src, sock_match_t **buf)
 {
 	sock_match_t *m;
 
@@ -300,8 +297,7 @@ sock_match_new_pink(const sock_info_t *src, sock_match_t **buf)
 	return 0;
 }
 
-sock_match_t *
-sock_match_xdup(const sock_match_t *src)
+sock_match_t *sock_match_xdup(const sock_match_t *src)
 {
 	sock_match_t *m;
 
@@ -335,8 +331,7 @@ sock_match_xdup(const sock_match_t *src)
 	return m;
 }
 
-int
-sock_match(const sock_match_t *haystack, const struct pink_sockaddr *needle)
+int sock_match(const sock_match_t *haystack, const struct pink_sockaddr *needle)
 {
 	int n, mask;
 	unsigned pmin, pmax, port;
@@ -353,7 +348,7 @@ sock_match(const sock_match_t *haystack, const struct pink_sockaddr *needle)
 		if (needle->u.sa_un.sun_path[0] == '\0' && needle->u.sa_un.sun_path[1] != '\0') {
 			/* Abstract UNIX socket */
 			return haystack->match.sa_un.abstract &&
-				wildmatch_ext(haystack->match.sa_un.path, needle->u.sa_un.sun_path + 1);
+				wildmatch(haystack->match.sa_un.path, needle->u.sa_un.sun_path + 1);
 		}
 		/* Non-abstract UNIX socket
 		 * This needs path resolving, expect the caller handled this.

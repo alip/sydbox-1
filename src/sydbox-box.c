@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -40,9 +40,8 @@
 #include "util.h"
 #include "wildmatch.h"
 
-inline
-static void
-box_report_violation_path(struct pink_easy_process *current, const char *name, unsigned ind, const char *path)
+static inline void box_report_violation_path(struct pink_easy_process *current,
+		const char *name, unsigned ind, const char *path)
 {
 	switch (ind) {
 	case 0:
@@ -63,9 +62,9 @@ box_report_violation_path(struct pink_easy_process *current, const char *name, u
 	}
 }
 
-inline
-static void
-box_report_violation_path_at(struct pink_easy_process *current, const char *name, unsigned ind, const char *path, const char *prefix)
+static inline void box_report_violation_path_at(struct pink_easy_process *current,
+		const char *name, unsigned ind, const char *path,
+		const char *prefix)
 {
 	switch (ind) {
 	case 1:
@@ -83,8 +82,9 @@ box_report_violation_path_at(struct pink_easy_process *current, const char *name
 	}
 }
 
-static void
-box_report_violation_sock(struct pink_easy_process *current, const sys_info_t *info, const char *name, const struct pink_sockaddr *paddr)
+static void box_report_violation_sock(struct pink_easy_process *current,
+		const sys_info_t *info, const char *name,
+		const struct pink_sockaddr *paddr)
 {
 	char ip[64];
 	const char *f;
@@ -122,8 +122,8 @@ box_report_violation_sock(struct pink_easy_process *current, const sys_info_t *i
 	}
 }
 
-static int
-box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolve, char **res)
+static int box_resolve_path_helper(const char *abspath, pid_t pid,
+		int maycreat, int resolve, char **res)
 {
 	int r;
 	char *p;
@@ -147,8 +147,8 @@ box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolv
 	return r;
 }
 
-int
-box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res)
+int box_resolve_path(const char *path, const char *prefix, pid_t pid,
+		int maycreat, int resolve, char **res)
 {
 	int r;
 	char *abspath;
@@ -162,13 +162,12 @@ box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, 
 	return r;
 }
 
-int
-box_match_path(const char *path, const slist_t *patterns, const char **match)
+int box_match_path(const char *path, const slist_t *patterns, const char **match)
 {
 	struct snode *node;
 
 	SLIST_FOREACH(node, patterns, up) {
-		if (wildmatch_ext(node->data, path)) {
+		if (wildmatch(node->data, path)) {
 			if (match)
 				*match = node->data;
 			return 1;
@@ -178,8 +177,8 @@ box_match_path(const char *path, const slist_t *patterns, const char **match)
 	return 0;
 }
 
-int
-box_check_path(struct pink_easy_process *current, const char *name, sys_info_t *info)
+int box_check_path(struct pink_easy_process *current, const char *name,
+		sys_info_t *info)
 {
 	int r;
 	char *prefix, *path, *abspath;
@@ -313,8 +312,7 @@ end:
 	return r;
 }
 
-int
-box_check_sock(struct pink_easy_process *current, const char *name, sys_info_t *info)
+int box_check_sock(struct pink_easy_process *current, const char *name, sys_info_t *info)
 {
 	int r;
 	char *abspath;
@@ -388,10 +386,10 @@ box_check_sock(struct pink_easy_process *current, const char *name, sys_info_t *
 			m = node->data;
 			if (m->family == AF_UNIX && !m->match.sa_un.abstract) {
 				if (info->whitelisting) {
-					if (wildmatch_ext(m->match.sa_un.path, abspath))
+					if (wildmatch(m->match.sa_un.path, abspath))
 						goto end;
 				}
-				else if (!wildmatch_ext(m->match.sa_un.path, abspath))
+				else if (!wildmatch(m->match.sa_un.path, abspath))
 					goto end;
 			}
 		}
@@ -420,7 +418,7 @@ filter:
 			m = node->data;
 			if (m->family == AF_UNIX
 					&& !m->match.sa_un.abstract
-					&& wildmatch_ext(m->match.sa_un.path, abspath))
+					&& wildmatch(m->match.sa_un.path, abspath))
 				goto end;
 		}
 	}

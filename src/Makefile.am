@@ -54,6 +54,7 @@ sydbox_SOURCES= \
 		 sydbox-syscall.c \
 		 sydbox-systable.c \
 		 sydbox-util.c \
+		 sydbox-wild.c \
 		 sys-access.c \
 		 sys-chdir.c \
 		 sys-execve.c \

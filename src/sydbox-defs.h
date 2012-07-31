@@ -508,6 +508,8 @@ int restore(struct pink_easy_process *current);
 int panic(struct pink_easy_process *current);
 int violation(struct pink_easy_process *current, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
 
+int wildmatch_expand(const char *pattern, char ***buf);
+
 sock_info_t *sock_info_xdup(sock_info_t *src);
 
 int sock_match_expand(const char *src, char ***buf);
