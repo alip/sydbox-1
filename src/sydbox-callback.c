@@ -189,18 +189,6 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 	SLIST_COPY_ALL(node, &inherit->blacklist_network_connect, up, &data->config.blacklist_network_connect, newnode, sock_match_xdup);
 #undef SLIST_COPY_ALL
 
-	if (sydbox->config.whitelist_per_process_directories) {
-#define SLIST_ALLOW_TID(var, head, field, id)							\
-		do {										\
-			var = xcalloc(1, sizeof(struct snode));					\
-			xasprintf((char **)&var->data, "/proc/%lu/***", (unsigned long)id);	\
-			SLIST_INSERT_HEAD(head, var, up);					\
-		} while (0)
-		SLIST_ALLOW_TID(newnode, &data->config.whitelist_read, up, tid);
-		SLIST_ALLOW_TID(newnode, &data->config.whitelist_write, up, tid);
-#undef SLIST_ALLOW_TID
-	}
-
 	/* Create the fd -> address hash table */
 	if ((r = hashtable_create(NR_OPEN, 1, &data->sockmap)) < 0) {
 		errno = -r;
@@ -208,6 +196,14 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 	}
 
 	pink_easy_process_set_userdata(current, data, free_proc);
+
+	if (sydbox->config.whitelist_per_process_directories) {
+		char *magic;
+		xasprintf(&magic, "+/proc/%lu/***", (unsigned long)tid);
+		magic_set_whitelist_read(magic, current);
+		magic_set_whitelist_write(magic, current);
+		free(magic);
+	}
 
 	info("startup: %s process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
 			(!parent && !attached) ? "initial" : "new",
