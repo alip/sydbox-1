@@ -8,7 +8,9 @@ test_description='sandbox link(2)'
 
 test_expect_success setup '
     mkdir dir0 &&
-    touch dir0/file0
+    touch dir0/file0 &&
+    mkdir dir1 &&
+    touch dir1/file1
 '
 
 test_expect_success 'deny link(NULL, NULL) with EFAULT' '
@@ -30,6 +32,15 @@ test_expect_success 'allow link()' '
         -m "whitelist/write+$HOME_RESOLVED/**" \
         -- emily link dir0/file0 file2 &&
     test_path_is_file file2
+'
+
+test_expect_success 'blacklist link()' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily link dir1/file1 file1-non-existant &&
+    test_path_is_missing file1-non-existant
 '
 
 test_done

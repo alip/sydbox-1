@@ -11,13 +11,16 @@ test_expect_success setup '
     touch file0 &&
     touch file1 &&
     touch file2 &&
-    touch file3
+    touch file3 &&
+    touch file4 &&
+    touch file5
 '
 
 test_expect_success SYMLINKS setup-symlinks '
     ln -sf /non/existant/file symlink-dangling &&
     ln -sf file1 symlink-file1 &&
-    ln -sf file3 symlink-file3
+    ln -sf file3 symlink-file3 &&
+    ln -sf file5 symlink-file5
 '
 
 test_expect_success 'deny chown(NULL) with EFAULT' '
@@ -52,19 +55,51 @@ test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
         -- emily chown symlink-dangling
 '
 
-test_expect_success 'allow chown()' '
+test_expect_success 'whitelist chown()' '
     sydbox -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
         -- emily chown file2
 '
 
-test_expect_success SYMLINKS 'allow chown() for symbolic link' '
+test_expect_success SYMLINKS 'whitelist chown() for symbolic link' '
     sydbox \
         -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
         -- emily chown symlink-file3
+'
+
+test_expect_success 'blacklist chown()' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily chown file4
+'
+
+test_expect_success 'blacklist chown() for non-existant file' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily chown file-non-existant
+'
+
+test_expect_success SYMLINKS 'blacklist chown() for symbolic link' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily chown symlink-file5
+'
+
+test_expect_success SYMLINKS 'blacklist chown() for dangling symbolic link' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily chown symlink-dangling
 '
 
 test_done

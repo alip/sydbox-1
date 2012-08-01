@@ -8,7 +8,8 @@ test_description='sandbox rmdir(2)'
 
 test_expect_success setup '
     mkdir dir0 &&
-    mkdir dir2
+    mkdir dir2 &&
+    mkdir dir3
 '
 
 test_expect_success 'deny rmdir(NULL) with EFAULT' '
@@ -30,12 +31,29 @@ test_expect_success 'deny rmdir() for non-existant directory' '
         -- emily rmdir dir1-non-existant
 '
 
-test_expect_success 'allow rmdir()' '
+test_expect_success 'whitelist rmdir()' '
     sydbox -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
         -- emily rmdir dir2 &&
     test_path_is_missing dir2
+'
+
+test_expect_success 'blacklist rmdir()' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily rmdir dir3 &&
+    test_path_is_dir dir3
+'
+
+test_expect_success 'blacklist rmdir() for non-existant directory' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily rmdir dir4-non-existant
 '
 
 test_done

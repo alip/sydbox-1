@@ -11,12 +11,15 @@ test_description='sandbox utime(2)'
 test_expect_success setup '
     rm -f file-non-existant
     touch file0 &&
-    touch file1
+    touch file1 &&
+    touch file3 &&
+    touch file5
 '
 
 test_expect_success SYMLINKS setup-symlinks '
     ln -sf /non/existant/path symlink-dangling &&
     ln -sf file1 symlink-file1
+    ln -sf file5 symlink-file5
 '
 
 test_expect_success 'deny utime(NULL) with EFAULT' '
@@ -48,6 +51,38 @@ test_expect_success 'deny utime() for dangling symbolic link' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
+        -- emily utime symlink-dangling
+'
+
+test_expect_success 'blacklist utime()' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily utime file3
+'
+
+test_expect_success 'blacklist utime()' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily utime file4-non-existant
+'
+
+test_expect_success 'blacklist utime() for symbolic link' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily utime symlink-file5
+'
+
+test_expect_success 'blacklist utime() for dangling symbolic link' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
         -- emily utime symlink-dangling
 '
 

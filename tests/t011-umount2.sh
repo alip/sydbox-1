@@ -11,12 +11,15 @@ prog=t011_umount2
 
 test_expect_success setup '
     mkdir mnt0 &&
-    mkdir mnt2
+    mkdir mnt2 &&
+    mkdir mnt3 &&
+    mkdir mnt5
 '
 
 test_expect_success SYMLINKS setup-symlinks '
     ln -sf /non/existant/directory symlink-dangling &&
     ln -sf mnt2 symlink-mnt2
+    ln -sf mnt5 symlink-mnt5
 '
 
 test_expect_success 'deny umount2(NULL) with EFAULT' '
@@ -48,6 +51,38 @@ test_expect_success SYMLINKS 'deny umount2() for dangling symbolic link' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
+        -- emily umount2 symlink-dangling
+'
+
+test_expect_success 'blacklist umount2()' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily umount2 mnt3
+'
+
+test_expect_success 'blacklist umount2() for non-existant directory' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily umount2 mnt4-non-existant
+'
+
+test_expect_success SYMLINKS 'blacklist umount2() for symbolic link' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily umount2 symlink-mnt5
+'
+
+test_expect_success SYMLINKS 'blacklist umount2() for dangling symbolic link' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
         -- emily umount2 symlink-dangling
 '
 

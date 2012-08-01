@@ -8,7 +8,8 @@ test_description='sandbox unlink(2)'
 
 test_expect_success setup '
     touch file0 &&
-    touch file2
+    touch file2 &&
+    touch file3
 '
 
 test_expect_success 'deny unlink(NULL) with EFAULT' '
@@ -36,6 +37,23 @@ test_expect_success 'allow unlink()' '
         -m "whitelist/write+$HOME_RESOLVED/**" \
         -- emily unlink file2 &&
     test_path_is_missing file2
+'
+
+test_expect_success 'blacklist unlink()' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily unlink file3 &&
+    test_path_is_file file3
+'
+
+test_expect_success 'blacklist unlink() for non-existant file' '
+    test_must_violate sydbox \
+        -ESYDBOX_TEST_EPERM=1 \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily unlink file4-non-existant
 '
 
 test_done
