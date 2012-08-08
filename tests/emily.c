@@ -4,19 +4,9 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/mount.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <utime.h>
+#include "emily.h"
 
+#if 0
 enum test_type {
 	TEST_EEXIST,
 	TEST_EFAULT,
@@ -34,73 +24,6 @@ static enum test_type get_test_type_from_environment(void)
 		return TEST_EPERM;
 	else
 		return TEST_SUCCESS;
-}
-
-static int do_close(int fd)
-{
-	int r;
-
-	for (;;) {
-		r = close(fd);
-		if (r < 0 && errno == EINTR)
-			continue;
-		return r;
-	}
-}
-
-static int do_write(int fd, const void *buf, size_t count)
-{
-	int written;
-	const char *p;
-
-	p = (const char *)buf;
-	do {
-		written = write(fd, p, count);
-		if (!written)
-			return -1;
-		if (written < 0) {
-			if (errno == EINTR)
-				continue;
-			return -1;
-		}
-		p += written;
-		count -= written;
-	} while (count > 0);
-
-	return written;
-}
-
-static int test_chmod(int argc, char **argv)
-{
-	const char *foo;
-	enum test_type type = get_test_type_from_environment();
-
-	if (type == TEST_EFAULT)
-		foo = NULL;
-	else if (argc >= 1)
-		foo = argv[0];
-	else {
-		fprintf(stderr, "Usage: emily chmod path\n");
-		return 127;
-	}
-
-	if (chmod(foo, 0000) < 0) {
-		if (type == TEST_SUCCESS) {
-			perror("chmod-success");
-			return 1;
-		} else if (type == TEST_EFAULT && errno == EFAULT) {
-			return 0;
-		} else if (type == TEST_EPERM && errno == EPERM) {
-			return 0;
-		} else {
-			perror("chmod");
-			return 1;
-		}
-	}
-
-	if (type == TEST_SUCCESS)
-		return 0;
-	return 2;
 }
 
 static int test_helper_chown(bool resolve_symlinks, int argc, char **argv)
@@ -603,48 +526,63 @@ static int test_link(int argc, char **argv)
 		return 0;
 	return 2;
 }
+#endif
+
+struct test {
+	const char *name;
+	int (*func) (int argc, char **argv);
+} test_table[] = {
+	{"chmod",	test_chmod},
+	{"fchmodat",	test_fchmodat},
+	{"chown",	test_chown},
+	{"lchown",	test_lchown},
+	{"fchownat",	test_fchownat},
+	{"open",	test_open},
+	{"openat",	test_openat},
+#if 0
+	{"creat",	test_creat},
+	{"mkdir",	test_mkdir},
+	{"mknod",	test_mknod},
+	{"rmdir",	test_rmdir},
+	{"truncate",	test_truncate},
+	{"umount",	test_umount},
+	{"umount2",	test_umount2},
+	{"utime",	test_utime},
+	{"utimes",	test_utimes},
+	{"unlink",	test_unlink},
+	{"link",	test_link},
+#endif
+	{NULL,		NULL},
+};
+
+static void usage(FILE *outfile, int exitcode)
+{
+	int i;
+
+	fprintf(outfile, "Usage: emily test [arguments]\n");
+	fprintf(outfile, "Available tests:\n");
+	for (i = 0; test_table[i].name != NULL; i++)
+		fprintf(outfile, "\t%s\n", test_table[i].name);
+	exit(exitcode);
+}
 
 int main(int argc, char **argv)
 {
 	int i;
 	const char *test_name;
-	struct test {
-		const char *name;
-		int (*func) (int argc, char **argv);
-	} test_table[] = {
-		{"chmod",	test_chmod},
-		{"chown",	test_chown},
-		{"lchown",	test_lchown},
-		{"open",	test_open},
-		{"creat",	test_creat},
-		{"mkdir",	test_mkdir},
-		{"mknod",	test_mknod},
-		{"rmdir",	test_rmdir},
-		{"truncate",	test_truncate},
-		{"umount",	test_umount},
-		{"umount2",	test_umount2},
-		{"utime",	test_utime},
-		{"utimes",	test_utimes},
-		{"unlink",	test_unlink},
-		{"link",	test_link},
-		{NULL,		NULL},
-	};
 
-	if (argc < 2) {
-		fprintf(stderr, "Usage: emily test test-arguments\n");
-		exit(1);
-	}
+	if (argc < 2)
+		usage(stderr, 1);
 	test_name = argv[1];
-	argc -= 2;
-	argv += 2;
+	argc -= 1;
+	argv += 1;
 
 	for (i = 0; test_table[i].name; i++) {
 		if (!strcmp(test_name, test_table[i].name))
 			return test_table[i].func(argc, argv);
 	}
 
-	fprintf(stderr, "emily: no such test\n");
-	return 127;
+	usage(stderr, 127);
 }
 
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */

@@ -20,6 +20,7 @@
 /*
  * Modified by Ali Polatel <alip@exherbo.org>
  * - Use getopt_long() instead of popt
+ * - Set output_iterations to 1
  */
 
 /*#define COMPARE_WITH_FNMATCH*/
@@ -55,7 +56,7 @@ char number_separator = ',';
 /* typedef char bool; */
 #include <stdbool.h>
 
-int output_iterations = 0;
+int output_iterations = 1;
 int explode_mod = 0;
 int empties_mod = 0;
 int empty_at_start = 0;

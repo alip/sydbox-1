@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  *
@@ -22,6 +22,7 @@
 #ifndef UTIL_H
 #define UTIL_H 1
 
+#include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 #include <limits.h>

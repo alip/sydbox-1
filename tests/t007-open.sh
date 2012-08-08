@@ -43,59 +43,52 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'deny open(NULL) with EFAULT' '
-    sydbox -ESYDBOX_TEST_EFAULT=1 -- emily open
+    sydbox -- emily open --errno=EFAULT
 '
 
-test_expect_success 'allow O_RDONLY' '
+test_expect_success 'whitelist O_RDONLY' '
     sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -- emily open file0 rdonly
+        -- emily open --errno=ERRNO_0 rdonly file0
 '
 
-test_expect_success SYMLINKS 'allow O_RDONLY for symbolic link' '
+test_expect_success SYMLINKS 'whitelist O_RDONLY for symbolic link' '
     sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
-        -- emily open symlink-file1 rdonly
+        -- emily open --errno=ERRNO_0 rdonly symlink-file1
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open file2-non-existant rdonly-creat &&
+        -- emily open --errno=EPERM --creat rdonly file2-non-existant &&
     test_path_is_missing file2-non-existant
 '
 
 test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open symlink-file3 rdonly-creat &&
+        -- emily open --errno=EPERM --creat rdonly symlink-file3 &&
     test_path_is_missing file3-non-existant
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open file4-non-existant rdonly-creat-excl &&
+        -- emily open --errno=EPERM --creat --excl rdonly file4-non-existant rdonly-creat-excl &&
     test_path_is_missing file4-non-existant
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
-        -- emily open file5 rdonly-creat-excl
+        -- emily open --errno=EEXIST --creat --excl rdonly file5
 '
 
 test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
-        -- emily open symlink-file6 rdonly-creat-excl &&
+        -- emily open --errno=EEXIST --creat --excl rdonly symlink-file6 &&
     test_path_is_missing file6-non-existant
 '
 
@@ -103,63 +96,56 @@ test_expect_success 'deny O_WRONLY' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open file7 wronly "3" &&
+        -- emily open --errno=EPERM wronly file7 "3" &&
     test_path_is_empty file7
 '
 
 test_expect_success 'deny O_WRONLY for non-existant file' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open file8-non-existant wronly &&
+        -- emily open --errno=EPERM wronly file8-non-existant "3" &&
     test_path_is_missing file8-non-existant
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY for symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open symlink-file9 wronly "3" &&
+        -- emily open --errno=EPERM wronly symlink-file9 "3" &&
     test_path_is_empty file9
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open file10-non-existant wronly-creat &&
+        -- emily open --errno=EPERM --creat wronly file10-non-existant "3" &&
     test_path_is_missing file10-non-existant
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT for existing file' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open file11 wronly-creat "3" &&
+        -- emily open --errno=EPERM --creat wronly file11 "3" &&
     test_path_is_empty file11
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open symlink-file12 wronly-creat "3" &&
+        -- emily open --errno=EPERM --creat wronly symlink-file12 "3" &&
     test_path_is_empty file12
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open symlink-file13 wronly-creat "3" &&
+        -- emily open --errno=EPERM --creat wronly symlink-file13 "3" &&
     test_path_is_missing file13-non-existant
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open file14-non-existant wronly-creat-excl &&
+        -- emily open --errno=EPERM --creat --excl wronly file14-non-existant "3" &&
     test_path_is_missing file14-non-existant
 '
 
@@ -167,95 +153,86 @@ test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL for existing file' '
     test_must_violate sydbox \
         -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
-        -- emily open file15 wronly-creat-excl "3" &&
+        -- emily open --errno=EPERM --creat --excl wronly file15 "3" &&
     test_path_is_empty file15
 '
 
 test_expect_success 'whitelist O_WRONLY' '
     sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily open file16 wronly "3" &&
+        -- emily open --errno=ERRNO_0 wronly file16 &&
     test_path_is_non_empty file16
 '
 
 test_expect_success 'whitelist O_WRONLY|O_CREAT' '
     sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily open file17-non-existant wronly-creat &&
+        -- emily open --errno=ERRNO_0 --creat wronly file17-non-existant &&
     test_path_is_file file17-non-existant
 '
 
 test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL' '
     sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily open file18-non-existant wronly-creat-excl &&
+        -- emily open --errno=ERRNO_0 --creat --excl wronly file18-non-existant &&
     test_path_is_file file18-non-existant
 '
 
 test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL for existing file' '
     sydbox \
-        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily open file19 wronly-creat-excl
+        -- emily open --errno=EEXIST --creat --excl wronly file19
 '
 
 test_expect_success 'deny O_RDWR' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open file20 rdwr "3" &&
+        -- emily open --errno=EPERM rdwr file20 "3" &&
     test_path_is_empty file20
 '
 
 test_expect_success 'deny O_RDWR|O_CREAT' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open file21-non-existant rdwr-creat &&
+        -- emily open --errno=EPERM --creat rdwr file21-non-existant &&
     test_path_is_missing file21-non-existant
 '
 
 test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily open file22-non-existant rdwr-creat-excl &&
+        -- emily open --errno=EPERM --creat --excl rdwr file22-non-existant &&
     test_path_is_missing file22-non-existant
 '
 
 test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL for existing file' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EEXIST=1 \
         -m core/sandbox/write:deny \
-        -- emily open file23 rdwr-creat-excl "3" &&
+        -- emily open --errno=EEXIST --creat --excl rdwr file23 "3" &&
     test_path_is_empty file23
 '
 
 test_expect_success 'whitelist O_RDWR' '
     sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily open file24 rdwr "3" &&
+        -- emily open --errno=ERRNO_0 rdwr file24 "3" &&
     test_path_is_non_empty file24
 '
 
 test_expect_success 'whitelist O_RDWR|O_CREAT' '
     sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily open file25-non-existant rdwr-creat &&
+        -- emily open --errno=ERRNO_0 --creat rdwr file25-non-existant &&
     test_path_is_file file25-non-existant
 '
 
+# XXX XXX XXX
 test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL' '
     sydbox \
         -ESYDBOX_TEST_SUCCESS=1 \

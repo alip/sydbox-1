@@ -8,7 +8,8 @@ test_description='basic sanity checks'
 
 test_expect_success 'sydbox' '
     type sydbox &&
-    sydbox -V
+    sydbox -V &&
+    sydbox --version
 '
 
 test_expect_success 'wildmatch' '

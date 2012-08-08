@@ -19,6 +19,17 @@ test-lib.sh: test-lib.sh.in
 	$(AM_V_at)$(SED) -e "s:@TOP_BUILDDIR@:$(abs_top_builddir):g" $< > $@
 CLEANFILES+= test-lib.sh
 
+emily_SOURCES= \
+	       emily.c \
+	       emily-chmod.c \
+	       emily-chown.c \
+	       emily-open.c \
+	       $(top_srcdir)/src/util.c
+emily_CFLAGS= \
+	      $(DEFS) \
+	      $(AM_CFLAGS) \
+	      -I$(top_srcdir)/src
+
 noinst_DATA= wildtest.txt
 wildtest_SOURCES= \
 		  wildtest.c
@@ -41,32 +52,34 @@ check-valgrind:
 
 TESTS_ENVIRONMENT= $(srcdir)/test-runner.sh
 TESTS= \
-       t000-basic.sh \
-       t001-chmod.sh \
-       t002-chown.sh \
-       t003-open.sh \
-       t004-creat.sh \
-       t005-lchown.sh \
-       t006-mkdir.sh \
-       t007-mknod.sh \
-       t008-rmdir.sh \
-       t009-truncate.sh \
-       t010-umount.sh \
-       t011-umount2.sh \
-       t012-utime.sh \
-       t013-utimes.sh \
-       t014-unlink.sh \
-       t015-link.sh \
-       t016-rename.sh \
-       t017-symlink.sh \
-       t018-mount.sh \
-       t019-openat.sh \
-       t020-mknodat.sh \
-       t021-mkdirat.sh \
-       t022-fchmodat.sh \
-       t023-fchownat.sh \
-       t024-unlinkat.sh \
-       t027-linkat.sh
+	t000-basic.sh \
+	t001-wildmatch.sh \
+	t002-chmod.sh \
+	t003-fchmodat.sh
+	t004-chown.sh \
+	t005-lchown.sh \
+	t006-fchownat.sh
+#	t007-open.sh \
+#	t008-creat.sh \
+#	t009-mkdir.sh \
+#	t010-mknod.sh \
+#	t011-rmdir.sh \
+#	t012-truncate.sh \
+#	t013-umount.sh \
+#	t014-umount2.sh \
+#	t015-utime.sh \
+#	t016-utimes.sh \
+#	t017-unlink.sh \
+#	t018-link.sh \
+#	t019-rename.sh \
+#	t020-symlink.sh \
+#	t021-mount.sh \
+#	t022-openat.sh \
+#	t023-mknodat.sh \
+#	t024-mkdirat.sh \
+#	t025-unlinkat.sh \
+#	t026-linkat.sh
+
 EXTRA_DIST= $(TESTS) \
 	    test-lib.sh.in \
 	    test-lib-functions.sh

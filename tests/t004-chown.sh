@@ -24,82 +24,73 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'deny chown(NULL) with EFAULT' '
-    sydbox -ESYDBOX_TEST_EFAULT=1 -- emily chown
+    sydbox -- emily chown --errno=EFAULT
 '
 
 test_expect_success 'deny chown()' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily chown file0
+        -- emily chown --errno=EPERM file0
 '
 
 test_expect_success 'deny chown() for non-existant file' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily chown file-non-existant
+        -- emily chown --errno=EPERM file-non-existant
 '
 
 test_expect_success SYMLINKS 'deny chown() for symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily chown symlink-file1
+        -- emily chown --errno=EPERM symlink-file1
 '
 
 test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily chown symlink-dangling
-'
-
-test_expect_success 'whitelist chown()' '
-    sydbox -ESYDBOX_TEST_SUCCESS=1 \
-        -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily chown file2
-'
-
-test_expect_success SYMLINKS 'whitelist chown() for symbolic link' '
-    sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
-        -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily chown symlink-file3
+        -- emily chown --errno=EPERM symlink-dangling
 '
 
 test_expect_success 'blacklist chown()' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown file4
+        -- emily chown --errno=EPERM file2
 '
 
 test_expect_success 'blacklist chown() for non-existant file' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown file-non-existant
+        -- emily chown --errno=EPERM file-non-existant
 '
 
 test_expect_success SYMLINKS 'blacklist chown() for symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown symlink-file5
+        -- emily chown --errno=EPERM symlink-file3
 '
 
 test_expect_success SYMLINKS 'blacklist chown() for dangling symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown symlink-dangling
+        -- emily chown --errno=EPERM symlink-dangling
+'
+
+test_expect_success 'whitelist chown()' '
+    sydbox \
+        -m core/sandbox/write:deny \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -- emily chown --errno=ERRNO_0 file4
+'
+
+test_expect_success SYMLINKS 'whitelist chown() for symbolic link' '
+    sydbox \
+        -m core/sandbox/write:deny \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -- emily chown --errno=ERRNO_0 symlink-file5
 '
 
 test_done

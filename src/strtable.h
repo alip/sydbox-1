@@ -140,6 +140,7 @@ static const char *const address_family_table[] = {
 DEFINE_STRING_TABLE_LOOKUP(address_family, int)
 
 static const char *const errno_table[] = {
+	[0] = "ERRNO_0",
 	[EPERM] = "EPERM",
 	[ENOENT] = "ENOENT",
 	[ESRCH] = "ESRCH",

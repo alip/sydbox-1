@@ -5,39 +5,49 @@
 
 test_description='sandbox lchown(2)'
 . ./test-lib.sh
-prog=t005_lchown
 
 test_expect_success SYMLINKS setup-symlinks '
     touch file0 &&
     ln -sf file0 symlink-file0 &&
+    touch file1 &&
+    ln -sf file1 symlink-file1 &&
     touch file2 &&
     ln -sf file2 symlink-file2
 '
 
 test_expect_success 'deny lchown(NULL) with EFAULT' '
-    sydbox -ESYDBOX_TEST_EFAULT=1 -- emily lchown
+    sydbox -- emily lchown --errno=EFAULT
 '
 
 test_expect_success SYMLINKS 'deny lchown()' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily lchown symlink-file0
+        -- emily lchown --errno=EPERM symlink-file0
 '
 
 test_expect_success SYMLINKS 'deny lchown for non-existant file' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily lchown file1-non-existant
+        -- emily lchown --errno=EPERM file-non-existant
 '
 
-test_expect_success SYMLINKS 'allow lchown()' '
+test_expect_success SYMLINKS 'blacklist lchown()' '
+    test_must_violate sydbox \
+        -m core/sandbox/write:deny \
+        -- emily lchown --errno=EPERM symlink-file1
+'
+
+test_expect_success SYMLINKS 'blacklist lchown for non-existant file' '
+    test_must_violate sydbox \
+        -m core/sandbox/write:deny \
+        -- emily lchown --errno=EPERM file-non-existant
+'
+
+test_expect_success SYMLINKS 'whitelist lchown()' '
     sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily lchown symlink-file2
+        -- emily lchown --errno=ERRNO_0 symlink-file2
 '
 
 test_done
