@@ -120,6 +120,17 @@
  **/
 #define PINK_TRACE_OPTION_EXIT      (1 << 6)
 
+/**
+ * This define represents the trace option SECCOMP.
+ * If this flag is set in the options argument of pink_trace_setup(), notify
+ * the tracer with (SIGTRAP | PTRACE_EVENT_SECCOMP << 8) on seccomp filtering
+ * events. SECCOMP_RET_DATA portion of the BPF program return value will be
+ * available to the tracer via pink_trace_geteventmsg()
+ *
+ * @see #PINK_HAVE_OPTION_SECCOMP
+ **/
+#define PINK_TRACE_OPTION_SECCOMP   (1 << 7)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -204,7 +215,8 @@ bool pink_trace_syscall(pid_t tid, int sig);
  * Retrieve a message (as an unsigned long) about the trace event that just
  * happened, placing it in the location given by the second argument. For
  * EXIT event this is the child's exit status. For FORK, VFORK, CLONE and
- * VFORK_DONE events this is the process ID of the new process.
+ * VFORK_DONE events this is the process ID of the new process. For SECCOMP
+ * event, this is the SECCOMP_RET_DATA portion of the BPF program return value.
  *
  * @see PINK_HAVE_GETEVENTMSG
  *

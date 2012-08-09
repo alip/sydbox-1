@@ -85,6 +85,12 @@ enum pink_event {
 	 * @see #PINK_HAVE_EVENT_EXIT
 	 **/
 	PINK_EVENT_EXIT = 6,
+	/**
+	 * Seccomp filter notification
+	 *
+	 * @see #PINK_HAVE_EVENT_SECCOMP
+	 **/
+	PINK_EVENT_SECCOMP = 7,
 };
 
 #ifdef __cplusplus

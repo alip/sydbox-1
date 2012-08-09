@@ -116,6 +116,13 @@
  * @see pink_trace_setup()
  **/
 #define PINK_HAVE_OPTION_EXIT		@PINK_HAVE_OPTION_EXIT@
+/**
+ * Define to 1 if #PINK_TRACE_OPTION_SECCOMP is supported, 0 otherwise
+ *
+ * @note This option is supported on Linux-3.5 and newer.
+ * @see pink_trace_setup()
+ **/
+#define PINK_HAVE_OPTION_SECCOMP	@PINK_HAVE_OPTION_SECCOMP@
 
 /**
  * Define to 1 if pink_trace_setup() is supported, 0 otherwise
@@ -193,6 +200,12 @@
  * @note This event is supported on Linux-2.5.60 and newer.
  **/
 #define PINK_HAVE_EVENT_EXIT		@PINK_HAVE_EVENT_EXIT@
+/**
+ * Define to 1 if #PINK_EVENT_SECCOMP is supported, 0 otherwise
+ *
+ * @note This event is supported on Linux-3.5 and newer.
+ **/
+#define PINK_HAVE_EVENT_SECCOMP		@PINK_HAVE_EVENT_SECCOMP@
 
 /**
  * Define to 1 if @e tkill(2) system call is available, 0 otherwise
