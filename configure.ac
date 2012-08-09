@@ -253,7 +253,7 @@ AC_CHECK_HEADER([sys/ptrace.h], [], AC_MSG_ERROR([I need sys/ptrace.h]))
 AC_CHECK_HEADER([sys/socket.h], [], AC_MSG_ERROR([I need sys/socket.h]))
 AC_CHECK_HEADER([netinet/in.h], [], AC_MSG_ERROR([I need netinet/in.h]))
 AC_CHECK_HEADER([sys/un.h],     [], AC_MSG_ERROR([I need sys/un.h]))
-AC_CHECK_HEADERS([sys/reg.h sys/uio.h], [], [])
+AC_CHECK_HEADERS([linux/ptrace.h sys/reg.h sys/uio.h], [], [])
 
 dnl check for pinktrace-easy headers
 AC_CHECK_HEADER([alloca.h],      [], AC_MSG_ERROR([I need alloca.h]))
