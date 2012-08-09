@@ -7,10 +7,10 @@ EXTRA_DIST=
 
 DEFS+= \
        -DDATADIR=\"$(datadir)\" \
-       -DGITHEAD=\"$(GITHEAD)\"
+       -DGITVERSION=\"$(GITVERSION)\"
 AM_CFLAGS= \
-	   $(pinktrace_CFLAGS) \
-	   $(pinktrace_easy_CFLAGS) \
+	   -I$(top_builddir)/include \
+	   -I$(top_srcdir)/include \
 	   @SYDBOX_CFLAGS@
 
 bin_PROGRAMS= sydbox
@@ -89,8 +89,8 @@ sydbox_SOURCES= \
 		 sys-getsockname.c \
 		 sydbox.c
 sydbox_LDADD= \
-	      $(pinktrace_LIBS) \
-	      $(pinktrace_easy_LIBS)
+	      $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la \
+	      $(top_builddir)/pinktrace/easy/libpinktrace_easy_@PINKTRACE_PC_SLOT@.la
 
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \

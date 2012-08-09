@@ -97,14 +97,14 @@ sydbox_t *sydbox = NULL;
 
 static void about(void)
 {
-	printf(PACKAGE"-"VERSION GITHEAD"\n");
+	printf(PACKAGE"-"VERSION GITVERSION"\n");
 }
 
 PINK_GCC_ATTR((noreturn))
 static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
-"PACKAGE"-"VERSION GITHEAD" -- ptrace based sandbox\n\
+"PACKAGE"-"VERSION GITVERSION" -- ptrace based sandbox\n\
 usage: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] {-p pid...}\n\
    or: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
