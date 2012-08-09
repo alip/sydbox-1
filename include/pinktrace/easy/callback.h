@@ -205,6 +205,17 @@ typedef int (*pink_easy_callback_pre_exit_t) (const struct pink_easy_context *ct
 		struct pink_easy_process *current, int status);
 
 /**
+ * Callback for seccomp filter notification
+ *
+ * @param ctx Tracing context
+ * @param current Current process
+ * @param ret_data Seccomp return data
+ * @return See PINK_EASY_CFLAG_* for flags to set in the return value.
+ **/
+typedef int (*pink_easy_callback_seccomp_t) (const struct pink_easy_context *ctx,
+		struct pink_easy_process *current, long ret_data);
+
+/**
  * Callback for stopping signal delivery
  *
  * @param ctx Tracing context
@@ -248,6 +259,8 @@ struct pink_easy_callback_table {
 	pink_easy_callback_exec_t exec;
 	/** "pre_exit" callback **/
 	pink_easy_callback_pre_exit_t pre_exit;
+	/** "seccomp" callback **/
+	pink_easy_callback_seccomp_t seccomp;
 	/** "signal" callback **/
 	pink_easy_callback_signal_t signal;
 	/** "exit" callback **/

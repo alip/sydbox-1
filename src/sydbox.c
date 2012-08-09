@@ -442,7 +442,7 @@ int main(int argc, char **argv)
 	sa.sa_handler = SIG_DFL;
 	sigaction(SIGCHLD, &sa, NULL);
 
-	ret = pink_easy_loop(sydbox->ctx);
+	ret = pink_easy_loop(sydbox->ctx, PINK_EASY_STEP_SYSCALL);
 	sydbox_destroy();
 	return ret;
 }

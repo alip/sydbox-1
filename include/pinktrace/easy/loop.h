@@ -43,6 +43,14 @@
 
 struct pink_easy_context;
 
+/** Stepping methods for pink_easy_loop() */
+enum pink_easy_step {
+	/** Step with pink_trace_syscall() */
+	PINK_EASY_STEP_SYSCALL,
+	/** Step with pink_trace_resume() */
+	PINK_EASY_STEP_RESUME,
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,13 +59,14 @@ extern "C" {
  * The main event loop
  *
  * @param ctx Tracing context
+ * @param step Stepping method
  * @return In case of success, if the "cb_end" callback exists this function
  *         calls it and returns what that callback returns; otherwise this
  *         function returns zero. In case of any error condition, this callback
  *         calls the "cb_error" callback and returns the error condition
  *         negated.
  **/
-int pink_easy_loop(struct pink_easy_context *ctx)
+int pink_easy_loop(struct pink_easy_context *ctx, enum pink_easy_step step)
 	PINK_GCC_ATTR((nonnull(1)));
 
 #ifdef __cplusplus
