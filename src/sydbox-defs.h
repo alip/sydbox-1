@@ -247,6 +247,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE_FOLLOW_FORK,
 	MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
+	MAGIC_KEY_CORE_TRACE_USE_SECCOMP,
 
 	MAGIC_KEY_LOG,
 	MAGIC_KEY_LOG_CONSOLE_FD,
@@ -354,7 +355,7 @@ typedef struct {
 	unsigned long sno;
 
 	/* Process registers */
-	const pink_regs_t *regs;
+	pink_regs_t regs;
 
 	/* Arguments of last system call */
 	long args[PINK_MAX_ARGS];
@@ -419,6 +420,7 @@ typedef struct {
 
 	bool follow_fork;
 	bool exit_wait_all;
+	bool use_seccomp;
 
 	unsigned log_console_fd;
 	unsigned log_level;
@@ -519,6 +521,7 @@ void log_msg(unsigned level, const char *fmt, ...) PINK_GCC_ATTR((format (printf
 #define debug(...)	log_msg(4, __VA_ARGS__)
 #define trace(...)	log_msg(5, __VA_ARGS__)
 
+void cont_all(void);
 void abort_all(void);
 int deny(struct pink_easy_process *current);
 int restore(struct pink_easy_process *current);
@@ -546,6 +549,8 @@ int magic_set_trace_follow_fork(const void *val, struct pink_easy_process *curre
 int magic_query_trace_follow_fork(struct pink_easy_process *current);
 int magic_set_trace_exit_wait_all(const void *val, struct pink_easy_process *current);
 int magic_query_trace_exit_wait_all(struct pink_easy_process *current);
+int magic_set_trace_use_seccomp(const void *val, struct pink_easy_process *current);
+int magic_query_trace_use_seccomp(struct pink_easy_process *current);
 int magic_set_whitelist_ppd(const void *val, struct pink_easy_process *current);
 int magic_query_whitelist_ppd(struct pink_easy_process *current);
 int magic_set_whitelist_sb(const void *val, struct pink_easy_process *current);
@@ -619,6 +624,7 @@ void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit);
 const sysentry_t *systable_lookup(long no, enum pink_abi abi);
 
 void sysinit(void);
+int sysinit_seccomp(void);
 int sysenter(struct pink_easy_process *current);
 int sysexit(struct pink_easy_process *current);
 

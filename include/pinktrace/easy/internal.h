@@ -49,21 +49,6 @@
 #undef KERNEL_VERSION
 #define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
 
-/** We have attached to this process, but did not see it stopping yet */
-#define PINK_EASY_PROCESS_STARTUP		00001
-/** Next SIGSTOP is to be ignored */
-#define PINK_EASY_PROCESS_IGNORE_ONE_SIGSTOP	00002
-/** Process is suspended, waiting for its parent */
-#define PINK_EASY_PROCESS_SUSPENDED		00004
-/** A system call is in progress **/
-#define PINK_EASY_PROCESS_INSYSCALL		00010
-/** It is attached already **/
-#define PINK_EASY_PROCESS_ATTACHED		00020
-/** Process should have forks followed **/
-#define PINK_EASY_PROCESS_FOLLOWFORK		00040
-/** Process is a clone **/
-#define PINK_EASY_PROCESS_CLONE_THREAD		00100
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -72,6 +57,9 @@ extern "C" {
 struct pink_easy_process {
 	/** PINK_EASY_PROCESS_* flags **/
 	short flags;
+
+	/** @e ptrace(2) stepping method **/
+	enum pink_easy_step ptrace_step;
 
 	/** Thread ID of this entry **/
 	pid_t tid;
@@ -100,6 +88,9 @@ struct pink_easy_context {
 	/** pink_trace_setup() options **/
 	int ptrace_options;
 
+	/** @e ptrace(2) stepping method **/
+	enum pink_easy_step ptrace_default_step;
+
 	/** Last error **/
 	enum pink_easy_error error;
 
@@ -119,25 +110,6 @@ struct pink_easy_context {
 	pink_easy_free_func_t userdata_destroy;
 };
 #define PINK_EASY_FOREACH_PROCESS(node, ctx)	SLIST_FOREACH((node), &(ctx)->process_list, entries)
-#define PINK_EASY_INSERT_PROCESS(ctx, current)							\
-	do {											\
-		(current) = calloc(1, sizeof(*(current)));					\
-		if ((current) == NULL) {							\
-			(ctx)->callback_table.error((ctx), PINK_EASY_ERROR_ALLOC, "calloc");	\
-		} else {									\
-			SLIST_INSERT_HEAD(&(ctx)->process_list, (current), entries);		\
-			(ctx)->nprocs++;							\
-		}										\
-	} while (0)
-#define PINK_EASY_REMOVE_PROCESS(ctx, current)							\
-	do {											\
-		SLIST_REMOVE(&(ctx)->process_list, (current), pink_easy_process, entries);	\
-		if ((current)->userdata_destroy && (current)->userdata) {			\
-			(current)->userdata_destroy((current)->userdata);			\
-		}										\
-		free(current);									\
-		(ctx)->nprocs--;								\
-	} while (0)
 
 #ifdef __cplusplus
 }

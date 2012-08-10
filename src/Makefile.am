@@ -23,6 +23,8 @@ noinst_HEADERS= \
 		macro.h \
 		path.h
 		proc.h \
+		seccomp.h \
+		seccomp-bpf.h \
 		slist.h \
 		strtable.h \
 		util.h \
@@ -35,6 +37,7 @@ sydbox_SOURCES= \
 		 hashtable.c \
 		 path.c \
 		 proc.c \
+		 seccomp.c \
 		 util.c \
 		 wildmatch.c \
 		 magic-bool.c \

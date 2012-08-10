@@ -42,7 +42,7 @@ int sys_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) c
 		return 0;
 
 	decode_socketcall = !!(data->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
-	if (!pink_read_socket_argument(tid, abi, data->regs,
+	if (!pink_read_socket_argument(tid, abi, &data->regs,
 				decode_socketcall, 0, &fd)) {
 		if (errno != ESRCH) {
 			warning("pink_read_socket_argument(%lu, %d, %s, 0) failed (errno:%d %s)",
@@ -77,7 +77,7 @@ int sysx_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) 
 		return 0;
 
 	/* Check the return value */
-	if (!pink_read_retval(tid, abi, data->regs, &retval, NULL)) {
+	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
 		if (errno != ESRCH) {
 			warning("pink_read_retval(%lu, %d) failed (errno:%d %s)",
 					(unsigned long)tid, abi,
@@ -96,7 +96,7 @@ int sysx_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) 
 	}
 
 	decode_socketcall = !!(data->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
-	if (!pink_read_socket_address(tid, abi, data->regs,
+	if (!pink_read_socket_address(tid, abi, &data->regs,
 				decode_socketcall,
 				0, NULL, &psa)) {
 		if (errno != ESRCH) {

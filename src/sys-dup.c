@@ -37,7 +37,7 @@ int sys_dup(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const cha
 	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind)
 		return 0;
 
-	if (!pink_read_argument(tid, abi, data->regs, 0, &fd)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 0, &fd)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 0) failed (errno:%d %s)",
 					(unsigned long)tid, abi,
@@ -63,7 +63,7 @@ int sysx_dup(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	/* Check the return value */
-	if (!pink_read_retval(tid, abi, data->regs, &retval, NULL)) {
+	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
 		if (errno != ESRCH) {
 			warning("pink_read_retval(%lu, %d) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

@@ -61,19 +61,20 @@ static inline int errno2retval(void)
 static bool cont_one(struct pink_easy_process *proc, void *userdata)
 {
 	pid_t tid = pink_easy_process_get_tid(proc);
+	int level = PTR_TO_INT(userdata);
 
-	if (PTR_TO_UINT(userdata))
-		warning("resuming process:%lu", (unsigned long)tid);
-	else
+	if (level < 0)
 		fprintf(stderr, "resuming process:%lu\n", (unsigned long)tid);
+	else
+		log_msg(level, "resuming process:%lu", (unsigned long)tid);
 
 	if (!pink_easy_process_resume(proc, 0) && errno != ESRCH) {
-		if (PTR_TO_UINT(userdata))
-			warning("failed to resume process:%lu (errno:%d %s)",
-				(unsigned long)tid, errno, strerror(errno));
-		else
+		if (level < 0)
 			fprintf(stderr, "failed to resume process:%lu (errno:%d %s)\n",
 					(unsigned long)tid, errno, strerror(errno));
+		else
+			log_msg(level, "failed to resume process:%lu (errno:%d %s)",
+				(unsigned long)tid, errno, strerror(errno));
 	}
 
 	return true;
@@ -82,22 +83,32 @@ static bool cont_one(struct pink_easy_process *proc, void *userdata)
 static bool kill_one(struct pink_easy_process *proc, void *userdata)
 {
 	pid_t tid = pink_easy_process_get_tid(proc);
+	int level = PTR_TO_INT(userdata);
 
-	if (PTR_TO_UINT(userdata))
-		warning("killing process:%lu", (unsigned long)tid);
-	else
+	if (level < 0)
 		fprintf(stderr, "killing process:%lu\n", (unsigned long)tid);
+	else
+		log_msg(level, "killing process:%lu", (unsigned long)tid);
 
 	if (pink_easy_process_kill(proc, SIGKILL) < 0 && errno != ESRCH) {
-		if (PTR_TO_UINT(userdata))
-			warning("failed to kill process:%lu (errno:%d %s)",
-				(unsigned long)tid, errno, strerror(errno));
-		else
+		if (level < 0)
 			fprintf(stderr, "failed to kill process:%lu (errno:%d %s)\n",
 					(unsigned long)tid, errno, strerror(errno));
+		else
+			log_msg(level, "failed to kill process:%lu (errno:%d %s)",
+				(unsigned long)tid, errno, strerror(errno));
 	}
 
 	return true;
+}
+
+void cont_all(void)
+{
+	unsigned count;
+	struct pink_easy_process_list *list = pink_easy_context_get_process_list(sydbox->ctx);
+
+	count = pink_easy_process_list_walk(list, cont_one, INT_TO_PTR(3));
+	info("resumed %u process%s", count, count > 1 ? "es" : "");
 }
 
 void abort_all(void)
@@ -107,11 +118,11 @@ void abort_all(void)
 
 	switch (sydbox->config.abort_decision) {
 	case ABORT_CONTALL:
-		count = pink_easy_process_list_walk(list, cont_one, UINT_TO_PTR(0));
+		count = pink_easy_process_list_walk(list, cont_one, INT_TO_PTR(-1));
 		fprintf(stderr, "resumed %u process%s\n", count, count > 1 ? "es" : "");
 		break;
 	case ABORT_KILLALL:
-		count = pink_easy_process_list_walk(list, kill_one, UINT_TO_PTR(0));
+		count = pink_easy_process_list_walk(list, kill_one, INT_TO_PTR(-1));
 		fprintf(stderr, "killed %u process%s\n", count, count > 1 ? "es" : "");
 		break;
 	default:
@@ -201,20 +212,20 @@ int panic(struct pink_easy_process *current)
 	switch (sydbox->config.panic_decision) {
 	case PANIC_KILL:
 		warning("panic! killing the guilty process");
-		kill_one(current, UINT_TO_PTR(1));
+		kill_one(current, INT_TO_PTR(1));
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONT:
 		warning("panic! resuming the guilty process");
-		cont_one(current, UINT_TO_PTR(1));
+		cont_one(current, INT_TO_PTR(1));
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONTALL:
 		warning("panic! resuming all processes");
-		count = pink_easy_process_list_walk(list, cont_one, UINT_TO_PTR(1));
+		count = pink_easy_process_list_walk(list, cont_one, INT_TO_PTR(1));
 		warning("resumed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	case PANIC_KILLALL:
 		warning("panic! killing all processes");
-		count = pink_easy_process_list_walk(list, kill_one, UINT_TO_PTR(1));
+		count = pink_easy_process_list_walk(list, kill_one, INT_TO_PTR(1));
 		warning("killed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	default:

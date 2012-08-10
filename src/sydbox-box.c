@@ -342,7 +342,7 @@ int box_check_sock(struct pink_easy_process *current, const char *name, sys_info
 	abspath = NULL;
 	psa = xmalloc(sizeof(struct pink_sockaddr));
 
-	if (!pink_read_socket_address(tid, abi, data->regs,
+	if (!pink_read_socket_address(tid, abi, &data->regs,
 				info->decode_socketcall,
 				info->index, info->fd, psa)) {
 		if (errno != ESRCH) {

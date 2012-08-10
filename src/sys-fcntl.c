@@ -38,7 +38,7 @@ int sys_fcntl(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const c
 		return 0;
 
 	/* Read the command */
-	if (!pink_read_argument(tid, abi, data->regs, 1, &cmd)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 1, &cmd)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 1): %d(%s)",
 					(unsigned long)tid, abi,
@@ -64,7 +64,7 @@ int sys_fcntl(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const c
 	}
 
 	/* Read the file descriptor */
-	if (!pink_read_argument(tid, abi, data->regs, 0, &fd)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 0, &fd)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 0) failed (errno:%d %s)",
 					(unsigned long)tid, abi,
@@ -90,7 +90,7 @@ int sysx_fcntl(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	/* Read the return value */
-	if (!pink_read_retval(tid, abi, data->regs, &retval, NULL)) {
+	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
 		if (errno != ESRCH) {
 			warning("pink_read_retval(%lu, %d) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

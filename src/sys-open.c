@@ -99,7 +99,7 @@ int sys_open(struct pink_easy_process *current, const char *name)
 	if (sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
 
-	if (!pink_read_argument(tid, abi, data->regs, 1, &flags)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 1, &flags)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 1) failed (errno:%d %s)",
 					(unsigned long)tid, abi,
@@ -146,7 +146,7 @@ int sys_openat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	/* Check mode argument first */
-	if (!pink_read_argument(tid, abi, data->regs, 2, &flags)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 2, &flags)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 2) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

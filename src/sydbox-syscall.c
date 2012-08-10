@@ -29,86 +29,124 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "macro.h"
 #include "proc.h"
+#ifdef WANT_SECCOMP
+#include "seccomp.h"
+#endif
+
+static const sysentry_t syscall_entries[] = {
+	{"chdir", NULL, sysx_chdir},
+	{"fchdir", NULL, sysx_chdir},
+
+	{"stat", sys_stat, NULL},
+	{"stat64", sys_stat, NULL},
+	{"lstat", sys_stat, NULL},
+	{"lstat64", sys_stat, NULL},
+
+	{"access", sys_access, NULL},
+	{"faccessat", sys_faccessat, NULL},
+
+	{"dup", sys_dup, sysx_dup},
+	{"dup2", sys_dup, sysx_dup},
+	{"dup3", sys_dup, sysx_dup},
+	{"fcntl", sys_fcntl, sysx_fcntl},
+	{"fcntl64", sys_fcntl, sysx_fcntl},
+
+	{"execve", sys_execve, NULL},
+
+	{"chmod", sys_chmod, NULL},
+	{"fchmodat", sys_fchmodat, NULL},
+
+	{"chown", sys_chown, NULL},
+	{"chown32", sys_chown, NULL},
+	{"lchown", sys_lchown, NULL},
+	{"lchown32", sys_lchown, NULL},
+	{"fchownat", sys_fchownat, NULL},
+
+	{"open", sys_open, NULL},
+	{"openat", sys_openat, NULL},
+	{"creat", sys_creat, NULL},
+
+	{"mkdir", sys_mkdir, NULL},
+	{"mkdirat", sys_mkdirat, NULL},
+
+	{"mknod", sys_mknod, NULL},
+	{"mknodat", sys_mknodat, NULL},
+
+	{"rmdir", sys_rmdir, NULL},
+
+	{"truncate", sys_truncate, NULL},
+	{"truncate64", sys_truncate, NULL},
+
+	{"mount", sys_mount, NULL},
+	{"umount", sys_umount, NULL},
+	{"umount2", sys_umount2, NULL},
+
+	{"utime", sys_utime, NULL},
+	{"utimes", sys_utimes, NULL},
+	{"utimensat", sys_utimensat, NULL},
+	{"futimesat", sys_futimesat, NULL},
+
+	{"unlink", sys_unlink, NULL},
+	{"unlinkat", sys_unlinkat, NULL},
+
+	{"link", sys_link, NULL},
+	{"linkat", sys_linkat, NULL},
+
+	{"rename", sys_rename, NULL},
+	{"renameat", sys_renameat, NULL},
+
+	{"symlink", sys_symlink, NULL},
+	{"symlinkat", sys_symlinkat, NULL},
+
+	{"setxattr", sys_setxattr, NULL},
+	{"lsetxattr", sys_lsetxattr, NULL},
+	{"removexattr", sys_removexattr, NULL},
+	{"lremovexattr", sys_lremovexattr, NULL},
+
+	{"socketcall", sys_socketcall, sysx_socketcall},
+	{"bind", sys_bind, sysx_bind},
+	{"connect", sys_connect, NULL},
+	{"sendto", sys_sendto, NULL},
+	{"recvfrom", sys_recvfrom, NULL},
+	{"getsockname", sys_getsockname, sysx_getsockname},
+};
 
 void sysinit(void)
 {
-	systable_add("chdir", NULL, sysx_chdir);
-	systable_add("fchdir", NULL, sysx_chdir);
+	unsigned i;
 
-	systable_add("stat", sys_stat, NULL);
-	systable_add("stat64", sys_stat, NULL);
-	systable_add("lstat", sys_stat, NULL);
-	systable_add("lstat64", sys_stat, NULL);
-
-	systable_add("access", sys_access, NULL);
-	systable_add("faccessat", sys_faccessat, NULL);
-
-	systable_add("dup", sys_dup, sysx_dup);
-	systable_add("dup2", sys_dup, sysx_dup);
-	systable_add("dup3", sys_dup, sysx_dup);
-	systable_add("fcntl", sys_fcntl, sysx_fcntl);
-	systable_add("fcntl64", sys_fcntl, sysx_fcntl);
-
-	systable_add("execve", sys_execve, NULL);
-
-	systable_add("chmod", sys_chmod, NULL);
-	systable_add("fchmodat", sys_fchmodat, NULL);
-
-	systable_add("chown", sys_chown, NULL);
-	systable_add("chown32", sys_chown, NULL);
-	systable_add("lchown", sys_lchown, NULL);
-	systable_add("lchown32", sys_lchown, NULL);
-	systable_add("fchownat", sys_fchownat, NULL);
-
-	systable_add("open", sys_open, NULL);
-	systable_add("openat", sys_openat, NULL);
-	systable_add("creat", sys_creat, NULL);
-
-	systable_add("mkdir", sys_mkdir, NULL);
-	systable_add("mkdirat", sys_mkdirat, NULL);
-
-	systable_add("mknod", sys_mknod, NULL);
-	systable_add("mknodat", sys_mknodat, NULL);
-
-	systable_add("rmdir", sys_rmdir, NULL);
-
-	systable_add("truncate", sys_truncate, NULL);
-	systable_add("truncate64", sys_truncate, NULL);
-
-	systable_add("mount", sys_mount, NULL);
-	systable_add("umount", sys_umount, NULL);
-	systable_add("umount2", sys_umount2, NULL);
-
-	systable_add("utime", sys_utime, NULL);
-	systable_add("utimes", sys_utimes, NULL);
-	systable_add("utimensat", sys_utimensat, NULL);
-	systable_add("futimesat", sys_futimesat, NULL);
-
-	systable_add("unlink", sys_unlink, NULL);
-	systable_add("unlinkat", sys_unlinkat, NULL);
-
-	systable_add("link", sys_link, NULL);
-	systable_add("linkat", sys_linkat, NULL);
-
-	systable_add("rename", sys_rename, NULL);
-	systable_add("renameat", sys_renameat, NULL);
-
-	systable_add("symlink", sys_symlink, NULL);
-	systable_add("symlinkat", sys_symlinkat, NULL);
-
-	systable_add("setxattr", sys_setxattr, NULL);
-	systable_add("lsetxattr", sys_lsetxattr, NULL);
-	systable_add("removexattr", sys_removexattr, NULL);
-	systable_add("lremovexattr", sys_lremovexattr, NULL);
-
-	systable_add("socketcall", sys_socketcall, sysx_socketcall);
-	systable_add("bind", sys_bind, sysx_bind);
-	systable_add("connect", sys_connect, NULL);
-	systable_add("sendto", sys_sendto, NULL);
-	systable_add("recvfrom", sys_recvfrom, NULL);
-	systable_add("getsockname", sys_getsockname, sysx_getsockname);
+	for (i = 0; i < ELEMENTSOF(syscall_entries); i++)
+		systable_add(syscall_entries[i].name, syscall_entries[i].enter, syscall_entries[i].exit);
 }
+
+#ifdef WANT_SECCOMP
+int sysinit_seccomp(void)
+{
+	int r;
+	unsigned i, j;
+	long sysno;
+	uint32_t *sysarray;
+
+	sysarray = xmalloc(sizeof(uint32_t) * ELEMENTSOF(syscall_entries));
+	for (i = 0, j = 0; i < ELEMENTSOF(syscall_entries); i++) {
+		sysno = pink_syscall_lookup(syscall_entries[i].name, PINK_ABI_DEFAULT);
+		if (sysno != -1)
+			sysarray[j++] = (uint32_t)sysno;
+	}
+	sysarray[j] = SYSCALL_FILTER_SENTINEL;
+
+	r = seccomp_apply(sysarray);
+	free(sysarray);
+	return r;
+}
+#else
+int sysinit_seccomp(void)
+{
+	return 0;
+}
+#endif
 
 int sysenter(struct pink_easy_process *current)
 {
@@ -123,7 +161,7 @@ int sysenter(struct pink_easy_process *current)
 	abi = pink_easy_process_get_abi(current);
 	data = pink_easy_process_get_userdata(current);
 
-	if (!pink_read_syscall(tid, abi, data->regs, &no)) {
+	if (!pink_read_syscall(tid, abi, &data->regs, &no)) {
 		if (errno != ESRCH) {
 			warning("pink_read_syscall(%lu, %d) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

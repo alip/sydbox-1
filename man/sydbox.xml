@@ -537,6 +537,18 @@
         </varlistentry>
 
         <varlistentry>
+          <term><option id="core-trace-use_seccomp">core/trace/seccomp</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether seccomp user-mode filters should be used. This works only on Linux-3.5 or
+              newer and sydbox must be compiled with the <option>--enable-seccomp</option> configure option. Note this
+              option is only taken into account for executed processes. Attached processes do not use seccomp filters.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
           <term><option id="core-match-case-sensitive">core/match/case_sensitive</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>

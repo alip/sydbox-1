@@ -46,7 +46,7 @@ int path_decode(struct pink_easy_process *current, unsigned ind, char **buf)
 	assert(current);
 	assert(buf);
 
-	if (!pink_read_argument(tid, abi, data->regs, ind, &addr))
+	if (!pink_read_argument(tid, abi, &data->regs, ind, &addr))
 		goto fail;
 	path[0] = '\0';
 	if (!pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX))
@@ -97,7 +97,7 @@ int path_prefix(struct pink_easy_process *current, unsigned ind, char **buf)
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!pink_read_argument(tid, abi, data->regs, ind, &fd)) {
+	if (!pink_read_argument(tid, abi, &data->regs, ind, &fd)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, %u) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

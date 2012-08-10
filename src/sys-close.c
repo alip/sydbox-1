@@ -39,7 +39,7 @@ int sys_close(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const c
 	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind)
 		return 0;
 
-	if (!pink_read_argument(tid, abi, data->regs, 0, &fd)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 0, &fd)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 0) failed (errno:%d %s)",
 					(unsigned long)tid, abi,
@@ -66,7 +66,7 @@ int sysx_close(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const 
 	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind || !data->args[0])
 		return 0;
 
-	if (!pink_read_retval(tid, abi, data->regs, &retval, NULL)) {
+	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
 		if (errno != ESRCH) {
 			warning("pink_read_retval(%lu, %d) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

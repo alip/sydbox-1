@@ -69,7 +69,7 @@ int sys_fchownat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	/* Check for AT_SYMLINK_FOLLOW */
-	if (!pink_read_argument(tid, abi, data->regs, 4, &flags)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 4, &flags)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 4) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

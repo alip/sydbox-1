@@ -377,6 +377,26 @@ AC_SUBST([PINK_HAVE_SYSEMU_SINGLESTEP])
 dnl check for large file support
 AC_SYS_LARGEFILE
 
+dnl check for seccomp support
+AC_ARG_ENABLE([seccomp],
+	      [AS_HELP_STRING([--enable-seccomp], [enable experimental seccomp support])],
+	      [WANT_SECCOMP="$enableval"],
+	      [WANT_SECCOMP="no"])
+if test x"$WANT_SECCOMP" = x"yes" ; then
+	AC_CHECK_HEADER([sys/prctl.h],       [], [AC_MSG_ERROR([I need sys/prctl.h for seccomp support!])])
+	AC_CHECK_HEADER([linux/seccomp.h],   [], [AC_MSG_ERROR([I need linux/seccomp.h for seccomp support!])])
+	AC_CHECK_DECL([SECCOMP_MODE_FILTER], [], [AC_MSG_ERROR([I need SECCOMP_MODE_FILTER for seccomp support!])],
+		      [#include <linux/seccomp.h>])
+	AC_CHECK_DECL([SECCOMP_RET_TRACE],   [], [AC_MSG_ERROR([I need SECCOMP_RET_TRACE for seccomp support!])],
+		      [#include <linux/seccomp.h>])
+fi
+AC_MSG_CHECKING([for seccomp support])
+AC_MSG_RESULT([$WANT_SECCOMP])
+if test x"$WANT_SECCOMP" = x"yes" ; then
+	AC_DEFINE([WANT_SECCOMP], [1], [Enable experimental seccomp support])
+fi
+AM_CONDITIONAL([WANT_SECCOMP], test x"$WANT_SECCOMP" = x"yes")
+
 dnl check for IPV6 support
 AC_ARG_ENABLE([ipv6],
 	      [AS_HELP_STRING([--disable-ipv6], [disable IPV6 support])],
@@ -394,7 +414,7 @@ if test x"$WANT_IPV6" = x"yes" ; then
 		       #include <netinet/in.h>])
 fi
 AC_MSG_CHECKING([for IPV6 support])
-AC_MSG_RESULT([yes])
+AC_MSG_RESULT([$WANT_IPV6])
 if test x"$WANT_IPV6" = x"yes"; then
 	PINK_HAVE_IPV6=1
 else

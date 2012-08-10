@@ -42,7 +42,7 @@ int sys_access(struct pink_easy_process *current, const char *name)
 	if (sandbox_exec_off(data) && sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
 
-	if (!pink_read_argument(tid, abi, data->regs, 1, &mode)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 1, &mode)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 1) failed (errno:%d %s)",
 					(unsigned long)tid, abi,
@@ -98,7 +98,7 @@ int sys_faccessat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	/* Check mode argument first */
-	if (!pink_read_argument(tid, abi, data->regs, 2, &mode)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 2, &mode)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 2) failed (errno:%d %s)",
 					(unsigned long)tid, abi,
@@ -114,7 +114,7 @@ int sys_faccessat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	/* Check for AT_SYMLINK_NOFOLLOW */
-	if (!pink_read_argument(tid, abi, data->regs, 3, &flags)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 3, &flags)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 3): %d(%s)",
 					(unsigned long)tid, abi,

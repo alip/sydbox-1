@@ -35,7 +35,7 @@ int sys_socketcall(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) co
 	if (sandbox_network_off(data))
 		return 0;
 
-	if (!pink_read_socket_subcall(tid, abi, data->regs, true, &subcall)) {
+	if (!pink_read_socket_subcall(tid, abi, &data->regs, true, &subcall)) {
 		if (errno != ESRCH) {
 			warning("pink_read_socket_subcall(%lu, %d, true) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

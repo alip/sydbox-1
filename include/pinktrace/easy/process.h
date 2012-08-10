@@ -41,6 +41,7 @@
 
 #include <pinktrace/compiler.h>
 #include <pinktrace/easy/func.h>
+#include <pinktrace/easy/step.h>
 
 #include <stdbool.h>
 #include <sys/types.h>
@@ -48,6 +49,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct pink_easy_context;
 
 /**
  * @struct pink_easy_process
@@ -62,6 +65,44 @@ struct pink_easy_process;
  * @note This list is maintained internally by the tracing context.
  **/
 struct pink_easy_process_list;
+
+/** The process is attached already */
+#define PINK_EASY_PROCESS_ATTACHED		00001
+/** Next SIGSTOP is to be ignored */
+#define PINK_EASY_PROCESS_IGNORE_ONE_SIGSTOP	00002
+/** Process should have forks followed **/
+#define PINK_EASY_PROCESS_FOLLOWFORK		00004
+/** Process is a clone **/
+#define PINK_EASY_PROCESS_CLONE_THREAD		00010
+/** We have attached to this process, but did not see it stopping yet */
+#define PINK_EASY_PROCESS_STARTUP		00020
+/** Process is suspended, waiting for its parent */
+#define PINK_EASY_PROCESS_SUSPENDED		00040
+/** A system call is in progress **/
+#define PINK_EASY_PROCESS_INSYSCALL		00100
+
+/**
+ * Insert a traced process into the process tree
+ *
+ * @param ctx Tracing context
+ * @param tid Thread ID
+ * @param tgid Thread group ID, specify -1 for non-clones
+ * @param ptrace_step @e ptrace(2) stepping
+ * @param flags Bitwise OR'ed PINK_EASY_PROCESS flags
+ * @return Process structure on success, NULL on failure and sets errno accordingly
+ **/
+struct pink_easy_process *pink_easy_process_new(struct pink_easy_context *ctx,
+		pid_t tid, pid_t tgid,
+		enum pink_easy_step ptrace_step,
+		short flags);
+
+/**
+ * Free a process
+ *
+ * @param ctx Tracing context
+ * @param proc Process entry
+ **/
+void pink_easy_process_free(struct pink_easy_context *ctx, struct pink_easy_process *proc);
 
 /**
  * Kill a process
@@ -113,37 +154,30 @@ int pink_easy_process_get_abi(const struct pink_easy_process *proc)
 	PINK_GCC_ATTR((nonnull(1)));
 
 /**
- * Are we attached to the process?
+ * Set the @e ptrace(2) stepping method
  *
  * @param proc Process entry
- * @return true if the process is attached, false otherwise
+ * @param ptrace_step @e ptrace(2) stepping method
  **/
-bool pink_easy_process_is_attached(const struct pink_easy_process *proc)
+void pink_easy_process_set_step(struct pink_easy_process *proc, enum pink_easy_step ptrace_step)
 	PINK_GCC_ATTR((nonnull(1)));
 
 /**
- * Is this process a clone?
- *
- * @see pink_easy_attach()
+ * Return the @e ptrace(2) stepping method
  *
  * @param proc Process entry
- * @return true if the process is a clone, false otherwise
+ * @return @e ptrace(2) stepping method
  **/
-bool pink_easy_process_is_clone(const struct pink_easy_process *proc)
+enum pink_easy_step pink_easy_process_get_step(const struct pink_easy_process *proc)
 	PINK_GCC_ATTR((nonnull(1)));
 
 /**
- * Is this process at suspended at startup?
- *
- * True for processes whose @e SIGTRAP signal is received yet their parent has
- * not returned from the fork/vfork/clone system call yet. Such a process is
- * listed in the process list but the startup callback has not been called for
- * it yet.
+ * Return process flags
  *
  * @param proc Process entry
- * @return true if the process is suspended at startup, false otherwise
+ * @return Process flags
  **/
-bool pink_easy_process_is_suspended(const struct pink_easy_process *proc);
+short pink_easy_process_get_flags(const struct pink_easy_process *proc);
 
 /**
  * Set the user data of the process entry.

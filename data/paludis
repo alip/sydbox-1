@@ -21,9 +21,10 @@
                         "raise_fail" : false, /* Raise access violations for simple failures like path resolution errors? */
                         "raise_safe" : false /* Raise access violations for "safe" violations like -EEXIST for mkdir() */
         },
-        "trace" : { "follow_fork"       : true, /* Follow forks? */
-                    "exit_wait_all"     : true, /* Wait all children to exit before exiting? */
-                    "magic_lock"        : "off" /* Initial state of the magic lock */
+        "trace" : { "follow_fork"   : true, /* Follow forks? */
+                    "exit_wait_all" : true, /* Wait all children to exit before exiting? */
+                    "magic_lock"    : "off", /* Initial state of the magic lock */
+                    "use_seccomp"   : false /* Use seccomp user mode filter (experimental) */
         },
         "match" : { "case_sensitive" : true, /* Case sensitive matching */
                     "no_wildcard"    : "prefix" /* Append '/***' to the end of patterns with no '*' or '?' in them */

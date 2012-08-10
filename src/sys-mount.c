@@ -78,7 +78,7 @@ int sys_umount2(struct pink_easy_process *current, const char *name)
 	/* Check for UMOUNT_NOFOLLOW */
 	tid = pink_easy_process_get_tid(current);
 	abi = pink_easy_process_get_abi(current);
-	if (!pink_read_argument(tid, abi, data->regs, 1, &flags)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 1, &flags)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 1) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

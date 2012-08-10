@@ -71,7 +71,7 @@ int sys_utimensat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	/* Check for AT_SYMLINK_NOFOLLOW */
-	if (!pink_read_argument(tid, abi, data->regs, 3, &flags)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 3, &flags)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 3): %d(%s)",
 					(unsigned long)tid, abi,

@@ -70,6 +70,25 @@ int magic_query_trace_exit_wait_all(PINK_GCC_ATTR((unused)) struct pink_easy_pro
 	return sydbox->config.exit_wait_all;
 }
 
+int magic_set_trace_use_seccomp(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+{
+#if WANT_SECCOMP
+	sydbox->config.use_seccomp = PTR_TO_BOOL(val);
+	return 0;
+#else
+	return MAGIC_ERROR_INVALID_KEY;
+#endif
+}
+
+int magic_query_trace_use_seccomp(PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+{
+#if WANT_SECCOMP
+	return sydbox->config.use_seccomp;
+#else
+	return MAGIC_ERROR_INVALID_KEY;
+#endif
+}
+
 int magic_set_whitelist_ppd(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
 {
 	sydbox->config.whitelist_per_process_directories = PTR_TO_BOOL(val);

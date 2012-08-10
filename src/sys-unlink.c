@@ -58,7 +58,7 @@ int sys_unlinkat(struct pink_easy_process *current, const char *name)
 	 * The difference between the two system calls is, the former resolves
 	 * symbolic links, whereas the latter doesn't.
 	 */
-	if (!pink_read_argument(tid, abi, data->regs, 2, &flags)) {
+	if (!pink_read_argument(tid, abi, &data->regs, 2, &flags)) {
 		if (errno != ESRCH) {
 			warning("pink_read_argument(%lu, %d, 2) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

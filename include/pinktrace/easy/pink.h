@@ -46,5 +46,6 @@
 #include <pinktrace/easy/init.h>
 #include <pinktrace/easy/loop.h>
 #include <pinktrace/easy/process.h>
+#include <pinktrace/easy/step.h>
 
 #endif

@@ -39,7 +39,7 @@ int sysx_chdir(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const 
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!pink_read_retval(tid, abi, data->regs, &retval, NULL)) {
+	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
 		if (errno != ESRCH) {
 			warning("pink_read_retval(%lu, %d) failed (errno:%d %s)",
 					(unsigned long)tid, abi,

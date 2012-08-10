@@ -40,7 +40,7 @@ int sys_stat(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const ch
 	if (data->config.magic_lock == LOCK_SET) /* No magic allowed! */
 		return 0;
 
-	if (!pink_read_argument(tid, abi, data->regs, 0, &addr)
+	if (!pink_read_argument(tid, abi, &data->regs, 0, &addr)
 			|| !pink_read_string(tid, abi, addr,
 				path, SYDBOX_PATH_MAX)) {
 		/* Don't bother denying the system call here.
@@ -79,7 +79,7 @@ int sys_stat(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const ch
 		buf.st_mtime = -842745600;
 		buf.st_ctime = 558748800;
 
-		if (pink_read_argument(tid, abi, data->regs, 1, &addr))
+		if (pink_read_argument(tid, abi, &data->regs, 1, &addr))
 			pink_write_vm_data(tid, abi, addr, (const char *)&buf, sizeof(struct stat));
 		info("magic \"%s\" accepted", path);
 		errno = (r == MAGIC_QUERY_FALSE) ? ENOENT : 0;

@@ -103,12 +103,14 @@ static void callback_error(const struct pink_easy_context *ctx, ...)
 	va_end(ap);
 }
 
-static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx,
-		struct pink_easy_process *current, struct pink_easy_process *parent)
+static void callback_startup(const struct pink_easy_context *ctx,
+		struct pink_easy_process *current,
+		struct pink_easy_process *parent)
 {
 	int r;
 	pid_t tid;
 	enum pink_abi abi;
+	short flags;
 	bool attached;
 	char *cwd, *comm;
 	struct snode *node, *newnode;
@@ -117,8 +119,9 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 
 	tid = pink_easy_process_get_tid(current);
 	abi = pink_easy_process_get_abi(current);
+	flags = pink_easy_process_get_flags(current);
+	attached = !!(flags & PINK_EASY_PROCESS_ATTACHED);
 	data = xcalloc(1, sizeof(proc_data_t));
-	attached = false;
 
 	if (parent) {
 		pdata = (proc_data_t *)pink_easy_process_get_userdata(parent);
@@ -126,7 +129,6 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 		cwd = xstrdup(pdata->cwd);
 		inherit = &pdata->config;
 	} else {
-		attached = pink_easy_process_is_attached(current);
 		if (attached) {
 			/* Figure out process name */
 			if ((r = proc_comm(tid, &comm))) {
@@ -215,7 +217,7 @@ static void callback_startup(PINK_GCC_ATTR((unused)) const struct pink_easy_cont
 		info("startup: process:%lu has no parent", (unsigned long)tid);
 }
 
-static int callback_cleanup(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx)
+static int callback_cleanup(const struct pink_easy_context *ctx)
 {
 	int r = sydbox->exit_code;
 
@@ -231,7 +233,7 @@ static int callback_cleanup(PINK_GCC_ATTR((unused)) const struct pink_easy_conte
 	return r;
 }
 
-static int callback_exit(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx,
+static int callback_exit(const struct pink_easy_context *ctx,
 		pid_t tid, int status)
 {
 	if (tid == sydbox->eldest) {
@@ -241,20 +243,23 @@ static int callback_exit(PINK_GCC_ATTR((unused)) const struct pink_easy_context 
 			info("initial process:%lu exited with code:%d (status:%#x)",
 					(unsigned long)tid, sydbox->exit_code,
 					(unsigned)status);
-		}
-		else if (WIFSIGNALED(status)) {
+		} else if (WIFSIGNALED(status)) {
 			sydbox->exit_code = 128 + WTERMSIG(status);
-			message("initial process:%lu was terminated with signal:%d (status:%#x)",
+			info("initial process:%lu was terminated with signal:%d (status:%#x)",
 					(unsigned long)tid, sydbox->exit_code - 128,
 					(unsigned)status);
-		}
-		else {
+		} else {
+			sydbox->exit_code = EXIT_FAILURE;
 			warning("initial process:%lu exited with unknown status:%#x",
 					(unsigned long)tid, (unsigned)status);
-			warning("don't know how to determine exit code");
 		}
-	}
-	else {
+
+		if (!sydbox->config.exit_wait_all) {
+			cont_all();
+			info("loop: aborted due to initial child exit");
+			exit(sydbox->exit_code);
+		}
+	} else {
 		if (WIFEXITED(status))
 			info("process:%lu exited with code:%d (status:%#x)",
 					(unsigned long)tid,
@@ -273,10 +278,10 @@ static int callback_exit(PINK_GCC_ATTR((unused)) const struct pink_easy_context 
 	return 0;
 }
 
-static int callback_exec(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx,
+static int callback_exec(const struct pink_easy_context *ctx,
 		struct pink_easy_process *current,
-		PINK_GCC_ATTR((unused)) const pink_regs_t *regs,
-		PINK_GCC_ATTR((unused)) enum pink_abi orig_abi)
+		const pink_regs_t *regs,
+		enum pink_abi orig_abi)
 {
 	int e, r;
 	char *comm;
@@ -285,10 +290,9 @@ static int callback_exec(PINK_GCC_ATTR((unused)) const struct pink_easy_context 
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sydbox->wait_execve == 2) {
-		/* Initial execve was successful. */
-		sydbox->wait_execve--;
+	if (sydbox->wait_execve > 0) {
 		info("exec: skipped successful execve()");
+		sydbox->wait_execve--;
 		return 0;
 	}
 
@@ -348,26 +352,61 @@ static int callback_exec(PINK_GCC_ATTR((unused)) const struct pink_easy_context 
 	return r;
 }
 
-static int callback_syscall(PINK_GCC_ATTR((unused)) const struct pink_easy_context *ctx,
+static int callback_syscall(const struct pink_easy_context *ctx,
 		struct pink_easy_process *current,
 		const pink_regs_t *regs,
 		bool entering)
 {
-	switch (sydbox->wait_execve) {
-	case 2:
-		return 0;
-	case 1:
-		sydbox->wait_execve = 0;
+	if (sydbox->wait_execve > 0) {
 		info("syscall: skipped successful execve() return");
-		info("syscall: started sandboxing");
+		sydbox->wait_execve--;
 		return 0;
 	}
 
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	data->regs = regs;
+	memcpy(&data->regs, regs, sizeof(pink_regs_t));
 
+	if (sydbox->config.use_seccomp) {
+		pink_easy_process_set_step(current, PINK_EASY_STEP_RESUME);
+		return sysexit(current);
+	}
 	return entering ? sysenter(current) : sysexit(current);
 }
+
+#if WANT_SECCOMP
+static int callback_seccomp(const struct pink_easy_context *ctx,
+		struct pink_easy_process *current, long ret_data)
+{
+	int r;
+	const sysentry_t *entry;
+	pid_t tid = pink_easy_process_get_tid(current);
+	enum pink_abi abi = pink_easy_process_get_abi(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
+
+	if (sydbox->wait_execve > 0) {
+		info("seccomp: skipped execve() syscall trap");
+		sydbox->wait_execve--;
+		return 0;
+	}
+
+#if PINK_HAVE_REGS_T
+	if (!pink_trace_get_regs(tid, &data->regs)) {
+		warning("seccomp: trace_get_regs failed (errno:%d %s)", errno, strerror(errno));
+		return (errno == ESRCH) ? PINK_EASY_CFLAG_DROP : panic(current);
+	}
+#else
+	data->regs = 0;
+#endif
+
+	r = sysenter(current);
+	if (r == 0) {
+		entry = systable_lookup(data->sno, abi);
+		if (data->deny || entry->exit) /* must stop at exit */
+			pink_easy_process_set_step(current, PINK_EASY_STEP_SYSCALL);
+	}
+	return r;
+}
+#endif
 
 void callback_init(void)
 {
@@ -378,6 +417,10 @@ void callback_init(void)
 	sydbox->callback_table.exit = callback_exit;
 	sydbox->callback_table.exec = callback_exec;
 	sydbox->callback_table.syscall = callback_syscall;
+#if WANT_SECCOMP
+	if (sydbox->config.use_seccomp)
+		sydbox->callback_table.seccomp = callback_seccomp;
+#endif
 	sydbox->callback_table.error = callback_error;
 	sydbox->callback_table.cerror = callback_child_error;
 }

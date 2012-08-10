@@ -18,7 +18,10 @@
  */
 
 /*
- * The function sydbox_attach_all() is based in part upon strace which is:
+ * The functions
+ *   - sydbox_attach_all()
+ *   - sydbox_startup_child()
+ *   are based in part upon strace which is:
  *
  * Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  * Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -62,10 +65,14 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/queue.h>
+#include <sys/stat.h>
 #include <getopt.h>
 
 #include "macro.h"
 #include "util.h"
+#ifdef WANT_SECCOMP
+#include "seccomp.h"
+#endif
 
 /* pink floyd */
 #define PINK_FLOYD	"       ..uu.                               \n" \
@@ -184,17 +191,18 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 	pid_t tid = pink_easy_process_get_tid(current);
 	pid_t tgid = pink_easy_process_get_tgid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
+	short flags = pink_easy_process_get_flags(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	struct snode *node;
 
 	fprintf(stderr, "-- Thread ID: %lu\n", (unsigned long)tid);
-	if (pink_easy_process_is_suspended(current)) {
+	if (flags & PINK_EASY_PROCESS_SUSPENDED) {
 		fprintf(stderr, "   Thread is suspended at startup!\n");
 		return true;
 	}
 	fprintf(stderr, "   Thread Group ID: %lu\n", tgid > 0 ? (unsigned long)tgid : 0UL);
-	fprintf(stderr, "   Attach: %s\n", pink_easy_process_is_attached(current) ? "true" : "false");
-	fprintf(stderr, "   Clone: %s\n", pink_easy_process_is_clone(current) ? "true" : "false");
+	fprintf(stderr, "   Attach: %s\n", flags & PINK_EASY_PROCESS_ATTACHED ? "true" : "false");
+	fprintf(stderr, "   Clone: %s\n", flags & PINK_EASY_PROCESS_CLONE_THREAD ? "true" : "false");
 	fprintf(stderr, "   Comm: %s\n", data->comm);
 	fprintf(stderr, "   Cwd: %s\n", data->cwd);
 	fprintf(stderr, "   Syscall: {no:%lu abi:%d name:%s}\n", data->sno, abi, pink_syscall_name(data->sno, abi));
@@ -291,14 +299,123 @@ one:
 	return 1;
 }
 
+static void sydbox_startup_child(char **argv)
+{
+	struct stat statbuf;
+	const char *filename;
+	char pathname[SYDBOX_PATH_MAX];
+	int pid = 0;
+	struct pink_easy_process *current;
+
+	filename = argv[0];
+	if (strchr(filename, '/')) {
+		if (strlen(filename) > sizeof pathname - 1) {
+			errno = ENAMETOOLONG;
+			die_errno(1, "exec");
+		}
+		strcpy(pathname, filename);
+	}
+#ifdef SYDBOX_USE_DEBUGGING_EXEC
+	/*
+	 * Debuggers customarily check the current directory
+	 * first regardless of the path but doing that gives
+	 * security geeks a panic attack.
+	 */
+	else if (stat(filename, &statbuf) == 0)
+		strcpy(pathname, filename);
+#endif /* SYDBOX_USE_DEBUGGING_EXEC */
+	else {
+		const char *path;
+		int m, n, len;
+
+		for (path = getenv("PATH"); path && *path; path += m) {
+			const char *colon = strchr(path, ':');
+			if (colon) {
+				n = colon - path;
+				m = n + 1;
+			}
+			else
+				m = n = strlen(path);
+			if (n == 0) {
+				if (!getcwd(pathname, SYDBOX_PATH_MAX))
+					continue;
+				len = strlen(pathname);
+			}
+			else if ((size_t)n > sizeof pathname - 1)
+				continue;
+			else {
+				strncpy(pathname, path, n);
+				len = n;
+			}
+			if (len && pathname[len - 1] != '/')
+				pathname[len++] = '/';
+			strcpy(pathname + len, filename);
+			if (stat(pathname, &statbuf) == 0 &&
+			    /* Accept only regular files
+			       with some execute bits set.
+			       XXX not perfect, might still fail */
+			    S_ISREG(statbuf.st_mode) &&
+			    (statbuf.st_mode & 0111))
+				break;
+		}
+	}
+	if (stat(pathname, &statbuf) < 0) {
+		die_errno(1, "Can't stat '%s'", filename);
+	}
+
+	pid = fork();
+	if (pid == 0) {
+#ifdef WANT_SECCOMP
+		int r;
+
+		if (sydbox->config.use_seccomp) {
+			if ((r = seccomp_init()) < 0) {
+				fprintf(stderr, "seccomp_init failed (errno:%d %s)\n",
+						-r, strerror(-r));
+				_exit(EXIT_FAILURE);
+			}
+
+			if ((r = sysinit_seccomp()) < 0) {
+				fprintf(stderr, "seccomp_apply failed (errno:%d %s)\n",
+						-r, strerror(-r));
+				_exit(EXIT_FAILURE);
+			}
+		}
+#endif
+		pid = getpid();
+		if (!pink_trace_me()) {
+			fprintf(stderr, "ptrace(PTRACE_TRACEME, ...) failed (errno:%d %s)\n",
+					errno, strerror(errno));
+			_exit(EXIT_FAILURE);
+		}
+		kill(pid, SIGSTOP);
+
+		execv(pathname, argv);
+		fprintf(stderr, "execv failed (errno:%d %s)\n", errno, strerror(errno));
+		_exit(EXIT_FAILURE);
+	}
+
+	current = pink_easy_process_new(sydbox->ctx, pid, -1,
+			PINK_EASY_STEP_NIL,
+			PINK_EASY_PROCESS_IGNORE_ONE_SIGSTOP);
+	if (current == NULL) {
+		kill(pid, SIGKILL);
+		die_errno(1, "pink_easy_process_new");
+	}
+}
+
 int main(int argc, char **argv)
 {
-	int opt, ptrace_options, ret;
+	int opt, r;
 	unsigned pid_count;
 	pid_t pid;
 	pid_t *pid_list;
 	const char *env;
 	struct sigaction sa;
+
+	int ptrace_options;
+	enum pink_easy_step ptrace_default_step;
+
 	/* Long options are present for compatibility with sydbox-0.
 	 * Thus they are not documented!
 	 */
@@ -344,13 +461,13 @@ int main(int argc, char **argv)
 			config_parse_spec(optarg);
 			break;
 		case 'm':
-			ret = magic_cast_string(NULL, optarg, 0);
-			if (ret < 0)
-				die(1, "invalid magic: `%s': %s", optarg, magic_strerror(ret));
+			r = magic_cast_string(NULL, optarg, 0);
+			if (r < 0)
+				die(1, "invalid magic: `%s': %s", optarg, magic_strerror(r));
 			break;
 		case 'p':
-			if ((ret = parse_pid(optarg, &pid)) < 0) {
-				errno = -ret;
+			if ((r = parse_pid(optarg, &pid)) < 0) {
+				errno = -r;
 				die_errno(1, "invalid process id `%s'", optarg);
 			}
 			if (pid == getpid())
@@ -383,18 +500,31 @@ int main(int argc, char **argv)
 	sysinit();
 
 	ptrace_options = PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC;
+	ptrace_default_step = PINK_EASY_STEP_SYSCALL;
 	if (sydbox->config.follow_fork)
 		ptrace_options |= (PINK_TRACE_OPTION_FORK | PINK_TRACE_OPTION_VFORK | PINK_TRACE_OPTION_CLONE);
+	if (sydbox->config.use_seccomp) {
+#ifdef WANT_SECCOMP
+		ptrace_options |= PINK_TRACE_OPTION_SECCOMP;
+		ptrace_default_step = PINK_EASY_STEP_RESUME;
+#else
+		info("seccomp: not supported, disabling");
+		sydbox->config.use_seccomp = false;
+#endif
+	}
 
-	if (!(sydbox->ctx = pink_easy_context_new(ptrace_options, &sydbox->callback_table, NULL, NULL)))
+	if (!(sydbox->ctx = pink_easy_context_new(ptrace_options, ptrace_default_step,
+					&sydbox->callback_table,
+					NULL, NULL)))
 		die_errno(-1, "pink_easy_context_new");
 
 	if (pid_count == 0) {
-		/* Ignore two execve(2) related events
+		/* Ignore initial execve(2) related events
 		 * 1. PTRACE_EVENT_EXEC
-		 * 2. SIGTRAP | 0x80 (stop after execve system call)
+		 * 2. PTRACE_EVENT_SECCOMP (in case seccomp is enabled)
+		 * 3. SIGTRAP | 0x80 (stop after execve system call)
 		 */
-		sydbox->wait_execve = 2;
+		sydbox->wait_execve = sydbox->config.use_seccomp ? 3 : 2;
 		sydbox->program_invocation_name = xstrdup(argv[optind]);
 
 		/* Set useful environment variables for children */
@@ -405,8 +535,7 @@ int main(int argc, char **argv)
 		if (streq(argv[optind], "/bin/sh"))
 			fprintf(stderr, "[01;35m" PINK_FLOYD "[00;00m");
 
-		if (!pink_easy_execvp(sydbox->ctx, argv[optind], &argv[optind]))
-			die(1, "failed to execute child process");
+		sydbox_startup_child(&argv[optind]);
 	}
 	else {
 		unsigned npid = 0;
@@ -414,6 +543,7 @@ int main(int argc, char **argv)
 			npid += sydbox_attach_all(pid_list[i]);
 		if (!npid)
 			die(1, "failed to attach to any process");
+		sydbox->config.use_seccomp = false;
 	}
 	free(pid_list);
 
@@ -428,10 +558,7 @@ int main(int argc, char **argv)
 	sa.sa_handler = sig_cleanup;
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGQUIT, &sa, NULL);
-	sigaction(SIGILL, &sa, NULL);
-	sigaction(SIGABRT, &sa, NULL);
-	sigaction(SIGFPE, &sa, NULL);
-	sigaction(SIGSEGV, &sa, NULL);
+	sigaction(SIGHUP, &sa, NULL);
 	sigaction(SIGPIPE, &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
 
@@ -442,7 +569,7 @@ int main(int argc, char **argv)
 	sa.sa_handler = SIG_DFL;
 	sigaction(SIGCHLD, &sa, NULL);
 
-	ret = pink_easy_loop(sydbox->ctx, PINK_EASY_STEP_SYSCALL);
+	r = pink_easy_loop(sydbox->ctx);
 	sydbox_destroy();
-	return ret;
+	return r;
 }
