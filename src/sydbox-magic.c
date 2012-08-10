@@ -336,6 +336,14 @@ static const struct key key_table[] = {
 			.type   = MAGIC_TYPE_STRING,
 			.set    = magic_set_trace_magic_lock,
 		},
+	[MAGIC_KEY_CORE_TRACE_INTERRUPT] =
+		{
+			.name   = "interrupt",
+			.lname  = "core.trace.interrupt",
+			.parent = MAGIC_KEY_CORE_TRACE,
+			.type   = MAGIC_TYPE_STRING,
+			.set    = magic_set_trace_interrupt,
+		},
 	[MAGIC_KEY_CORE_TRACE_USE_SECCOMP] =
 		{
 			.name   = "use_seccomp",

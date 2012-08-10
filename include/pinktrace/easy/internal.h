@@ -89,7 +89,7 @@ struct pink_easy_context {
 	int ptrace_options;
 
 	/** @e ptrace(2) stepping method **/
-	enum pink_easy_step ptrace_default_step;
+	enum pink_easy_step ptrace_step;
 
 	/** Last error **/
 	enum pink_easy_error error;
@@ -110,6 +110,8 @@ struct pink_easy_context {
 	pink_easy_free_func_t userdata_destroy;
 };
 #define PINK_EASY_FOREACH_PROCESS(node, ctx)	SLIST_FOREACH((node), &(ctx)->process_list, entries)
+
+extern bool pink_easy_interactive;
 
 #ifdef __cplusplus
 }

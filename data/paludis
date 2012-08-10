@@ -24,6 +24,7 @@
         "trace" : { "follow_fork"   : true, /* Follow forks? */
                     "exit_wait_all" : true, /* Wait all children to exit before exiting? */
                     "magic_lock"    : "off", /* Initial state of the magic lock */
+                    "interrupt"     : "while_wait", /* Interrupt handling */
                     "use_seccomp"   : false /* Use seccomp user mode filter (experimental) */
         },
         "match" : { "case_sensitive" : true, /* Case sensitive matching */

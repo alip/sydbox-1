@@ -103,6 +103,11 @@ static void callback_error(const struct pink_easy_context *ctx, ...)
 	va_end(ap);
 }
 
+static int callback_interrupt(const struct pink_easy_context *ctx, int fatal_sig)
+{
+	return 128 + fatal_sig;
+}
+
 static void callback_startup(const struct pink_easy_context *ctx,
 		struct pink_easy_process *current,
 		struct pink_easy_process *parent)
@@ -412,6 +417,7 @@ void callback_init(void)
 {
 	memset(&sydbox->callback_table, 0, sizeof(struct pink_easy_callback_table));
 
+	sydbox->callback_table.interrupt = callback_interrupt;
 	sydbox->callback_table.startup = callback_startup;
 	sydbox->callback_table.cleanup = callback_cleanup;
 	sydbox->callback_table.exit = callback_exit;

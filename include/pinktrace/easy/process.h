@@ -84,6 +84,10 @@ struct pink_easy_process_list;
 /**
  * Insert a traced process into the process tree
  *
+ * @note By default @e ptrace(2) step is #PINK_EASY_STEP_NOT_SET, thus the
+ *       default @e ptrace(2) method of the tracing context is used. Use
+ *       pink_easy_process_set_step() to change the stepping method.
+ *
  * @param ctx Tracing context
  * @param tid Thread ID
  * @param tgid Thread group ID, specify -1 for non-clones
@@ -92,9 +96,7 @@ struct pink_easy_process_list;
  * @return Process structure on success, NULL on failure and sets errno accordingly
  **/
 struct pink_easy_process *pink_easy_process_new(struct pink_easy_context *ctx,
-		pid_t tid, pid_t tgid,
-		enum pink_easy_step ptrace_step,
-		short flags);
+		pid_t tid, pid_t tgid, short flags);
 
 /**
  * Free a process

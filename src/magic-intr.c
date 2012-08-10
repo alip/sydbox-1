@@ -19,45 +19,19 @@
 
 #include "sydbox-defs.h"
 
-#include <stdbool.h>
-#include <stdlib.h>
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
 
-int magic_set_abort_decision(const void *val, struct pink_easy_process *current)
+int magic_set_trace_interrupt(const void *val, struct pink_easy_process *current)
 {
-	int d;
+	int intr;
 	const char *str = val;
 
-	if ((d = abort_decision_from_string(str)) < 0)
+	if ((intr = trace_interrupt_from_string(str)) < 0)
 		return MAGIC_ERROR_INVALID_VALUE;
 
-	sydbox->config.abort_decision = (enum abort_decision)d;
-	return 0;
-}
-
-int magic_set_panic_decision(const void *val, struct pink_easy_process *current)
-{
-	int d;
-	const char *str = val;
-
-	if ((d = panic_decision_from_string(str)) < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	sydbox->config.panic_decision = (enum panic_decision)d;
-	return 0;
-}
-
-int magic_set_violation_decision(const void *val, struct pink_easy_process *current)
-{
-	int d;
-	const char *str = val;
-
-	if ((d = violation_decision_from_string(str)) < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	sydbox->config.violation_decision = (enum violation_decision)d;
+	sydbox->config.trace_interrupt = (enum pink_easy_intr)intr;
 	return 0;
 }

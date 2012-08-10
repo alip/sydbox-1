@@ -48,9 +48,6 @@
 
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
-      <command>sydbox <arg choice="opt">-hVv</arg><arg choice="opt" rep="repeat">-c pathspec</arg><arg choice="opt" rep="repeat">-m magic</arg><arg choice="req" rep="repeat">-p pid</arg></command>
-    </cmdsynopsis>
-    <cmdsynopsis>
       <command>sydbox <arg choice="opt">-hVv</arg><arg choice="opt" rep="repeat">-c pathspec</arg><arg choice="opt" rep="repeat">-m magic</arg><arg choice="opt" rep="repeat">-E var=val</arg><arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command>
     </cmdsynopsis>
   </refsynopsisdiv>
@@ -537,13 +534,27 @@
         </varlistentry>
 
         <varlistentry>
+          <term><option id="core-trace-interrupt">core/trace/interrupt</option></term>
+          <listitem>
+            <para>type: <type>string</type></para>
+            <para>
+              A string specifying how to handle interrupts. Possible values are
+              <constant>anywhere</constant> (don't block/ignore any signals),
+              <constant>while_wait</constant> (block fatal signals while decoding syscall),
+              <constant>never</constant> (block fatal signals),
+              <constant>block_tstp_too</constant> (block fatal signals and SIGTSTP (^Z)).
+              Default is <constant>while_wait</constant>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
           <term><option id="core-trace-use_seccomp">core/trace/seccomp</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>
               A boolean specifying whether seccomp user-mode filters should be used. This works only on Linux-3.5 or
-              newer and sydbox must be compiled with the <option>--enable-seccomp</option> configure option. Note this
-              option is only taken into account for executed processes. Attached processes do not use seccomp filters.
+              newer and sydbox must be compiled with the <option>--enable-seccomp</option> configure option.
             </para>
           </listitem>
         </varlistentry>

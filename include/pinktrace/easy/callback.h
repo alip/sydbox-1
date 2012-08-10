@@ -126,6 +126,15 @@ typedef int (*pink_easy_errback_child_t) (enum pink_easy_child_error e);
 int pink_easy_errback_child_stderr(enum pink_easy_child_error e);
 
 /**
+ * Callback for interrupts
+ *
+ * @param ctx Tracing context
+ * @param fatal_sig Signal causing the interrupt
+ * @return pink_easy_loop() returns this value
+ **/
+typedef int (*pink_easy_callback_interrupt_t) (const struct pink_easy_context *ctx, int fatal_sig);
+
+/**
  * Callback for process trace startup
  *
  * @param ctx Tracing context
@@ -245,6 +254,9 @@ struct pink_easy_callback_table {
 	pink_easy_errback_t error;
 	/** "cerror" errback **/
 	pink_easy_errback_child_t cerror;
+
+	/** interrupt callback */
+	pink_easy_callback_interrupt_t interrupt;
 
 	/** "startup" callback **/
 	pink_easy_callback_startup_t startup;

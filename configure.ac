@@ -257,9 +257,11 @@ AC_CHECK_HEADERS([linux/ptrace.h sys/reg.h sys/uio.h], [], [])
 
 dnl check for pinktrace-easy headers
 AC_CHECK_HEADER([alloca.h],      [], AC_MSG_ERROR([I need alloca.h]))
+AC_CHECK_HEADER([signal.h],      [], AC_MSG_ERROR([I need signal.h]))
 AC_CHECK_HEADER([sys/queue.h],   [], AC_MSG_ERROR([I need sys/queue.h]))
 AC_CHECK_HEADER([sys/utsname.h], [], AC_MSG_ERROR([I need sys/utsname.h]))
 AC_FUNC_ALLOCA
+AC_CHECK_TYPE([sig_atomic_t],    [], AC_MSG_ERROR([I need sigatomic_t]), [#include <signal.h>])
 
 dnl check for sydbox headers
 AC_CHECK_HEADER([limits.h]      [], AC_MSG_ERROR([I need limits.h]))

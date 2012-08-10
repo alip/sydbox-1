@@ -19,7 +19,6 @@
 
 /*
  * The functions
- *   - sydbox_attach_all()
  *   - sydbox_startup_child()
  *   are based in part upon strace which is:
  *
@@ -119,7 +118,6 @@ usage: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] {-p pid...}\n\
 -v          -- Be verbose, may be repeated\n\
 -c pathspec -- path spec to the configuration file, may be repeated\n\
 -m magic    -- run a magic command during init, may be repeated\n\
--p pid      -- trace processes with process id, may be repeated\n\
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
 -E var      -- remove var from the environment for command, may be repeated\n\
 \n\
@@ -172,18 +170,16 @@ static void sydbox_destroy(void)
 	log_close();
 }
 
-static void sig_cleanup(int signo)
+static void cleanup(void)
 {
-	struct sigaction sa;
+	int fatal_sig;
 
-	fprintf(stderr, "\ncaught signal %d exiting\n", signo);
+	/* 'pink_easy_interrupted' is a volatile object, fetch it only once */
+	fatal_sig = pink_easy_interrupted;
+	if (!fatal_sig)
+		fatal_sig = SIGTERM;
 
-	abort_all();
-
-	sigaction(signo, NULL, &sa);
-	sa.sa_handler = SIG_DFL;
-	sigaction(signo, &sa, NULL);
-	raise(signo);
+	abort_all(fatal_sig);
 }
 
 static bool dump_one_process(struct pink_easy_process *current, void *userdata)
@@ -201,8 +197,6 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 		return true;
 	}
 	fprintf(stderr, "   Thread Group ID: %lu\n", tgid > 0 ? (unsigned long)tgid : 0UL);
-	fprintf(stderr, "   Attach: %s\n", flags & PINK_EASY_PROCESS_ATTACHED ? "true" : "false");
-	fprintf(stderr, "   Clone: %s\n", flags & PINK_EASY_PROCESS_CLONE_THREAD ? "true" : "false");
 	fprintf(stderr, "   Comm: %s\n", data->comm);
 	fprintf(stderr, "   Cwd: %s\n", data->cwd);
 	fprintf(stderr, "   Syscall: {no:%lu abi:%d name:%s}\n", data->sno, abi, pink_syscall_name(data->sno, abi));
@@ -247,56 +241,6 @@ static void sig_user(int signo)
 			cmpl ? "complete " : "");
 	c = pink_easy_process_list_walk(list, dump_one_process, UINT_TO_PTR(cmpl));
 	fprintf(stderr, "Tracing %u process%s\n", c, c > 1 ? "es" : "");
-}
-
-static unsigned sydbox_attach_all(pid_t pid)
-{
-	char *ptask;
-	DIR *dir;
-
-	if (!sydbox->config.follow_fork)
-		goto one;
-
-	/* Read /proc/$pid/task and attach to all threads */
-	xasprintf(&ptask, "/proc/%lu/task", (unsigned long)pid);
-	dir = opendir(ptask);
-	free(ptask);
-
-	if (dir) {
-		unsigned ntid = 0, nerr = 0;
-		struct dirent *de;
-		pid_t tid;
-
-		while ((de = readdir(dir))) {
-			if (de->d_fileno == 0)
-				continue;
-			if (parse_pid(de->d_name, &tid) < 0)
-				continue;
-			++ntid;
-			if (!pink_easy_attach(sydbox->ctx, tid, tid != pid ? pid : -1)) {
-				warning("failed to attach to tid:%lu (errno:%d %s)",
-						(unsigned long)tid,
-						errno, strerror(errno));
-				++nerr;
-			}
-
-		}
-		closedir(dir);
-		ntid -= nerr;
-		return ntid;
-	}
-
-	warning("failed to open /proc/%lu/task (errno:%d %s)",
-			(unsigned long)pid,
-			errno, strerror(errno));
-one:
-	if (!pink_easy_attach(sydbox->ctx, pid, -1)) {
-		warning("failed to attach process:%lu (errno:%d %s)",
-				(unsigned long)pid,
-				errno, strerror(errno));
-		return 0;
-	}
-	return 1;
 }
 
 static void sydbox_startup_child(char **argv)
@@ -396,7 +340,6 @@ static void sydbox_startup_child(char **argv)
 	}
 
 	current = pink_easy_process_new(sydbox->ctx, pid, -1,
-			PINK_EASY_STEP_NIL,
 			PINK_EASY_PROCESS_IGNORE_ONE_SIGSTOP);
 	if (current == NULL) {
 		kill(pid, SIGKILL);
@@ -407,9 +350,7 @@ static void sydbox_startup_child(char **argv)
 int main(int argc, char **argv)
 {
 	int opt, r;
-	unsigned pid_count;
 	pid_t pid;
-	pid_t *pid_list;
 	const char *env;
 	struct sigaction sa;
 
@@ -431,11 +372,14 @@ int main(int argc, char **argv)
 	/* Initialize Sydbox */
 	sydbox_init();
 
-	/* Allocate pids array */
-	pid_count = 0;
-	pid_list = xmalloc(argc * sizeof(pid_t));
+	/* Make sure SIGCHLD has the default action so that waitpid
+	   definitely works without losing track of children.  The user
+	   should not have given us a bogus state to inherit, but he might
+	   have.  Arguably we should detect SIG_IGN here and pass it on
+	   to children, but probably noone really needs that.  */
+	signal(SIGCHLD, SIG_DFL);
 
-	while ((opt = getopt_long(argc, argv, "hVvc:m:p:E:", long_options, &options_index)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "hVvc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name, "profile")) {
@@ -465,16 +409,6 @@ int main(int argc, char **argv)
 			if (r < 0)
 				die(1, "invalid magic: `%s': %s", optarg, magic_strerror(r));
 			break;
-		case 'p':
-			if ((r = parse_pid(optarg, &pid)) < 0) {
-				errno = -r;
-				die_errno(1, "invalid process id `%s'", optarg);
-			}
-			if (pid == getpid())
-				die(1, "tracing self is not possible");
-
-			pid_list[pid_count++] = pid;
-			break;
 		case 'E':
 			if (putenv(optarg))
 				die_errno(1, "putenv");
@@ -484,7 +418,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if ((optind == argc) && !pid_count)
+	if (optind == argc)
 		usage(stderr, 1);
 
 	if ((env = getenv(SYDBOX_CONFIG_ENV))) {
@@ -502,7 +436,9 @@ int main(int argc, char **argv)
 	ptrace_options = PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC;
 	ptrace_default_step = PINK_EASY_STEP_SYSCALL;
 	if (sydbox->config.follow_fork)
-		ptrace_options |= (PINK_TRACE_OPTION_FORK | PINK_TRACE_OPTION_VFORK | PINK_TRACE_OPTION_CLONE);
+		ptrace_options |= (PINK_TRACE_OPTION_FORK
+				| PINK_TRACE_OPTION_VFORK
+				| PINK_TRACE_OPTION_CLONE);
 	if (sydbox->config.use_seccomp) {
 #ifdef WANT_SECCOMP
 		ptrace_options |= PINK_TRACE_OPTION_SECCOMP;
@@ -513,62 +449,33 @@ int main(int argc, char **argv)
 #endif
 	}
 
-	if (!(sydbox->ctx = pink_easy_context_new(ptrace_options, ptrace_default_step,
-					&sydbox->callback_table,
-					NULL, NULL)))
+	sydbox->ctx = pink_easy_context_new(ptrace_options, &sydbox->callback_table, NULL, NULL);
+	if (sydbox->ctx == NULL)
 		die_errno(-1, "pink_easy_context_new");
+	pink_easy_context_set_step(sydbox->ctx, ptrace_default_step);
 
-	if (pid_count == 0) {
-		/* Ignore initial execve(2) related events
-		 * 1. PTRACE_EVENT_EXEC
-		 * 2. PTRACE_EVENT_SECCOMP (in case seccomp is enabled)
-		 * 3. SIGTRAP | 0x80 (stop after execve system call)
-		 */
-		sydbox->wait_execve = sydbox->config.use_seccomp ? 3 : 2;
-		sydbox->program_invocation_name = xstrdup(argv[optind]);
+	/* Ignore initial execve(2) related events
+	 * 1. PTRACE_EVENT_EXEC
+	 * 2. PTRACE_EVENT_SECCOMP (in case seccomp is enabled)
+	 * 3. SIGTRAP | 0x80 (stop after execve system call)
+	 */
+	sydbox->wait_execve = sydbox->config.use_seccomp ? 3 : 2;
+	sydbox->program_invocation_name = xstrdup(argv[optind]);
 
-		/* Set useful environment variables for children */
-		setenv("SYDBOX_ACTIVE", "1", 1);
-		setenv("SYDBOX_VERSION", VERSION, 1);
+	/* Set useful environment variables for children */
+	setenv("SYDBOX_ACTIVE", "1", 1);
+	setenv("SYDBOX_VERSION", VERSION, 1);
 
-		/* Poison! */
-		if (streq(argv[optind], "/bin/sh"))
-			fprintf(stderr, "[01;35m" PINK_FLOYD "[00;00m");
+	/* Poison! */
+	if (streq(argv[optind], "/bin/sh"))
+		fprintf(stderr, "[01;35m" PINK_FLOYD "[00;00m");
 
-		sydbox_startup_child(&argv[optind]);
-	}
-	else {
-		unsigned npid = 0;
-		for (unsigned i = 0; i < pid_count; i++)
-			npid += sydbox_attach_all(pid_list[i]);
-		if (!npid)
-			die(1, "failed to attach to any process");
-		sydbox->config.use_seccomp = false;
-	}
-	free(pid_list);
-
-	/* Handle signals */
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;
-
-	sa.sa_handler = SIG_IGN;
-	sigaction(SIGTTOU, &sa, NULL);
-	sigaction(SIGTTIN, &sa, NULL);
-
-	sa.sa_handler = sig_cleanup;
-	sigaction(SIGINT, &sa, NULL);
-	sigaction(SIGQUIT, &sa, NULL);
-	sigaction(SIGHUP, &sa, NULL);
-	sigaction(SIGPIPE, &sa, NULL);
-	sigaction(SIGTERM, &sa, NULL);
-
-	sa.sa_handler = sig_user;
-	sigaction(SIGUSR1, &sa, NULL);
-	sigaction(SIGUSR2, &sa, NULL);
-
-	sa.sa_handler = SIG_DFL;
-	sigaction(SIGCHLD, &sa, NULL);
-
+	/* STARTUP_CHILD must be called before the signal handlers get
+	   installed below as they are inherited into the spawned process.
+	   Also we do not need to be protected by them as during interruption
+	   in the STARTUP_CHILD mode we kill the spawned process anyway.  */
+	sydbox_startup_child(&argv[optind]);
+	pink_easy_interrupt_init(sydbox->config.trace_interrupt);
 	r = pink_easy_loop(sydbox->ctx);
 	sydbox_destroy();
 	return r;

@@ -39,10 +39,12 @@
  * @{
  **/
 
+#include <signal.h>
 #include <pinktrace/compiler.h>
 #include <pinktrace/easy/error.h>
 #include <pinktrace/easy/func.h>
 #include <pinktrace/easy/step.h>
+#include <pinktrace/easy/intr.h>
 
 struct pink_easy_callback_table;
 
@@ -67,8 +69,10 @@ extern "C" {
  *       destruction yourself or use the standard free() function from stdlib.h
  *       for basic destruction.
  *
+ * @note Default @e ptrace stepping is #PINK_EASY_STEP_SYSCALL, use
+ *       pink_easy_context_set_step() to change it.
+ *
  * @param ptrace_options Options for pink_trace_setup()
- * @param ptrace_default_step Default @e ptrace(2) step
  * @param callback_table Callback table
  * @param userdata User data
  * @param userdata_destroy Destructor function for the user data
@@ -76,10 +80,9 @@ extern "C" {
  *         accordingly
  **/
 struct pink_easy_context *pink_easy_context_new(int ptrace_options,
-		enum pink_easy_step ptrace_default_step,
 		const struct pink_easy_callback_table *callback_table,
 		void *userdata, pink_easy_free_func_t userdata_destroy)
-	PINK_GCC_ATTR((malloc, nonnull(3)));
+	PINK_GCC_ATTR((malloc, nonnull(2)));
 
 /**
  * Destroy a tracing context; destroys the process list and all the members of
@@ -111,24 +114,6 @@ void pink_easy_context_clear_error(struct pink_easy_context *ctx)
 	PINK_GCC_ATTR((nonnull(1)));
 
 /**
- * Sets the default @e ptrace(2) stepping method
- *
- * @param ctx Tracing context
- * @param ptrace_step Default stepping, must @b not be PINK_EASY_STEP_NIL
- **/
-void pink_easy_context_set_default_step(struct pink_easy_context *ctx, enum pink_easy_step ptrace_default_step)
-	PINK_GCC_ATTR((nonnull(1)));
-
-/**
- * Returns the default @e ptrace(2) stepping method
- *
- * @param ctx Tracing context
- * @return Default @e ptrace(2) stepping method
- **/
-enum pink_easy_step pink_easy_context_get_default_step(const struct pink_easy_context *ctx)
-	PINK_GCC_ATTR((nonnull(1)));
-
-/**
  * Set user data and destruction function of the tracing context
  *
  * @note This function accepts a destructor function pointer which may be used
@@ -151,6 +136,24 @@ void pink_easy_context_set_userdata(struct pink_easy_context *ctx, void *userdat
  * @return User data
  **/
 void *pink_easy_context_get_userdata(const struct pink_easy_context *ctx)
+	PINK_GCC_ATTR((nonnull(1)));
+
+/**
+ * Sets the default @e ptrace(2) stepping method
+ *
+ * @param ctx Tracing context
+ * @param ptrace_step Default stepping, must @b not be PINK_EASY_STEP_NIL
+ **/
+void pink_easy_context_set_step(struct pink_easy_context *ctx, enum pink_easy_step ptrace_step)
+	PINK_GCC_ATTR((nonnull(1)));
+
+/**
+ * Returns the default @e ptrace(2) stepping method
+ *
+ * @param ctx Tracing context
+ * @return Default @e ptrace(2) stepping method
+ **/
+enum pink_easy_step pink_easy_context_get_step(const struct pink_easy_context *ctx)
 	PINK_GCC_ATTR((nonnull(1)));
 
 /**

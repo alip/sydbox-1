@@ -45,6 +45,7 @@ sydbox_SOURCES= \
 		 magic-strlist.c \
 		 magic-socklist.c \
 		 magic-decision.c \
+		 magic-intr.c \
 		 magic-lock.c \
 		 magic-log.c \
 		 magic-match.c \

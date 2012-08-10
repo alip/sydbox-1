@@ -34,12 +34,13 @@
  *
  * Do not include this file directly. Use pinktrace/easy/pink.h directly.
  *
- * @defgroup pink_easy_init Pink's easy initilization
+ * @defgroup pink_easy_init Pink's easy initialization
  * @ingroup pinktrace-easy
  * @{
  **/
 
 #include <stdbool.h>
+#include <signal.h>
 
 #ifdef __cplusplus
 extern "C" {

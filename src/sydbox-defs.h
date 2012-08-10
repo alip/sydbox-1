@@ -175,6 +175,14 @@ static const char *const violation_decision_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(violation_decision, int)
 
+static const char *const trace_interrupt_table[] = {
+	[PINK_EASY_INTR_ANYWHERE] = "anywhere",
+	[PINK_EASY_INTR_WHILE_WAIT] = "while_wait",
+	[PINK_EASY_INTR_NEVER] = "never",
+	[PINK_EASY_INTR_BLOCK_TSTP_TOO] = "block_tstp_too",
+};
+DEFINE_STRING_TABLE_LOOKUP(trace_interrupt, int)
+
 enum log_level {
 	LOG_LEVEL_FATAL,
 	LOG_LEVEL_WARNING,
@@ -247,6 +255,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE_FOLLOW_FORK,
 	MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
+	MAGIC_KEY_CORE_TRACE_INTERRUPT,
 	MAGIC_KEY_CORE_TRACE_USE_SECCOMP,
 
 	MAGIC_KEY_LOG,
@@ -420,6 +429,7 @@ typedef struct {
 
 	bool follow_fork;
 	bool exit_wait_all;
+	bool trace_interrupt;
 	bool use_seccomp;
 
 	unsigned log_console_fd;
@@ -515,22 +525,15 @@ void log_suffix(const char *s);
 void log_msg_va(unsigned level, const char *fmt, va_list ap) PINK_GCC_ATTR((format (printf, 2, 0)));
 void log_msg(unsigned level, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
 
-#define LL_FATAL	0
-#define LL_WARNING	1
-#define LL_MESSAGE	2
-#define LL_INFO		3
-#define LL_DEBUG	4
-#define LL_TRACE	5
-
-#define fatal(...)	log_msg(LL_FATAL, __VA_ARGS__)
-#define warning(...)	log_msg(LL_WARNING, __VA_ARGS__)
-#define message(...)	log_msg(LL_MESSAGE, __VA_ARGS__)
-#define info(...)	log_msg(LL_INFO, __VA_ARGS__)
-#define debug(...)	log_msg(LL_DEBUG, __VA_ARGS__)
-#define trace(...)	log_msg(LL_TRACE, __VA_ARGS__)
+#define fatal(...)	log_msg(LOG_LEVEL_FATAL, __VA_ARGS__)
+#define warning(...)	log_msg(LOG_LEVEL_WARNING, __VA_ARGS__)
+#define message(...)	log_msg(LOG_LEVEL_MESSAGE, __VA_ARGS__)
+#define info(...)	log_msg(LOG_LEVEL_INFO, __VA_ARGS__)
+#define debug(...)	log_msg(LOG_LEVEL_DEBUG, __VA_ARGS__)
+#define trace(...)	log_msg(LOG_LEVEL_TRACE, __VA_ARGS__)
 
 void cont_all(void);
-void abort_all(void);
+void abort_all(int fatal_sig);
 int deny(struct pink_easy_process *current);
 int restore(struct pink_easy_process *current);
 int panic(struct pink_easy_process *current);
@@ -557,6 +560,7 @@ int magic_set_trace_follow_fork(const void *val, struct pink_easy_process *curre
 int magic_query_trace_follow_fork(struct pink_easy_process *current);
 int magic_set_trace_exit_wait_all(const void *val, struct pink_easy_process *current);
 int magic_query_trace_exit_wait_all(struct pink_easy_process *current);
+int magic_set_trace_interrupt(const void *val, struct pink_easy_process *current);
 int magic_set_trace_use_seccomp(const void *val, struct pink_easy_process *current);
 int magic_query_trace_use_seccomp(struct pink_easy_process *current);
 int magic_set_whitelist_ppd(const void *val, struct pink_easy_process *current);

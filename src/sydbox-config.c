@@ -182,6 +182,7 @@ void config_init(void)
 	sydbox->config.match_no_wildcard = NO_WILDCARD_LITERAL;
 	sydbox->config.follow_fork = true;
 	sydbox->config.exit_wait_all = true;
+	sydbox->config.trace_interrupt = PINK_EASY_INTR_WHILE_WAIT;
 	sydbox->config.use_seccomp = false;
 	sydbox->config.whitelist_per_process_directories = true;
 	sydbox->config.whitelist_successful_bind = true;
