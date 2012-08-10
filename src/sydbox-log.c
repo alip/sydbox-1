@@ -56,7 +56,7 @@ static inline void log_me(int fd, unsigned level, const char *fmt, va_list ap)
 		p = tty ? ANSI_MAGENTA : "";
 		s = tty ? ANSI_NORMAL : "";
 		break;
-	case LOG_LEVEL_MESSAGE:
+	case LOG_LEVEL_NOTICE:
 		p = tty ? ANSI_GREEN : "";
 		s = tty ? ANSI_NORMAL : "";
 		break;
@@ -119,7 +119,7 @@ void log_msg_va(unsigned level, const char *fmt, va_list ap)
 
 	if (logfd != -1) {
 		log_me(logfd, level, fmt, ap);
-		if (level < 2)
+		if (level <= LOG_LEVEL_WARNING)
 			log_me(sydbox->config.log_console_fd, level, fmt, ap);
 	}
 	else

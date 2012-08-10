@@ -186,16 +186,16 @@ DEFINE_STRING_TABLE_LOOKUP(trace_interrupt, int)
 enum log_level {
 	LOG_LEVEL_FATAL,
 	LOG_LEVEL_WARNING,
+	LOG_LEVEL_NOTICE,
 	LOG_LEVEL_INFO,
-	LOG_LEVEL_MESSAGE,
 	LOG_LEVEL_DEBUG,
 	LOG_LEVEL_TRACE,
 };
 static const char *const log_level_table[] = {
 	[LOG_LEVEL_FATAL] = "fatal",
 	[LOG_LEVEL_WARNING] = "warning",
+	[LOG_LEVEL_NOTICE] = "notice",
 	[LOG_LEVEL_INFO] = "info",
-	[LOG_LEVEL_MESSAGE] = "message",
 	[LOG_LEVEL_DEBUG] = "debug",
 	[LOG_LEVEL_TRACE] = "trace",
 };
@@ -527,7 +527,7 @@ void log_msg(unsigned level, const char *fmt, ...) PINK_GCC_ATTR((format (printf
 
 #define fatal(...)	log_msg(LOG_LEVEL_FATAL, __VA_ARGS__)
 #define warning(...)	log_msg(LOG_LEVEL_WARNING, __VA_ARGS__)
-#define message(...)	log_msg(LOG_LEVEL_MESSAGE, __VA_ARGS__)
+#define notice(...)	log_msg(LOG_LEVEL_NOTICE, __VA_ARGS__)
 #define info(...)	log_msg(LOG_LEVEL_INFO, __VA_ARGS__)
 #define debug(...)	log_msg(LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define trace(...)	log_msg(LOG_LEVEL_TRACE, __VA_ARGS__)
