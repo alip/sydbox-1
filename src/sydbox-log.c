@@ -48,23 +48,23 @@ static inline void log_me(int fd, unsigned level, const char *fmt, va_list ap)
 	tty = isatty(fd);
 
 	switch (level) {
-	case 0: /* fatal */
+	case LL_FATAL:
 		p = tty ? ANSI_DARK_MAGENTA : "";
 		s = tty ? ANSI_NORMAL : "";
 		break;
-	case 1: /* warning */
+	case LL_WARNING:
 		p = tty ? ANSI_MAGENTA : "";
 		s = tty ? ANSI_NORMAL : "";
 		break;
-	case 2: /* message */
+	case LL_MESSAGE:
 		p = tty ? ANSI_GREEN : "";
 		s = tty ? ANSI_NORMAL : "";
 		break;
-	case 3: /* info */
+	case LL_INFO:
 		p = tty ? ANSI_YELLOW : "";
 		s = tty ? ANSI_NORMAL : "";
 		break;
-	case 4: /* debug */
+	case LL_DEBUG:
 		p = tty ? ANSI_CYAN : "";
 		s = tty ? ANSI_NORMAL : "";
 		break;

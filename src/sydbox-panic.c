@@ -107,7 +107,7 @@ void cont_all(void)
 	unsigned count;
 	struct pink_easy_process_list *list = pink_easy_context_get_process_list(sydbox->ctx);
 
-	count = pink_easy_process_list_walk(list, cont_one, INT_TO_PTR(3));
+	count = pink_easy_process_list_walk(list, cont_one, INT_TO_PTR(LL_MESSAGE));
 	info("resumed %u process%s", count, count > 1 ? "es" : "");
 }
 
@@ -212,20 +212,20 @@ int panic(struct pink_easy_process *current)
 	switch (sydbox->config.panic_decision) {
 	case PANIC_KILL:
 		warning("panic! killing the guilty process");
-		kill_one(current, INT_TO_PTR(1));
+		kill_one(current, INT_TO_PTR(LL_WARNING));
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONT:
 		warning("panic! resuming the guilty process");
-		cont_one(current, INT_TO_PTR(1));
+		cont_one(current, INT_TO_PTR(LL_WARNING));
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONTALL:
 		warning("panic! resuming all processes");
-		count = pink_easy_process_list_walk(list, cont_one, INT_TO_PTR(1));
+		count = pink_easy_process_list_walk(list, cont_one, INT_TO_PTR(LL_WARNING));
 		warning("resumed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	case PANIC_KILLALL:
 		warning("panic! killing all processes");
-		count = pink_easy_process_list_walk(list, kill_one, INT_TO_PTR(1));
+		count = pink_easy_process_list_walk(list, kill_one, INT_TO_PTR(LL_WARNING));
 		warning("killed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	default:

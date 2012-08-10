@@ -514,12 +514,20 @@ void log_prefix(const char *p);
 void log_suffix(const char *s);
 void log_msg_va(unsigned level, const char *fmt, va_list ap) PINK_GCC_ATTR((format (printf, 2, 0)));
 void log_msg(unsigned level, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
-#define fatal(...)	log_msg(0, __VA_ARGS__)
-#define warning(...)	log_msg(1, __VA_ARGS__)
-#define message(...)	log_msg(2, __VA_ARGS__)
-#define info(...)	log_msg(3, __VA_ARGS__)
-#define debug(...)	log_msg(4, __VA_ARGS__)
-#define trace(...)	log_msg(5, __VA_ARGS__)
+
+#define LL_FATAL	0
+#define LL_WARNING	1
+#define LL_MESSAGE	2
+#define LL_INFO		3
+#define LL_DEBUG	4
+#define LL_TRACE	5
+
+#define fatal(...)	log_msg(LL_FATAL, __VA_ARGS__)
+#define warning(...)	log_msg(LL_WARNING, __VA_ARGS__)
+#define message(...)	log_msg(LL_MESSAGE, __VA_ARGS__)
+#define info(...)	log_msg(LL_INFO, __VA_ARGS__)
+#define debug(...)	log_msg(LL_DEBUG, __VA_ARGS__)
+#define trace(...)	log_msg(LL_TRACE, __VA_ARGS__)
 
 void cont_all(void);
 void abort_all(void);
