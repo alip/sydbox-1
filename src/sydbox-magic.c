@@ -527,11 +527,13 @@ static const struct key key_table[] = {
 		},
 };
 
-const char *magic_strerror(enum magic_error error)
+const char *magic_strerror(int error)
 {
 	switch (error) {
 	case MAGIC_ERROR_SUCCESS:
 		return "Success";
+	case MAGIC_ERROR_NOT_SUPPORTED:
+		return "Not supported";
 	case MAGIC_ERROR_INVALID_KEY:
 		return "Invalid key";
 	case MAGIC_ERROR_INVALID_TYPE:
@@ -638,7 +640,7 @@ static inline enum magic_key magic_next_key(const char *magic, enum magic_key ke
 int magic_cast_string(struct pink_easy_process *current, const char *magic, int prefix)
 {
 	bool query = false, bval;
-	int ret, ival;
+	int r, ival;
 	enum magic_key key;
 	const char *cmd;
 	struct key entry;
@@ -708,27 +710,27 @@ int magic_cast_string(struct pink_easy_process *current, const char *magic, int 
 
 	entry = key_table[key];
 	if (query) {
-		ret = magic_query(current, key);
-		return ret < 0 ? ret : ret == 0 ? MAGIC_QUERY_FALSE : MAGIC_QUERY_TRUE;
+		r = magic_query(current, key);
+		return r < 0 ? r : r == 0 ? MAGIC_QUERY_FALSE : MAGIC_QUERY_TRUE;
 	}
 
 	switch (entry.type) {
 	case MAGIC_TYPE_BOOLEAN:
-		if ((ret = parse_boolean(cmd, &bval)) < 0)
+		if ((r = parse_boolean(cmd, &bval)) < 0)
 			return MAGIC_ERROR_INVALID_VALUE;
-		if ((ret = magic_cast(current, key, MAGIC_TYPE_BOOLEAN, BOOL_TO_PTR(bval))) < 0)
-			return ret;
+		if ((r = magic_cast(current, key, MAGIC_TYPE_BOOLEAN, BOOL_TO_PTR(bval))) < 0)
+			return r;
 		break;
 	case MAGIC_TYPE_INTEGER:
-		if ((ret = safe_atoi(cmd, &ival)) < 0)
+		if ((r = safe_atoi(cmd, &ival)) < 0)
 			return MAGIC_ERROR_INVALID_VALUE;
-		if ((ret = magic_cast(current, key, MAGIC_TYPE_INTEGER, INT_TO_PTR(ival))) < 0)
-			return ret;
+		if ((r = magic_cast(current, key, MAGIC_TYPE_INTEGER, INT_TO_PTR(ival))) < 0)
+			return r;
 		break;
 	case MAGIC_TYPE_STRING_ARRAY:
 	case MAGIC_TYPE_STRING:
-		if ((ret = magic_cast(current, key, entry.type, cmd)) < 0)
-			return ret;
+		if ((r = magic_cast(current, key, entry.type, cmd)) < 0)
+			return r;
 		break;
 	default:
 		break;

@@ -72,20 +72,20 @@ int magic_query_trace_exit_wait_all(struct pink_easy_process *current)
 
 int magic_set_trace_use_seccomp(const void *val, struct pink_easy_process *current)
 {
-#if WANT_SECCOMP
+#ifdef WANT_SECCOMP
 	sydbox->config.use_seccomp = PTR_TO_BOOL(val);
 	return 0;
 #else
-	return MAGIC_ERROR_INVALID_KEY;
+	return MAGIC_ERROR_NOT_SUPPORTED;
 #endif
 }
 
 int magic_query_trace_use_seccomp(struct pink_easy_process *current)
 {
-#if WANT_SECCOMP
+#ifdef WANT_SECCOMP
 	return sydbox->config.use_seccomp;
 #else
-	return MAGIC_ERROR_INVALID_KEY;
+	return MAGIC_ERROR_NOT_SUPPORTED;
 #endif
 }
 

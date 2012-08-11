@@ -70,7 +70,7 @@ static const char *JSON_strerror(JSON_error error)
 
 static int parser_callback(void *ctx, int type, const JSON_value *value)
 {
-	int ret;
+	int r;
 	const char *name;
 	char *str;
 	config_state_t *state = ctx;
@@ -108,12 +108,13 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 		break;
 	case JSON_T_TRUE:
 	case JSON_T_FALSE:
-		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_BOOLEAN,
-						UINT_TO_PTR(type == JSON_T_TRUE)) < 0))
+		if ((r = magic_cast(NULL, state->key, MAGIC_TYPE_BOOLEAN,
+						UINT_TO_PTR(type == JSON_T_TRUE))) < 0) {
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
 					sydbox->config.state->filename,
-					magic_strerror(ret));
+					magic_strerror(r));
+		}
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
 		break;
@@ -129,23 +130,23 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 		else
 			str = xstrndup(value->vu.str.value, value->vu.str.length + 1);
 
-		if ((ret = magic_cast(NULL, state->key,
+		if ((r = magic_cast(NULL, state->key,
 						state->inarray ? MAGIC_TYPE_STRING_ARRAY : MAGIC_TYPE_STRING,
 						str)) < 0)
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
 					sydbox->config.state->filename,
-					magic_strerror(ret));
+					magic_strerror(r));
 		free(str);
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
 		break;
 	case JSON_T_INTEGER:
-		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_INTEGER, INT_TO_PTR(value->vu.integer_value))) < 0)
+		if ((r = magic_cast(NULL, state->key, MAGIC_TYPE_INTEGER, INT_TO_PTR(value->vu.integer_value))) < 0)
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
 					sydbox->config.state->filename,
-					magic_strerror(ret));
+					magic_strerror(r));
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
 		break;
