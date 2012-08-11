@@ -51,18 +51,16 @@ int path_decode(struct pink_easy_process *current, unsigned ind, char **buf)
 	path[0] = '\0';
 	if (!pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX))
 		goto fail;
-	if (path[0] == '\0') {
-		debug("read_string(%lu, %d, %u) returned NULL",
+	path[SYDBOX_PATH_MAX-1] = '\0';
+	*buf = xstrdup(path);
+	return 0;
+fail:
+	if (errno == EFAULT) {
+		debug("read_string(%lu, %d, %u) returned -EFAULT",
 				(unsigned long)tid, abi, ind);
-		errno = EFAULT;
 		*buf = NULL;
 		return -1;
-	} else {
-		path[SYDBOX_PATH_MAX-1] = '\0';
-		*buf = xstrdup(path);
-		return 0;
 	}
-fail:
 	if (errno != ESRCH) {
 		warning("read_string(%lu, %d, %u) failed (errno:%d %s)",
 				(unsigned long)tid, abi,
