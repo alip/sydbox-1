@@ -74,8 +74,8 @@ enum pink_abi {
 #define PINK_ABI_POWERPC	PINK_ABI_0
 #elif PINK_ARCH_POWERPC64
 #define PINK_ABI_POWERPC64	PINK_ABI_0
-#elif PINK_ARCH_X86
-#define PINK_ABI_X86		PINK_ABI_0
+#elif PINK_ARCH_I386
+#define PINK_ABI_I386		PINK_ABI_0
 #elif PINK_ARCH_X86_64
 #define PINK_ABI_X86_64		PINK_ABI_0
 #elif PINK_ARCH_X32
@@ -90,9 +90,9 @@ enum pink_abi {
 #elif PINK_ARCH_POWERPC64
 #define PINK_ABI_POWERPC	PINK_ABI_1
 #elif PINK_ARCH_X86_64
-#define PINK_ABI_X86		PINK_ABI_1
+#define PINK_ABI_I386		PINK_ABI_1
 #elif PINK_ARCH_X32
-#define PINK_ABI_X86		PINK_ABI_1
+#define PINK_ABI_I386		PINK_ABI_1
 #else
 #error unsupported architecture
 #endif

@@ -42,7 +42,7 @@
  **/
 
 /** Define to 1 if the architecture is x86, 0 otherwise */
-#define PINK_ARCH_X86			@PINK_ARCH_X86@
+#define PINK_ARCH_I386			@PINK_ARCH_I386@
 /** Define to 1 if the architecture is x86_64, 0 otherwise */
 #define PINK_ARCH_X86_64		@PINK_ARCH_X86_64@
 /** Define to 1 if the architecture is 32bit x86_64, 0 otherwise */

@@ -143,8 +143,8 @@ dnl check for supported architecture
 AC_MSG_CHECKING([for supported architecture])
 case "$host_cpu" in
 i[[3456]]86|pentium)
-	arch=x86
-	AC_DEFINE([X86], 1, [Define for the x86 architecture.])
+	arch=i386
+	AC_DEFINE([I386], 1, [Define for the i386 architecture.])
 	;;
 x86?64*)
 	AC_PREPROC_IFELSE([AC_LANG_PROGRAM([[#ifndef __ILP32__
@@ -179,10 +179,10 @@ esac
 AC_MSG_RESULT([$arch])
 AC_SUBST([arch])
 
-if test x"$arch" = x"x86"; then
-	PINK_ARCH_X86=1
+if test x"$arch" = x"i386"; then
+	PINK_ARCH_I386=1
 else
-	PINK_ARCH_X86=0
+	PINK_ARCH_I386=0
 fi
 if test x"$arch" = x"x86_64"; then
 	PINK_ARCH_X86_64=1
@@ -214,7 +214,7 @@ if test x"$arch" = x"arm"; then
 else
 	PINK_ARCH_ARM=0
 fi
-AC_SUBST([PINK_ARCH_X86])
+AC_SUBST([PINK_ARCH_I386])
 AC_SUBST([PINK_ARCH_X86_64])
 AC_SUBST([PINK_ARCH_X32])
 AC_SUBST([PINK_ARCH_IA64])
@@ -496,7 +496,7 @@ AC_CONFIG_FILES([Makefile
 		 pinktrace/Makefile
 		 pinktrace/easy/Makefile
 		 pinktrace/linux/Makefile
-		 pinktrace/linux/x86/Makefile
+		 pinktrace/linux/i386/Makefile
 		 pinktrace/linux/x32/Makefile
 		 pinktrace/linux/x86_64/Makefile
 		 pinktrace/linux/ia64/Makefile

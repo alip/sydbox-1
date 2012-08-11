@@ -65,7 +65,7 @@
  * @see PINK_HAVE_REGS_T
  **/
 
-#if PINK_ARCH_ARM || PINK_ARCH_POWERPC || PINK_ARCH_X86
+#if PINK_ARCH_ARM || PINK_ARCH_POWERPC || PINK_ARCH_I386
 # include <asm/ptrace.h>
 typedef struct pt_regs pink_regs_t;
 #elif PINK_ARCH_X86_64 || PINK_ARCH_X32
