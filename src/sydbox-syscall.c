@@ -35,17 +35,19 @@
 #include "seccomp.h"
 #endif
 
+/* Order matters! Put more frequent system calls above. */
 static const sysentry_t syscall_entries[] = {
-	{"chdir", NULL, sysx_chdir},
-	{"fchdir", NULL, sysx_chdir},
-
 	{"stat", sys_stat, NULL},
-	{"stat64", sys_stat, NULL},
 	{"lstat", sys_stat, NULL},
+	{"stat64", sys_stat, NULL},
 	{"lstat64", sys_stat, NULL},
 
 	{"access", sys_access, NULL},
 	{"faccessat", sys_faccessat, NULL},
+
+	{"open", sys_open, NULL},
+	{"openat", sys_openat, NULL},
+	{"creat", sys_creat, NULL},
 
 	{"dup", sys_dup, sysx_dup},
 	{"dup2", sys_dup, sysx_dup},
@@ -53,7 +55,8 @@ static const sysentry_t syscall_entries[] = {
 	{"fcntl", sys_fcntl, sysx_fcntl},
 	{"fcntl64", sys_fcntl, sysx_fcntl},
 
-	{"execve", sys_execve, NULL},
+	{"chdir", NULL, sysx_chdir},
+	{"fchdir", NULL, sysx_chdir},
 
 	{"chmod", sys_chmod, NULL},
 	{"fchmodat", sys_fchmodat, NULL},
@@ -63,10 +66,6 @@ static const sysentry_t syscall_entries[] = {
 	{"lchown", sys_lchown, NULL},
 	{"lchown32", sys_lchown, NULL},
 	{"fchownat", sys_fchownat, NULL},
-
-	{"open", sys_open, NULL},
-	{"openat", sys_openat, NULL},
-	{"creat", sys_creat, NULL},
 
 	{"mkdir", sys_mkdir, NULL},
 	{"mkdirat", sys_mkdirat, NULL},
@@ -78,10 +77,6 @@ static const sysentry_t syscall_entries[] = {
 
 	{"truncate", sys_truncate, NULL},
 	{"truncate64", sys_truncate, NULL},
-
-	{"mount", sys_mount, NULL},
-	{"umount", sys_umount, NULL},
-	{"umount2", sys_umount2, NULL},
 
 	{"utime", sys_utime, NULL},
 	{"utimes", sys_utimes, NULL},
@@ -100,10 +95,7 @@ static const sysentry_t syscall_entries[] = {
 	{"symlink", sys_symlink, NULL},
 	{"symlinkat", sys_symlinkat, NULL},
 
-	{"setxattr", sys_setxattr, NULL},
-	{"lsetxattr", sys_lsetxattr, NULL},
-	{"removexattr", sys_removexattr, NULL},
-	{"lremovexattr", sys_lremovexattr, NULL},
+	{"execve", sys_execve, NULL},
 
 	{"socketcall", sys_socketcall, sysx_socketcall},
 	{"bind", sys_bind, sysx_bind},
@@ -111,6 +103,15 @@ static const sysentry_t syscall_entries[] = {
 	{"sendto", sys_sendto, NULL},
 	{"recvfrom", sys_recvfrom, NULL},
 	{"getsockname", sys_getsockname, sysx_getsockname},
+
+	{"setxattr", sys_setxattr, NULL},
+	{"lsetxattr", sys_lsetxattr, NULL},
+	{"removexattr", sys_removexattr, NULL},
+	{"lremovexattr", sys_lremovexattr, NULL},
+
+	{"mount", sys_mount, NULL},
+	{"umount", sys_umount, NULL},
+	{"umount2", sys_umount2, NULL},
 };
 
 void sysinit(void)
@@ -122,23 +123,47 @@ void sysinit(void)
 }
 
 #ifdef WANT_SECCOMP
-int sysinit_seccomp(void)
+static size_t make_seccomp_filter(int abi, uint32_t **syscalls)
 {
-	int r;
 	unsigned i, j;
 	long sysno;
-	uint32_t *sysarray;
+	uint32_t *list;
 
-	sysarray = xmalloc(sizeof(uint32_t) * ELEMENTSOF(syscall_entries));
+	list = xmalloc(sizeof(uint32_t) * ELEMENTSOF(syscall_entries));
 	for (i = 0, j = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		sysno = pink_syscall_lookup(syscall_entries[i].name, PINK_ABI_DEFAULT);
+		sysno = pink_syscall_lookup(syscall_entries[i].name, abi);
 		if (sysno != -1)
-			sysarray[j++] = (uint32_t)sysno;
+			list[j++] = (uint32_t)sysno;
 	}
-	sysarray[j] = SYSCALL_FILTER_SENTINEL;
 
-	r = seccomp_apply(sysarray);
-	free(sysarray);
+	*syscalls = list;
+	return j;
+}
+
+int sysinit_seccomp(void)
+{
+	int r, count;
+	uint32_t *syscalls;
+
+#if defined(__i386__)
+	count = make_seccomp_filter(PINK_ABI_X86, &syscalls);
+	r = seccomp_apply(AUDIT_ARCH_I386, syscalls, count);
+
+	free(syscalls);
+#elif defined(__x86_64__)
+	count = make_seccomp_filter(PINK_ABI_X86_64, &syscalls);
+	r = seccomp_apply(AUDIT_ARCH_X86_64, syscalls, count);
+	free(syscalls);
+	if (r < 0)
+		return r;
+
+	count = make_seccomp_filter(PINK_ABI_X86, &syscalls);
+	r = seccomp_apply(AUDIT_ARCH_I386, syscalls, count);
+	free(syscalls);
+#else
+#error "Platform does not support seccomp filter yet"
+#endif
+
 	return r;
 }
 #else

@@ -21,11 +21,9 @@
 #define SECCOMP_H 1
 
 #include <stdint.h>
-#include <pinktrace/system.h>
-
-#define SYSCALL_FILTER_SENTINEL PINK_SYSCALL_INVALID
+#include <linux/audit.h>
 
 int seccomp_init(void);
-int seccomp_apply(uint32_t *syscall_filter);
+int seccomp_apply(int arch, uint32_t *syscalls, int count);
 
 #endif

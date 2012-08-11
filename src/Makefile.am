@@ -24,7 +24,6 @@ noinst_HEADERS= \
 		path.h
 		proc.h \
 		seccomp.h \
-		seccomp-bpf.h \
 		slist.h \
 		strtable.h \
 		util.h \
