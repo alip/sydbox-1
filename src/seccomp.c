@@ -109,7 +109,7 @@ int seccomp_init(void)
 	return -ENOTSUP;
 }
 
-int seccomp_apply(uint32_t *syscall_filter)
+int seccomp_apply(int arch, uint32_t *syscalls, int count)
 {
 	return -ENOTSUP;
 }
