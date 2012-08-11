@@ -38,7 +38,7 @@ int wildmatch_syd(const char *pattern, const char *text)
 int wildmatch_expand(const char *pattern, char ***buf)
 {
 	int i, bufsiz;
-	char *s, *p;
+	char *s, *p, *cp;
 	char **list;
 
 	assert(buf);
@@ -46,7 +46,7 @@ int wildmatch_expand(const char *pattern, char ***buf)
 	p = xstrdup(pattern);
 	if (sydbox->config.match_no_wildcard == NO_WILDCARD_PREFIX &&
 			!strchr(p, '*') && !strchr(p, '?')) {
-		char *cp = xmalloc(sizeof(char) * (sizeof(p) + sizeof(WILD3_SUFFIX) - 1));
+		cp = xmalloc(sizeof(char) * (strlen(pattern) + sizeof(WILD3_SUFFIX)));
 		strcpy(cp, p);
 		strcat(cp, WILD3_SUFFIX);
 		free(p);
