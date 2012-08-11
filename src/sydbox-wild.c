@@ -46,7 +46,7 @@ int wildmatch_expand(const char *pattern, char ***buf)
 	p = xstrdup(pattern);
 	if (sydbox->config.match_no_wildcard == NO_WILDCARD_PREFIX &&
 			!strchr(p, '*') && !strchr(p, '?')) {
-		cp = xmalloc(sizeof(char) * (strlen(pattern) + sizeof(WILD3_SUFFIX)));
+		cp = xmalloc(sizeof(char) * (strlen(p) + sizeof(WILD3_SUFFIX)));
 		strcpy(cp, p);
 		strcat(cp, WILD3_SUFFIX);
 		free(p);
@@ -54,7 +54,7 @@ int wildmatch_expand(const char *pattern, char ***buf)
 	}
 	p = path_kill_slashes(p);
 
-	if (endswith(pattern, WILD3_SUFFIX)) {
+	if (endswith(p, WILD3_SUFFIX)) {
 		list = xmalloc(sizeof(char *) * 2);
 		s = xstrdup(p);
 		i = strrchr(s, '/') - s;
