@@ -112,6 +112,12 @@ enum create_mode {
 	MAY_CREATE,
 	MUST_CREATE,
 };
+static const char *const create_mode_table[] = {
+	[NO_CREATE] = "no",
+	[MAY_CREATE] = "may",
+	[MUST_CREATE] = "must",
+};
+DEFINE_STRING_TABLE_LOOKUP(create_mode, int)
 
 enum no_wildcard_mode {
 	NO_WILDCARD_LITERAL,

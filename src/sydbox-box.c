@@ -227,10 +227,12 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 					tid,
 					!!(info->create > 0),
 					info->resolv, &abspath)) < 0) {
-		warning("resolve path:'%s' [%s() index:%u prefix:'%s']"
+		warning("resolve path:'%s' [%s() index:%u prefix:'%s' create:%s resolve:%s]"
 				" failed for process:%lu [abi:%d name:'%s' cwd:'%s']"
 				" (errno:%d %s)",
 				path, name, info->index, prefix,
+				create_mode_to_string(info->create),
+				info->resolv ? "true" : "false",
 				(unsigned long)tid, abi,
 				data->comm, data->cwd,
 				-r, strerror(-r));

@@ -79,9 +79,9 @@ int basename_alloc(const char *path, char **buf)
 	return 0;
 }
 
-/* readlink() wrapper which does:
- * - Allocates the string itself.
- * - Appends a zero-byte at the end.
+/* readlink() wrapper which:
+ * - allocates the string itself.
+ * - appends a zero-byte at the end.
  */
 int readlink_alloc(const char *path, char **buf)
 {

@@ -110,6 +110,11 @@ int sys_open(struct pink_easy_process *current, const char *name)
 	}
 
 	wr = open_wr_check(flags, &create, &resolv);
+	debug("open: wr_check:%ld returned wr=%s create=%s resolv=%s",
+			flags,
+			wr ? "true" : "false",
+			create_mode_to_string(create),
+			resolv ? "true" : "false");
 
 	memset(&info, 0, sizeof(sys_info_t));
 	info.create = create;
