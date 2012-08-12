@@ -105,6 +105,10 @@ static void callback_error(const struct pink_easy_context *ctx, ...)
 
 static int callback_interrupt(const struct pink_easy_context *ctx, int fatal_sig)
 {
+	if (!fatal_sig)
+		fatal_sig = SIGTERM;
+
+	abort_all(fatal_sig);
 	return 128 + fatal_sig;
 }
 

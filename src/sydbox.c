@@ -170,18 +170,6 @@ static void sydbox_destroy(void)
 	log_close();
 }
 
-static void cleanup(void)
-{
-	int fatal_sig;
-
-	/* 'pink_easy_interrupted' is a volatile object, fetch it only once */
-	fatal_sig = pink_easy_interrupted;
-	if (!fatal_sig)
-		fatal_sig = SIGTERM;
-
-	abort_all(fatal_sig);
-}
-
 static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 {
 	pid_t tid = pink_easy_process_get_tid(current);
