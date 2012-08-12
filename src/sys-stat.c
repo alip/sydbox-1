@@ -41,8 +41,8 @@ int sys_stat(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const ch
 		return 0;
 
 	if (!pink_read_argument(tid, abi, &data->regs, 0, &addr)
-			|| !pink_read_string(tid, abi, addr,
-				path, SYDBOX_PATH_MAX)) {
+			|| pink_read_string(tid, abi, addr,
+				path, SYDBOX_PATH_MAX) < 0) {
 		/* Don't bother denying the system call here.
 		 * Because this should not be a fatal error.
 		 */

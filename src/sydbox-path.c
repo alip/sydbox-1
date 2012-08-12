@@ -48,7 +48,7 @@ int path_decode(struct pink_easy_process *current, unsigned ind, char **buf)
 
 	if (!pink_read_argument(tid, abi, &data->regs, ind, &addr))
 		goto fail;
-	if (!pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX))
+	if (pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX) < 0)
 		goto fail;
 	path[SYDBOX_PATH_MAX-1] = '\0';
 	*buf = xstrdup(path);
