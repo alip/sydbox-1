@@ -61,6 +61,8 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 
 	if (!name || name[0] == '\0' || name[0] != '/')
 		return -EINVAL;
+	if (MULTIPLE_BITS_SET(can_mode))
+		return -EINVAL;
 
 	rname = malloc(PATH_MAX * sizeof(char));
 	if (!rname)
@@ -147,16 +149,13 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 #endif
 #endif
 				if (linkcount++ > SYDBOX_MAXSYMLINKS) {
-					if (can_mode == CAN_MISSING)
-						continue;
 					saved_errno = ELOOP;
 					goto error;
 				}
 
-				if (readlink_alloc(rname, &buf) < 0) {
+				if ((saved_errno = readlink_alloc(rname, &buf)) < 0) {
 					if (can_mode == CAN_MISSING && errno != ENOMEM)
 						continue;
-					saved_errno = errno;
 					goto error;
 				}
 
@@ -190,14 +189,12 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 					/* Back up to previous component,
 					 * ignore if at root already. */
 					if (dest > rname + 1) {
-						while ((--dest)[-1] != '/')
-							/* void */;
+						while ((--dest)[-1] != '/') /* void */;
 					}
 				}
 
 				free(buf);
-			}
-			else {
+			} else {
 				if (!S_ISDIR(st.st_mode) && *end && (can_mode != CAN_MISSING)) {
 					saved_errno = ENOTDIR;
 					goto error;
