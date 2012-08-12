@@ -214,21 +214,21 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 
 static void sig_user(int signo)
 {
-	bool cmpl;
-	unsigned c;
+	bool complete_dump;
+	unsigned all;
 	struct pink_easy_process_list *list;
 
 	if (!sydbox)
 		return;
 
-	cmpl = signo == SIGUSR2;
+	complete_dump= !!(signo == SIGUSR2);
 	list = pink_easy_context_get_process_list(sydbox->ctx);
 
 	fprintf(stderr, "\nReceived SIGUSR%s, dumping %sprocess tree\n",
-			cmpl ? "2" : "1",
-			cmpl ? "complete " : "");
-	c = pink_easy_process_list_walk(list, dump_one_process, UINT_TO_PTR(cmpl));
-	fprintf(stderr, "Tracing %u process%s\n", c, c > 1 ? "es" : "");
+			complete_dump ? "2" : "1",
+			complete_dump ? "complete " : "");
+	all = pink_easy_process_list_walk(list, dump_one_process, BOOL_TO_PTR(complete_dump));
+	fprintf(stderr, "Tracing %u process%s\n", all, all > 1 ? "es" : "");
 }
 
 static void sydbox_startup_child(char **argv)
@@ -463,8 +463,14 @@ int main(int argc, char **argv)
 	   Also we do not need to be protected by them as during interruption
 	   in the STARTUP_CHILD mode we kill the spawned process anyway.  */
 	sydbox_startup_child(&argv[optind]);
+
 	pink_easy_interrupt_init(sydbox->config.trace_interrupt);
+	signal(SIGUSR1, sig_user);
+	signal(SIGUSR2, sig_user);
+
 	r = pink_easy_loop(sydbox->ctx);
+
 	sydbox_destroy();
+
 	return r;
 }
