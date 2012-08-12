@@ -74,10 +74,10 @@ int magic_set_trace_use_seccomp(const void *val, struct pink_easy_process *curre
 {
 #ifdef WANT_SECCOMP
 	sydbox->config.use_seccomp = PTR_TO_BOOL(val);
-	return 0;
 #else
-	return MAGIC_ERROR_NOT_SUPPORTED;
+	info("seccomp support not enabled, ignoring magic");
 #endif
+	return 0;
 }
 
 int magic_query_trace_use_seccomp(struct pink_easy_process *current)
