@@ -157,7 +157,14 @@ int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 	int r;
 	char *abspath;
 
-	abspath = path != NULL ? path_make_absolute(path, prefix) : xstrdup(prefix);
+	if (path == NULL && prefix == NULL)
+		return -EINVAL;
+	if (path == NULL)
+		abspath = xstrdup(prefix);
+	else if (prefix == NULL)
+		abspath = xstrdup(path);
+	else
+		abspath = path_make_absolute(path, prefix);
 	if (!abspath)
 		return -errno;
 
@@ -189,12 +196,18 @@ int box_match_path(const char *path, const slist_t *patterns, const char **match
 
 int box_check_path(struct pink_easy_process *current, const char *name, sys_info_t *info)
 {
-	int r;
+	int r, deny_errno;
 	char *prefix, *path, *abspath;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	slist_t *wblist;
+
+	assert(current);
+	assert(info);
+
+	prefix = path = abspath = NULL;
+	deny_errno = info->deny_errno ? info->deny_errno : EPERM;
 
 	debug("check_path: %s[%lu:%u] sys:%s() arg_index:%u cwd:'%s'",
 			data->comm, (unsigned long)tid, abi, name,
@@ -206,15 +219,10 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 			create_mode_to_string(info->create));
 	debug("check_path: safe:%s deny-errno:%s whitelisting:%s",
 			info->safe ? "true" : "false",
-			errno_to_string(info->deny_errno),
+			errno_to_string(deny_errno),
 			info->whitelisting ? "true" : "false");
 
-	assert(current);
-	assert(info);
-
-	prefix = path = abspath = NULL;
-
-	if (info->at && (r = path_prefix(current, info->arg_index - 1, &prefix))) {
+	if (info->at && (r = path_prefix(current, info->arg_index-1, &prefix))) {
 		if (r < 0) {
 			errno = -r;
 			r = deny(current);
@@ -276,7 +284,7 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 		goto out;
 	}
 
-	errno = info->deny_errno ? info->deny_errno : EPERM;
+	errno = deny_errno;
 
 	if (info->safe && !sydbox->config.violation_raise_safe) {
 		r = deny(current);

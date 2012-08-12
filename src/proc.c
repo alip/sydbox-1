@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  *
@@ -82,10 +82,9 @@ proc_cwd(pid_t pid, char **buf)
 /*
  * resolve /proc/$pid/fd/$dirfd
  */
-int
-proc_fd(pid_t pid, int dfd, char **buf)
+int proc_fd(pid_t pid, int dfd, char **buf)
 {
-	int ret;
+	int r;
 	char *fd, *linkdir;
 
 	assert(pid >= 1);
@@ -95,19 +94,18 @@ proc_fd(pid_t pid, int dfd, char **buf)
 	if (asprintf(&linkdir, "/proc/%lu/fd/%d", (unsigned long)pid, dfd) < 0)
 		return -ENOMEM;
 
-	ret = readlink_alloc(linkdir, &fd);
+	r = readlink_alloc(linkdir, &fd);
 	free(linkdir);
-	if (!ret)
+	if (r == 0)
 		*buf = fd;
-	return ret;
+	return r;
 }
 
 /*
  * read /proc/$pid/cmdline,
  * does not handle kernel threads which can't be traced anyway.
  */
-int
-proc_cmdline(pid_t pid, size_t max_length, char **buf)
+int proc_cmdline(pid_t pid, size_t max_length, char **buf)
 {
 	char *p, *r, *k;
 	int c;
@@ -172,8 +170,7 @@ proc_cmdline(pid_t pid, size_t max_length, char **buf)
 /*
  * read /proc/$pid/comm
  */
-int
-proc_comm(pid_t pid, char **name)
+int proc_comm(pid_t pid, char **name)
 {
 	int r;
 	char *p;
