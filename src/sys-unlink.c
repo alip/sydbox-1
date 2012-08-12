@@ -69,9 +69,9 @@ int sys_unlinkat(struct pink_easy_process *current, const char *name)
 	}
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = true;
-	info.resolv = !!(flags & AT_REMOVEDIR);
-	info.index  = 1;
+	info.at           = true;
+	info.arg_index    = 1;
+	info.resolve      = !!(flags & AT_REMOVEDIR);
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);

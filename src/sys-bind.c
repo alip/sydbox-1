@@ -53,8 +53,8 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 	info.whitelisting = data->config.sandbox_network == SANDBOX_DENY;
 	info.wblist = sandbox_network_deny(data) ? &data->config.whitelist_network_bind : &data->config.blacklist_network_bind;
 	info.filter = &sydbox->config.filter_network;
-	info.resolv = true;
-	info.index  = 1;
+	info.resolve = true;
+	info.arg_index = 1;
 	info.create = MAY_CREATE;
 	info.deny_errno = EADDRNOTAVAIL;
 
@@ -66,7 +66,7 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 		info.addr = &psa;
 	}
 
-	r = box_check_sock(current, name, &info);
+	r = box_check_socket(current, name, &info);
 
 	if (sydbox->config.whitelist_successful_bind && !r) {
 		/* Read the file descriptor, for use in exit */

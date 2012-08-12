@@ -42,8 +42,8 @@ int sys_link(struct pink_easy_process *current, const char *name)
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
-		info.create = MUST_CREATE;
-		info.index  = 1;
+		info.arg_index  = 1;
+		info.create     = MUST_CREATE;
 		return box_check_path(current, name, &info);
 	}
 
@@ -74,15 +74,15 @@ int sys_linkat(struct pink_easy_process *current, const char *name)
 	}
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = true;
-	info.resolv = !!(flags & AT_SYMLINK_FOLLOW);
-	info.index  = 1;
+	info.at           = true;
+	info.arg_index    = 1;
+	info.resolve      = !!(flags & AT_SYMLINK_FOLLOW);
 	info.whitelisting = sandbox_write_deny(data);
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
-		info.create = MAY_CREATE;
-		info.index  = 3;
+		info.arg_index = 3;
+		info.create    = MAY_CREATE;
 		return box_check_path(current, name, &info);
 	}
 

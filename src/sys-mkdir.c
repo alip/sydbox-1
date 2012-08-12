@@ -34,8 +34,8 @@ int sys_mkdir(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.resolv = true;
-	info.create = MUST_CREATE;
+	info.resolve      = true;
+	info.create       = MUST_CREATE;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);
@@ -50,10 +50,10 @@ int sys_mkdirat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = true;
-	info.resolv = true;
-	info.create = MUST_CREATE;
-	info.index  = 1;
+	info.at           = true;
+	info.arg_index    = 1;
+	info.resolve      = true;
+	info.create       = MUST_CREATE;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);

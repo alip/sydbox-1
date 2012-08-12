@@ -37,8 +37,8 @@ int sys_creat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.resolv = true;
-	info.create = MAY_CREATE;
+	info.resolve      = true;
+	info.create       = MAY_CREATE;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);

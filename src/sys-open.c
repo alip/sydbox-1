@@ -88,7 +88,7 @@ static inline bool open_wr_check(long flags, enum create_mode *create, bool *res
 int sys_open(struct pink_easy_process *current, const char *name)
 {
 	int r;
-	bool resolv, wr;
+	bool resolve, wr;
 	enum create_mode create;
 	long flags;
 	pid_t tid = pink_easy_process_get_tid(current);
@@ -109,16 +109,16 @@ int sys_open(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	wr = open_wr_check(flags, &create, &resolv);
-	debug("open: wr_check:%ld returned wr=%s create=%s resolv=%s",
+	wr = open_wr_check(flags, &create, &resolve);
+	debug("open: wr_check:%ld returned wr=%s create=%s resolve=%s",
 			flags,
 			wr ? "true" : "false",
 			create_mode_to_string(create),
-			resolv ? "true" : "false");
+			resolve ? "true" : "false");
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.create = create;
-	info.resolv = resolv;
+	info.create  = create;
+	info.resolve = resolve;
 
 	r = 0;
 	if (wr && !sandbox_write_off(data)) {
@@ -139,7 +139,7 @@ int sys_open(struct pink_easy_process *current, const char *name)
 int sys_openat(struct pink_easy_process *current, const char *name)
 {
 	int r;
-	bool resolv, wr;
+	bool resolve, wr;
 	enum create_mode create;
 	long flags;
 	pid_t tid = pink_easy_process_get_tid(current);
@@ -161,13 +161,13 @@ int sys_openat(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	wr = open_wr_check(flags, &create, &resolv);
+	wr = open_wr_check(flags, &create, &resolve);
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at = true;
-	info.index = 1;
-	info.create = create;
-	info.resolv = resolv;
+	info.at        = true;
+	info.arg_index = 1;
+	info.create    = create;
+	info.resolve   = resolve;
 
 	r = 0;
 	if (wr && !sandbox_write_off(data)) {

@@ -39,14 +39,14 @@ int sys_connect(struct pink_easy_process *current, const char *name)
 	info.whitelisting = sandbox_network_deny(data);
 	info.wblist = sandbox_network_deny(data) ? &data->config.whitelist_network_connect : &data->config.blacklist_network_connect;
 	info.filter = &sydbox->config.filter_network;
-	info.resolv = true;
+	info.resolve = true;
 	info.create = MAY_CREATE;
-	info.index  = 1;
+	info.arg_index  = 1;
 	info.deny_errno = ECONNREFUSED;
 	if (data->subcall == PINK_SOCKET_SUBCALL_CONNECT)
 		info.decode_socketcall = true;
 
-	return box_check_sock(current, name, &info);
+	return box_check_socket(current, name, &info);
 }
 
 int sys_sendto(struct pink_easy_process *current, const char *name)
@@ -61,14 +61,14 @@ int sys_sendto(struct pink_easy_process *current, const char *name)
 	info.whitelisting = sandbox_network_deny(data);
 	info.wblist = sandbox_network_deny(data) ? &data->config.whitelist_network_connect : &data->config.blacklist_network_connect;
 	info.filter = &sydbox->config.filter_network;
-	info.resolv = true;
+	info.resolve = true;
 	info.create = MAY_CREATE;
-	info.index  = 4;
+	info.arg_index  = 4;
 	info.deny_errno = ECONNREFUSED;
 	if (data->subcall == PINK_SOCKET_SUBCALL_SENDTO)
 		info.decode_socketcall = true;
 
-	return box_check_sock(current, name, &info);
+	return box_check_socket(current, name, &info);
 }
 
 int sys_recvfrom(struct pink_easy_process *current, const char *name)
@@ -83,12 +83,12 @@ int sys_recvfrom(struct pink_easy_process *current, const char *name)
 	info.whitelisting = sandbox_network_deny(data);
 	info.wblist = sandbox_network_deny(data) ? &data->config.whitelist_network_connect : &data->config.blacklist_network_connect;
 	info.filter = &sydbox->config.filter_network;
-	info.resolv = true;
+	info.resolve = true;
 	info.create = MAY_CREATE;
-	info.index  = 4;
+	info.arg_index  = 4;
 	info.deny_errno = ECONNREFUSED;
 	if (data->subcall == PINK_SOCKET_SUBCALL_RECVFROM)
 		info.decode_socketcall = true;
 
-	return box_check_sock(current, name, &info);
+	return box_check_socket(current, name, &info);
 }

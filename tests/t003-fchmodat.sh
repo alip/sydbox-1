@@ -50,7 +50,7 @@ test_expect_success 'deny fchmodat(AT_FDCWD, ...)' '
 test_expect_success 'deny fchmodat(AT_FDCWD, ...) for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchmodat --errno=EPERM --dir=cwd -m 000 file-non-existant
+        -- emily fchmodat --errno=ENOENT --dir=cwd -m 000 file-non-existant
 '
 
 test_expect_success 'deny fchmodat(AT_FDCWD, ...) for symbolic link' '
@@ -72,7 +72,7 @@ test_expect_success 'deny fchmodat(fd, ...)' '
 test_expect_success 'deny fchmodat(fd, ...) for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchmodat --errno=EPERM --dir=cwd -m 000 file-non-existant
+        -- emily fchmodat --errno=ENOENT --dir=cwd -m 000 file-non-existant
 '
 
 test_expect_success 'deny fchmodat(fd, ...) for symbolic link' '
@@ -96,7 +96,7 @@ test_expect_success 'blacklist fchmodat(AT_FDCWD, ...) for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat --errno=EPERM --dir=cwd -m 000 file-non-existant
+        -- emily fchmodat --errno=ENOENT --dir=cwd -m 000 file-non-existant
 '
 
 test_expect_success 'blacklist fchmodat(AT_FDCWD, ...) for symbolic link' '
@@ -121,7 +121,7 @@ test_expect_success 'blacklist fchmodat(fd, ...) for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat --errno=EPERM --dir=cwd -m 000 file-non-existant
+        -- emily fchmodat --errno=ENOENT --dir=cwd -m 000 file-non-existant
 '
 
 test_expect_success 'blacklist fchmodat(fd, ...) for symbolic link' '

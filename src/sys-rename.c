@@ -39,8 +39,8 @@ int sys_rename(struct pink_easy_process *current, const char *name)
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
-		info.create = MAY_CREATE;
-		info.index  = 1;
+		info.arg_index = 1;
+		info.create    = MAY_CREATE;
 		return box_check_path(current, name, &info);
 	}
 
@@ -57,14 +57,14 @@ int sys_renameat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = true;
-	info.index  = 1;
+	info.at           = true;
+	info.arg_index    = 1;
 	info.whitelisting = sandbox_write_deny(data);
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
-		info.create = MAY_CREATE;
-		info.index  = 3;
+		info.arg_index = 3;
+		info.create    = MAY_CREATE;
 		return box_check_path(current, name, &info);
 	}
 

@@ -38,7 +38,7 @@ test_expect_success 'deny chmod()' '
 test_expect_success 'deny chmod() for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chmod --errno=EPERM -m 000 file-non-existant
+        -- emily chmod --errno=ENOENT -m 000 file-non-existant
 '
 
 test_expect_success SYMLINKS 'deny chmod() for symbolic link' '
@@ -52,7 +52,7 @@ test_expect_success SYMLINKS 'deny chmod() for symbolic link' '
 test_expect_success SYMLINKS 'deny chmod() for dangling symbolic link' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chmod --errno=EPERM -m 000 symlink-dangling
+        -- emily chmod --errno=ENOENT -m 000 symlink-dangling
 '
 
 test_expect_success 'blacklist chmod()' '
@@ -68,7 +68,7 @@ test_expect_success 'blacklist chmod() for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chmod --errno=EPERM -m 000 file-non-existant
+        -- emily chmod --errno=ENOENT -m 000 file-non-existant
 '
 
 test_expect_success SYMLINKS 'blacklist chmod() for symbolic link' '
@@ -84,7 +84,7 @@ test_expect_success SYMLINKS 'blacklist chmod() for dangling symbolic link' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chmod --errno=EPERM -m 000 symlink-dangling
+        -- emily chmod --errno=ENOENT -m 000 symlink-dangling
 '
 
 test_expect_success 'whitelist chmod()' '

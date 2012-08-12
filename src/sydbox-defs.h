@@ -486,12 +486,12 @@ typedef struct {
 } sysentry_t;
 
 typedef struct {
-	unsigned index;
+	unsigned arg_index; /* Argument index */
 
 	bool at; /* at suffixed function */
 	bool null_ok; /* NULL argument doesn't cause -EFAULT (only valid for `at') */
 	bool decode_socketcall; /* decode socketcall() into subcall */
-	bool resolv; /* resolv filename */
+	bool resolve; /* resolv filename */
 	enum create_mode create; /* creation mode */
 
 	bool safe; /* safe system call, silently deny */
@@ -631,7 +631,7 @@ void callback_init(void);
 int box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res);
 int box_match_path(const char *path, const slist_t *patterns, const char **match);
 int box_check_path(struct pink_easy_process *current, const char *name, sys_info_t *info);
-int box_check_sock(struct pink_easy_process *current, const char *name, sys_info_t *info);
+int box_check_socket(struct pink_easy_process *current, const char *name, sys_info_t *info);
 
 int path_decode(struct pink_easy_process *current, unsigned ind, char **buf);
 int path_prefix(struct pink_easy_process *current, unsigned ind, char **buf);

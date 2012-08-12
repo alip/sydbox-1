@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -37,7 +37,7 @@ int sys_chmod(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.resolv = true;
+	info.resolve      = true;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);
@@ -66,9 +66,9 @@ int sys_fchmodat(struct pink_easy_process *current, const char *name)
 	}
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = true;
-	info.resolv = !(flags & AT_SYMLINK_NOFOLLOW);
-	info.index  = 1;
+	info.at           = true;
+	info.arg_index    = 1;
+	info.resolve      = !(flags & AT_SYMLINK_NOFOLLOW);
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);

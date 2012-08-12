@@ -31,9 +31,9 @@
 /* Decode the path at the given index and place it in buf.
  * Handles panic() itself.
  * Returns:
- * -1 : System call must be denied.
- *  0 : Successful run
- * >0 : PINK_EASY_CFLAG* flags
+ * -errno : Negated errno indicating error code
+ *  0     : Successful run
+ * >0     : PINK_EASY_CFLAG* flags
  */
 int path_decode(struct pink_easy_process *current, unsigned ind, char **buf)
 {
@@ -58,7 +58,7 @@ fail:
 		debug("read_string(%lu, %d, %u) returned -EFAULT",
 				(unsigned long)tid, abi, ind);
 		*buf = NULL;
-		return -1;
+		return -EFAULT;
 	}
 	if (errno != ESRCH) {
 		warning("read_string(%lu, %d, %u) failed (errno:%d %s)",
@@ -81,11 +81,11 @@ fail:
  * Resolve the prefix of an at-suffixed function.
  * Handles panic() itself.
  * Returns:
- * -1 : System call must be denied.
- *  0 : Successful run
- * >0 : PINK_EASY_CFLAG* flags
+ * -errno : Negated errno indicating error code
+ *  0     : Successful run
+ * >0     : PINK_EASY_CFLAG* flags
  */
-int path_prefix(struct pink_easy_process *current, unsigned ind, char **buf)
+int path_prefix(struct pink_easy_process *current, unsigned arg_index, char **buf)
 {
 	int r;
 	long fd;
@@ -94,34 +94,40 @@ int path_prefix(struct pink_easy_process *current, unsigned ind, char **buf)
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!pink_read_argument(tid, abi, &data->regs, ind, &fd)) {
+	debug("path_prefix: %s[%lu:%u] arg_index:%u",
+			data->comm, 
+			(unsigned long)tid, abi,
+			arg_index);
+
+	if (!pink_read_argument(tid, abi, &data->regs, arg_index, &fd)) {
 		if (errno != ESRCH) {
-			warning("pink_read_argument(%lu, %d, %u) failed (errno:%d %s)",
-					(unsigned long)tid, abi,
-					ind, errno, strerror(errno));
+			warning("path_prefix: read argument:%u failed (errno:%d %s)",
+					arg_index, errno, strerror(errno));
 			return panic(current);
 		}
-		debug("pink_read_argument(%lu, %d, %u) failed (errno:%d %s)",
-				(unsigned long)tid, abi,
-				ind, errno, strerror(errno));
-		debug("dropping process:%lu [abi:%d name:\"%s\" cwd:\"%s\"] from process tree",
-				(unsigned long)tid, abi,
-				data->comm, data->cwd);
+		notice("path_prefix: read argument:%u failed (errno:%d %s)",
+				arg_index, errno, strerror(errno));
+		notice("path_prefix: drop process %s[%lu:%u]",
+				data->comm,
+				(unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
 	if (fd != AT_FDCWD) {
 		if ((r = proc_fd(tid, fd, &prefix)) < 0) {
-			warning("proc_fd(%lu, %ld) failed (errno:%d %s)",
-					(unsigned long)tid, fd,
+			warning("path_prefix: readlink /proc/%lu/fd/%ld failed (errno:%d %s)",
+					fd,
+					(unsigned long)tid,
 					-r, strerror(-r));
-			errno = r == -ENOENT ? EBADF : -r;
-			return -1;
+			if (r == -ENOENT)
+				r = -EBADF; /* correct errno */
+			return r;
 		}
 		*buf = prefix;
-	}
-	else
+	} else {
 		*buf = NULL;
+	}
 
+	debug("path_prefix: fd:%ld is %s", fd, prefix ? prefix : "AT_FDCWD");
 	return 0;
 }

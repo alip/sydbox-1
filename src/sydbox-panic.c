@@ -32,6 +32,7 @@
 
 #include "macro.h"
 #include "proc.h"
+#include "strtable.h"
 
 static inline int errno2retval(void)
 {
@@ -128,14 +129,24 @@ int deny(struct pink_easy_process *current)
 	data->deny = true;
 	data->retval = errno2retval();
 
+	info("deny: %s[%lu:%u] return code:%ld",
+			data->comm,
+			(unsigned long)tid, abi,
+			data->retval);
+
 	if (!pink_write_syscall(tid, abi, PINK_SYSCALL_INVALID)) {
 		if (errno != ESRCH) {
-			warning("pink_write_syscall(%lu, %d, %u) failed (errno:%d %s)",
-					(unsigned long)tid, abi,
+			warning("deny: write syscall:%#x failed (errno:%d %s)",
 					PINK_SYSCALL_INVALID,
 					errno, strerror(errno));
 			return panic(current);
 		}
+		notice("deny: write syscall:%#x failed (errno:%d %s)",
+				PINK_SYSCALL_INVALID,
+				errno, strerror(errno));
+		notice("path_prefix: drop process %s[%lu:%u]",
+				data->comm,
+				(unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
@@ -144,30 +155,53 @@ int deny(struct pink_easy_process *current)
 
 int restore(struct pink_easy_process *current)
 {
+	int retval, error;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
+	info("restore: %s[%lu:%d] sys:%s()",
+			data->comm,
+			(unsigned long)tid, abi,
+			pink_syscall_name(data->sno, abi));
+
 	/* Restore system call number */
 	if (!pink_write_syscall(tid, abi, data->sno)) {
-		if (errno == ESRCH)
+		if (errno == ESRCH) {
+			notice("restore: write syscall:%#lx failed (errno:%d %s)",
+					data->sno, errno, strerror(errno));
+			notice("restore: drop process %s[%lu:%d]",
+					data->comm,
+					(unsigned long)tid, abi);
 			return PINK_EASY_CFLAG_DROP;
-		warning("pink_write_syscall(%lu, %d, %s) failed (errno:%d %s)",
-				(unsigned long)tid, abi,
-				pink_syscall_name(data->sno, abi),
-				errno, strerror(errno));
+		}
+		warning("restore: write syscall:%#lx failed (errno:%d %s)",
+				data->sno, errno, strerror(errno));
+		/* TODO: Why doesn't panic(current) work here? */
 	}
 
 	/* Return the saved return value */
-	if (!pink_write_retval(tid, abi,
-				(data->retval < 0) ? -1 : data->retval,
-				(data->retval < 0) ? -data->retval : 0)) {
-		if (errno == ESRCH)
+	if (data->retval < 0) { /* failure */
+		retval = -1;
+		error = -data->retval;
+	} else { /* success */
+		retval = data->retval;
+		error = 0;
+	}
+	if (!pink_write_retval(tid, abi, retval, error)) {
+		if (errno == ESRCH) {
+			notice("restore: write retval:%d and error(%d %s) failed (errno:%d %s)",
+					retval, error, errno_to_string(error),
+					errno, strerror(errno));
+			notice("restore: drop process %s[%lu:%d]",
+					data->comm,
+					(unsigned long)tid, abi);
 			return PINK_EASY_CFLAG_DROP;
-		warning("pink_write_retval(%lu, %d, %s) failed (errno:%d %s)",
-				(unsigned long)tid, abi,
-				pink_syscall_name(data->sno, abi),
+		}
+		warning("restore: write retval:%d and error(%d %s) failed (errno:%d %s)",
+				retval, error, errno_to_string(error),
 				errno, strerror(errno));
+		/* TODO: Why doesn't panic(current) work here? */
 	}
 
 	return 0;

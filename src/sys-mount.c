@@ -37,8 +37,8 @@ int sys_mount(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.resolv = true;
-	info.index  = 1;
+	info.arg_index    = 1;
+	info.resolve      = true;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);
@@ -53,7 +53,7 @@ int sys_umount(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.resolv = true;
+	info.resolve      = true;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);
@@ -87,9 +87,9 @@ int sys_umount2(struct pink_easy_process *current, const char *name)
 		}
 		return PINK_EASY_CFLAG_DROP;
 	}
-	info.resolv = !(flags & UMOUNT_NOFOLLOW);
+	info.resolve = !(flags & UMOUNT_NOFOLLOW);
 #else
-	info.resolv = true;
+	info.resolve = true;
 #endif /* UMOUNT_NOFOLLOW */
 
 	return box_check_path(current, name, &info);

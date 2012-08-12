@@ -34,7 +34,7 @@ int sys_removexattr(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.resolv = true;
+	info.resolve      = true;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);

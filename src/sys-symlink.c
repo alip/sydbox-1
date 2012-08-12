@@ -34,8 +34,8 @@ int sys_symlink(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.create = MUST_CREATE;
-	info.index  = 1;
+	info.arg_index    = 1;
+	info.create       = MUST_CREATE;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);
@@ -50,9 +50,9 @@ int sys_symlinkat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = true;
-	info.create = MUST_CREATE;
-	info.index  = 2;
+	info.at           = true;
+	info.arg_index    = 2;
+	info.create       = MUST_CREATE;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);
