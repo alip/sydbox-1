@@ -204,20 +204,26 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 
 	if (info->at && (r = path_prefix(current, info->index - 1, &prefix))) {
 		if (r < 0) {
-			errno = EPERM; /* or -r for the real errno */
-			r = deny(current);
-			if (sydbox->config.violation_raise_fail)
+			if (sydbox->config.violation_raise_fail) {
+				errno = EPERM;
 				violation(current, "%s()", name);
+			} else {
+				errno = -r;
+			}
+			r = deny(current);
 		}
-		return r; /* PINK_EASY_CFLAG */
+		return r;
 	}
 
 	r = path_decode(current, info->index, &path);
 	if (r < 0 && !(info->at && info->null_ok && prefix && r == -EFAULT)) {
-		errno = EPERM; /* or -r for the real errno */
-		r = deny(current);
-		if (sydbox->config.violation_raise_fail)
+		if (sydbox->config.violation_raise_fail) {
+			errno = EPERM;
 			violation(current, "%s()", name);
+		} else {
+			errno = -r;
+		}
+		r = deny(current);
 		goto end;
 	} else if (r > 0 /* PINK_EASY_CFLAG */) {
 		goto end;
@@ -236,10 +242,13 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 				(unsigned long)tid, abi,
 				data->comm, data->cwd,
 				-r, strerror(-r));
-		errno = EPERM; /* or -r for the real errno */
-		r = deny(current);
-		if (sydbox->config.violation_raise_fail)
+		if (sydbox->config.violation_raise_fail) {
+			errno = EPERM;
 			violation(current, "%s()", name);
+		} else {
+			errno = -r;
+		}
+		r = deny(current);
 		goto end;
 	}
 	debug("resolved path:'%s' to absolute path:'%s' [name=%s() create=%d resolv=%d]"
@@ -389,10 +398,13 @@ int box_check_sock(struct pink_easy_process *current, const char *name, sys_info
 					(unsigned long)tid, abi,
 					data->comm, data->cwd,
 					-r, strerror(-r));
-			errno = EPERM; /* or -r for the real errno */
-			r = deny(current);
-			if (sydbox->config.violation_raise_fail)
+			if (sydbox->config.violation_raise_fail) {
+				errno = EPERM;
 				violation(current, "%s()", name);
+			} else {
+				errno = -r;
+			}
+			r = deny(current);
 			goto end;
 		}
 
