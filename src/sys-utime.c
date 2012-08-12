@@ -82,9 +82,10 @@ int sys_utimensat(struct pink_easy_process *current, const char *name)
 	}
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = true;
-	info.resolv = !(flags & AT_SYMLINK_NOFOLLOW);
-	info.index  = 1;
+	info.at      = true;
+	info.null_ok = true;
+	info.resolv  = !(flags & AT_SYMLINK_NOFOLLOW);
+	info.index   = 1;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);
@@ -99,9 +100,10 @@ int sys_futimesat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = true;
-	info.resolv = true;
-	info.index  = 1;
+	info.at      = true;
+	info.null_ok = true;
+	info.resolv  = true;
+	info.index   = 1;
 	info.whitelisting = sandbox_write_deny(data);
 
 	return box_check_path(current, name, &info);

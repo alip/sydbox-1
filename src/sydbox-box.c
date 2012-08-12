@@ -157,7 +157,7 @@ int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 	int r;
 	char *abspath;
 
-	abspath = path_make_absolute(path, prefix);
+	abspath = path != NULL ? path_make_absolute(path, prefix) : xstrdup(prefix);
 	if (!abspath)
 		return -errno;
 
@@ -209,25 +209,25 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", name);
 		}
-		return r;
+		return r; /* PINK_EASY_CFLAG */
 	}
 
 	r = path_decode(current, info->index, &path);
-	if (r < 0) {
+	if (r < 0 && !(info->at && info->null_ok && prefix && r == -EFAULT)) {
 		errno = EPERM; /* or -r for the real errno */
 		r = deny(current);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s()", name);
 		goto end;
-	}
-	else if (r /* > 0 */)
+	} else if (r > 0 /* PINK_EASY_CFLAG */) {
 		goto end;
+	}
 
 	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd,
 					tid,
 					!!(info->create > 0),
 					info->resolv, &abspath)) < 0) {
-		warning("resolving path:'%s' [%s() index:%u prefix:'%s']"
+		warning("resolve path:'%s' [%s() index:%u prefix:'%s']"
 				" failed for process:%lu [abi:%d name:'%s' cwd:'%s']"
 				" (errno:%d %s)",
 				path, name, info->index, prefix,

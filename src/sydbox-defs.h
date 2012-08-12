@@ -482,16 +482,17 @@ typedef struct {
 typedef struct {
 	unsigned index;
 
-	bool at;
-	bool decode_socketcall;
-	bool resolv;
-	enum create_mode create;
+	bool at; /* at suffixed function */
+	bool null_ok; /* NULL argument doesn't cause -EFAULT (only valid for `at') */
+	bool decode_socketcall; /* decode socketcall() into subcall */
+	bool resolv; /* resolv filename */
+	enum create_mode create; /* creation mode */
 
-	bool safe;
+	bool safe; /* safe system call, silently deny */
 	int deny_errno;
 
-	bool whitelisting;
-	slist_t *wblist;
+	bool whitelisting; /* Are we whitelisting or blacklisting? */
+	slist_t *wblist; /* White/Black List */
 
 	slist_t *filter;
 
