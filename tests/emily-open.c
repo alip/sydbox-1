@@ -110,7 +110,7 @@ int test_open(int argc, char **argv)
 		{NULL,		0,			NULL,	0},
 	};
 
-	while ((optc = getopt_long(argc, argv, "hcxe:", long_options, NULL)) != EOF) {
+	while ((optc = getopt_long(argc, argv, "hcxe:m:", long_options, NULL)) != EOF) {
 		switch (optc) {
 		case 'h':
 			test_open_usage(stdout, 0);
@@ -154,9 +154,12 @@ int test_open(int argc, char **argv)
 		switch (test_flags & O_ACCMODE) {
 		case O_WRONLY:
 		case O_RDWR:
-			if (argc != 2)
+			if (argc > 2)
 				test_open_usage(stderr, 2);
-			test_data = argv[1];
+			else if (argc == 2)
+				test_data = argv[1];
+			else
+				test_data = NULL;
 			break;
 		}
 	}
@@ -190,7 +193,7 @@ int test_openat(int argc, char **argv)
 		{"mode",	required_argument,	NULL,	'm'},
 	};
 
-	while ((optc = getopt_long(argc, argv, "hnd:e:", long_options, NULL)) != EOF) {
+	while ((optc = getopt_long(argc, argv, "hnd:e:m:", long_options, NULL)) != EOF) {
 		switch (optc) {
 		case 'h':
 			test_openat_usage(stdout, 0);
@@ -250,9 +253,12 @@ int test_openat(int argc, char **argv)
 		switch (test_flags & O_ACCMODE) {
 		case O_WRONLY:
 		case O_RDWR:
-			if (argc != 2)
+			if (argc > 2)
 				test_openat_usage(stderr, 2);
-			test_data = argv[1];
+			else if (argc == 2)
+				test_data = argv[1];
+			else
+				test_data = NULL;
 			break;
 		}
 	}

@@ -58,8 +58,8 @@ TESTS= \
 	t003-fchmodat.sh
 	t004-chown.sh \
 	t005-lchown.sh \
-	t006-fchownat.sh
-#	t007-open.sh \
+	t006-fchownat.sh \
+	t007-open.sh
 #	t008-creat.sh \
 #	t009-mkdir.sh \
 #	t010-mknod.sh \
