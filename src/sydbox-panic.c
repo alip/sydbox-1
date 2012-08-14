@@ -89,7 +89,7 @@ void abort_all(int fatal_sig)
 	unsigned count;
 	struct pink_easy_process_list *list;
 
-	if (!sydbox || sydbox->ctx)
+	if (!sydbox || !sydbox->ctx)
 		return;
 
 	list = pink_easy_context_get_process_list(sydbox->ctx);
