@@ -174,7 +174,7 @@ static void sydbox_destroy(void)
 static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 {
 	int r;
-	const char *CG, *CB, *CN, *CH, *CE; /* good, bad, normal, header, end */
+	const char *CG, *CB, *CN, *CI, *CE; /* good, bad, important, normal end */
 	bool verbose = !!PTR_TO_UINT(userdata);
 	struct proc_statinfo info;
 
@@ -189,11 +189,11 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 	if (isatty(STDERR_FILENO)) {
 		CG = ANSI_GREEN;
 		CB = ANSI_DARK_MAGENTA;
+		CI = ANSI_CYAN;
 		CN = ANSI_YELLOW;
-		CH = ANSI_CYAN;
 		CE = ANSI_NORMAL;
 	} else {
-		CG = CB = CN = CH = CE = "";
+		CG = CB = CI = CN = CE = "";
 	}
 
 	fprintf(stderr, "%s-- Information on Thread ID: %lu%s\n", CG, (unsigned long)tid, CE);
@@ -201,19 +201,19 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 		fprintf(stderr, "%sproc_stat failed (errno:%d %s)%s\n", CB, errno, strerror(errno), CE);
 	} else {
 		fprintf(stderr, "\t%sproc: pid=%d ppid=%d pgrp=%d%s\n",
-				CH,
+				CI,
 				info.pid, info.ppid, info.pgrp,
 				CE);
 		fprintf(stderr, "\t%sproc: comm=`%s' state=`%c'%s\n",
-				CH,
+				CI,
 				info.comm, info.state,
 				CE);
 		fprintf(stderr, "\t%sproc: session=%d tty_nr=%d tpgid=%d%s\n",
-				CH,
+				CI,
 				info.session, info.tty_nr, info.tpgid,
 				CE);
 		fprintf(stderr, "\t%sproc: nice=%ld num_threads=%ld%s\n",
-				CH,
+				CI,
 				info.nice, info.num_threads,
 				CE);
 	}
@@ -240,16 +240,16 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 			sandbox_mode_to_string(data->config.sandbox_network),
 			CE);
 	fprintf(stderr, "\t%sMagic Lock: %s%s\n", CN, lock_state_to_string(data->config.magic_lock), CE);
-	fprintf(stderr, "\t%sExec Whitelist:%s\n", CH, CE);
+	fprintf(stderr, "\t%sExec Whitelist:%s\n", CI, CE);
 	SLIST_FOREACH(node, &data->config.whitelist_exec, up)
 		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->data, CE);
-	fprintf(stderr, "\t%sRead Whitelist:%s\n", CH, CE);
+	fprintf(stderr, "\t%sRead Whitelist:%s\n", CI, CE);
 	SLIST_FOREACH(node, &data->config.whitelist_read, up)
 		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->data, CE);
-	fprintf(stderr, "\t%sWrite Whitelist:%s\n", CH, CE);
+	fprintf(stderr, "\t%sWrite Whitelist:%s\n", CI, CE);
 	SLIST_FOREACH(node, &data->config.whitelist_write, up)
 		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->data, CE);
-	fprintf(stderr, "\t%sNetwork Whitelist bind():%s\n", CH, CE);
+	fprintf(stderr, "\t%sNetwork Whitelist bind():%s\n", CI, CE);
 	SLIST_FOREACH(node, &data->config.whitelist_network_bind, up) {
 		match = node->data;
 		if (match->str) {
@@ -258,7 +258,7 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 			fprintf(stderr, "\t\t%s((%p))%s\n", CN, match, CE);
 		}
 	}
-	fprintf(stderr, "\t%sNetwork Whitelist connect():%s\n", CH, CE);
+	fprintf(stderr, "\t%sNetwork Whitelist connect():%s\n", CI, CE);
 	SLIST_FOREACH(node, &data->config.whitelist_network_connect, up) {
 		match = node->data;
 		if (match->str) {
