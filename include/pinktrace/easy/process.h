@@ -174,6 +174,16 @@ enum pink_easy_step pink_easy_process_get_step(const struct pink_easy_process *p
 	PINK_GCC_ATTR((nonnull(1)));
 
 /**
+ * Set process flags
+ *
+ * @attention Care must be given not to screw pinktrace's internal state!
+ *
+ * @param proc Process entry
+ * @param flags Flags
+ **/
+void pink_easy_process_set_flags(struct pink_easy_process *proc, short flags);
+
+/**
  * Return process flags
  *
  * @param proc Process entry

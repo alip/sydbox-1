@@ -137,7 +137,7 @@ static void sydbox_init(void)
 	sydbox = xmalloc(sizeof(sydbox_t));
 	sydbox->eldest = -1;
 	sydbox->exit_code = 0;
-	sydbox->wait_execve = 0;
+	sydbox->wait_execve = true;
 	sydbox->violation = false;
 	sydbox->ctx = NULL;
 	config_init();
@@ -296,7 +296,9 @@ static void sydbox_startup_child(char **argv)
 	}
 
 	pid = fork();
-	if (pid == 0) {
+	if (pid < 0)
+		die_errno(1, "Can't fork");
+	else if (pid == 0) {
 #ifdef WANT_SECCOMP
 		int r;
 
@@ -316,10 +318,11 @@ static void sydbox_startup_child(char **argv)
 #endif
 		pid = getpid();
 		if (!pink_trace_me()) {
-			fprintf(stderr, "ptrace(PTRACE_TRACEME, ...) failed (errno:%d %s)\n",
+			fprintf(stderr, "ptrace(TRACEME) failed (errno:%d %s)\n",
 					errno, strerror(errno));
 			_exit(EXIT_FAILURE);
 		}
+
 		kill(pid, SIGSTOP);
 
 		execv(pathname, argv);
@@ -436,14 +439,14 @@ int main(int argc, char **argv)
 	sydbox->ctx = pink_easy_context_new(ptrace_options, &sydbox->callback_table, NULL, NULL);
 	if (sydbox->ctx == NULL)
 		die_errno(-1, "context_new failed");
+
+	/* Set default ptrace stepping */
 	pink_easy_context_set_step(sydbox->ctx, ptrace_default_step);
 
-	/* Ignore initial execve(2) related events
-	 * 1. PTRACE_EVENT_EXEC
-	 * 2. PTRACE_EVENT_SECCOMP (in case seccomp is enabled)
-	 * 3. SIGTRAP | 0x80 (stop after execve system call)
+	/*
+	 * Initial program_invocation_name to be used for data->comm.
+	 * Saves one proc_comm() call.
 	 */
-	sydbox->wait_execve = sydbox->config.use_seccomp ? 3 : 2;
 	sydbox->program_invocation_name = xstrdup(argv[optind]);
 
 	/* Set useful environment variables for children */

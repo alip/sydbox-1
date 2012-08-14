@@ -437,8 +437,8 @@ typedef struct {
 	/* Exit code */
 	int exit_code;
 
-	/* Wait until the first execve() is successful to start sandboxing. */
-	unsigned wait_execve;
+	/* Wait for initial execve() to start sandboxing */
+	bool wait_execve;
 
 	/* This is true if an access violation has occured, false otherwise. */
 	bool violation;

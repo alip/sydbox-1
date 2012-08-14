@@ -282,17 +282,18 @@ static int callback_exec(const struct pink_easy_context *ctx,
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sydbox->wait_execve > 0) {
-		log_trace("skipped successful execve()");
-		sydbox->wait_execve--;
+	if (sydbox->wait_execve) {
+		log_info("process %s[%lu:%u] entered execve() trap",
+				sydbox->program_invocation_name,
+				(unsigned long)tid, abi);
+		sydbox->wait_execve = false;
+		log_info("wait_execve cleared, sandboxing started");
 		return 0;
 	}
 
 	if (data->config.magic_lock == LOCK_PENDING) {
-		log_magic("locking magic commands for"
-				" process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
-				(unsigned long)tid, abi,
-				data->comm, data->cwd);
+		log_magic("lock magic commands for %s[%lu:%u]", data->comm,
+				(unsigned long)tid, abi);
 		data->config.magic_lock = LOCK_SET;
 	}
 
@@ -365,59 +366,48 @@ static int callback_syscall(const struct pink_easy_context *ctx,
 		const pink_regs_t *regs,
 		bool entering)
 {
-	if (sydbox->wait_execve > 0) {
-		sydbox->wait_execve--;
-		log_info("skip successful execve() return,"
-				" decrease wait_execve to %d",
-				sydbox->wait_execve);
+	int r;
+	proc_data_t *data;
+
+	if (sydbox->wait_execve) {
+		log_info("waiting for execve()");
 		return 0;
 	}
 
-	proc_data_t *data = pink_easy_process_get_userdata(current);
+	data = pink_easy_process_get_userdata(current);
 	memcpy(&data->regs, regs, sizeof(pink_regs_t));
 
-	if (sydbox->config.use_seccomp) {
-		pink_easy_process_set_step(current, PINK_EASY_STEP_RESUME);
-		return sysexit(current);
+	if (entering) {
+		r = sysenter(current);
+	} else {
+		r = sysexit(current);
+		if (sydbox->config.use_seccomp)
+			pink_easy_process_set_step(current, PINK_EASY_STEP_RESUME);
 	}
-	return entering ? sysenter(current) : sysexit(current);
+
+	return r;
 }
 
 #if WANT_SECCOMP
 static int callback_seccomp(const struct pink_easy_context *ctx,
 		struct pink_easy_process *current, long ret_data)
 {
-	int r;
-	const sysentry_t *entry;
-	pid_t tid = pink_easy_process_get_tid(current);
-	enum pink_abi abi = pink_easy_process_get_abi(current);
-	proc_data_t *data = pink_easy_process_get_userdata(current);
+	short flags;
 
-	if (sydbox->wait_execve > 0) {
-		sydbox->wait_execve--;
-		log_info("skip execve() trap,"
-				" decrease wait_execve to %d",
-				sydbox->wait_execve);
+	if (sydbox->wait_execve) {
+		log_info("waiting for execve(), ret_data:%ld", ret_data);
 		return 0;
 	}
 
-#if PINK_HAVE_REGS_T
-	if (!pink_trace_get_regs(tid, &data->regs)) {
-		log_warning("get_regs failed (errno:%d %s)",
-				errno, strerror(errno));
-		return (errno == ESRCH) ? PINK_EASY_CFLAG_DROP : panic(current);
-	}
-#else
-	data->regs = 0;
-#endif
+	/* Stop at syscall entry */
+	pink_easy_process_set_step(current, PINK_EASY_STEP_SYSCALL);
 
-	r = sysenter(current);
-	if (r == 0) {
-		entry = systable_lookup(data->sno, abi);
-		if (data->deny || entry->exit) /* must stop at exit */
-			pink_easy_process_set_step(current, PINK_EASY_STEP_SYSCALL);
-	}
-	return r;
+	/* Let pinktrace recognize this is syscall entry */
+	flags = pink_easy_process_get_flags(current);
+	flags &= ~PINK_EASY_PROCESS_INSYSCALL;
+	pink_easy_process_set_flags(current, flags);
+
+	return 0;
 }
 #endif
 
