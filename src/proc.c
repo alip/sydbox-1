@@ -189,3 +189,57 @@ int proc_comm(pid_t pid, char **name)
 
 	return 0;
 }
+
+/*
+ * read /proc/$pid/stat
+ */
+int proc_stat(pid_t pid, struct proc_statinfo *info)
+{
+	int r;
+	char *p;
+	FILE *f;
+
+	assert(pid >= 1);
+	assert(info);
+
+	if (asprintf(&p, "/proc/%lu/stat", (unsigned long)pid) < 0)
+		return -ENOMEM;
+
+	f = fopen(p, "r");
+	free(p);
+
+	if (!f)
+		return -errno;
+
+	if (fscanf(f,
+		"%d"	/* pid */
+		" %32s"	/* comm */
+		" %c"	/* state */
+		" %d"	/* ppid */
+		" %d"	/* pgrp */
+		" %d"	/* session */
+		" %d"	/* tty_nr */
+		" %d"	/* tpgid */
+		" %*u"	/* flags */
+		" %*u %*u %*u %*u" /* minflt, cminflt, majflt, cmajflt */
+		" %*u %*u %*d %*d" /* utime, stime, cutime, cstime */
+		" %*d"	/* priority */
+		" %ld" /* nice */
+		" %ld", /* num_threads */
+			&info->pid,
+			info->comm,
+			&info->state,
+			&info->ppid,
+			&info->pgrp,
+			&info->session,
+			&info->tty_nr,
+			&info->tpgid,
+			&info->nice,
+			&info->num_threads) != 10) {
+		fclose(f);
+		return -EINVAL;
+	}
+
+	fclose(f);
+	return 0;
+}

@@ -34,13 +34,6 @@
 #include "log.h"
 #include "util.h"
 
-#define ANSI_NORMAL		"[00;00m"
-#define ANSI_MAGENTA		"[00;35m"
-#define ANSI_DARK_MAGENTA	"[01;35m"
-#define ANSI_GREEN		"[00;32m"
-#define ANSI_YELLOW		"[00;33m"
-#define ANSI_CYAN		"[00;36m"
-
 /* fatal can't be turned off! */
 #define LOG_LEVEL_MINIMUM	LOG_LEVEL_FATAL
 

@@ -68,6 +68,7 @@
 #include <getopt.h>
 
 #include "macro.h"
+#include "proc.h"
 #include "log.h"
 #include "util.h"
 #ifdef WANT_SECCOMP
@@ -172,42 +173,100 @@ static void sydbox_destroy(void)
 
 static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 {
+	int r;
+	const char *CG, *CB, *CN, *CH, *CE; /* good, bad, normal, header, end */
+	bool verbose = !!PTR_TO_UINT(userdata);
+	struct proc_statinfo info;
+
 	pid_t tid = pink_easy_process_get_tid(current);
 	pid_t tgid = pink_easy_process_get_tgid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	short flags = pink_easy_process_get_flags(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	struct snode *node;
+	sock_match_t *match;
 
-	fprintf(stderr, "-- Thread ID: %lu\n", (unsigned long)tid);
+	if (isatty(STDERR_FILENO)) {
+		CG = ANSI_GREEN;
+		CB = ANSI_DARK_MAGENTA;
+		CN = ANSI_YELLOW;
+		CH = ANSI_CYAN;
+		CE = ANSI_NORMAL;
+	} else {
+		CG = CB = CN = CH = CE = "";
+	}
+
+	fprintf(stderr, "%s-- Information on Thread ID: %lu%s\n", CG, (unsigned long)tid, CE);
+	if ((r = proc_stat(tid, &info)) < 0) {
+		fprintf(stderr, "%sproc_stat failed (errno:%d %s)%s\n", CB, errno, strerror(errno), CE);
+	} else {
+		fprintf(stderr, "\t%sproc: pid=%d ppid=%d pgrp=%d%s\n",
+				CH,
+				info.pid, info.ppid, info.pgrp,
+				CE);
+		fprintf(stderr, "\t%sproc: comm=`%s' state=`%c'%s\n",
+				CH,
+				info.comm, info.state,
+				CE);
+		fprintf(stderr, "\t%sproc: session=%d tty_nr=%d tpgid=%d%s\n",
+				CH,
+				info.session, info.tty_nr, info.tpgid,
+				CE);
+		fprintf(stderr, "\t%sproc: nice=%ld num_threads=%ld%s\n",
+				CH,
+				info.nice, info.num_threads,
+				CE);
+	}
+
 	if (flags & PINK_EASY_PROCESS_SUSPENDED) {
-		fprintf(stderr, "   Thread is suspended at startup!\n");
+		fprintf(stderr, "\t%sThread is suspended at startup!%s\n", CB, CE);
 		return true;
 	}
-	fprintf(stderr, "   Thread Group ID: %lu\n", tgid > 0 ? (unsigned long)tgid : 0UL);
-	fprintf(stderr, "   Comm: %s\n", data->comm);
-	fprintf(stderr, "   Cwd: %s\n", data->cwd);
-	fprintf(stderr, "   Syscall: {no:%lu abi:%d name:%s}\n", data->sno, abi, pink_syscall_name(data->sno, abi));
+	fprintf(stderr, "\t%sThread Group ID: %lu%s\n", CN, tgid > 0 ? (unsigned long)tgid : 0UL, CE);
+	fprintf(stderr, "\t%sComm: `%s'%s\n", CN, data->comm, CE);
+	fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, data->cwd, CE);
+	fprintf(stderr, "\t%sSyscall: {no:%lu abi:%d name:%s}%s\n", CN,
+			data->sno, abi, pink_syscall_name(data->sno, abi),
+			CE);
 
-	if (!PTR_TO_UINT(userdata))
+	if (!verbose)
 		return true;
 
-	fprintf(stderr, "--> Sandbox: {exec:%s read:%s write:%s sock:%s}\n",
+	fprintf(stderr, "\t%sSandbox: {exec:%s read:%s write:%s sock:%s}%s\n",
+			CN,
 			sandbox_mode_to_string(data->config.sandbox_exec),
 			sandbox_mode_to_string(data->config.sandbox_read),
 			sandbox_mode_to_string(data->config.sandbox_write),
-			sandbox_mode_to_string(data->config.sandbox_network));
-	fprintf(stderr, "    Magic Lock: %s\n", lock_state_to_string(data->config.magic_lock));
-	fprintf(stderr, "    Exec Whitelist:\n");
+			sandbox_mode_to_string(data->config.sandbox_network),
+			CE);
+	fprintf(stderr, "\t%sMagic Lock: %s%s\n", CN, lock_state_to_string(data->config.magic_lock), CE);
+	fprintf(stderr, "\t%sExec Whitelist:%s\n", CH, CE);
 	SLIST_FOREACH(node, &data->config.whitelist_exec, up)
-		fprintf(stderr, "      \"%s\"\n", (char *)node->data);
-	fprintf(stderr, "    Read Whitelist:\n");
+		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->data, CE);
+	fprintf(stderr, "\t%sRead Whitelist:%s\n", CH, CE);
 	SLIST_FOREACH(node, &data->config.whitelist_read, up)
-		fprintf(stderr, "      \"%s\"\n", (char *)node->data);
-	fprintf(stderr, "    Write Whitelist:\n");
+		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->data, CE);
+	fprintf(stderr, "\t%sWrite Whitelist:%s\n", CH, CE);
 	SLIST_FOREACH(node, &data->config.whitelist_write, up)
-		fprintf(stderr, "      \"%s\"\n", (char *)node->data);
-	/* TODO:  SLIST_FOREACH(node, data->config.whitelist_sock, up) */
+		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->data, CE);
+	fprintf(stderr, "\t%sNetwork Whitelist bind():%s\n", CH, CE);
+	SLIST_FOREACH(node, &data->config.whitelist_network_bind, up) {
+		match = node->data;
+		if (match->str) {
+			fprintf(stderr, "\t\t%s`%s'%s\n", CN, match->str, CE);
+		} else {
+			fprintf(stderr, "\t\t%s((%p))%s\n", CN, match, CE);
+		}
+	}
+	fprintf(stderr, "\t%sNetwork Whitelist connect():%s\n", CH, CE);
+	SLIST_FOREACH(node, &data->config.whitelist_network_connect, up) {
+		match = node->data;
+		if (match->str) {
+			fprintf(stderr, "\t\t%s`%s'%s\n", CN, match->str, CE);
+		} else {
+			fprintf(stderr, "\t\t%s((%p))%s\n", CN, match, CE);
+		}
+	}
 
 	return true;
 }

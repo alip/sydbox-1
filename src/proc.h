@@ -22,9 +22,23 @@
 
 #include <sys/types.h>
 
+struct proc_statinfo {
+	int pid;
+	char comm[32];
+	char state;
+	int ppid;
+	int pgrp;
+	int session;
+	int tty_nr;
+	int tpgid;
+	long nice;
+	long num_threads;
+};
+
 int proc_cwd(pid_t pid, char **buf);
 int proc_fd(pid_t pid, int dfd, char **buf);
 int proc_cmdline(pid_t pid, size_t max_length, char **buf);
 int proc_comm(pid_t pid, char **name);
+int proc_stat(pid_t pid, struct proc_statinfo *info);
 
 #endif /* !PROC_H */
