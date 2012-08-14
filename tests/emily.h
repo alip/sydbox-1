@@ -97,5 +97,7 @@ extern int test_fchownat(int argc, char **argv);
 extern int test_open(int argc, char **argv);
 extern int test_openat(int argc, char **argv);
 extern int test_creat(int argc, char **argv);
+extern int test_mkdir(int argc, char **argv);
+extern int test_mkdirat(int argc, char **argv);
 
 #endif /* !EMILY_H */

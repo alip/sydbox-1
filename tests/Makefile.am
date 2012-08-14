@@ -25,6 +25,7 @@ emily_SOURCES= \
 	       emily-chown.c \
 	       emily-open.c \
 	       emily-creat.c \
+	       emily-mkdir.c \
 	       $(top_srcdir)/src/util.c
 emily_CFLAGS= \
 	      $(DEFS) \

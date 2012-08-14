@@ -18,6 +18,8 @@ struct test {
 	{"open",	test_open},
 	{"openat",	test_openat},
 	{"creat",	test_creat},
+	{"mkdir",	test_mkdir},
+	{"mkdirat",	test_mkdirat},
 	{NULL,		NULL},
 };
 
