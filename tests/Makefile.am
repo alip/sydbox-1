@@ -55,7 +55,7 @@ TESTS= \
 	t000-basic.sh \
 	t001-wildmatch.sh \
 	t002-chmod.sh \
-	t003-fchmodat.sh
+	t003-fchmodat.sh \
 	t004-chown.sh \
 	t005-lchown.sh \
 	t006-fchownat.sh \

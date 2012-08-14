@@ -24,13 +24,13 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'deny chmod(NULL) with EFAULT' '
-    sydbox -- emily chmod --errno=EFAULT
+    sydbox -- emily chmod -e EFAULT
 '
 
 test_expect_success 'deny chmod()' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chmod --errno=EPERM -m 000 file0 &&
+        -- emily chmod -e EPERM -m 000 file0 &&
     test_path_is_readable file0 &&
     test_path_is_writable file0
 '
@@ -38,13 +38,13 @@ test_expect_success 'deny chmod()' '
 test_expect_success 'deny chmod() for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chmod --errno=ENOENT -m 000 file-non-existant
+        -- emily chmod -e ENOENT -m 000 file-non-existant
 '
 
 test_expect_success SYMLINKS 'deny chmod() for symbolic link' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chmod --errno=EPERM -m 000 symlink-file1 &&
+        -- emily chmod -e EPERM -m 000 symlink-file1 &&
     test_path_is_readable file1 &&
     test_path_is_writable file1
 '
@@ -52,14 +52,14 @@ test_expect_success SYMLINKS 'deny chmod() for symbolic link' '
 test_expect_success SYMLINKS 'deny chmod() for dangling symbolic link' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chmod --errno=ENOENT -m 000 symlink-dangling
+        -- emily chmod -e ENOENT -m 000 symlink-dangling
 '
 
 test_expect_success 'blacklist chmod()' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chmod --errno=EPERM -m 000 file2 &&
+        -- emily chmod -e EPERM -m 000 file2 &&
     test_path_is_readable file2 &&
     test_path_is_writable file2
 '
@@ -68,14 +68,14 @@ test_expect_success 'blacklist chmod() for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chmod --errno=ENOENT -m 000 file-non-existant
+        -- emily chmod -e ENOENT -m 000 file-non-existant
 '
 
 test_expect_success SYMLINKS 'blacklist chmod() for symbolic link' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chmod --errno=EPERM -m 000 symlink-file3 &&
+        -- emily chmod -e EPERM -m 000 symlink-file3 &&
     test_path_is_readable file3 &&
     test_path_is_writable file3
 '
@@ -84,14 +84,14 @@ test_expect_success SYMLINKS 'blacklist chmod() for dangling symbolic link' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chmod --errno=ENOENT -m 000 symlink-dangling
+        -- emily chmod -e ENOENT -m 000 symlink-dangling
 '
 
 test_expect_success 'whitelist chmod()' '
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily chmod --errno=ERRNO_0 -m 000 file4 &&
+        -- emily chmod -e ERRNO_0 -m 000 file4 &&
     test_path_is_not_readable file4 &&
     test_path_is_not_writable file4
 '
@@ -100,7 +100,7 @@ test_expect_success SYMLINKS 'whitelist chmod() for symbolic link' '
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily chmod --errno=ERRNO_0 -m 000 symlink-file5 &&
+        -- emily chmod -e ERRNO_0 -m 000 symlink-file5 &&
     test_path_is_not_readable file5 &&
     test_path_is_not_writable file5
 '

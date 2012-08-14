@@ -32,117 +32,117 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'deny fchownat(AT_FDCWD, NULL) with EFAULT' '
-    sydbox -- emily fchownat --errno=EFAULT --dir=cwd
+    sydbox -- emily fchownat -e EFAULT -d cwd
 '
 
 test_expect_success 'deny fchownat(-1) with EBADF' '
-    sydbox -- emily fchownat --errno=EBADF --dir=null file0-non-existant
+    sydbox -- emily fchownat -e EBADF -d null file0-non-existant
 '
 
 test_expect_success 'deny fchownat(AT_FDCWD, ...)' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchownat --errno=EPERM --dir=cwd file1
+        -- emily fchownat -e EPERM -d cwd file1
 '
 
 test_expect_success 'deny fchownat(AT_FDCWD, ...) for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchownat --errno=EPERM --dir=cwd file-non-existant
+        -- emily fchownat -e ENOENT -d cwd file-non-existant
 '
 
 test_expect_success 'deny fchownat(AT_FDCWD, ...) for symbolic link' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchownat --errno=EPERM --dir=cwd symlink-file2
+        -- emily fchownat -e EPERM -d cwd symlink-file2
 '
 
 test_expect_success 'deny fchownat(fd, ...)' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchownat --errno=EPERM --dir="$HOME" file3
+        -- emily fchownat -e EPERM -d "$HOME" file3
 '
 
 test_expect_success 'deny fchownat(fd, ...) for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchownat --errno=EPERM --dir=cwd file-non-existant
+        -- emily fchownat -e ENOENT -d cwd file-non-existant
 '
 
 test_expect_success 'deny fchownat(fd, ...) for symbolic link' '
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchownat --errno=EPERM --dir=cwd symlink-file4
+        -- emily fchownat -e EPERM -d cwd symlink-file4
 '
 
 test_expect_success 'blacklist fchownat(AT_FDCWD, ...)' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchownat --errno=EPERM --dir=cwd file5
+        -- emily fchownat -e EPERM -d cwd file5
 '
 
 test_expect_success 'blacklist fchownat(AT_FDCWD, ...) for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchownat --errno=EPERM --dir=cwd file-non-existant
+        -- emily fchownat -e ENOENT -d cwd file-non-existant
 '
 
 test_expect_success 'blacklist fchownat(AT_FDCWD, ...) for symbolic link' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchownat --errno=EPERM --dir=cwd symlink-file6
+        -- emily fchownat -e EPERM -d cwd symlink-file6
 '
 
 test_expect_success 'blacklist fchownat(fd, ...)' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchownat --errno=EPERM --dir="$HOME" file7
+        -- emily fchownat -e EPERM -d "$HOME" file7
 '
 
 test_expect_success 'blacklist fchownat(fd, ...) for non-existant file' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchownat --errno=EPERM --dir=cwd file-non-existant
+        -- emily fchownat -e ENOENT -d cwd file-non-existant
 '
 
 test_expect_success 'blacklist fchownat(fd, ...) for symbolic link' '
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchownat --errno=EPERM --dir=cwd symlink-file8
+        -- emily fchownat -e EPERM -d cwd symlink-file8
 '
 
 test_expect_success 'whitelist fchownat(AT_FDCWD, ...)' '
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily fchownat --errno=ERRNO_0 --dir=cwd file9
+        -- emily fchownat -e ERRNO_0 -d cwd file9
 '
 
 test_expect_success SYMLINKS 'whitelist fchownat(AT_FDCWD) for symbolic link' '
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily fchownat --errno=ERRNO_0 --dir=cwd symlink-file10
+        -- emily fchownat -e ERRNO_0 -d cwd symlink-file10
 '
 
 test_expect_success 'whitelist fchownat(fd, ...)' '
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily fchownat --errno=ERRNO_0 --dir="$HOME" file11
+        -- emily fchownat -e ERRNO_0 -d "$HOME" file11
 '
 
 test_expect_success SYMLINKS 'whitelist fchownat(fd, ...) for symbolic link' '
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily fchownat --errno=ERRNO_0 --dir="$HOME" symlink-file12
+        -- emily fchownat -e ERRNO_0 -d "$HOME" symlink-file12
 '
 
 test_done
