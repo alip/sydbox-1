@@ -21,40 +21,6 @@ static bool set_open_mode(const char *s, int *flags)
 	return true;
 }
 
-static int do_close(int fd)
-{
-	int r;
-
-	for (;;) {
-		r = close(fd);
-		if (r < 0 && errno == EINTR)
-			continue;
-		return r;
-	}
-}
-
-static int do_write(int fd, const void *buf, size_t count)
-{
-	int written;
-	const char *p;
-
-	p = (const char *)buf;
-	do {
-		written = write(fd, p, count);
-		if (!written)
-			return -1;
-		if (written < 0) {
-			if (errno == EINTR)
-				continue;
-			return -1;
-		}
-		p += written;
-		count -= written;
-	} while (count > 0);
-
-	return written;
-}
-
 static void test_open_usage(FILE *outfile, int exitcode)
 {
 	fprintf(outfile, "\
@@ -151,17 +117,8 @@ int test_open(int argc, char **argv)
 		if (!seen_mode)
 			test_open_usage(stderr, 2);
 		test_file = argv[0];
-		switch (test_flags & O_ACCMODE) {
-		case O_WRONLY:
-		case O_RDWR:
-			if (argc > 2)
-				test_open_usage(stderr, 2);
-			else if (argc == 2)
-				test_data = argv[1];
-			else
-				test_data = NULL;
-			break;
-		}
+		if (argc == 2)
+			test_data = argv[1];
 	}
 
 	errno = 0;
@@ -250,17 +207,8 @@ int test_openat(int argc, char **argv)
 		if (!seen_mode)
 			test_openat_usage(stderr, 2);
 		test_file = argv[0];
-		switch (test_flags & O_ACCMODE) {
-		case O_WRONLY:
-		case O_RDWR:
-			if (argc > 2)
-				test_openat_usage(stderr, 2);
-			else if (argc == 2)
-				test_data = argv[1];
-			else
-				test_data = NULL;
-			break;
-		}
+		if (argc == 2)
+			test_data = argv[1];
 	}
 
 	errno = 0;

@@ -8,12 +8,10 @@ test_description='basic sanity checks'
 
 test_expect_success 'sydbox' '
     type sydbox &&
+    sydbox -h &&
+    sydbox --help &&
     sydbox -V &&
     sydbox --version
-'
-
-test_expect_success 'wildmatch' '
-    wildtest -i $TEST_DIRECTORY/wildtest.txt
 '
 
 test_done

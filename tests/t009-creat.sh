@@ -5,7 +5,6 @@
 
 test_description='sandbox creat(2)'
 . ./test-lib.sh
-prog=t004_creat
 
 test_expect_success setup '
 '
@@ -16,44 +15,39 @@ test_expect_success SYMLINKS setup-symlinks '
 
 test_expect_success 'deny creat()' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily creat file0-non-existant &&
+        -- emily creat -e EPERM file0-non-existant &&
     test_path_is_missing file0-non-existant
 '
 
 test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:deny \
-        -- emily creat symlink-file1 &&
+        -- emily creat -e EPERM symlink-file1 &&
     test_path_is_missing file1-non-existant
 '
 
 test_expect_success 'whitelist creat()' '
     sydbox \
-        -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily creat file2-non-existant "3" &&
+        -- emily creat -e ERRNO_0 file2-non-existant "3" &&
     test_path_is_non_empty file2-non-existant
 '
 
 test_expect_success 'blacklist creat()' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily creat file0-non-existant &&
+        -- emily creat -e EPERM file0-non-existant &&
     test_path_is_missing file0-non-existant
 '
 
 test_expect_success SYMLINKS 'blacklist creat() for dangling symbolic link' '
     test_must_violate sydbox \
-        -ESYDBOX_TEST_EPERM=1 \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily creat symlink-file1 &&
+        -- emily creat -e EPERM symlink-file1 &&
     test_path_is_missing file1-non-existant
 '
 

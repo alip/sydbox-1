@@ -24,6 +24,7 @@ emily_SOURCES= \
 	       emily-chmod.c \
 	       emily-chown.c \
 	       emily-open.c \
+	       emily-creat.c \
 	       $(top_srcdir)/src/util.c
 emily_CFLAGS= \
 	      $(DEFS) \
@@ -59,27 +60,9 @@ TESTS= \
 	t004-chown.sh \
 	t005-lchown.sh \
 	t006-fchownat.sh \
-	t007-open.sh
-#	t008-creat.sh \
-#	t009-mkdir.sh \
-#	t010-mknod.sh \
-#	t011-rmdir.sh \
-#	t012-truncate.sh \
-#	t013-umount.sh \
-#	t014-umount2.sh \
-#	t015-utime.sh \
-#	t016-utimes.sh \
-#	t017-unlink.sh \
-#	t018-link.sh \
-#	t019-rename.sh \
-#	t020-symlink.sh \
-#	t021-mount.sh \
-#	t022-openat.sh \
-#	t023-mknodat.sh \
-#	t024-mkdirat.sh \
-#	t025-unlinkat.sh \
-#	t026-linkat.sh
-
+	t007-open.sh \
+	t008-openat.sh \
+	t009-creat.sh
 EXTRA_DIST= $(TESTS) \
 	    test-lib.sh.in \
 	    test-lib-functions.sh

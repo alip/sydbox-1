@@ -8,21 +8,6 @@
 
 #include "emily.h"
 
-static bool parse_octal(const char *s, mode_t *mode)
-{
-	char *e;
-	unsigned long tmp;
-
-	assert(mode);
-
-	tmp = strtoul(s, &e, 8);
-	if (*e || tmp > 07777U) /* Check range and trailing chars */
-		return false;
-
-	*mode = tmp;
-	return true;
-}
-
 static void test_chmod_usage(FILE *outfile, int exitcode)
 {
 	fprintf(outfile, "\
@@ -60,7 +45,7 @@ int test_chmod(int argc, char **argv)
 	int optc;
 	bool seen_mode = false;
 	int test_errno = TEST_ERRNO_INVALID;
-	mode_t test_mode;
+	mode_t test_mode = 0000;
 	const char *test_file;
 	struct option long_options[] = {
 		{"help",	no_argument,		NULL,	'h'},
@@ -96,7 +81,7 @@ int test_chmod(int argc, char **argv)
 		test_chmod_usage(stderr, 1);
 
 	if (test_errno == EFAULT) {
-		test_mode = 0;
+		test_mode = 0000;
 		test_file = NULL;
 	} else if (argc != 1) {
 		test_chmod_usage(stderr, 1);
@@ -119,7 +104,7 @@ int test_fchmodat(int argc, char **argv)
 	bool test_nofollow = false;
 	int test_errno = TEST_ERRNO_INVALID;
 	int test_dirfd = TEST_DIRFD_INVALID;
-	mode_t test_mode;
+	mode_t test_mode = 0000;
 	const char *test_file;
 	struct option long_options[] = {
 		{"help",	no_argument,		NULL,	'h'},
@@ -176,7 +161,7 @@ int test_fchmodat(int argc, char **argv)
 		test_fchmodat_usage(stderr, 1);
 
 	if (test_errno == EFAULT) {
-		test_mode = 0;
+		test_mode = 0000;
 		test_file = NULL;
 	} else if (argc != 1) {
 		test_fchmodat_usage(stderr, 1);
