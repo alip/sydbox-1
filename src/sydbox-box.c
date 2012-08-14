@@ -513,13 +513,13 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
-		if (!box_match_path_saun(abspath, info->filter, NULL)) {
+		if (box_match_path_saun(abspath, info->filter, NULL)) {
 			log_access("sa_un=`%s' matches a filter pattern,"
 					" access violation filtered", abspath);
 			goto out;
 		}
 	} else {
-		if (!box_match_socket(psa, info->filter, NULL)) {
+		if (box_match_socket(psa, info->filter, NULL)) {
 			log_access("sockaddr=%p matches a filter pattern,"
 					" access violation filtered", psa);
 			goto out;
