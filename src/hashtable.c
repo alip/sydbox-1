@@ -17,7 +17,6 @@
  * with this program; if not, visit the http://fsf.org website.
  */
 
-#include "byteorder.h"
 #include "hashtable.h"
 
 #include <assert.h>
@@ -26,41 +25,34 @@
 
 #define HASH_LOAD_LIMIT(size) ((size)*3/4)
 
-int
-hashtable_create(int size, int key64, hashtable_t **tbl)
+struct hashtable *hashtable_create(int size, int key64)
 {
-	int req = size;
-	hashtable_t *htbl;
-	int node_size = key64 ? sizeof (ht_int64_node_t)
-			      : sizeof (ht_int32_node_t);
-
-	assert(tbl);
+	struct hashtable *tbl;
+	int node_size = key64 ? sizeof (struct ht_int64_node)
+			      : sizeof (struct ht_int32_node);
 
 	/* Pick a power of 2 that can hold the requested size. */
 	if (size & (size-1) || size < 16) {
+		int req = size;
 		size = 16;
 		while (size < req)
 			size *= 2;
 	}
 
-	if (!(htbl = malloc(sizeof(hashtable_t))))
-		return -ENOMEM;
-	if (!(htbl->nodes = calloc(size * node_size, sizeof(char)))) {
-		free(htbl);
-		return -ENOMEM;
+	if (!(tbl = malloc(sizeof(struct hashtable)))
+	 || !(tbl->nodes = calloc(size * node_size, sizeof(char)))) {
+		errno = ENOMEM;
+		return NULL;
 	}
+	tbl->size = size;
+	tbl->entries = 0;
+	tbl->node_size = node_size;
+	tbl->key64 = key64 ? 1 : 0;
 
-	htbl->size = size;
-	htbl->entries = 0;
-	htbl->node_size = node_size;
-	htbl->key64 = key64 ? 1 : 0;
-
-	*tbl = htbl;
-	return 0;
+	return tbl;
 }
 
-void
-hashtable_destroy(hashtable_t *tbl)
+void hashtable_destroy(struct hashtable *tbl)
 {
 	free(tbl->nodes);
 	free(tbl);
@@ -68,30 +60,31 @@ hashtable_destroy(hashtable_t *tbl)
 
 /* This returns the node for the indicated key, either newly created or
  * already existing.  Returns NULL if not allocating and not found. */
-void *
-hashtable_find(hashtable_t *tbl, int64 key, int allocate_if_missing)
+void *hashtable_find(struct hashtable *tbl, int64 key, int allocate_if_missing)
 {
 	int key64 = tbl->key64;
-	ht_int32_node_t *node;
+	struct ht_int32_node *node;
 	uint32 ndx;
 
-	assert(tbl);
-
-	if (key64 ? key == 0 : (int32)key == 0)
+	if (key64 ? key == 0 : (int32)key == 0) {
+		errno = EINVAL;
 		return NULL;
+	}
 
 	if (allocate_if_missing && tbl->entries > HASH_LOAD_LIMIT(tbl->size)) {
 		void *old_nodes = tbl->nodes;
 		int size = tbl->size * 2;
 		int i;
 
-		if (!(tbl->nodes = calloc(size * tbl->node_size, sizeof(char))))
+		if (!(tbl->nodes = calloc(size * tbl->node_size, sizeof(char)))) {
+			errno = ENOMEM;
 			return NULL;
+		}
 		tbl->size = size;
 		tbl->entries = 0;
 
 		for (i = size / 2; i-- > 0; ) {
-			ht_int32_node_t *move_node = HT_NODE(tbl, old_nodes, i);
+			struct ht_int32_node *move_node = HT_NODE(tbl, old_nodes, i);
 			int64 move_key = HT_KEY(move_node, key64);
 			if (move_key == 0)
 				continue;
@@ -104,7 +97,7 @@ hashtable_find(hashtable_t *tbl, int64 key, int allocate_if_missing)
 
 	if (!key64) {
 		/* Based on Jenkins One-at-a-time hash. */
-		unsigned char buf[4], *keyp = buf;
+		uchar buf[4], *keyp = buf;
 		int i;
 
 		SIVALu(buf, 0, key);
@@ -160,7 +153,7 @@ hashtable_find(hashtable_t *tbl, int64 key, int allocate_if_missing)
 
 	/* Take over this empty spot and then return the node. */
 	if (key64)
-		((ht_int64_node_t*)node)->key = key;
+		((struct ht_int64_node*)node)->key = key;
 	else
 		node->key = (int32)key;
 	tbl->entries++;

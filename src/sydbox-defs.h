@@ -602,6 +602,7 @@ void systable_free(void);
 void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit);
 const sysentry_t *systable_lookup(long no, enum pink_abi abi);
 
+size_t syscall_entries_max(void);
 void sysinit(void);
 int sysinit_seccomp(void);
 int sysenter(struct pink_easy_process *current);

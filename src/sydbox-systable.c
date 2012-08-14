@@ -49,10 +49,9 @@ void systable_init(void)
 	int r;
 
 	for (enum pink_abi abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
-		if ((r = hashtable_create(64, 0, &systable[abi])) < 0) {
-			errno = -r;
+		systable[abi] = hashtable_create(syscall_entries_max(), 0);
+		if (systable[abi] == NULL)
 			die_errno(-1, "hashtable_create");
-		}
 	}
 }
 

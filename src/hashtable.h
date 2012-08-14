@@ -32,6 +32,32 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#ifndef uchar
+#define uchar unsigned char
+#endif
+
+#ifdef SIGNED_CHAR_OK
+#define schar signed char
+#else
+#define schar char
+#endif
+
+#ifndef int16
+#if SIZEOF_INT16_T == 2
+# define int16 int16_t
+#else
+# define int16 short
+#endif
+#endif
+
+#ifndef uint16
+#if SIZEOF_UINT16_T == 2
+# define uint16 uint16_t
+#else
+# define uint16 unsigned int16
+#endif
+#endif
+
 /* Find a variable that is either exactly 32-bits or longer.
  * If some code depends on 32-bit truncation, it will need to
  * take special action in a "#if SIZEOF_INT32 > 4" section. */
@@ -119,29 +145,35 @@
 # define SIZEOF_INT64 SIZEOF_OFF_T
 #endif
 
-typedef struct {
+#include "byteorder.h"
+
+struct hashtable {
 	void *nodes;
 	int32 size, entries;
 	uint32 node_size;
-	short key64;
-} hashtable_t;
+	int key64;
+};
 
-typedef struct {
+struct ht_int32_node {
 	void *data;
 	int32 key;
-} ht_int32_node_t;
+};
 
-typedef struct {
+struct ht_int64_node {
 	void *data;
 	int64 key;
-} ht_int64_node_t;
+};
 
 #define HT_NODE(tbl, bkts, i) ((void*)((char*)(bkts) + (i)*(tbl)->node_size))
-#define HT_KEY(node, k64) ((k64)? ((ht_int64_node_t*)(node))->key \
-			 : (int64)((ht_int32_node_t*)(node))->key)
+#define HT_KEY(node, k64) ((k64)? ((struct ht_int64_node*)(node))->key \
+			 : (int64)((struct ht_int32_node*)(node))->key)
 
-int hashtable_create(int size, int key64, hashtable_t **tbl);
-void hashtable_destroy(hashtable_t *tbl);
+typedef struct hashtable hashtable_t;
+typedef struct ht_int32_node ht_int32_node_t;
+typedef struct ht_int64_node ht_int64_node_t;
+
+struct hashtable *hashtable_create(int size, int key64);
+void hashtable_destroy(struct hashtable *tbl);
 void *hashtable_find(hashtable_t *tbl, int64 key, int allocate_if_missing);
 
 #endif /* !HASHTABLE_H */

@@ -178,10 +178,9 @@ static void callback_startup(const struct pink_easy_context *ctx,
 #undef SLIST_COPY_ALL
 
 	/* Create the fd -> address hash table */
-	if ((r = hashtable_create(NR_OPEN, 1, &data->sockmap)) < 0) {
-		errno = -r;
+	data->sockmap = hashtable_create(NR_OPEN, 1);
+	if (data->sockmap == NULL)
 		die_errno(-1, "hashtable_create");
-	}
 
 	pink_easy_process_set_userdata(current, data, free_proc);
 

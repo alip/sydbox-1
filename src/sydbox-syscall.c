@@ -115,6 +115,11 @@ static const sysentry_t syscall_entries[] = {
 	{"umount2", sys_umount2, NULL},
 };
 
+size_t syscall_entries_max(void)
+{
+	return ELEMENTSOF(syscall_entries);
+}
+
 void sysinit(void)
 {
 	unsigned i;
