@@ -28,6 +28,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "proc.h"
+#include "log.h"
 #include "util.h"
 
 int sysx_chdir(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
@@ -41,11 +42,17 @@ int sysx_chdir(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const 
 
 	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
 		if (errno != ESRCH) {
-			warning("pink_read_retval(%lu, %d) failed (errno:%d %s)",
+			log_warning("read_retval(%lu, %d) failed"
+					" (errno:%d %s)",
 					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_retval(%lu, %d) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				errno, strerror(errno));
+		log_trace("drop process %s[%lu:%u]",
+				data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
@@ -55,17 +62,19 @@ int sysx_chdir(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const 
 	}
 
 	if ((r = proc_cwd(tid, &cwd)) < 0) {
-		warning("proc_cwd(%lu): %d(%s)",
-				(unsigned long)tid,
+		log_warning("proc_cwd for process %s[%lu:%u]"
+				" failed (errno:%d %s)",
+				data->comm,
+				(unsigned long)tid, abi,
 				-r, strerror(-r));
 		return panic(current);
 	}
 
 	if (!streq(data->cwd, cwd))
-		info("process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]"
-				" changed directory to \"%s\"",
-				(unsigned long)tid, abi,
-				data->comm, data->cwd, cwd);
+		log_check("process %s[%lu:%u] changed directory", data->comm,
+				(unsigned long)tid, abi);
+		log_check("old cwd=`%s'", data->cwd);
+		log_check("new cwd=`%s'", cwd);
 
 	free(data->cwd);
 	data->cwd = cwd;

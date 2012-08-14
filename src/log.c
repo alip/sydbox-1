@@ -2,6 +2,8 @@
 
 /*
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Based in part upon privoxy which is:
+ *   Copyright (c) 2001-2010 the Privoxy team. http://www.privoxy.org/
  *
  * This file is part of Sydbox. sydbox is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -17,15 +19,19 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "sydbox-defs.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <assert.h>
-#include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <time.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <time.h>
 
+#include "log.h"
 #include "util.h"
 
 #define ANSI_NORMAL		"[00;00m"
@@ -35,15 +41,30 @@
 #define ANSI_YELLOW		"[00;33m"
 #define ANSI_CYAN		"[00;36m"
 
+/* fatal can't be turned off! */
+#define LOG_LEVEL_MINIMUM	LOG_LEVEL_FATAL
+
+/* where to log (default: stderr) */
+static int logfd = -1;
+static int logcfd = STDERR_FILENO;
+
+/* logging detail level. */
+static int debug = (LOG_LEVEL_FATAL
+		| LOG_LEVEL_WARNING
+		| LOG_LEVEL_ACCESS_V
+		| LOG_LEVEL_INFO);
+static int cdebug = (LOG_LEVEL_FATAL
+		| LOG_LEVEL_WARNING
+		| LOG_LEVEL_ACCESS_V);
+
 static const char *prefix = LOG_DEFAULT_PREFIX;
 static const char *suffix = LOG_DEFAULT_SUFFIX;
-static int logfd = -1;
 
-PINK_GCC_ATTR((format (printf, 3, 0)))
-static inline void log_me(int fd, unsigned level, const char *fmt, va_list ap)
+PINK_GCC_ATTR((format (printf, 4, 0)))
+static void log_me(int fd, int level, const char *func, const char *fmt, va_list ap)
 {
 	int tty;
-	const char *p, *s;
+	const char *p, *s, *l;
 
 	tty = isatty(fd);
 
@@ -53,53 +74,66 @@ static inline void log_me(int fd, unsigned level, const char *fmt, va_list ap)
 		s = tty ? ANSI_NORMAL : "";
 		break;
 	case LOG_LEVEL_WARNING:
+	case LOG_LEVEL_ACCESS_V:
 		p = tty ? ANSI_MAGENTA : "";
-		s = tty ? ANSI_NORMAL : "";
-		break;
-	case LOG_LEVEL_NOTICE:
-		p = tty ? ANSI_GREEN : "";
 		s = tty ? ANSI_NORMAL : "";
 		break;
 	case LOG_LEVEL_INFO:
 		p = tty ? ANSI_YELLOW : "";
 		s = tty ? ANSI_NORMAL : "";
-		break;
-	case LOG_LEVEL_DEBUG:
-		p = tty ? ANSI_CYAN : "";
-		s = tty ? ANSI_NORMAL : "";
-		break;
 	default:
 		p = s = "";
 		break;
 	}
 
 	dprintf(fd, "%s", p);
-	if (prefix) {
-		if (sydbox->config.log_timestamp)
-			dprintf(fd, "%s@%lu: ", prefix, time(NULL));
-		else
-			dprintf(fd, "%s: ", prefix);
-	}
+	if (prefix)
+		dprintf(fd, "%s@%lu: ", prefix, time(NULL));
+	if (func)
+		dprintf(fd, "%s: ", func);
 	vdprintf(fd, fmt, ap);
 	dprintf(fd, "%s%s", s, suffix ? suffix : "");
 }
 
-void log_init(void)
+int log_init(const char *filename)
 {
-	assert(sydbox);
+	if (logfd > 0 && logfd != STDERR_FILENO)
+		close_nointr(logfd);
 
-	if (sydbox->config.log_file) {
-		logfd = open(sydbox->config.log_file, O_WRONLY|O_APPEND|O_CREAT, 0640);
+	if (filename) {
+		logfd = open(filename, O_WRONLY|O_APPEND|O_CREAT);
 		if (logfd < 0)
-			die_errno(3, "failed to open log file `%s'", sydbox->config.log_file);
+			return -errno;
+	} else {
+		logfd = -1;
 	}
+
+	log_debug_level(debug);
+	log_debug_console_level(cdebug);
+
+	return 0;
 }
 
 void log_close(void)
 {
-	if (logfd != -1)
+	if (logfd > 0)
 		close_nointr(logfd);
 	logfd = -1;
+}
+
+void log_console_fd(int fd)
+{
+	logcfd = fd;
+}
+
+void log_debug_level(int debug_level)
+{
+	debug = debug_level | LOG_LEVEL_MINIMUM;
+}
+
+void log_debug_console_level(int debug_level)
+{
+	cdebug = debug_level | LOG_LEVEL_MINIMUM;
 }
 
 void log_prefix(const char *p)
@@ -114,16 +148,10 @@ void log_suffix(const char *s)
 
 void log_msg_va(unsigned level, const char *fmt, va_list ap)
 {
-	if (level > sydbox->config.log_level)
-		return;
-
-	if (logfd != -1) {
-		log_me(logfd, level, fmt, ap);
-		if (level <= LOG_LEVEL_WARNING)
-			log_me(sydbox->config.log_console_fd, level, fmt, ap);
-	}
-	else
-		log_me(sydbox->config.log_console_fd, level, fmt, ap);
+	if (logfd > 0 && (level & debug))
+		log_me(logfd, level, NULL, fmt, ap);
+	if (logcfd > 0 && (level & cdebug))
+		log_me(logcfd, level, NULL, fmt, ap);
 }
 
 void log_msg(unsigned level, const char *fmt, ...)
@@ -132,5 +160,22 @@ void log_msg(unsigned level, const char *fmt, ...)
 
 	va_start(ap, fmt);
 	log_msg_va(level, fmt, ap);
+	va_end(ap);
+}
+
+void log_msg_va_f(unsigned level, const char *func, const char *fmt, va_list ap)
+{
+	if (logfd > 0 && (level & debug))
+		log_me(logfd, level, func, fmt, ap);
+	if (logcfd > 0 && (level & cdebug))
+		log_me(logcfd, level, func, fmt, ap);
+}
+
+void log_msg_f(unsigned level, const char *func, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	log_msg_va_f(level, func, fmt, ap);
 	va_end(ap);
 }

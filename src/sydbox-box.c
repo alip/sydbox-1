@@ -35,6 +35,7 @@
 
 #include "macro.h"
 #include "canonicalize.h"
+#include "log.h"
 #include "path.h"
 #include "proc.h"
 #include "strtable.h"
@@ -45,16 +46,16 @@ static inline void box_report_violation_path(struct pink_easy_process *current,
 {
 	switch (ind) {
 	case 0:
-		violation(current, "%s('%s')", name, path);
+		violation(current, "%s(`%s')", name, path);
 		break;
 	case 1:
-		violation(current, "%s(?, '%s')", name, path);
+		violation(current, "%s(?, `%s')", name, path);
 		break;
 	case 2:
-		violation(current, "%s(?, ?, '%s')", name, path);
+		violation(current, "%s(?, ?, `%s')", name, path);
 		break;
 	case 3:
-		violation(current, "%s(?, ?, ?, '%s')", name, path);
+		violation(current, "%s(?, ?, ?, `%s')", name, path);
 		break;
 	default:
 		violation(current, "%s(?)", name);
@@ -68,13 +69,13 @@ static inline void box_report_violation_path_at(struct pink_easy_process *curren
 {
 	switch (arg_index) {
 	case 1:
-		violation(current, "%s('%s', prefix='%s')", name, path, prefix);
+		violation(current, "%s(`%s', prefix=`%s')", name, path, prefix);
 		break;
 	case 2:
-		violation(current, "%s(?, '%s', prefix='%s')", name, path, prefix);
+		violation(current, "%s(?, `%s', prefix=`%s')", name, path, prefix);
 		break;
 	case 3:
-		violation(current, "%s(?, ?, '%s', prefix='%s')", name, path, prefix);
+		violation(current, "%s(?, ?, '%s', prefix=`%s')", name, path, prefix);
 		break;
 	default:
 		violation(current, "%s(?)", name);
@@ -140,14 +141,25 @@ static int box_resolve_path_helper(const char *abspath, pid_t pid,
 			if (asprintf(&p, "/proc/%lu%s", (unsigned long)pid, tail) < 0)
 				return -errno;
 		}
+		log_check("/proc/self is `/proc/%lu'",
+				(unsigned long)pid);
 	}
 
 	can_mode = maycreat ? CAN_ALL_BUT_LAST : CAN_EXISTING;
 	if (!resolve)
 		can_mode |= CAN_NOLINKS;
 	r = canonicalize_filename_mode(p ? p : abspath, can_mode, res);
+
+	if (r == 0)
+		log_check("canonicalized `%s' to `%s' (mode:%#x)",
+				p ? p : abspath, *res, can_mode);
+	else
+		log_check("canonicalize `%s' failed (mode:%#x)",
+				p ? p : abspath, can_mode);
+
 	if (p)
 		free(p);
+
 	return r;
 }
 
@@ -156,6 +168,12 @@ int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 {
 	int r;
 	char *abspath;
+
+	log_check("pid=%lu creat=%s resolve=%s",
+			(unsigned long)pid,
+			maycreat ? "yes" : "no",
+			resolve ? "yes" : "no");
+	log_check("path=`%s' prefix=`%s'", path, prefix);
 
 	if (path == NULL && prefix == NULL)
 		return -EINVAL;
@@ -178,17 +196,45 @@ int box_match_path(const char *path, const slist_t *patterns, const char **match
 	struct snode *node;
 
 	SLIST_FOREACH(node, patterns, up) {
-		if (wildmatch_syd(node->data, path)) {
-			debug("match: pattern='%s', path='%s'",
-					(char *)node->data,
-					path);
+		if (wildmatch_sydbox(node->data, path)) {
 			if (match)
 				*match = node->data;
 			return 1;
 		}
-		debug("nomatch: pattern='%s', path='%s'",
-				(char *)node->data,
-				path);
+	}
+
+	return 0;
+}
+
+static int box_match_path_saun(const char *path, const slist_t *patterns, const char **match)
+{
+	struct snode *node;
+	sock_match_t *m;
+
+	SLIST_FOREACH(node, patterns, up) {
+		m = node->data;
+		if (m->family == AF_UNIX && !m->match.sa_un.abstract) {
+			if (wildmatch_sydbox(m->match.sa_un.path, path)) {
+				if (match)
+					*match = node->data;
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+static int box_match_socket(const struct pink_sockaddr *psa, const slist_t *patterns, sock_match_t **match)
+{
+	struct snode *node;
+
+	SLIST_FOREACH(node, patterns, up) {
+		if (sock_match(node->data, psa)) {
+			if (match)
+				*match = node->data;
+			return 1;
+		}
 	}
 
 	return 0;
@@ -209,18 +255,18 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 	prefix = path = abspath = NULL;
 	deny_errno = info->deny_errno ? info->deny_errno : EPERM;
 
-	debug("check_path: %s[%lu:%u] sys:%s() arg_index:%u cwd:'%s'",
+	log_check("%s[%lu:%u] sys=%s() arg_index=%u cwd:`%s'",
 			data->comm, (unsigned long)tid, abi, name,
 			info->arg_index, data->cwd);
-	debug("check_path: at:%s null_ok:%s resolve:%s create:%s",
-			info->at ? "true" : "false",
-			info->null_ok ? "true" : "false",
-			info->resolve ? "true" : "false",
+	log_check("at=%s null_ok=%s resolve=%s create=%s",
+			info->at ? "yes" : "no",
+			info->null_ok ? "yes" : "no",
+			info->resolve ? "yes" : "no",
 			create_mode_to_string(info->create));
-	debug("check_path: safe:%s deny-errno:%s whitelisting:%s",
-			info->safe ? "true" : "false",
+	log_check("safe=%s deny-errno=%s whitelisting=%s",
+			info->safe ? "yes" : "no",
 			errno_to_string(deny_errno),
-			info->whitelisting ? "true" : "false");
+			info->whitelisting ? "yes" : "no");
 
 	if (info->at && (r = path_prefix(current, info->arg_index-1, &prefix))) {
 		if (r < 0) {
@@ -247,15 +293,15 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 					tid,
 					!!(info->create > 0),
 					info->resolve, &abspath)) < 0) {
-		info("check_path: resolve path:'%s' for sys:%s() failed (errno:%d %s)",
+		log_access("resolve path=`%s' for sys=%s() failed (errno=%d %s)",
 				path, name, -r, strerror(-r));
+		log_access("deny access with errno=%s", errno_to_string(-r));
 		errno = -r;
 		r = deny(current);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s()", name);
 		goto out;
 	}
-	debug("check_path: resolve path:'%s' for sys:%s() succeeded", path, name);
 
 	if (info->wblist)
 		wblist = info->wblist;
@@ -266,27 +312,30 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 
 	if (info->whitelisting) {
 		if (box_match_path(abspath, wblist, NULL)) {
+			log_access("path=`%s' matches a whitelist pattern,"
+					" access granted", abspath);
 			r = 0;
-			info("check_path path:'%s' matches a whitelist pattern,"
-					" access granted",
-					abspath);
 			goto out;
+		} else {
+			log_access("path=`%s' does not match a whitelist pattern,"
+					" access denied", abspath);
 		}
-	}
-	else if (!box_match_path(abspath, wblist, NULL)) {
-		/* Path does not match one of the blacklisted path patterns.
-		 * Allow access.
-		 */
-		r = 0;
-		info("check_path: path:'%s' does not match any blacklist pattern,"
-				" access granted",
-				abspath);
-		goto out;
+	} else {
+		if (!box_match_path(abspath, wblist, NULL)) {
+			log_access("path=`%s' does not match any blacklist pattern,"
+					" access granted", abspath);
+			r = 0;
+			goto out;
+		} else {
+			log_access("path=`%s' matches a blacklist pattern,"
+					" access denied", abspath);
+		}
 	}
 
 	errno = deny_errno;
 
 	if (info->safe && !sydbox->config.violation_raise_safe) {
+		log_access("sys:%s() is safe, access violation filtered", name);
 		r = deny(current);
 		goto out;
 	}
@@ -299,17 +348,18 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 		sr = info->resolve ? stat(abspath, &buf) : lstat(abspath, &buf);
 		if (sr == 0) {
 			/* Yet the file exists... */
-			info("check_path: sys:%s() must create existant path:'%s'",
+			log_access("sys=%s() must create existant path=`%s'",
 					name, abspath);
-			info("check_path: deny access with EEXIST");
+			log_access("deny access with errno=EEXIST");
 			errno = EEXIST;
 			if (!sydbox->config.violation_raise_safe) {
+				log_access("sys:%s() is safe, access violation filtered", name);
 				r = deny(current);
 				goto out;
 			}
-		}
-		else
+		} else {
 			errno = info->deny_errno ? info->deny_errno : EPERM;
+		}
 	}
 
 	r = deny(current);
@@ -346,14 +396,14 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 	assert(current);
 	assert(info);
 
-	debug("check_socket: %s[%lu:%u] sys:%s() arg_index:%u decode:%s",
+	log_check("%s[%lu:%u] sys=%s() arg_index=%u decode=%s",
 			data->comm, (unsigned long)tid, abi, name,
 			info->arg_index,
-			info->decode_socketcall ? "true" : "false");
-	debug("check_socket: safe:%s deny-errno:%s whitelisting:%s",
-			info->safe ? "true" : "false",
+			info->decode_socketcall ? "yes" : "no");
+	log_check("safe=%s deny-errno=%s whitelisting=%s",
+			info->safe ? "yes" : "no",
 			errno_to_string(info->deny_errno),
-			info->whitelisting ? "true" : "false");
+			info->whitelisting ? "yes" : "no");
 
 	r = 0;
 	abspath = NULL;
@@ -363,15 +413,14 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 				info->decode_socketcall,
 				info->arg_index, info->fd, psa)) {
 		if (errno != ESRCH) {
-			warning("check_socket: read sockaddr at index:%d failed (errno:%d %s)",
+			log_warning("read sockaddr at index=%d failed (errno=%d %s)",
 					info->arg_index, errno, strerror(errno));
 			r = panic(current);
 			goto out;
 		}
-		info("check_socket: read sockaddr at index:%d failed (errno:%d %s)",
+		log_trace("read sockaddr at index=%d failed (errno=%d %s)",
 				info->arg_index, errno, strerror(errno));
-		info("check_socket: drop process %s[%lu:%u]",
-				data->comm,
+		log_trace("drop process  %s[%lu:%u]", data->comm,
 				(unsigned long)tid, abi);
 		r = PINK_EASY_CFLAG_DROP;
 		goto out;
@@ -387,7 +436,8 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 		break;
 	default:
 		if (sydbox->config.whitelist_unsupported_socket_families) {
-			debug("check_socket: whitelist unsupported sockfamily:%d", psa->family);
+			log_access("whitelist unsupported sockfamily:%d",
+					psa->family);
 			goto out;
 		}
 		errno = EAFNOSUPPORT;
@@ -401,8 +451,10 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 						tid, 1,
 						info->resolve,
 						&abspath)) < 0) {
-			info("check_socket: resolve path:'%s' for sys:%s() failed (errno:%d %s)",
-					psa->u.sa_un.sun_path, name, -r, strerror(-r));
+			log_access("resolve path=`%s' for sys=%s() failed (errno=%d %s)",
+				psa->u.sa_un.sun_path,
+				name, -r, strerror(-r));
+			log_access("deny access with errno=%s", errno_to_string(-r));
 			errno = -r;
 			r = deny(current);
 			if (sydbox->config.violation_raise_fail)
@@ -410,50 +462,67 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 			goto out;
 		}
 
-		SLIST_FOREACH(node, info->wblist, up) {
-			m = node->data;
-			if (m->family == AF_UNIX && !m->match.sa_un.abstract) {
-				if (info->whitelisting) {
-					if (wildmatch_syd(m->match.sa_un.path, abspath))
-						goto out;
-				}
-				else if (!wildmatch_syd(m->match.sa_un.path, abspath))
-					goto out;
+		if (info->whitelisting) {
+			if (box_match_path_saun(abspath, info->wblist, NULL)) {
+				log_access("sun_path=`%s' matches a whitelist pattern,"
+						" access granted",
+						abspath);
+				r = 0;
+				goto out;
+			} else {
+				log_access("sun_path=`%s does not match a whitelist pattern,"
+						" access denied",
+						abspath);
+			}
+		} else {
+			if (!box_match_path(abspath, info->wblist, NULL)) {
+				log_access("sun_path=`%s' does not match any blacklist pattern,"
+						" access granted",
+						abspath);
+				r = 0;
+				goto out;
+			} else {
+				log_access("sun_path=`%s matches a blacklist pattern,"
+						" access denied",
+						abspath);
 			}
 		}
-
-		errno = info->deny_errno;
-		r = deny(current);
-		goto filter;
-	}
-
-	SLIST_FOREACH(node, info->wblist, up) {
+	} else {
 		if (info->whitelisting) {
-			if (sock_match(node->data, psa))
+			if (box_match_socket(psa, info->wblist, NULL)) {
+				log_access("sockaddr=%p matches a whitelist pattern,"
+						" access granted", psa);
+				r = 0;
 				goto out;
+			}
+		} else {
+			if (!box_match_socket(psa, info->wblist, NULL)) {
+				log_access("sockaddr=%p does not match any blacklist pattern,"
+						" access granted", psa);
+				r = 0;
+				goto out;
+			} else {
+				log_access("sockaddr=%p matches a blacklist pattern,"
+						" access denied", psa);
+			}
 		}
-		else if (!sock_match(node->data, psa))
-			goto out;
 	}
 
 	errno = info->deny_errno;
 	r = deny(current);
 
-filter:
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
-		SLIST_FOREACH(node, info->filter, up) {
-			m = node->data;
-			if (m->family == AF_UNIX
-					&& !m->match.sa_un.abstract
-					&& wildmatch_syd(m->match.sa_un.path, abspath))
-				goto out;
+		if (!box_match_path_saun(abspath, info->filter, NULL)) {
+			log_access("sa_un=`%s' matches a filter pattern,"
+					" access violation filtered", abspath);
+			goto out;
 		}
-	}
-	else {
-		SLIST_FOREACH(node, info->filter, up) {
-			if (sock_match(node->data, psa))
-				goto out;
+	} else {
+		if (!box_match_socket(psa, info->filter, NULL)) {
+			log_access("sockaddr=%p matches a filter pattern,"
+					" access violation filtered", psa);
+			goto out;
 		}
 	}
 

@@ -28,6 +28,8 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "log.h"
+
 int sys_chown(struct pink_easy_process *current, const char *name)
 {
 	sys_info_t info;
@@ -71,11 +73,17 @@ int sys_fchownat(struct pink_easy_process *current, const char *name)
 	/* Check for AT_SYMLINK_FOLLOW */
 	if (!pink_read_argument(tid, abi, &data->regs, 4, &flags)) {
 		if (errno != ESRCH) {
-			warning("pink_read_argument(%lu, %d, 4) failed (errno:%d %s)",
+			log_warning("read_argument(%lu, %d, 4) failed"
+					" (errno:%d %s)",
 					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_argument(%lu, %d, 4) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				errno, strerror(errno));
+		log_trace("drop process %s[%lu:%u]", data->comm,
+				(unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 

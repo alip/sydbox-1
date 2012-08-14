@@ -25,6 +25,9 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "log.h"
+#include "strtable.h"
+
 int sys_execve(struct pink_easy_process *current, const char *name)
 {
 	int r;
@@ -45,13 +48,9 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 		return r;
 
 	if ((r = box_resolve_path(path, data->cwd, tid, 0, 1, &abspath)) < 0) {
-		info("resolving path:\"%s\" [%s() index:0]"
-				" failed for process:%lu"
-				" [abi:%d name:\"%s\" cwd:\"%s\"] (errno:%d %s)",
-				path, name,
-				(unsigned long)tid, abi,
-				data->comm, data->cwd,
-				-r, strerror(-r));
+		log_access("resolve path=`%s' failed (errno=%d %s)",
+				path, -r, strerror(-r));
+		log_access("deny access with errno=%s", errno_to_string(-r));
 		errno = -r;
 		r = deny(current);
 		if (sydbox->config.violation_raise_fail)

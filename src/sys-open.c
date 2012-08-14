@@ -29,6 +29,8 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "log.h"
+
 static inline bool open_wr_check(long flags, enum create_mode *create, bool *resolv)
 {
 	enum create_mode c;
@@ -101,16 +103,22 @@ int sys_open(struct pink_easy_process *current, const char *name)
 
 	if (!pink_read_argument(tid, abi, &data->regs, 1, &flags)) {
 		if (errno != ESRCH) {
-			warning("pink_read_argument(%lu, %d, 1) failed (errno:%d %s)",
+			log_warning("read_argument(%lu, %d, 1) failed"
+					" (errno:%d %s)",
 					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_argument(%lu, %d, 1) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				errno, strerror(errno));
+		log_trace("drop process %s[%lu:%u]", data->comm,
+				(unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
 	wr = open_wr_check(flags, &create, &resolve);
-	debug("open: wr_check:%ld returned wr=%s create=%s resolve=%s",
+	log_trace("wr_check:%ld returned wr=%s create=%s resolve=%s",
 			flags,
 			wr ? "true" : "false",
 			create_mode_to_string(create),
@@ -153,11 +161,17 @@ int sys_openat(struct pink_easy_process *current, const char *name)
 	/* Check mode argument first */
 	if (!pink_read_argument(tid, abi, &data->regs, 2, &flags)) {
 		if (errno != ESRCH) {
-			warning("pink_read_argument(%lu, %d, 2) failed (errno:%d %s)",
+			log_warning("read_argument(%lu, %d, 2) failed"
+					" (errno:%d %s)",
 					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_argument(%lu, %d, 2) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				errno, strerror(errno));
+		log_trace("drop process %s[%lu:%u]", data->comm,
+				(unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 

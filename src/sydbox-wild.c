@@ -22,17 +22,28 @@
 #include <assert.h>
 #include <string.h>
 
+#include "log.h"
 #include "path.h"
 #include "util.h"
 #include "wildmatch.h"
 
 #define WILD3_SUFFIX "/***"
 
-int wildmatch_syd(const char *pattern, const char *text)
+int wildmatch_sydbox(const char *pattern, const char *text)
 {
-	return sydbox->config.match_case_sensitive
-		? wildmatch(pattern, text)
-		: iwildmatch(pattern, text);
+	int r;
+
+	if (sydbox->config.match_case_sensitive)
+		r = wildmatch(pattern, text);
+	else
+		r = iwildmatch(pattern, text);
+
+	log_match("%smatch%s: pattern=`%s' text=`%s'",
+			r == 0 ? "no" : "",
+			sydbox->config.match_case_sensitive ? "" : "case",
+			pattern, text);
+
+	return r;
 }
 
 int wildmatch_expand(const char *pattern, char ***buf)
@@ -47,10 +58,15 @@ int wildmatch_expand(const char *pattern, char ***buf)
 	if (sydbox->config.match_no_wildcard == NO_WILDCARD_PREFIX &&
 			!strchr(p, '*') && !strchr(p, '?')) {
 		cp = xmalloc(sizeof(char) * (strlen(p) + sizeof(WILD3_SUFFIX)));
+
 		strcpy(cp, p);
 		strcat(cp, WILD3_SUFFIX);
+
 		free(p);
 		p = cp;
+
+		log_match("append `%s' to pattern=`%s' due to no_wildcard=prefix",
+				WILD3_SUFFIX, p);
 	}
 	p = path_kill_slashes(p);
 

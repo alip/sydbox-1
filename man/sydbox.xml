@@ -134,11 +134,11 @@
           speficied using the <option>-c</option> command line switch or the <envar>SYDBOX_CONFIG</envar>
           environment variable. More than one configuration file may be specified this way. However, only the
           <emphasis role="bold">initial</emphasis> configuration file can change the <emphasis>core</emphasis>
-          configuration. If path to the configuration file is prefixed with the character
-          <emphasis role="bold">@</emphasis>, Sydbox looks for this configuration file under
-          <filename class="directory"><varname>$sharedir</varname>/sydbox/</filename>
-          where <varname>$sharedir</varname> is usually <filename class="directory">/usr/share</filename>.
-          The command line switch has precedence over the <envar>SYDBOX_CONFIG</envar> environment variable.
+          configuration. If path to the configuration file is prefixed with the character <literal>@</literal>,
+          Sydbox looks for this configuration file under
+          <filename class="directory"><varname>$sharedir</varname>/sydbox/</filename> where <varname>$sharedir</varname>
+          is usually <filename class="directory">/usr/share</filename>.  The command line switch has precedence over the
+          <envar>SYDBOX_CONFIG</envar> environment variable.
         </para>
       </listitem>
       <listitem>
@@ -590,26 +590,14 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="log-console_fd">log/console_fd</option></term>
-          <listitem>
-            <para>type: <type>integer</type></para>
-            <para>
-              An integer specifying the console log file descriptor.
-              Defaults to 2, standard error.
-              See <xref linkend="logging"/> for more information.
-            </para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
           <term><option id="log-file">log/file</option></term>
           <listitem>
             <para>type: <type>string</type></para>
             <para>
               A string specifying the path to the log file.
               Defaults to "" (empty string), no logging to file.
-              See <xref linkend="logging"/> for more information.
             </para>
+            <para>See <xref linkend="logging"/> for more information.</para>
           </listitem>
         </varlistentry>
 
@@ -618,21 +606,34 @@
           <listitem>
             <para> type: <type>integer</type></para>
             <para>
-              An integer specifying the level of messages to log.
-              Log messages lower than this level are discarded.
-              Defaults to 2, <option>message</option>
+              An integer specifying the log level.
+              Defaults to 0, only fatal errors.
             </para>
+            <para>See <xref linkend="logging"/> for more information</para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option id="log-timestamp">log/timestamp</option></term>
+          <term><option id="log-console_fd">log/console_fd</option></term>
           <listitem>
-            <para>type: <type>boolean</type></para>
+            <para>type: <type>integer</type></para>
             <para>
-              A boolean specifying whether the messages should be prefixed with a timestamp.
-              Defaults to <constant>true</constant>.
+              An integer specifying the console log file descriptor.
+              Defaults to 2, standard error.
             </para>
+            <para>See <xref linkend="logging"/> for more information</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="log-console-level">log/console_level</option></term>
+          <listitem>
+            <para> type: <type>integer</type></para>
+            <para>
+              An integer specifying the log level.
+              Defaults to 1, only fatal errors and access violations.
+            </para>
+            <para>See <xref linkend="logging"/> for more information</para>
           </listitem>
         </varlistentry>
 
@@ -828,21 +829,79 @@
     <title>Logging</title>
 
     <para>
-      Sydbox has a simple logging infrastructure. There are two log targets, <option>core/log/console_fd</option> and
-      <option>core/log/file</option>. Messages with severity lower than <option>core/log/level</option> are discarded.
-      The rest are logged to <option>core/log/file</option> if specified and messages with log level higher than
-      <constant>message</constant> are logged to <option>core/log/console_fd</option> as well. Below is a list of log
-      levels and corresponding integers representing these levels:
+      Sydbox has a simple logging system. There are two log targets, <option>core/log/file</option> and
+      <option>core/log/console_fd</option>. Messages matching level <option>core/log/level</option> are logged to
+      <option>core/log/file</option>. Messages matching level <option>core/log/console_level</option> are logged to
+      <option>core/log/console_fd</option>. Below is a list of log levels and corresponding integers representing these
+      levels:
     </para>
 
-    <itemizedlist>
-      <listitem><para>0: fatal</para></listitem>
-      <listitem><para>1: warning</para></listitem>
-      <listitem><para>2: message</para></listitem>
-      <listitem><para>3: info</para></listitem>
-      <listitem><para>4: debug</para></listitem>
-      <listitem><para>5: trace</para></listitem>
-    </itemizedlist>
+    <table frame='all'>
+      <title>Sydbox Log Levels</title>
+      <tgroup cols='3' align='left' colsep='1' rowsep='1'>
+        <colspec colname='name' />
+        <colspec colname='value' />
+        <colspec colname='description' />
+        <thead>
+          <row>
+            <entry>Name</entry>
+            <entry>Value</entry>
+            <entry>Description</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>ACCESS_V</entry>
+            <entry>1</entry>
+            <entry>Log access violations</entry>
+          </row>
+          <row>
+            <entry>INFO</entry>
+            <entry>2</entry>
+            <entry>Log messages about program workflow</entry>
+          </row>
+          <row>
+            <entry>ACCESS</entry>
+            <entry>4</entry>
+            <entry>Log denied/granted access</entry>
+          </row>
+          <row>
+            <entry>MAGIC</entry>
+            <entry>8</entry>
+            <entry>Log magic commands</entry>
+          </row>
+          <row>
+            <entry>CHECK</entry>
+            <entry>16</entry>
+            <entry>Log path/socket-address lookups and checks</entry>
+          </row>
+          <row>
+            <entry>MATCH</entry>
+            <entry>32</entry>
+            <entry>Log pattern matching, socket-address matching</entry>
+          </row>
+          <row>
+            <entry>TRACE</entry>
+            <entry>64</entry>
+            <entry>Log trace calls</entry>
+          </row>
+          <row>
+            <entry>SYSCALL</entry>
+            <entry>128</entry>
+            <entry>Log intercepted system calls</entry>
+          </row>
+          <row>
+            <entry>SYS_ALL</entry>
+            <entry>1024</entry>
+            <entry>Log all system calls</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <note>
+      <para>To select multiple debug levels, you can add them together.</para>
+    </note>
   </refsect1>
 
   <refsect1 id="sandboxing">
@@ -1150,10 +1209,10 @@
         }
     },
 
-    "log" : { "console_fd" : 2, /* Messages with level higher than message go to standard error as well. */
-              "file"       : "", /* Specify a path or leave it empty for no file logging. */
-              "level"      : 2, /* 0:fatal 1:warning 2:message 3:info 4:debug 5:trace */
-              "timestamp"  : true /* Prefix log messages with timestamp */
+    "log" : { "file"           : "", /* Specify a path or leave it empty for no file logging. */
+              "level"          : 0, /* log level, consult manual page */
+              "console_fd"     : 2, /* console file descriptor, default: stderr */
+              "console_level"  : 0 /* console log level, consult manual page */
             },
 
     "exec" : { "resume_if_match" : [ ],

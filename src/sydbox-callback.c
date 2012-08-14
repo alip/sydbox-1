@@ -32,6 +32,7 @@
 #include <sys/wait.h>
 
 #include "file.h"
+#include "log.h"
 #include "proc.h"
 
 #ifndef NR_OPEN
@@ -60,20 +61,20 @@ static void callback_error(const struct pink_easy_context *ctx, ...)
 	switch (error) {
 	case PINK_EASY_ERROR_CALLBACK_ABORT:
 	case PINK_EASY_ERROR_WAIT:
-		fatal("error: %s (errno:%d %s)\n",
+		log_fatal("%s (errno:%d %s)\n",
 				pink_easy_strerror(error),
 				errno, strerror(errno));
 		break;
 	case PINK_EASY_ERROR_ALLOC:
 	case PINK_EASY_ERROR_FORK:
 		errctx = va_arg(ap, const char *);
-		fatal("error: %s: %s (errno:%d %s)\n",
+		log_fatal("%s: %s (errno:%d %s)\n",
 				pink_easy_strerror(error),
 				errctx, errno, strerror(errno));
 		break;
 	case PINK_EASY_ERROR_ATTACH:
 		tid = va_arg(ap, pid_t);
-		fatal("error: %s (process:%lu errno:%d %s)\n",
+		log_fatal("%s (process:%lu errno:%d %s)\n",
 				pink_easy_strerror(error),
 				(unsigned long)tid,
 				errno, strerror(errno));
@@ -83,20 +84,20 @@ static void callback_error(const struct pink_easy_context *ctx, ...)
 		current = va_arg(ap, struct pink_easy_process *);
 		errctx = va_arg(ap, const char *);
 		if (error == PINK_EASY_ERROR_TRACE) { /* errno is set! */
-			fatal("error: %s (ctx:%s process:%lu [abi:%d] errno:%d %s)",
+			log_fatal("%s (ctx:%s process:%lu [abi:%d] errno:%d %s)",
 					pink_easy_strerror(error), errctx,
 					(unsigned long)pink_easy_process_get_tid(current),
 					pink_easy_process_get_abi(current),
 					errno, strerror(errno));
 		} else { /* if (error == PINK_EASY_ERROR_PROCESS */
-			fatal("error: %s (process:%lu [abi:%d])",
+			log_fatal("%s (process:%lu [abi:%d])",
 					pink_easy_strerror(error),
 					(unsigned long)pink_easy_process_get_tid(current),
 					pink_easy_process_get_abi(current));
 		}
 		break;
 	default:
-		fatal("error: unknown:%u\n", error);
+		log_fatal("unknown:%u\n", error);
 		break;
 	}
 
@@ -129,7 +130,6 @@ static void callback_startup(const struct pink_easy_context *ctx,
 	tid = pink_easy_process_get_tid(current);
 	abi = pink_easy_process_get_abi(current);
 	flags = pink_easy_process_get_flags(current);
-	attached = !!(flags & PINK_EASY_PROCESS_ATTACHED);
 	data = xcalloc(1, sizeof(proc_data_t));
 
 	if (parent) {
@@ -138,31 +138,8 @@ static void callback_startup(const struct pink_easy_context *ctx,
 		cwd = xstrdup(pdata->cwd);
 		inherit = &pdata->config;
 	} else {
-		if (attached) {
-			/* Figure out process name */
-			if ((r = proc_comm(tid, &comm))) {
-				warning("failed to read the name of"
-						" process:%lu [abi:%d] (errno:%d %s)",
-						(unsigned long)tid, abi,
-						-r, strerror(-r));
-				comm = xstrdup("???");
-			}
-
-			/* Figure out the current working directory */
-			if ((r = proc_cwd(tid, &cwd))) {
-				warning("failed to get working directory of the initial "
-						"process:%lu [abi:%d name:\"%s\"] (errno:%d %s)",
-						(unsigned long)tid, abi, comm,
-						-r, strerror(-r));
-				free(data);
-				panic(current);
-				return;
-			}
-		} else {
-			cwd = xgetcwd();
-			comm = xstrdup(sydbox->program_invocation_name);
-		}
-
+		cwd = xgetcwd();
+		comm = xstrdup(sydbox->program_invocation_name);
 		sydbox->eldest = tid;
 		inherit = &sydbox->config.child;
 	}
@@ -216,14 +193,13 @@ static void callback_startup(const struct pink_easy_context *ctx,
 		free(magic);
 	}
 
-	info("startup: %s process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
-			(!parent && !attached) ? "initial" : "new",
-			(unsigned long)tid, abi, comm, cwd);
+	log_trace("%s process %s[%lu:%u cwd=`%s']",
+			parent ? "new" : "eldest", comm,
+			(unsigned long)tid, abi, cwd);
 	if (parent)
-		info("startup: process:%lu has parent:%lu", (unsigned long)tid,
+		log_trace("process:%lu has parent:%lu",
+				(unsigned long)tid,
 				(unsigned long)pink_easy_process_get_tid(parent));
-	else
-		info("startup: process:%lu has no parent", (unsigned long)tid);
 }
 
 static int callback_cleanup(const struct pink_easy_context *ctx)
@@ -237,7 +213,7 @@ static int callback_cleanup(const struct pink_easy_context *ctx)
 			r = 128 + sydbox->exit_code;
 	}
 
-	info("cleanup: return value %d (%s access violations)",
+	log_info("return value %d (%s access violations)",
 			r, sydbox->violation ? "due to" : "no");
 	return r;
 }
@@ -249,38 +225,45 @@ static int callback_exit(const struct pink_easy_context *ctx,
 		/* Eldest process, keep return code */
 		if (WIFEXITED(status)) {
 			sydbox->exit_code = WEXITSTATUS(status);
-			info("initial process:%lu exited with code:%d (status:%#x)",
+			log_trace("eldest process:%lu exited"
+					" with code:%d (status:%#x)",
 					(unsigned long)tid, sydbox->exit_code,
 					(unsigned)status);
 		} else if (WIFSIGNALED(status)) {
 			sydbox->exit_code = 128 + WTERMSIG(status);
-			info("initial process:%lu was terminated with signal:%d (status:%#x)",
+			log_trace("eldest process:%lu was terminated"
+					" with signal:%d (status:%#x)",
 					(unsigned long)tid, sydbox->exit_code - 128,
 					(unsigned)status);
 		} else {
 			sydbox->exit_code = EXIT_FAILURE;
-			warning("initial process:%lu exited with unknown status:%#x",
+			log_warning("eldest process:%lu exited"
+					" with unknown status:%#x",
 					(unsigned long)tid, (unsigned)status);
 		}
 
 		if (!sydbox->config.exit_wait_all) {
 			cont_all();
-			info("loop: aborted due to initial child exit");
+			log_trace("loop abort due to eldest process %lu exit (status:%#x)",
+					(unsigned long)tid, (unsigned)status);
 			exit(sydbox->exit_code);
 		}
 	} else {
 		if (WIFEXITED(status))
-			info("process:%lu exited with code:%d (status:%#x)",
+			log_trace("process:%lu exited"
+					" with code:%d (status:%#x)",
 					(unsigned long)tid,
 					WEXITSTATUS(status),
 					(unsigned)status);
 		else if (WIFSIGNALED(status))
-			info("process:%lu exited was terminated with signal:%d (status:%#x)",
+			log_trace("process:%lu was terminated"
+					" with signal:%d (status:%#x)",
 					(unsigned long)tid,
 					WTERMSIG(status),
 					(unsigned)status);
 		else
-			warning("process:%lu exited with unknown status:%#x",
+			log_warning("process:%lu exited"
+					" with unknown status:%#x",
 					(unsigned long)tid, (unsigned)status);
 	}
 
@@ -300,13 +283,13 @@ static int callback_exec(const struct pink_easy_context *ctx,
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (sydbox->wait_execve > 0) {
-		info("exec: skipped successful execve()");
+		log_trace("skipped successful execve()");
 		sydbox->wait_execve--;
 		return 0;
 	}
 
 	if (data->config.magic_lock == LOCK_PENDING) {
-		info("locking magic commands for"
+		log_magic("locking magic commands for"
 				" process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]",
 				(unsigned long)tid, abi,
 				data->comm, data->cwd);
@@ -321,32 +304,48 @@ static int callback_exec(const struct pink_easy_context *ctx,
 	/* kill_if_match and resume_if_match */
 	r = 0;
 	if (box_match_path(data->abspath, &sydbox->config.exec_kill_if_match, &match)) {
-		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
-		warning("killing process:%lu [abi:%d cwd:\"%s\"]", (unsigned long)tid, abi, data->cwd);
+		log_warning("kill_if_match pattern=`%s'"
+				" matches execve path=`%s'",
+				match, data->abspath);
+		log_warning("killing process:%lu"
+				" [abi:%d cwd:`%s']",
+				(unsigned long)tid, abi,
+				data->cwd);
 		if (pink_easy_process_kill(current, SIGKILL) < 0)
-			warning("failed to kill process:%lu (errno:%d %s)", (unsigned long)tid, errno, strerror(errno));
+			log_warning("kill process:%lu failed"
+					" (errno:%d %s)",
+					(unsigned long)tid,
+					errno, strerror(errno));
 		r |= PINK_EASY_CFLAG_DROP;
 	}
 	else if (box_match_path(data->abspath, &sydbox->config.exec_resume_if_match, &match)) {
-		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
-		warning("resuming process:%lu [abi:%d cwd:\"%s\"]", (unsigned long)tid, abi, data->cwd);
+		log_warning("resume_if_match pattern=`%s'"
+				" matches execve path=`%s'",
+				match, data->abspath);
+		log_warning("resuming process:%lu"
+				" [abi:%d cwd:\"%s\"]",
+				(unsigned long)tid, abi, data->cwd);
 		if (!pink_easy_process_resume(current, 0))
-			warning("failed to resume process:%lu (errno:%d %s)",
-					(unsigned long)tid, errno, strerror(errno));
+			log_warning("resume process:%lu failed"
+					" (errno:%d %s)",
+					(unsigned long)tid,
+					errno, strerror(errno));
 		r |= PINK_EASY_CFLAG_DROP;
 	}
 
 	/* Update process name */
 	if ((e = basename_alloc(data->abspath, &comm))) {
-		warning("failed to update name of process:%lu"
-				" [abi:%d name:\"%s\" cwd:\"%s\"] (errno:%d %s)",
+		log_warning("update name of process:%lu"
+				" [abi:%d name:\"%s\" cwd:\"%s\"] failed"
+				" (errno:%d %s)",
 				(unsigned long)tid, abi,
 				data->comm, data->cwd,
 				-e, strerror(-e));
 		comm = xstrdup("???");
 	} else if (strcmp(comm, data->comm)) {
-		info("updating name of process:%lu"
-				" [abi:%d name:\"%s\" cwd:\"%s\"] to \"%s\" due to execve()",
+		log_info("update name of process:%lu"
+				" [abi=%d name=`%s' cwd:`%s']"
+				" to `%s' due to execve()",
 				(unsigned long)tid, abi,
 				data->comm, data->cwd, comm);
 	}
@@ -367,8 +366,10 @@ static int callback_syscall(const struct pink_easy_context *ctx,
 		bool entering)
 {
 	if (sydbox->wait_execve > 0) {
-		info("syscall: skipped successful execve() return");
 		sydbox->wait_execve--;
+		log_info("skip successful execve() return,"
+				" decrease wait_execve to %d",
+				sydbox->wait_execve);
 		return 0;
 	}
 
@@ -393,14 +394,17 @@ static int callback_seccomp(const struct pink_easy_context *ctx,
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (sydbox->wait_execve > 0) {
-		info("seccomp: skipped execve() syscall trap");
 		sydbox->wait_execve--;
+		log_info("skip execve() trap,"
+				" decrease wait_execve to %d",
+				sydbox->wait_execve);
 		return 0;
 	}
 
 #if PINK_HAVE_REGS_T
 	if (!pink_trace_get_regs(tid, &data->regs)) {
-		warning("seccomp: trace_get_regs failed (errno:%d %s)", errno, strerror(errno));
+		log_warning("get_regs failed (errno:%d %s)",
+				errno, strerror(errno));
 		return (errno == ESRCH) ? PINK_EASY_CFLAG_DROP : panic(current);
 	}
 #else

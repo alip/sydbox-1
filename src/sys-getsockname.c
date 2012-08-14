@@ -29,6 +29,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "hashtable.h"
+#include "log.h"
 
 int sys_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
 {
@@ -45,12 +46,20 @@ int sys_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) c
 	if (!pink_read_socket_argument(tid, abi, &data->regs,
 				decode_socketcall, 0, &fd)) {
 		if (errno != ESRCH) {
-			warning("pink_read_socket_argument(%lu, %d, %s, 0) failed (errno:%d %s)",
+			log_warning("read_socket_argument(%lu, %d, %s, 0)"
+					" failed (errno:%d %s)",
 					(unsigned long)tid, abi,
 					decode_socketcall ? "true" : "false",
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_socket_argument(%lu, %d, %s, 0)"
+				" failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				decode_socketcall ? "true" : "false",
+				errno, strerror(errno));
+		log_trace("drop process %s[%lu:%u]",
+				data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
@@ -79,19 +88,24 @@ int sysx_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) 
 	/* Check the return value */
 	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
 		if (errno != ESRCH) {
-			warning("pink_read_retval(%lu, %d) failed (errno:%d %s)",
+			log_warning("read_retval(%lu, %d) failed"
+					" (errno:%d %s)",
 					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_retval(%lu, %d) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				errno, strerror(errno));
+		log_trace("drop process %s[%lu:%u]",
+				data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
 	if (retval == -1) {
-		debug("ignoring failed %s() call for process:%lu"
-				" [abi:%d name:\"%s\" cwd:\"%s\"]",
-				name, (unsigned long)tid, abi,
-				data->comm, data->cwd);
+		log_trace("ignore failed %s() call for process %s[%lu:%u]",
+				name, data->comm, (unsigned long)tid,
+				abi);
 		return 0;
 	}
 
@@ -100,12 +114,20 @@ int sysx_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) 
 				decode_socketcall,
 				0, NULL, &psa)) {
 		if (errno != ESRCH) {
-			warning("pink_read_socket_address(%lu, %d, %s, 0): %d(%s)",
+			log_warning("read_socket_address(%lu, %d, %s, 0)"
+					" failed (errno:%d %s)",
 					(unsigned long)tid, abi,
 					decode_socketcall ? "true" : "false",
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_socket_address(%lu, %d, %s, 0) failed"
+				" (errno:%d %s)",
+				(unsigned long)tid, abi,
+				decode_socketcall ? "true" : "false",
+				errno, strerror(errno));
+		log_trace("drop process %s[%lu:%u]", data->comm,
+				(unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 

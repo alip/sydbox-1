@@ -27,6 +27,8 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "log.h"
+
 int sys_fcntl(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	long fd, cmd;
@@ -40,11 +42,17 @@ int sys_fcntl(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const c
 	/* Read the command */
 	if (!pink_read_argument(tid, abi, &data->regs, 1, &cmd)) {
 		if (errno != ESRCH) {
-			warning("pink_read_argument(%lu, %d, 1): %d(%s)",
+			log_warning("read_argument(%lu, %d, 1) failed"
+					" (errno:%d %s)",
 					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_argument(%lu, %d, 1) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				errno, strerror(errno));
+		log_trace("drop process %s[%lu:%u]", data->comm,
+				(unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
@@ -66,11 +74,17 @@ int sys_fcntl(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const c
 	/* Read the file descriptor */
 	if (!pink_read_argument(tid, abi, &data->regs, 0, &fd)) {
 		if (errno != ESRCH) {
-			warning("pink_read_argument(%lu, %d, 0) failed (errno:%d %s)",
+			log_warning("read_argument(%lu, %d, 0) failed"
+					" (errno:%d %s)",
 					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_argument(%lu, %d, 0) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				errno, strerror(errno));
+		log_trace("drop process %s[%lu:%u]", data->comm,
+				(unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
@@ -92,28 +106,31 @@ int sysx_fcntl(struct pink_easy_process *current, const char *name)
 	/* Read the return value */
 	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
 		if (errno != ESRCH) {
-			warning("pink_read_retval(%lu, %d) failed (errno:%d %s)",
+			log_warning("read_retval(%lu, %d) failed"
+					" (errno:%d %s)",
 					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_retval(%lu, %d) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				errno, strerror(errno));
+		log_trace("drop process %s[%lu:%u]",
+				data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
 	if (retval == -1) {
-		debug("ignoring failed %s() call for process:%lu"
-				" [abi:%d name:\"%s\" cwd:\"%s\"]",
-				name, (unsigned long)tid, abi,
-				data->comm, data->cwd);
+		log_trace("ignore failed %s() call for process %s[%lu:%u]",
+				name, data->comm, (unsigned long)tid,
+				abi);
 		return 0;
 	}
 
 	if (!(old_node = hashtable_find(data->sockmap, data->args[0] + 1, 0))) {
-		debug("process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]"
-				" duplicated unknown fd:%ld to fd:%ld by %s() call",
-				(unsigned long)tid, abi,
-				data->comm, data->cwd,
-				data->args[0], retval, name);
+		log_check("process %s[%lu:%u] duplicated unknown fd:%ld to fd:%ld",
+				data->comm, (unsigned long)tid, abi,
+				data->args[0], retval);
 		return 0;
 	}
 
@@ -121,10 +138,8 @@ int sysx_fcntl(struct pink_easy_process *current, const char *name)
 		die_errno(-1, "hashtable_find");
 
 	new_node->data = sock_info_xdup(old_node->data);
-	info("process:%lu [abi:%d name:\"%s\" cwd:\"%s\"]"
-			" duplicated fd:%lu to fd:%lu by %s() call",
-			(unsigned long)tid, abi,
-			data->comm, data->cwd,
-			data->args[0], retval, name);
+	log_check("process %s[%lu:%u] duplicated fd:%ld to fd:%ld",
+			data->comm, (unsigned long)tid, abi,
+			data->args[0], retval);
 	return 0;
 }

@@ -27,6 +27,8 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "log.h"
+
 int sys_stat(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	int r;
@@ -52,7 +54,7 @@ int sys_stat(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const ch
 
 	r = magic_cast_string(current, path, 1);
 	if (r < 0) {
-		warning("failed to cast magic \"%s\": %s", path, magic_strerror(r));
+		log_warning("failed to cast magic=`%s': %s", path, magic_strerror(r));
 		switch (r) {
 		case MAGIC_ERROR_INVALID_KEY:
 		case MAGIC_ERROR_INVALID_TYPE:
@@ -81,7 +83,7 @@ int sys_stat(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const ch
 
 		if (pink_read_argument(tid, abi, &data->regs, 1, &addr))
 			pink_write_vm_data(tid, abi, addr, (const char *)&buf, sizeof(struct stat));
-		info("magic \"%s\" accepted", path);
+		log_magic("accepted magic=`%s'", path);
 		errno = (r == MAGIC_QUERY_FALSE) ? ENOENT : 0;
 		r = deny(current);
 	}

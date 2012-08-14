@@ -20,6 +20,7 @@ noinst_HEADERS= \
 		canonicalize.h \
 		file.h \
 		hashtable.h \
+		log.h \
 		macro.h \
 		path.h
 		proc.h \
@@ -34,6 +35,7 @@ sydbox_SOURCES= \
 		 canonicalize.c \
 		 file.c \
 		 hashtable.c \
+		 log.c \
 		 path.c \
 		 proc.c \
 		 seccomp.c \
@@ -53,7 +55,6 @@ sydbox_SOURCES= \
 		 sydbox-box.c \
 		 sydbox-callback.c \
 		 sydbox-config.c \
-		 sydbox-log.c \
 		 sydbox-magic.c \
 		 sydbox-panic.c \
 		 sydbox-path.c \
@@ -61,8 +62,8 @@ sydbox_SOURCES= \
 		 sydbox-sockinfo.c \
 		 sydbox-syscall.c \
 		 sydbox-systable.c \
-		 sydbox-util.c \
 		 sydbox-wild.c \
+		 sydbox-xfunc.c \
 		 sys-access.c \
 		 sys-chdir.c \
 		 sys-execve.c \

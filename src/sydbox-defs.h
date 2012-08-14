@@ -189,24 +189,6 @@ static const char *const trace_interrupt_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(trace_interrupt, int)
 
-enum log_level {
-	LOG_LEVEL_FATAL,
-	LOG_LEVEL_WARNING,
-	LOG_LEVEL_NOTICE,
-	LOG_LEVEL_INFO,
-	LOG_LEVEL_DEBUG,
-	LOG_LEVEL_TRACE,
-};
-static const char *const log_level_table[] = {
-	[LOG_LEVEL_FATAL] = "fatal",
-	[LOG_LEVEL_WARNING] = "warning",
-	[LOG_LEVEL_NOTICE] = "notice",
-	[LOG_LEVEL_INFO] = "info",
-	[LOG_LEVEL_DEBUG] = "debug",
-	[LOG_LEVEL_TRACE] = "trace",
-};
-DEFINE_STRING_TABLE_LOOKUP(log_level, int)
-
 #define MAGIC_QUERY_TRUE	1
 #define MAGIC_QUERY_FALSE	2
 
@@ -265,10 +247,10 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE_USE_SECCOMP,
 
 	MAGIC_KEY_LOG,
-	MAGIC_KEY_LOG_CONSOLE_FD,
 	MAGIC_KEY_LOG_FILE,
 	MAGIC_KEY_LOG_LEVEL,
-	MAGIC_KEY_LOG_TIMESTAMP,
+	MAGIC_KEY_LOG_CONSOLE_FD,
+	MAGIC_KEY_LOG_CONSOLE_LEVEL,
 
 	MAGIC_KEY_EXEC,
 	MAGIC_KEY_EXEC_KILL_IF_MATCH,
@@ -437,9 +419,6 @@ typedef struct {
 	bool trace_interrupt;
 	bool use_seccomp;
 
-	unsigned log_console_fd;
-	unsigned log_level;
-	bool log_timestamp;
 	char *log_file;
 
 	slist_t exec_kill_if_match;
@@ -521,23 +500,6 @@ char *xstrndup(const char *src, size_t n) PINK_GCC_ATTR((malloc));
 int xasprintf(char **strp, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
 char *xgetcwd(void);
 
-#define LOG_DEFAULT_PREFIX PACKAGE
-#define LOG_DEFAULT_SUFFIX "\n"
-
-void log_init(void);
-void log_close(void);
-void log_prefix(const char *p);
-void log_suffix(const char *s);
-void log_msg_va(unsigned level, const char *fmt, va_list ap) PINK_GCC_ATTR((format (printf, 2, 0)));
-void log_msg(unsigned level, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
-
-#define fatal(...)	log_msg(LOG_LEVEL_FATAL, __VA_ARGS__)
-#define warning(...)	log_msg(LOG_LEVEL_WARNING, __VA_ARGS__)
-#define notice(...)	log_msg(LOG_LEVEL_NOTICE, __VA_ARGS__)
-#define info(...)	log_msg(LOG_LEVEL_INFO, __VA_ARGS__)
-#define debug(...)	log_msg(LOG_LEVEL_DEBUG, __VA_ARGS__)
-#define trace(...)	log_msg(LOG_LEVEL_TRACE, __VA_ARGS__)
-
 void cont_all(void);
 void abort_all(int fatal_sig);
 int deny(struct pink_easy_process *current);
@@ -545,7 +507,7 @@ int restore(struct pink_easy_process *current);
 int panic(struct pink_easy_process *current);
 int violation(struct pink_easy_process *current, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
 
-int wildmatch_syd(const char *pattern, const char *text);
+int wildmatch_sydbox(const char *pattern, const char *text);
 int wildmatch_expand(const char *pattern, char ***buf);
 
 sock_info_t *sock_info_xdup(sock_info_t *src);
@@ -594,10 +556,9 @@ int magic_set_panic_decision(const void *val, struct pink_easy_process *current)
 int magic_set_violation_decision(const void *val, struct pink_easy_process *current);
 int magic_set_trace_magic_lock(const void *val, struct pink_easy_process *current);
 int magic_set_log_file(const void *val, struct pink_easy_process *current);
-int magic_set_log_console_fd(const void *val, struct pink_easy_process *current);
 int magic_set_log_level(const void *val, struct pink_easy_process *current);
-int magic_set_log_timestamp(const void *val, struct pink_easy_process *current);
-int magic_query_log_timestamp(struct pink_easy_process *current);
+int magic_set_log_console_fd(const void *val, struct pink_easy_process *current);
+int magic_set_log_console_level(const void *val, struct pink_easy_process *current);
 int magic_query_sandbox_exec(struct pink_easy_process *current);
 int magic_query_sandbox_read(struct pink_easy_process *current);
 int magic_query_sandbox_write(struct pink_easy_process *current);

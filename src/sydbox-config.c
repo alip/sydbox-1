@@ -194,9 +194,6 @@ void config_init(void)
 	sydbox->config.violation_decision = VIOLATION_DENY;
 	sydbox->config.violation_exit_code = -1;
 	sydbox->config.child.magic_lock = LOCK_UNSET;
-	sydbox->config.log_console_fd = STDERR_FILENO;
-	sydbox->config.log_level = LOG_LEVEL_NOTICE;
-	sydbox->config.log_timestamp = true;
 
 	init_JSON_config(&jc);
 	jc.depth = -1;

@@ -20,66 +20,49 @@
 #include "sydbox-defs.h"
 
 #include <stdlib.h>
-
+#include <errno.h>
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "log.h"
 #include "macro.h"
 
-int magic_set_log_file(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_set_log_file(const void *val, struct pink_easy_process *current)
 {
-	const char *str = val;
+	int r;
+	const char *filename = val;
 
-	if (!str /* || !*str */)
+	if (!filename /* || !*filename */)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	log_close();
 
-	if (!*str) {
-		if (sydbox->config.log_file)
-			free(sydbox->config.log_file);
-		sydbox->config.log_file = NULL;
-		return 0;
+	if (*filename) {
+		if ((r = log_init(filename)) < 0) {
+			errno = -r;
+			die_errno(3, "log_init for file `%s' failed", filename);
+		}
+	} else {
+		log_init(NULL);
 	}
 
-	if (sydbox->config.log_file)
-		free(sydbox->config.log_file);
-	sydbox->config.log_file = xstrdup(str);
-
-	log_init();
-
 	return 0;
 }
 
-int magic_set_log_console_fd(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_set_log_level(const void *val, struct pink_easy_process *current)
 {
-	int r = PTR_TO_INT(val);
-
-	if (r < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	sydbox->config.log_console_fd = r;
+	log_debug_level(PTR_TO_INT(val));
 	return 0;
 }
 
-int magic_set_log_level(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_set_log_console_fd(const void *val, struct pink_easy_process *current)
 {
-	int r = PTR_TO_INT(val);
-
-	if (r < 0 || r > 5)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	sydbox->config.log_level = r;
+	log_console_fd(PTR_TO_INT(val));
 	return 0;
 }
 
-int magic_set_log_timestamp(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_set_log_console_level(const void *val, struct pink_easy_process *current)
 {
-	sydbox->config.log_timestamp = PTR_TO_BOOL(val);
+	log_debug_console_level(PTR_TO_INT(val));
 	return 0;
-}
-
-int magic_query_log_timestamp(PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
-{
-	return sydbox->config.log_timestamp;
 }

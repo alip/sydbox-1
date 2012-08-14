@@ -31,6 +31,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
+#include "log.h"
 #include "proc.h"
 #include "strtable.h"
 
@@ -80,14 +81,18 @@ void cont_all(void)
 	struct pink_easy_process_list *list = pink_easy_context_get_process_list(sydbox->ctx);
 
 	count = pink_easy_process_list_walk(list, cont_one, NULL);
-	info("resumed %u process%s", count, count > 1 ? "es" : "");
+	log_info("resumed %u process%s", count, count > 1 ? "es" : "");
 }
 
 void abort_all(int fatal_sig)
 {
 	unsigned count;
-	struct pink_easy_process_list *list = pink_easy_context_get_process_list(sydbox->ctx);
+	struct pink_easy_process_list *list;
 
+	if (!sydbox || sydbox->ctx)
+		return;
+
+	list = pink_easy_context_get_process_list(sydbox->ctx);
 	switch (sydbox->config.abort_decision) {
 	case ABORT_CONTALL:
 		count = pink_easy_process_list_walk(list, cont_one, NULL);
@@ -108,12 +113,12 @@ static void report(struct pink_easy_process *current, const char *fmt, va_list a
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	warning("-- Access Violation! --");
-	warning("process id:%lu (abi:%d name:\"%s\")", (unsigned long)tid, abi, data->comm);
-	warning("cwd: `%s'", data->cwd);
+	log_access_v("-- Access Violation! --");
+	log_access_v("process id=%lu (abi=%d name:`%s')", (unsigned long)tid, abi, data->comm);
+	log_access_v("cwd: `%s'", data->cwd);
 
-	if (!proc_cmdline(tid, 128, &cmdline)) {
-		warning("cmdline: `%s'", cmdline);
+	if (proc_cmdline(tid, 128, &cmdline) == 0) {
+		log_access_v("cmdline: `%s'", cmdline);
 		free(cmdline);
 	}
 
@@ -129,24 +134,23 @@ int deny(struct pink_easy_process *current)
 	data->deny = true;
 	data->retval = errno2retval();
 
-	info("deny: %s[%lu:%u] return code:%ld",
+	log_access("%s[%lu:%u] return code:%ld",
 			data->comm,
 			(unsigned long)tid, abi,
 			data->retval);
 
 	if (!pink_write_syscall(tid, abi, PINK_SYSCALL_INVALID)) {
 		if (errno != ESRCH) {
-			warning("deny: write syscall:%#x failed (errno:%d %s)",
+			log_warning("write syscall:%#x failed (errno:%d %s)",
 					PINK_SYSCALL_INVALID,
 					errno, strerror(errno));
 			return panic(current);
 		}
-		notice("deny: write syscall:%#x failed (errno:%d %s)",
+		log_trace("write syscall:%#x failed (errno:%d %s)",
 				PINK_SYSCALL_INVALID,
 				errno, strerror(errno));
-		notice("path_prefix: drop process %s[%lu:%u]",
-				data->comm,
-				(unsigned long)tid, abi);
+		log_trace("drop process %s[%lu:%u]",
+				data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
@@ -160,24 +164,22 @@ int restore(struct pink_easy_process *current)
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	info("restore: %s[%lu:%d] sys:%s()",
-			data->comm,
-			(unsigned long)tid, abi,
+	log_trace("%s[%lu:%d] sys:%s()",
+			data->comm, (unsigned long)tid, abi,
 			pink_syscall_name(data->sno, abi));
 
 	/* Restore system call number */
 	if (!pink_write_syscall(tid, abi, data->sno)) {
 		if (errno == ESRCH) {
-			notice("restore: write syscall:%#lx failed (errno:%d %s)",
+			log_trace("write syscall:%#lx failed (errno:%d %s)",
 					data->sno, errno, strerror(errno));
-			notice("restore: drop process %s[%lu:%d]",
-					data->comm,
-					(unsigned long)tid, abi);
+			log_trace("drop process %s[%lu:%d]",
+					data->comm, (unsigned long)tid, abi);
 			return PINK_EASY_CFLAG_DROP;
 		}
-		warning("restore: write syscall:%#lx failed (errno:%d %s)",
+		log_warning("write syscall:%#lx failed (errno:%d %s)",
 				data->sno, errno, strerror(errno));
-		/* TODO: Why doesn't panic(current) work here? */
+		return panic(current);
 	}
 
 	/* Return the saved return value */
@@ -190,18 +192,20 @@ int restore(struct pink_easy_process *current)
 	}
 	if (!pink_write_retval(tid, abi, retval, error)) {
 		if (errno == ESRCH) {
-			notice("restore: write retval:%d and error(%d %s) failed (errno:%d %s)",
-					retval, error, errno_to_string(error),
+			log_trace("write retval=%d and error=%s failed"
+					" (errno:%d %s)",
+					retval, errno_to_string(error),
 					errno, strerror(errno));
-			notice("restore: drop process %s[%lu:%d]",
-					data->comm,
-					(unsigned long)tid, abi);
+			log_trace("drop process %s[%lu:%d]",
+					data->comm, (unsigned long)tid, abi);
 			return PINK_EASY_CFLAG_DROP;
 		}
-		warning("restore: write retval:%d and error(%d %s) failed (errno:%d %s)",
-				retval, error, errno_to_string(error),
+
+		log_warning("write retval=%d and error=%s failed"
+				" (errno:%d %s)",
+				retval, errno_to_string(error),
 				errno, strerror(errno));
-		/* TODO: Why doesn't panic(current) work here? */
+		return panic(current);
 	}
 
 	return 0;
@@ -214,22 +218,22 @@ int panic(struct pink_easy_process *current)
 
 	switch (sydbox->config.panic_decision) {
 	case PANIC_KILL:
-		warning("panic! killing the guilty process");
+		log_warning("panic! killing the guilty process");
 		kill_one(current, INT_TO_PTR(SIGKILL));
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONT:
-		warning("panic! resuming the guilty process");
+		log_warning("panic! resuming the guilty process");
 		cont_one(current, NULL);
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONTALL:
-		warning("panic! resuming all processes");
+		log_warning("panic! resuming all processes");
 		count = pink_easy_process_list_walk(list, cont_one, NULL);
-		warning("resumed %u process%s, exiting", count, count > 1 ? "es" : "");
+		log_warning("resumed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	case PANIC_KILLALL:
-		warning("panic! killing all processes");
+		log_warning("panic! killing all processes");
 		count = pink_easy_process_list_walk(list, kill_one, INT_TO_PTR(SIGKILL));
-		warning("killed %u process%s, exiting", count, count > 1 ? "es" : "");
+		log_warning("killed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	default:
 		abort();
@@ -255,22 +259,22 @@ int violation(struct pink_easy_process *current, const char *fmt, ...)
 	case VIOLATION_DENY:
 		return 0; /* Let the caller handle this */
 	case VIOLATION_KILL:
-		warning("killing the guilty process");
+		log_warning("killing the guilty process");
 		kill_one(current, INT_TO_PTR(SIGKILL));
 		return PINK_EASY_CFLAG_DROP;
 	case VIOLATION_CONT:
-		warning("resuming the guilty process");
+		log_warning("resuming the guilty process");
 		cont_one(current, NULL);
 		return PINK_EASY_CFLAG_DROP;
 	case VIOLATION_CONTALL:
-		warning("resuming all processes");
+		log_warning("resuming all processes");
 		count = pink_easy_process_list_walk(list, cont_one, NULL);
-		warning("resumed %u processes, exiting", count);
+		log_warning("resumed %u processes, exiting", count);
 		break;
 	case VIOLATION_KILLALL:
-		warning("killing all processes");
+		log_warning("killing all processes");
 		count = pink_easy_process_list_walk(list, kill_one, INT_TO_PTR(SIGKILL));
-		warning("killed %u processes, exiting", count);
+		log_warning("killed %u processes, exiting", count);
 		break;
 	default:
 		abort();

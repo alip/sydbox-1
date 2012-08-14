@@ -354,14 +354,6 @@ static const struct key key_table[] = {
 			.query  = magic_query_trace_use_seccomp,
 		},
 
-	[MAGIC_KEY_LOG_CONSOLE_FD] =
-		{
-			.name   = "console_fd",
-			.lname  = "log.console_fd",
-			.parent = MAGIC_KEY_LOG,
-			.type   = MAGIC_TYPE_INTEGER,
-			.set    = magic_set_log_console_fd,
-		},
 	[MAGIC_KEY_LOG_FILE] =
 		{
 			.name   = "file",
@@ -378,14 +370,21 @@ static const struct key key_table[] = {
 			.type   = MAGIC_TYPE_INTEGER,
 			.set    = magic_set_log_level,
 		},
-	[MAGIC_KEY_LOG_TIMESTAMP] =
+	[MAGIC_KEY_LOG_CONSOLE_FD] =
 		{
-			.name   = "timestamp",
-			.lname  = "log.timestamp",
+			.name   = "console_fd",
+			.lname  = "log.console_fd",
 			.parent = MAGIC_KEY_LOG,
-			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = magic_set_log_timestamp,
-			.query  = magic_query_log_timestamp,
+			.type   = MAGIC_TYPE_INTEGER,
+			.set    = magic_set_log_console_fd,
+		},
+	[MAGIC_KEY_LOG_CONSOLE_LEVEL] =
+		{
+			.name   = "console_level",
+			.lname  = "log.console_level",
+			.parent = MAGIC_KEY_LOG,
+			.type   = MAGIC_TYPE_INTEGER,
+			.set    = magic_set_log_console_level,
 		},
 
 	[MAGIC_KEY_EXEC_KILL_IF_MATCH] =

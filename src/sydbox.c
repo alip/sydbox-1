@@ -68,6 +68,7 @@
 #include <getopt.h>
 
 #include "macro.h"
+#include "log.h"
 #include "util.h"
 #ifdef WANT_SECCOMP
 #include "seccomp.h"
@@ -115,7 +116,6 @@ usage: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] {-p pid...}\n\
    or: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
 -V          -- Show version and exit\n\
--v          -- Be verbose, may be repeated\n\
 -c pathspec -- path spec to the configuration file, may be repeated\n\
 -m magic    -- run a magic command during init, may be repeated\n\
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
@@ -243,7 +243,7 @@ static void sydbox_startup_child(char **argv)
 	if (strchr(filename, '/')) {
 		if (strlen(filename) > sizeof pathname - 1) {
 			errno = ENAMETOOLONG;
-			die_errno(1, "exec");
+			die_errno(2, "exec");
 		}
 		strcpy(pathname, filename);
 	}
@@ -331,7 +331,7 @@ static void sydbox_startup_child(char **argv)
 			PINK_EASY_PROCESS_IGNORE_ONE_SIGSTOP);
 	if (current == NULL) {
 		kill(pid, SIGKILL);
-		die_errno(1, "pink_easy_process_new");
+		die_errno(-1, "process_new failed, killed %lu", (unsigned long)pid);
 	}
 }
 
@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 	   to children, but probably noone really needs that.  */
 	signal(SIGCHLD, SIG_DFL);
 
-	while ((opt = getopt_long(argc, argv, "hVvc:m:E:", long_options, &options_index)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "hVc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name, "profile")) {
@@ -385,9 +385,6 @@ int main(int argc, char **argv)
 		case 'V':
 			about();
 			return 0;
-		case 'v':
-			sydbox->config.log_level++;
-			break;
 		case 'c':
 			config_reset();
 			config_parse_spec(optarg);
@@ -415,7 +412,6 @@ int main(int argc, char **argv)
 	}
 
 	pink_easy_init();
-	log_init();
 	config_done();
 	callback_init();
 	systable_init();
@@ -439,7 +435,7 @@ int main(int argc, char **argv)
 
 	sydbox->ctx = pink_easy_context_new(ptrace_options, &sydbox->callback_table, NULL, NULL);
 	if (sydbox->ctx == NULL)
-		die_errno(-1, "pink_easy_context_new");
+		die_errno(-1, "context_new failed");
 	pink_easy_context_set_step(sydbox->ctx, ptrace_default_step);
 
 	/* Ignore initial execve(2) related events

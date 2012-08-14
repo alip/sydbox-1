@@ -20,6 +20,7 @@
 #include "sydbox-defs.h"
 
 #include <assert.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,22 +28,24 @@
 #include <unistd.h>
 #include <errno.h>
 
-void
-die(int code, const char *fmt, ...)
+#include "log.h"
+
+void die(int code, const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	log_msg_va(0, fmt, ap);
+	log_msg_va(LOG_LEVEL_FATAL, fmt, ap);
 	va_end(ap);
+
+	abort_all(SIGTERM);
 
 	if (code < 0)
 		abort();
 	exit(code);
 }
 
-void
-die_errno(int code, const char *fmt, ...)
+void die_errno(int code, const char *fmt, ...)
 {
 	int save_errno;
 	va_list ap;
@@ -51,12 +54,12 @@ die_errno(int code, const char *fmt, ...)
 
 	log_suffix(NULL);
 	va_start(ap, fmt);
-	log_msg_va(0, fmt, ap);
+	log_msg_va(LOG_LEVEL_FATAL, fmt, ap);
 	va_end(ap);
 	log_suffix(LOG_DEFAULT_SUFFIX);
 
 	log_prefix(NULL);
-	log_msg(0, " (errno:%d %s)", save_errno, strerror(save_errno));
+	log_msg(LOG_LEVEL_FATAL, " (errno:%d %s)", save_errno, strerror(save_errno));
 	log_prefix(LOG_DEFAULT_PREFIX);
 
 	if (code < 0)
@@ -64,8 +67,7 @@ die_errno(int code, const char *fmt, ...)
 	exit(code);
 }
 
-void *
-xmalloc(size_t size)
+void *xmalloc(size_t size)
 {
 	void *ptr;
 
@@ -76,8 +78,7 @@ xmalloc(size_t size)
 	return ptr;
 }
 
-void *
-xcalloc(size_t nmemb, size_t size)
+void *xcalloc(size_t nmemb, size_t size)
 {
 	void *ptr;
 
@@ -88,8 +89,7 @@ xcalloc(size_t nmemb, size_t size)
 	return ptr;
 }
 
-void *
-xrealloc(void *ptr, size_t size)
+void *xrealloc(void *ptr, size_t size)
 {
 	void *nptr;
 
@@ -100,8 +100,7 @@ xrealloc(void *ptr, size_t size)
 	return nptr;
 }
 
-char *
-xstrdup(const char *src)
+char *xstrdup(const char *src)
 {
 	char *dest;
 
@@ -112,8 +111,7 @@ xstrdup(const char *src)
 	return dest;
 }
 
-char *
-xstrndup(const char *src, size_t n)
+char *xstrndup(const char *src, size_t n)
 {
 	char *dest;
 
@@ -124,8 +122,7 @@ xstrndup(const char *src, size_t n)
 	return dest;
 }
 
-int
-xasprintf(char **strp, const char *fmt, ...)
+int xasprintf(char **strp, const char *fmt, ...)
 {
 	int r;
 	char *dest;
@@ -146,8 +143,7 @@ xasprintf(char **strp, const char *fmt, ...)
 	return r;
 }
 
-char *
-xgetcwd(void)
+char *xgetcwd(void)
 {
 	char *cwd;
 #ifdef _GNU_SOURCE
@@ -156,7 +152,7 @@ xgetcwd(void)
 	cwd = xmalloc(sizeof(char) * (PATH_MAX + 1));
 	cwd = getcwd(cwd, PATH_MAX + 1);
 #endif
-	if (cwd == NULL)
+	if (!cwd)
 		die_errno(-1, "getcwd");
 	return cwd;
 }

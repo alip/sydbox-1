@@ -26,6 +26,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
+#include "log.h"
 
 static int magic_set_socklist(const void *val, slist_t *head)
 {
@@ -50,14 +51,14 @@ static int magic_set_socklist(const void *val, slist_t *head)
 		case SYDBOX_MAGIC_ADD_CHAR:
 			errno = 0;
 			if ((r = sock_match_new(list[c], &match)) < 0) {
-				warning("invalid address `%s' (errno:%d %s)",
+				log_warning("invalid address `%s' (errno:%d %s)",
 						list[c], -r, strerror(-r));
 				r = MAGIC_ERROR_INVALID_VALUE;
 				goto end;
 			}
 			if (errno == EAFNOSUPPORT) {
 				/* ipv6 support disabled? */
-				info("unsupported address `%s' ignoring", list[c]);
+				log_magic("ignore unsupported address=`%s'", list[c]);
 				goto end;
 			}
 			node = xcalloc(1, sizeof(struct snode));

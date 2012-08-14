@@ -389,13 +389,13 @@ SYDBOX_OPTIONS='
 
 if test "$verbose" = "t"
 then
-	SYDBOX_OPTIONS="$SYDBOX_OPTIONS -vv"
+	SYDBOX_OPTIONS="$SYDBOX_OPTIONS -m log/console_level:511"
 fi
 
 if test -n "$valgrind"
 then
 	SYDBOX_VALGRIND="$TEST_DIRECTORY"/valgrind
-	SYDBOX_OPTIONS="$SYDBOX_OPTIONS -vvv"
+	SYDBOX_OPTIONS="$SYDBOX_OPTIONS -m log/console_level:511"
 	PATH=$SYDBOX_VALGRIND/bin:$PATH
 	export SYDBOX_VALGRIND
 #elif test -n "$SYDBOX_TEST_INSTALLED" ; then

@@ -30,6 +30,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
+#include "log.h"
 #include "proc.h"
 #ifdef WANT_SECCOMP
 #include "seccomp.h"
@@ -188,25 +189,29 @@ int sysenter(struct pink_easy_process *current)
 
 	if (!pink_read_syscall(tid, abi, &data->regs, &no)) {
 		if (errno != ESRCH) {
-			warning("pink_read_syscall(%lu, %d) failed (errno:%d %s)",
+			log_warning("read_syscall(%lu, %d) failed"
+					" (errno:%d %s)",
 					(unsigned long)tid, abi,
 					errno, strerror(errno));
 			return panic(current);
 		}
+		log_trace("read_syscall(%lu, %d) failed (errno:%d %s)",
+				(unsigned long)tid, abi,
+				errno, strerror(errno));
+
 		return PINK_EASY_CFLAG_DROP;
 	}
 
 	data->sno = no;
 	entry = systable_lookup(no, abi);
 	if (entry)
-		debug("process:%lu is entering system call \"%s\"",
-				(unsigned long)tid,
+		log_syscall("process %s[%lu:%u] enters syscall=`%s'",
+				data->comm, (unsigned long)tid, abi,
 				entry->name);
 	else {
-		name = pink_syscall_name(no, abi);
-		trace("process:%lu is entering system call \"%s\"",
-				(unsigned long)tid,
-				name ? name : "???");
+		log_sys_all("process %s[%lu:%u] enters syscall=%ld",
+				data->comm, (unsigned long)tid, abi,
+				no);
 	}
 
 	return (entry && entry->enter) ? entry->enter(current, entry->name) : 0;
