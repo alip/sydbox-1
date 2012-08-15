@@ -848,47 +848,52 @@
         </thead>
         <tbody>
           <row>
-            <entry>ACCESS_V</entry>
+            <entry><varname>WARNING</varname></entry>
             <entry>1</entry>
+            <entry>Log warnings</entry>
+          </row>
+          <row>
+            <entry><varname>ACCESS_V</varname></entry>
+            <entry>2</entry>
             <entry>Log access violations</entry>
           </row>
           <row>
-            <entry>INFO</entry>
-            <entry>2</entry>
+            <entry><varname>INFO</varname></entry>
+            <entry>4</entry>
             <entry>Log messages about program workflow</entry>
           </row>
           <row>
-            <entry>ACCESS</entry>
-            <entry>4</entry>
+            <entry><varname>ACCESS</varname></entry>
+            <entry>8</entry>
             <entry>Log denied/granted access</entry>
           </row>
           <row>
-            <entry>MAGIC</entry>
-            <entry>8</entry>
+            <entry><varname>MAGIC</varname></entry>
+            <entry>16</entry>
             <entry>Log magic commands</entry>
           </row>
           <row>
-            <entry>CHECK</entry>
-            <entry>16</entry>
+            <entry><varname>CHECK</varname></entry>
+            <entry>32</entry>
             <entry>Log path/socket-address lookups and checks</entry>
           </row>
           <row>
-            <entry>MATCH</entry>
-            <entry>32</entry>
+            <entry><varname>MATCH</varname></entry>
+            <entry>64</entry>
             <entry>Log pattern matching, socket-address matching</entry>
           </row>
           <row>
-            <entry>TRACE</entry>
-            <entry>64</entry>
+            <entry><varname>TRACE</varname></entry>
+            <entry>128</entry>
             <entry>Log trace calls</entry>
           </row>
           <row>
-            <entry>SYSCALL</entry>
-            <entry>128</entry>
+            <entry><varname>SYSCALL</varname></entry>
+            <entry>256</entry>
             <entry>Log intercepted system calls</entry>
           </row>
           <row>
-            <entry>SYS_ALL</entry>
+            <entry><varname>SYS_ALL</varname></entry>
             <entry>1024</entry>
             <entry>Log all system calls</entry>
           </row>

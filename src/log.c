@@ -38,8 +38,8 @@
 #define LOG_LEVEL_MINIMUM	LOG_LEVEL_FATAL
 
 /* where to log (default: stderr) */
-static int logfd = -1;
-static int logcfd = STDERR_FILENO;
+static FILE *logfp = NULL;
+static FILE *logcfp = NULL;
 
 /* logging detail level. */
 static int debug = (LOG_LEVEL_FATAL
@@ -54,10 +54,15 @@ static const char *prefix = LOG_DEFAULT_PREFIX;
 static const char *suffix = LOG_DEFAULT_SUFFIX;
 
 PINK_GCC_ATTR((format (printf, 4, 0)))
-static void log_me(int fd, int level, const char *func, const char *fmt, va_list ap)
+static void log_me(FILE *fp, int level, const char *func, const char *fmt, va_list ap)
 {
-	int tty;
+	int fd, tty;
 	const char *p, *s, *l;
+
+	if (fp == NULL)
+		return;
+	if ((fd = fileno(fp)) < 0)
+		return;
 
 	tty = isatty(fd);
 
@@ -79,26 +84,30 @@ static void log_me(int fd, int level, const char *func, const char *fmt, va_list
 		break;
 	}
 
-	dprintf(fd, "%s", p);
+	fprintf(fp, "%s", p);
 	if (prefix)
-		dprintf(fd, "%s@%lu: ", prefix, time(NULL));
+		fprintf(fp, "%s@%lu: ", prefix, time(NULL));
 	if (func)
-		dprintf(fd, "%s: ", func);
-	vdprintf(fd, fmt, ap);
-	dprintf(fd, "%s%s", s, suffix ? suffix : "");
+		fprintf(fp, "%s: ", func);
+	vfprintf(fp, fmt, ap);
+	fprintf(fp, "%s%s", s, suffix ? suffix : "");
 }
 
 int log_init(const char *filename)
 {
-	if (logfd > 0 && logfd != STDERR_FILENO)
-		close_nointr(logfd);
+	if (logfp && logfp != stderr)
+		fclose(logfp);
+
+	if (logcfp == NULL)
+		logcfp = stderr;
 
 	if (filename) {
-		logfd = open(filename, O_WRONLY|O_APPEND|O_CREAT);
-		if (logfd < 0)
+		logfp = fopen(filename, "a");
+		if (logfp == NULL)
 			return -errno;
+		setbuf(logfp, NULL);
 	} else {
-		logfd = -1;
+		logfp = NULL;
 	}
 
 	log_debug_level(debug);
@@ -109,14 +118,21 @@ int log_init(const char *filename)
 
 void log_close(void)
 {
-	if (logfd > 0)
-		close_nointr(logfd);
-	logfd = -1;
+	if (logfp != NULL)
+		fclose(logfp);
+	logfp = NULL;
 }
 
-void log_console_fd(int fd)
+int log_console_fd(int fd)
 {
-	logcfd = fd;
+	if (logcfp != stderr)
+		fclose(logcfp);
+
+	logcfp = fdopen(fd, "a");
+	if (!logcfp)
+		return -errno;
+
+	return 0;
 }
 
 void log_debug_level(int debug_level)
@@ -141,10 +157,18 @@ void log_suffix(const char *s)
 
 void log_msg_va(unsigned level, const char *fmt, va_list ap)
 {
-	if (logfd > 0 && (level & debug))
-		log_me(logfd, level, NULL, fmt, ap);
-	if (logcfd > 0 && (level & cdebug))
-		log_me(logcfd, level, NULL, fmt, ap);
+	va_list aq;
+
+	if (logcfp != NULL && (level & cdebug)) {
+		va_copy(aq, ap);
+		log_me(logcfp, level, NULL, fmt, aq);
+		va_end(aq);
+	}
+	if (logfp != NULL && (level & debug)) {
+		va_copy(aq, ap);
+		log_me(logfp, level, NULL, fmt, aq);
+		va_end(aq);
+	}
 }
 
 void log_msg(unsigned level, const char *fmt, ...)
@@ -158,10 +182,10 @@ void log_msg(unsigned level, const char *fmt, ...)
 
 void log_msg_va_f(unsigned level, const char *func, const char *fmt, va_list ap)
 {
-	if (logfd > 0 && (level & debug))
-		log_me(logfd, level, func, fmt, ap);
-	if (logcfd > 0 && (level & cdebug))
-		log_me(logcfd, level, func, fmt, ap);
+	if (logcfp != NULL && (level & cdebug))
+		log_me(logcfp, level, func, fmt, ap);
+	if (logfp != NULL && (level & debug))
+		log_me(logfp, level, func, fmt, ap);
 }
 
 void log_msg_f(unsigned level, const char *func, const char *fmt, ...)

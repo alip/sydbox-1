@@ -33,9 +33,9 @@
     },
 
     "log" : { "file"           : "", /* Specify a path or leave it empty for no file logging. */
-              "level"          : 0, /* log level, consult manual page */
+              "level"          : 511, /* log level, consult manual page */
               "console_fd"     : 2, /* console file descriptor, default: stderr */
-              "console_level"  : 1 /* console log level, consult manual page */
+              "console_level"  : 3 /* console log level, consult manual page */
             },
 
     "exec" : { "resume_if_match" : [ ],

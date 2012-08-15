@@ -37,31 +37,31 @@
 #define LOG_DEFAULT_SUFFIX "\n"
 
 /* Log levels */
-#define LOG_LEVEL_ACCESS_V	0x0001 /* log access violations */
-#define LOG_LEVEL_INFO		0x0002 /* log messages about program workflow */
-#define LOG_LEVEL_ACCESS	0x0004 /* log denied/granted access */
-#define LOG_LEVEL_MAGIC		0x0008 /* log magic commands */
-#define LOG_LEVEL_CHECK		0x0010 /* log path/socket-address lookups and checks */
-#define LOG_LEVEL_MATCH		0x0020 /* log pattern matching, socket-address matching */
-#define LOG_LEVEL_TRACE		0x0040 /* log trace calls */
-#define LOG_LEVEL_SYSCALL	0x0080 /* log intercepted system calls */
+#define LOG_LEVEL_WARNING	0x0001 /* log warnings */
+#define LOG_LEVEL_ACCESS_V	0x0002 /* log access violations */
+#define LOG_LEVEL_INFO		0x0004 /* log messages about program workflow */
+#define LOG_LEVEL_ACCESS	0x0008 /* log denied/granted access */
+#define LOG_LEVEL_MAGIC		0x0010 /* log magic commands */
+#define LOG_LEVEL_CHECK		0x0020 /* log path/socket-address lookups and checks */
+#define LOG_LEVEL_MATCH		0x0040 /* log pattern matching, socket-address matching */
+#define LOG_LEVEL_TRACE		0x0080 /* log trace calls */
+#define LOG_LEVEL_SYSCALL	0x0100 /* log intercepted system calls */
 #define LOG_LEVEL_SYS_ALL	0x0400 /* log all system calls */
 
 /* Log levels below are always on: */
-#define LOG_LEVEL_WARNING	0x0100
 #define LOG_LEVEL_FATAL		0x0200
 
-int log_init(const char *filename);
-void log_close(void);
-void log_console_fd(int fd);
-void log_debug_level(int debug_level);
-void log_debug_console_level(int debug_level);
-void log_prefix(const char *p);
-void log_suffix(const char *s);
-void log_msg_va(unsigned level, const char *fmt, va_list ap) PINK_GCC_ATTR((format (printf, 2, 0)));
-void log_msg_va_f(unsigned level, const char *func, const char *fmt, va_list ap) PINK_GCC_ATTR((format (printf, 2, 0)));
-void log_msg(unsigned level, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
-void log_msg_f(unsigned level, const char *func, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 3, 4)));
+extern int log_init(const char *filename);
+extern void log_close(void);
+extern int log_console_fd(int fd);
+extern void log_debug_level(int debug_level);
+extern void log_debug_console_level(int debug_level);
+extern void log_prefix(const char *p);
+extern void log_suffix(const char *s);
+extern void log_msg_va(unsigned level, const char *fmt, va_list ap) PINK_GCC_ATTR((format (printf, 2, 0)));
+extern void log_msg_va_f(unsigned level, const char *func, const char *fmt, va_list ap) PINK_GCC_ATTR((format (printf, 2, 0)));
+extern void log_msg(unsigned level, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
+extern void log_msg_f(unsigned level, const char *func, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 3, 4)));
 
 /* Shorthand notations */
 #define log_fatal(...)		log_msg_f(LOG_LEVEL_FATAL, __func__, __VA_ARGS__)

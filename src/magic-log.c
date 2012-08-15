@@ -57,7 +57,14 @@ int magic_set_log_level(const void *val, struct pink_easy_process *current)
 
 int magic_set_log_console_fd(const void *val, struct pink_easy_process *current)
 {
-	log_console_fd(PTR_TO_INT(val));
+	int r;
+	int fd = PTR_TO_INT(val);
+
+	if ((r = log_console_fd(fd)) < 0) {
+		errno = -r;
+		die_errno(3, "log_console_fd for fd `%d' failed", fd);
+	}
+
 	return 0;
 }
 
