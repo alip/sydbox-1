@@ -29,6 +29,8 @@ noinst_HEADERS= \
 		strtable.h \
 		util.h \
 		wildmatch.h \
+		sys-check.h \
+		sydbox-conf.c \
 		sydbox-defs.h
 sydbox_SOURCES= \
 		 JSON_parser.c \

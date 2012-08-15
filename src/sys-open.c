@@ -31,18 +31,18 @@
 
 #include "log.h"
 
-static inline bool open_wr_check(long flags, enum create_mode *create, bool *resolv)
+static bool open_wr_check(long flags, enum file_exist_mode *file_mode, bool *resolve)
 {
-	enum create_mode c;
+	enum file_exist_mode f;
 	bool r;
 
-	assert(create);
-	assert(resolv);
+	assert(file_mode);
+	assert(resolve);
 
 	r = true;
-	c = flags & O_CREAT ? MAY_CREATE : NO_CREATE;
+	f = flags & O_CREAT ? FILE_MAY_EXIST : FILE_MUST_EXIST;
 	if (flags & O_EXCL) {
-		if (c == NO_CREATE) {
+		if (f == FILE_MUST_EXIST) {
 			/* Quoting open(2):
 			 * In general, the behavior of O_EXCL is undefined if
 			 * it is used without O_CREAT.  There is one exception:
@@ -52,8 +52,7 @@ static inline bool open_wr_check(long flags, enum create_mode *create, bool *res
 			 * mounted), open() fails.
 			 */
 			/* void */;
-		}
-		else {
+		} else {
 			/* Two things to mention here:
 			 * - If O_EXCL is specified in conjunction with
 			 *   O_CREAT, and pathname already exists, then open()
@@ -61,13 +60,13 @@ static inline bool open_wr_check(long flags, enum create_mode *create, bool *res
 			 * - When both O_CREAT and O_EXCL are specified,
 			 *   symbolic links are not followed.
 			 */
-			c = MUST_CREATE;
+			f = FILE_CANT_EXIST;
 			r = false;
 		}
 	}
 
-	*create = c;
-	*resolv = r;
+	*file_mode = f;
+	*resolve = r;
 
 	/* `unsafe' flag combinations:
 	 * - O_RDONLY | O_CREAT
@@ -90,13 +89,13 @@ static inline bool open_wr_check(long flags, enum create_mode *create, bool *res
 int sys_open(struct pink_easy_process *current, const char *name)
 {
 	int r;
-	bool resolve, wr;
-	enum create_mode create;
-	long flags;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	sys_info_t info;
+	bool resolve, wr;
+	enum file_exist_mode file_mode;
+	long flags;
+	sysinfo_t info;
 
 	if (sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
@@ -117,27 +116,25 @@ int sys_open(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	wr = open_wr_check(flags, &create, &resolve);
-	log_trace("wr_check:%ld returned wr=%s create=%s resolve=%s",
+	wr = open_wr_check(flags, &file_mode, &resolve);
+	log_trace("wr_check:%ld returned wr=%s file_mode=%s resolve=%s",
 			flags,
 			wr ? "true" : "false",
-			create_mode_to_string(create),
+			file_exist_mode_to_string(file_mode),
 			resolve ? "true" : "false");
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.create  = create;
-	info.resolve = resolve;
+	init_sysinfo(&info);
+	info.file_mode = file_mode;
+	info.no_resolve = !resolve;
 
 	r = 0;
-	if (wr && !sandbox_write_off(data)) {
-		info.whitelisting = sandbox_write_deny(data);
+	if (wr && !sandbox_write_off(data))
 		r = box_check_path(current, name, &info);
-	}
 
 	if (!r && !data->deny && !sandbox_read_off(data)) {
-		info.whitelisting = sandbox_read_deny(data);
-		info.wblist = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
-		info.filter = &sydbox->config.filter_read;
+		info.access_mode = sandbox_read_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
+		info.access_list = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
+		info.access_filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
 
@@ -147,13 +144,13 @@ int sys_open(struct pink_easy_process *current, const char *name)
 int sys_openat(struct pink_easy_process *current, const char *name)
 {
 	int r;
-	bool resolve, wr;
-	enum create_mode create;
-	long flags;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	sys_info_t info;
+	bool resolve, wr;
+	enum file_exist_mode file_mode;
+	long flags;
+	sysinfo_t info;
 
 	if (sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
@@ -175,24 +172,22 @@ int sys_openat(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	wr = open_wr_check(flags, &create, &resolve);
+	wr = open_wr_check(flags, &file_mode, &resolve);
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.at        = true;
+	init_sysinfo(&info);
+	info.at_func = true;
 	info.arg_index = 1;
-	info.create    = create;
-	info.resolve   = resolve;
+	info.file_mode = file_mode;
+	info.no_resolve = !resolve;
 
 	r = 0;
-	if (wr && !sandbox_write_off(data)) {
-		info.whitelisting = sandbox_write_deny(data);
+	if (wr && !sandbox_write_off(data))
 		r = box_check_path(current, name, &info);
-	}
 
 	if (!r && !data->deny && !sandbox_read_off(data)) {
-		info.whitelisting = sandbox_read_deny(data);
-		info.wblist = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
-		info.filter = &sydbox->config.filter_read;
+		info.access_mode = sandbox_read_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
+		info.access_list = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
+		info.access_filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
 

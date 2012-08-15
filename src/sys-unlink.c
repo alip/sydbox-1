@@ -32,14 +32,14 @@
 
 int sys_unlink(struct pink_easy_process *current, const char *name)
 {
-	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
+	sysinfo_t info;
 
 	if (sandbox_write_off(data))
 		return 0;
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = sandbox_write_deny(data);
+	init_sysinfo(&info);
+	info.file_mode = FILE_MAY_EXIST;
 
 	return box_check_path(current, name, &info);
 }
@@ -50,7 +50,7 @@ int sys_unlinkat(struct pink_easy_process *current, const char *name)
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	sys_info_t info;
+	sysinfo_t info;
 
 	if (sandbox_write_off(data))
 		return 0;
@@ -76,11 +76,11 @@ int sys_unlinkat(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.at           = true;
-	info.arg_index    = 1;
-	info.resolve      = !!(flags & AT_REMOVEDIR);
-	info.whitelisting = sandbox_write_deny(data);
+	init_sysinfo(&info);
+	info.at_func = true;
+	info.arg_index = 1;
+	info.file_mode = FILE_MAY_EXIST;
+	info.no_resolve = !(flags & AT_REMOVEDIR);
 
 	return box_check_path(current, name, &info);
 }

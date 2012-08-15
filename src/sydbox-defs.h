@@ -36,7 +36,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <sys/queue.h>
 #include <sys/types.h>
 
@@ -50,49 +49,8 @@
 #include "hashtable.h"
 #include "slist.h"
 #include "util.h"
-
-/* Definitions */
-#ifndef SYDBOX_PATH_MAX
-#if defined(PATH_MAX)
-#define SYDBOX_PATH_MAX (PATH_MAX+1)
-#elif defined(MAXPATHLEN)
-#define SYDBOX_PATH_MAX (MAXPATHLEN+1)
-#else
-#define SYDBOX_PATH_MAX (256+1)
-#endif
-#endif
-
-#ifndef SYDBOX_PROFILE_CHAR
-#define SYDBOX_PROFILE_CHAR '@'
-#endif /* !SYDBOX_PROFILE_CHAR */
-
-#ifndef SYDBOX_CONFIG_ENV
-#define SYDBOX_CONFIG_ENV "SYDBOX_CONFIG"
-#endif /* !SYDBOX_CONFIG_ENV */
-
-#ifndef SYDBOX_JSON_DEBUG_ENV
-#define SYDBOX_JSON_DEBUG_ENV "SYDBOX_JSON_DEBUG"
-#endif /* !SYDBOX_JSON_DEBUG_ENV */
-
-#ifndef SYDBOX_MAGIC_PREFIX
-#define SYDBOX_MAGIC_PREFIX "/dev/sydbox"
-#endif /* !SYDBOX_MAGIC_PREFIX */
-
-#ifndef SYDBOX_MAGIC_SEP_CHAR
-#define SYDBOX_MAGIC_SEP_CHAR ':'
-#endif /* !SYDBOX_MAGIC_SEP_CHAR */
-
-#ifndef SYDBOX_MAGIC_QUERY_CHAR
-#define SYDBOX_MAGIC_QUERY_CHAR '?'
-#endif /* !SYDBOX_MAGIC_QUERY_CHAR */
-
-#ifndef SYDBOX_MAGIC_ADD_CHAR
-#define SYDBOX_MAGIC_ADD_CHAR '+'
-#endif /* !SYDBOX_MAGIC_ADD_CHAR */
-
-#ifndef SYDBOX_MAGIC_REMOVE_CHAR
-#define SYDBOX_MAGIC_REMOVE_CHAR '-'
-#endif /* !SYDBOX_MAGIC_REMOVE_CHAR */
+#include "sys-check.h"
+#include "sydbox-conf.h"
 
 /* Enumerations */
 enum sandbox_mode {
@@ -106,18 +64,6 @@ static const char *const sandbox_mode_table[] = {
 	[SANDBOX_ALLOW] = "allow",
 };
 DEFINE_STRING_TABLE_LOOKUP(sandbox_mode, int)
-
-enum create_mode {
-	NO_CREATE,
-	MAY_CREATE,
-	MUST_CREATE,
-};
-static const char *const create_mode_table[] = {
-	[NO_CREATE] = "no",
-	[MAY_CREATE] = "may",
-	[MUST_CREATE] = "must",
-};
-DEFINE_STRING_TABLE_LOOKUP(create_mode, int)
 
 enum no_wildcard_mode {
 	NO_WILDCARD_LITERAL,
@@ -456,36 +402,6 @@ typedef struct {
 	config_t config;
 } sydbox_t;
 
-typedef int (*sysfunc_t) (struct pink_easy_process *current, const char *name);
-
-typedef struct {
-	const char *name;
-	sysfunc_t enter;
-	sysfunc_t exit;
-} sysentry_t;
-
-typedef struct {
-	unsigned arg_index; /* Argument index */
-
-	bool at; /* at suffixed function */
-	bool null_ok; /* NULL argument doesn't cause -EFAULT (only valid for `at') */
-	bool decode_socketcall; /* decode socketcall() into subcall */
-	bool resolve; /* resolv filename */
-	enum create_mode create; /* creation mode */
-
-	bool safe; /* safe system call, silently deny */
-	int deny_errno;
-
-	bool whitelisting; /* Are we whitelisting or blacklisting? */
-	slist_t *wblist; /* White/Black List */
-
-	slist_t *filter;
-
-	long *fd;
-	char **abspath;
-	struct pink_sockaddr **addr;
-} sys_info_t;
-
 /* Global variables */
 extern sydbox_t *sydbox;
 
@@ -589,10 +505,11 @@ void config_parse_spec(const char *filename) PINK_GCC_ATTR((nonnull(1)));
 
 void callback_init(void);
 
-int box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res);
+int box_resolve_path(const char *path, const char *prefix, pid_t pid,
+		enum file_exist_mode file_mode, bool no_resolve, char **res);
 int box_match_path(const char *path, const slist_t *patterns, const char **match);
-int box_check_path(struct pink_easy_process *current, const char *name, sys_info_t *info);
-int box_check_socket(struct pink_easy_process *current, const char *name, sys_info_t *info);
+int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_t *info);
+int box_check_socket(struct pink_easy_process *current, const char *name, sysinfo_t *info);
 
 int path_decode(struct pink_easy_process *current, unsigned ind, char **buf);
 int path_prefix(struct pink_easy_process *current, unsigned ind, char **buf);
@@ -607,66 +524,6 @@ void sysinit(void);
 int sysinit_seccomp(void);
 int sysenter(struct pink_easy_process *current);
 int sysexit(struct pink_easy_process *current);
-
-int sys_chmod(struct pink_easy_process *current, const char *name);
-int sys_fchmodat(struct pink_easy_process *current, const char *name);
-int sys_chown(struct pink_easy_process *current, const char *name);
-int sys_lchown(struct pink_easy_process *current, const char *name);
-int sys_fchownat(struct pink_easy_process *current, const char *name);
-int sys_open(struct pink_easy_process *current, const char *name);
-int sys_openat(struct pink_easy_process *current, const char *name);
-int sys_creat(struct pink_easy_process *current, const char *name);
-int sys_close(struct pink_easy_process *current, const char *name);
-int sys_mkdir(struct pink_easy_process *current, const char *name);
-int sys_mkdirat(struct pink_easy_process *current, const char *name);
-int sys_mknod(struct pink_easy_process *current, const char *name);
-int sys_mknodat(struct pink_easy_process *current, const char *name);
-int sys_rmdir(struct pink_easy_process *current, const char *name);
-int sys_truncate(struct pink_easy_process *current, const char *name);
-int sys_mount(struct pink_easy_process *current, const char *name);
-int sys_umount(struct pink_easy_process *current, const char *name);
-int sys_umount2(struct pink_easy_process *current, const char *name);
-int sys_utime(struct pink_easy_process *current, const char *name);
-int sys_utimes(struct pink_easy_process *current, const char *name);
-int sys_utimensat(struct pink_easy_process *current, const char *name);
-int sys_futimesat(struct pink_easy_process *current, const char *name);
-int sys_unlink(struct pink_easy_process *current, const char *name);
-int sys_unlinkat(struct pink_easy_process *current, const char *name);
-int sys_link(struct pink_easy_process *current, const char *name);
-int sys_linkat(struct pink_easy_process *current, const char *name);
-int sys_rename(struct pink_easy_process *current, const char *name);
-int sys_renameat(struct pink_easy_process *current, const char *name);
-int sys_symlink(struct pink_easy_process *current, const char *name);
-int sys_symlinkat(struct pink_easy_process *current, const char *name);
-int sys_setxattr(struct pink_easy_process *current, const char *name);
-int sys_lsetxattr(struct pink_easy_process *current, const char *name);
-int sys_removexattr(struct pink_easy_process *current, const char *name);
-int sys_lremovexattr(struct pink_easy_process *current, const char *name);
-
-int sys_access(struct pink_easy_process *current, const char *name);
-int sys_faccessat(struct pink_easy_process *current, const char *name);
-
-int sys_dup(struct pink_easy_process *current, const char *name);
-int sys_dup3(struct pink_easy_process *current, const char *name);
-int sys_fcntl(struct pink_easy_process *current, const char *name);
-
-int sys_execve(struct pink_easy_process *current, const char *name);
-int sys_stat(struct pink_easy_process *current, const char *name);
-
-int sys_socketcall(struct pink_easy_process *current, const char *name);
-int sys_bind(struct pink_easy_process *current, const char *name);
-int sys_connect(struct pink_easy_process *current, const char *name);
-int sys_sendto(struct pink_easy_process *current, const char *name);
-int sys_recvfrom(struct pink_easy_process *current, const char *name);
-int sys_getsockname(struct pink_easy_process *current, const char *name);
-
-int sysx_chdir(struct pink_easy_process *current, const char *name);
-int sysx_close(struct pink_easy_process *current, const char *name);
-int sysx_dup(struct pink_easy_process *current, const char *name);
-int sysx_fcntl(struct pink_easy_process *current, const char *name);
-int sysx_socketcall(struct pink_easy_process *current, const char *name);
-int sysx_bind(struct pink_easy_process *current, const char *name);
-int sysx_getsockname(struct pink_easy_process *current, const char *name);
 
 static inline sandbox_t *box_current(struct pink_easy_process *current)
 {

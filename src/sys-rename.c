@@ -28,19 +28,24 @@
 int sys_rename(struct pink_easy_process *current, const char *name)
 {
 	int r;
-	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
+	sysinfo_t info;
 
 	if (sandbox_write_off(data))
 		return 0;
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = sandbox_write_deny(data);
+	init_sysinfo(&info);
+	info.no_resolve = true;
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
 		info.arg_index = 1;
-		info.create    = MAY_CREATE;
+		/* FIXME:
+		 * oldpath can specify a directory.
+		 * In this case, newpath must either not exist, or it must
+		 * specify an empty directory.
+		 */
+		info.file_mode = FILE_MAY_EXIST;
 		return box_check_path(current, name, &info);
 	}
 
@@ -50,21 +55,21 @@ int sys_rename(struct pink_easy_process *current, const char *name)
 int sys_renameat(struct pink_easy_process *current, const char *name)
 {
 	int r;
-	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
+	sysinfo_t info;
 
 	if (sandbox_write_off(data))
 		return 0;
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.at           = true;
-	info.arg_index    = 1;
-	info.whitelisting = sandbox_write_deny(data);
+	init_sysinfo(&info);
+	info.at_func = true;
+	info.arg_index = 1;
+	info.no_resolve = true;
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
 		info.arg_index = 3;
-		info.create    = MAY_CREATE;
+		info.file_mode = FILE_MAY_EXIST;
 		return box_check_path(current, name, &info);
 	}
 

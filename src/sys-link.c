@@ -33,19 +33,31 @@
 int sys_link(struct pink_easy_process *current, const char *name)
 {
 	int r;
-	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
+	sysinfo_t info;
 
 	if (sandbox_write_off(data))
 		return 0;
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = sandbox_write_deny(data);
+	init_sysinfo(&info);
+	/*
+	 * POSIX.1-2001 says that link() should dereference oldpath if it is a
+	 * symbolic link. However, since kernel 2.0, Linux does not do
+	 * so: if  oldpath is a symbolic link, then newpath is created as a
+	 * (hard) link to the same symbolic link file (i.e., newpath becomes a
+	 * symbolic link to the same file that oldpath refers to). Some other
+	 * implementations behave in the same manner as Linux.
+	 * POSIX.1-2008 changes the specification of link(), making it
+	 * implementation-dependent whether or not oldpath is dereferenced if
+	 * it is a symbolic link.
+	 */
+	info.no_resolve = true;
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
-		info.arg_index  = 1;
-		info.create     = MUST_CREATE;
+		info.arg_index = 1;
+		info.file_mode = FILE_CANT_EXIST;
+		info.no_resolve = false;
 		return box_check_path(current, name, &info);
 	}
 
@@ -59,7 +71,7 @@ int sys_linkat(struct pink_easy_process *current, const char *name)
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	sys_info_t info;
+	sysinfo_t info;
 
 	if (sandbox_write_off(data))
 		return 0;
@@ -82,16 +94,16 @@ int sys_linkat(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.at           = true;
-	info.arg_index    = 1;
-	info.resolve      = !!(flags & AT_SYMLINK_FOLLOW);
-	info.whitelisting = sandbox_write_deny(data);
+	init_sysinfo(&info);
+	info.at_func = true;
+	info.arg_index = 1;
+	info.no_resolve = !(flags & AT_SYMLINK_FOLLOW);
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
 		info.arg_index = 3;
-		info.create    = MAY_CREATE;
+		info.file_mode = FILE_CANT_EXIST;
+		info.no_resolve = false;
 		return box_check_path(current, name, &info);
 	}
 

@@ -42,23 +42,21 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 	long fd;
 	char *unix_abspath;
 	struct pink_sockaddr *psa;
-	sys_info_t info;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
+	sysinfo_t info;
 
 	if (sandbox_network_off(data))
 		return 0;
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = data->config.sandbox_network == SANDBOX_DENY;
-	info.wblist = sandbox_network_deny(data) ? &data->config.whitelist_network_bind : &data->config.blacklist_network_bind;
-	info.filter = &sydbox->config.filter_network;
-	info.resolve = true;
+	init_sysinfo(&info);
+	info.access_mode = sandbox_network_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
+	info.access_list = sandbox_network_deny(data) ? &data->config.whitelist_network_bind : &data->config.blacklist_network_bind;
+	info.access_filter = &sydbox->config.filter_network;
 	info.arg_index = 1;
-	info.create = MAY_CREATE;
+	info.file_mode = FILE_MAY_EXIST;
 	info.deny_errno = EADDRNOTAVAIL;
-
 	if (data->subcall == PINK_SOCKET_SUBCALL_BIND)
 		info.decode_socketcall = true;
 

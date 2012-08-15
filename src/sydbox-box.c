@@ -84,7 +84,7 @@ static inline void box_report_violation_path_at(struct pink_easy_process *curren
 }
 
 static void box_report_violation_sock(struct pink_easy_process *current,
-		const sys_info_t *info, const char *name,
+		const sysinfo_t *info, const char *name,
 		const struct pink_sockaddr *paddr)
 {
 	char ip[64];
@@ -124,7 +124,8 @@ static void box_report_violation_sock(struct pink_easy_process *current,
 }
 
 static int box_resolve_path_helper(const char *abspath, pid_t pid,
-		int maycreat, int resolve, char **res)
+		enum file_exist_mode file_mode, bool no_resolve,
+		char **res)
 {
 	int r;
 	char *p;
@@ -141,21 +142,18 @@ static int box_resolve_path_helper(const char *abspath, pid_t pid,
 			if (asprintf(&p, "/proc/%lu%s", (unsigned long)pid, tail) < 0)
 				return -errno;
 		}
-		log_check("/proc/self is `/proc/%lu'",
-				(unsigned long)pid);
+		log_check("/proc/self is `/proc/%lu'", (unsigned long)pid);
 	}
 
-	can_mode = maycreat ? CAN_ALL_BUT_LAST : CAN_EXISTING;
-	if (!resolve)
+	can_mode = (file_mode == FILE_MUST_EXIST) ? CAN_EXISTING : CAN_ALL_BUT_LAST;
+	if (no_resolve)
 		can_mode |= CAN_NOLINKS;
 	r = canonicalize_filename_mode(p ? p : abspath, can_mode, res);
 
 	if (r == 0)
-		log_check("canonicalized `%s' to `%s' (mode:%#x)",
-				p ? p : abspath, *res, can_mode);
+		log_check("canonicalize `%s' to `%s'", p ? p : abspath, *res);
 	else
-		log_check("canonicalize `%s' failed (mode:%#x)",
-				p ? p : abspath, can_mode);
+		log_check("canonicalize `%s' failed", p ? p : abspath);
 
 	if (p)
 		free(p);
@@ -164,15 +162,16 @@ static int box_resolve_path_helper(const char *abspath, pid_t pid,
 }
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid,
-		int maycreat, int resolve, char **res)
+		enum file_exist_mode file_mode, bool no_resolve,
+		char **res)
 {
 	int r;
 	char *abspath;
 
-	log_check("pid=%lu creat=%s resolve=%s",
+	log_check("pid=%lu file_mode=%s resolve=%s",
 			(unsigned long)pid,
-			maycreat ? "yes" : "no",
-			resolve ? "yes" : "no");
+			file_exist_mode_to_string(file_mode),
+			no_resolve ? "no" : "yes");
 	log_check("path=`%s' prefix=`%s'", path, prefix);
 
 	if (path == NULL && prefix == NULL)
@@ -186,7 +185,7 @@ int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 	if (!abspath)
 		return -errno;
 
-	r = box_resolve_path_helper(abspath, pid, maycreat, resolve, res);
+	r = box_resolve_path_helper(abspath, pid, file_mode, no_resolve, res);
 	free(abspath);
 	return r;
 }
@@ -240,35 +239,37 @@ static int box_match_socket(const struct pink_sockaddr *psa, const slist_t *patt
 	return 0;
 }
 
-int box_check_path(struct pink_easy_process *current, const char *name, sys_info_t *info)
+int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_t *info)
 {
 	int r, deny_errno;
 	char *prefix, *path, *abspath;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	slist_t *wblist;
+	slist_t *access_list;
 
 	assert(current);
 	assert(info);
 
 	prefix = path = abspath = NULL;
 	deny_errno = info->deny_errno ? info->deny_errno : EPERM;
+	if (info->access_mode == ACCESS_0)
+		info->access_mode = sandbox_write_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
 
 	log_check("%s[%lu:%u] sys=%s() arg_index=%u cwd:`%s'",
 			data->comm, (unsigned long)tid, abi, name,
 			info->arg_index, data->cwd);
-	log_check("at=%s null_ok=%s resolve=%s create=%s",
-			info->at ? "yes" : "no",
+	log_check("at_func=%s null_ok=%s resolve=%s create=%s",
+			info->at_func ? "yes" : "no",
 			info->null_ok ? "yes" : "no",
-			info->resolve ? "yes" : "no",
-			create_mode_to_string(info->create));
-	log_check("safe=%s deny-errno=%s whitelisting=%s",
+			info->no_resolve ? "no" : "yes",
+			file_exist_mode_to_string(info->file_mode));
+	log_check("safe=%s deny-errno=%s access_mode=%s",
 			info->safe ? "yes" : "no",
 			errno_to_string(deny_errno),
-			info->whitelisting ? "yes" : "no");
+			sys_access_mode_to_string(info->access_mode));
 
-	if (info->at && (r = path_prefix(current, info->arg_index-1, &prefix))) {
+	if (info->at_func && (r = path_prefix(current, info->arg_index-1, &prefix))) {
 		if (r < 0) {
 			errno = -r;
 			r = deny(current);
@@ -279,7 +280,7 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 	}
 
 	r = path_decode(current, info->arg_index, &path);
-	if (r < 0 && !(info->at && info->null_ok && prefix && r == -EFAULT)) {
+	if (r < 0 && !(info->at_func && info->null_ok && prefix && r == -EFAULT)) {
 		errno = -r;
 		r = deny(current);
 		if (sydbox->config.violation_raise_fail)
@@ -291,8 +292,8 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 
 	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd,
 					tid,
-					!!(info->create > 0),
-					info->resolve, &abspath)) < 0) {
+					info->file_mode,
+					info->no_resolve, &abspath)) < 0) {
 		log_access("resolve path=`%s' for sys=%s() failed (errno=%d %s)",
 				path, name, -r, strerror(-r));
 		log_access("deny access with errno=%s", errno_to_string(-r));
@@ -303,15 +304,15 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 		goto out;
 	}
 
-	if (info->wblist)
-		wblist = info->wblist;
-	else if (info->whitelisting)
-		wblist = &data->config.whitelist_write;
-	else
-		wblist = &data->config.blacklist_write;
+	if (info->access_list)
+		access_list = info->access_list;
+	else if (info->access_mode == ACCESS_WHITELIST)
+		access_list = &data->config.whitelist_write;
+	else /* if (info->access_mode == ACCESS_BLACKLIST) */
+		access_list = &data->config.blacklist_write;
 
-	if (info->whitelisting) {
-		if (box_match_path(abspath, wblist, NULL)) {
+	if (info->access_mode == ACCESS_WHITELIST) {
+		if (box_match_path(abspath, access_list, NULL)) {
 			log_access("path=`%s' matches a whitelist pattern,"
 					" access granted", abspath);
 			r = 0;
@@ -320,8 +321,8 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 			log_access("path=`%s' does not match a whitelist pattern,"
 					" access denied", abspath);
 		}
-	} else {
-		if (!box_match_path(abspath, wblist, NULL)) {
+	} else /* if (info->access_mode == ACCESS_BLACKLIST) */ {
+		if (!box_match_path(abspath, access_list, NULL)) {
 			log_access("path=`%s' does not match any blacklist pattern,"
 					" access granted", abspath);
 			r = 0;
@@ -332,40 +333,38 @@ int box_check_path(struct pink_easy_process *current, const char *name, sys_info
 		}
 	}
 
-	errno = deny_errno;
-
 	if (info->safe && !sydbox->config.violation_raise_safe) {
 		log_access("sys:%s() is safe, access violation filtered", name);
+		errno = deny_errno;
 		r = deny(current);
 		goto out;
 	}
 
-	if (info->create == MUST_CREATE) {
+	if (info->file_mode == FILE_CANT_EXIST) {
 		/* The system call *must* create the file */
 		int sr;
 		struct stat buf;
 
-		sr = info->resolve ? stat(abspath, &buf) : lstat(abspath, &buf);
+		sr = info->no_resolve ? lstat(abspath, &buf) : stat(abspath, &buf);
 		if (sr == 0) {
 			/* Yet the file exists... */
-			log_access("sys=%s() must create existant path=`%s'",
-					name, abspath);
+			log_access("sys=%s() must create existant path=`%s'", name, abspath);
 			log_access("deny access with errno=EEXIST");
-			errno = EEXIST;
+			deny_errno = EEXIST;
 			if (!sydbox->config.violation_raise_safe) {
 				log_access("sys:%s() is safe, access violation filtered", name);
+				errno = deny_errno;
 				r = deny(current);
 				goto out;
 			}
-		} else {
-			errno = info->deny_errno ? info->deny_errno : EPERM;
 		}
 	}
 
+	errno = deny_errno;
 	r = deny(current);
 
-	if (!box_match_path(abspath, info->filter ? info->filter : &sydbox->config.filter_write, NULL)) {
-		if (info->at)
+	if (!box_match_path(abspath, info->access_filter ? info->access_filter : &sydbox->config.filter_write, NULL)) {
+		if (info->at_func)
 			box_report_violation_path_at(current, name, info->arg_index, path, prefix);
 		else
 			box_report_violation_path(current, name, info->arg_index, path);
@@ -382,7 +381,7 @@ out:
 	return r;
 }
 
-int box_check_socket(struct pink_easy_process *current, const char *name, sys_info_t *info)
+int box_check_socket(struct pink_easy_process *current, const char *name, sysinfo_t *info)
 {
 	int r;
 	char *abspath;
@@ -395,15 +394,19 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 
 	assert(current);
 	assert(info);
+	assert(info->deny_errno != 0);
+	assert(info->access_mode != ACCESS_0);
+	assert(info->access_list);
+	assert(info->access_filter);
 
 	log_check("%s[%lu:%u] sys=%s() arg_index=%u decode=%s",
 			data->comm, (unsigned long)tid, abi, name,
 			info->arg_index,
 			info->decode_socketcall ? "yes" : "no");
-	log_check("safe=%s deny-errno=%s whitelisting=%s",
+	log_check("safe=%s deny-errno=%s access_mode=%s",
 			info->safe ? "yes" : "no",
 			errno_to_string(info->deny_errno),
-			info->whitelisting ? "yes" : "no");
+			sys_access_mode_to_string(info->access_mode));
 
 	r = 0;
 	abspath = NULL;
@@ -436,8 +439,7 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 		break;
 	default:
 		if (sydbox->config.whitelist_unsupported_socket_families) {
-			log_access("whitelist unsupported sockfamily:%d",
-					psa->family);
+			log_access("unsupported sockfamily:%d, access granted", psa->family);
 			goto out;
 		}
 		errno = EAFNOSUPPORT;
@@ -448,8 +450,8 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket, resolve the path. */
 		if ((r = box_resolve_path(psa->u.sa_un.sun_path, data->cwd,
-						tid, 1,
-						info->resolve,
+						tid, FILE_MAY_EXIST,
+						info->no_resolve,
 						&abspath)) < 0) {
 			log_access("resolve path=`%s' for sys=%s() failed (errno=%d %s)",
 				psa->u.sa_un.sun_path,
@@ -462,8 +464,8 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 			goto out;
 		}
 
-		if (info->whitelisting) {
-			if (box_match_path_saun(abspath, info->wblist, NULL)) {
+		if (info->access_mode == ACCESS_WHITELIST) {
+			if (box_match_path_saun(abspath, info->access_list, NULL)) {
 				log_access("sun_path=`%s' matches a whitelist pattern,"
 						" access granted",
 						abspath);
@@ -474,8 +476,8 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 						" access denied",
 						abspath);
 			}
-		} else {
-			if (!box_match_path(abspath, info->wblist, NULL)) {
+		} else if (info->access_mode == ACCESS_BLACKLIST) {
+			if (!box_match_path(abspath, info->access_list, NULL)) {
 				log_access("sun_path=`%s' does not match any blacklist pattern,"
 						" access granted",
 						abspath);
@@ -488,15 +490,15 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 			}
 		}
 	} else {
-		if (info->whitelisting) {
-			if (box_match_socket(psa, info->wblist, NULL)) {
+		if (info->access_mode == ACCESS_WHITELIST) {
+			if (box_match_socket(psa, info->access_list, NULL)) {
 				log_access("sockaddr=%p matches a whitelist pattern,"
 						" access granted", psa);
 				r = 0;
 				goto out;
 			}
-		} else {
-			if (!box_match_socket(psa, info->wblist, NULL)) {
+		} else if (info->access_mode == ACCESS_BLACKLIST) {
+			if (!box_match_socket(psa, info->access_list, NULL)) {
 				log_access("sockaddr=%p does not match any blacklist pattern,"
 						" access granted", psa);
 				r = 0;
@@ -513,13 +515,13 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sys_in
 
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
-		if (box_match_path_saun(abspath, info->filter, NULL)) {
+		if (box_match_path_saun(abspath, info->access_filter, NULL)) {
 			log_access("sa_un=`%s' matches a filter pattern,"
 					" access violation filtered", abspath);
 			goto out;
 		}
 	} else {
-		if (box_match_socket(psa, info->filter, NULL)) {
+		if (box_match_socket(psa, info->access_filter, NULL)) {
 			log_access("sockaddr=%p matches a filter pattern,"
 					" access violation filtered", psa);
 			goto out;
@@ -540,8 +542,7 @@ out:
 			*info->addr = psa;
 		else
 			free(psa);
-	}
-	else {
+	} else {
 		if (abspath)
 			free(abspath);
 		free(psa);

@@ -32,31 +32,27 @@
 
 int sys_mount(struct pink_easy_process *current, const char *name)
 {
-	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
+	sysinfo_t info;
 
 	if (sandbox_write_off(data))
 		return 0;
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.arg_index    = 1;
-	info.resolve      = true;
-	info.whitelisting = sandbox_write_deny(data);
+	init_sysinfo(&info);
+	info.arg_index = 1;
 
 	return box_check_path(current, name, &info);
 }
 
 int sys_umount(struct pink_easy_process *current, const char *name)
 {
-	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
+	sysinfo_t info;
 
 	if (sandbox_write_off(data))
 		return 0;
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.resolve      = true;
-	info.whitelisting = sandbox_write_deny(data);
+	init_sysinfo(&info);
 
 	return box_check_path(current, name, &info);
 }
@@ -68,14 +64,13 @@ int sys_umount2(struct pink_easy_process *current, const char *name)
 	pid_t tid;
 	enum pink_abi abi;
 #endif
-	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
+	sysinfo_t info;
 
 	if (sandbox_write_off(data))
 		return 0;
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelisting = sandbox_write_deny(data);
+	init_sysinfo(&info);
 #ifdef UMOUNT_NOFOLLOW
 	/* Check for UMOUNT_NOFOLLOW */
 	tid = pink_easy_process_get_tid(current);
@@ -96,9 +91,7 @@ int sys_umount2(struct pink_easy_process *current, const char *name)
 
 		return PINK_EASY_CFLAG_DROP;
 	}
-	info.resolve = !(flags & UMOUNT_NOFOLLOW);
-#else
-	info.resolve = true;
+	info.no_resolve = !!(flags & UMOUNT_NOFOLLOW);
 #endif /* UMOUNT_NOFOLLOW */
 
 	return box_check_path(current, name, &info);

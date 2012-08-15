@@ -39,7 +39,7 @@ int sys_access(struct pink_easy_process *current, const char *name)
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	sys_info_t info;
+	sysinfo_t info;
 
 	if (sandbox_exec_off(data) && sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
@@ -65,28 +65,25 @@ int sys_access(struct pink_easy_process *current, const char *name)
 		&& !((mode & X_OK) && sandbox_exec_off(data)))
 		return 0;
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.resolve    = true;
-	info.safe       = true;
+	init_sysinfo(&info);
+	info.safe = true;
 	info.deny_errno = EACCES;
 
 	r = 0;
-	if (!sandbox_write_off(data) && mode & W_OK) {
-		info.whitelisting = sandbox_write_deny(data);
+	if (!sandbox_write_off(data) && mode & W_OK)
 		r = box_check_path(current, name, &info);
-	}
 
 	if (!r && !data->deny && !sandbox_read_off(data) && mode & R_OK) {
-		info.whitelisting = sandbox_read_deny(data);
-		info.wblist = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
-		info.filter = &sydbox->config.filter_read;
+		info.access_mode = sandbox_read_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
+		info.access_list = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
+		info.access_filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
 
 	if (!r && !data->deny && !sandbox_exec_off(data) && mode & X_OK) {
-		info.whitelisting = sandbox_exec_deny(data);
-		info.wblist = sandbox_exec_deny(data) ? &data->config.whitelist_exec : &data->config.blacklist_exec;
-		info.filter = &sydbox->config.filter_exec;
+		info.access_mode = sandbox_exec_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
+		info.access_list = sandbox_exec_deny(data) ? &data->config.whitelist_exec : &data->config.blacklist_exec;
+		info.access_filter = &sydbox->config.filter_exec;
 		r = box_check_path(current, name, &info);
 	}
 
@@ -100,7 +97,7 @@ int sys_faccessat(struct pink_easy_process *current, const char *name)
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	sys_info_t info;
+	sysinfo_t info;
 
 	if (sandbox_exec_off(data) && sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
@@ -144,30 +141,28 @@ int sys_faccessat(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	memset(&info, 0, sizeof(sys_info_t));
-	info.at         = true;
-	info.arg_index  = 1;
-	info.resolve    = !(flags & AT_SYMLINK_NOFOLLOW);
-	info.safe       = true;
+	init_sysinfo(&info);
+	info.at_func = true;
+	info.arg_index = 1;
+	info.no_resolve = !!(flags & AT_SYMLINK_NOFOLLOW);
+	info.safe = true;
 	info.deny_errno = EACCES;
 
 	r = 0;
-	if (!sandbox_write_off(data) && mode & W_OK) {
-		info.whitelisting = sandbox_write_deny(data);
+	if (!sandbox_write_off(data) && mode & W_OK)
 		r = box_check_path(current, name, &info);
-	}
 
 	if (!r && !data->deny && !sandbox_read_off(data) && mode & R_OK) {
-		info.whitelisting = sandbox_read_deny(data);
-		info.wblist = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
-		info.filter = &sydbox->config.filter_read;
+		info.access_mode = sandbox_read_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
+		info.access_list = sandbox_read_deny(data) ? &data->config.whitelist_read : &data->config.blacklist_read;
+		info.access_filter = &sydbox->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
 
 	if (!r && !data->deny && !sandbox_exec_off(data) && mode & X_OK) {
-		info.whitelisting = sandbox_exec_deny(data);
-		info.wblist = sandbox_exec_deny(data) ? &data->config.whitelist_exec : &data->config.blacklist_exec;
-		info.filter = &sydbox->config.filter_exec;
+		info.access_mode = sandbox_exec_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
+		info.access_list = sandbox_exec_deny(data) ? &data->config.whitelist_exec : &data->config.blacklist_exec;
+		info.access_filter = &sydbox->config.filter_exec;
 		r = box_check_path(current, name, &info);
 	}
 
