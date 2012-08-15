@@ -57,17 +57,15 @@
 
     <para>
       <command>sydbox</command> is a
-        <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>
-        based sandboxing utility for Linux.
+      <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+      based sandboxing utility for Linux.
     </para>
   </refsect1>
 
   <refsect1 id="options">
     <title>Options</title>
 
-    <simpara>
-      The following options are understood:
-    </simpara>
+    <simpara>The following options are understood:</simpara>
 
     <variablelist>
       <varlistentry>
@@ -108,7 +106,7 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-m</option> <constant>magic</constant></term>
+        <term><option>-m</option> <varname>magic</varname></term>
         <listitem>
           <simpara>
             Run a magic command during init, may be repeated.
@@ -134,7 +132,7 @@
           speficied using the <option>-c</option> command line switch or the <envar>SYDBOX_CONFIG</envar>
           environment variable. More than one configuration file may be specified this way. However, only the
           <emphasis role="bold">initial</emphasis> configuration file can change the <emphasis>core</emphasis>
-          configuration. If path to the configuration file is prefixed with the character <literal>@</literal>,
+          configuration. If path to the configuration file is prefixed with the character '<literal>@</literal>',
           Sydbox looks for this configuration file under
           <filename class="directory"><varname>$sharedir</varname>/sydbox/</filename> where <varname>$sharedir</varname>
           is usually <filename class="directory">/usr/share</filename>.  The command line switch has precedence over the
@@ -192,15 +190,15 @@
           <listitem>
             <para>
               A boolean type may have one of the two values,
-              <constant>true</constant> or <constant>false</constant>.
+              <varname>true</varname> or <varname>false</varname>.
               This corresponds to JSON's boolean type thus to set a boolean value using the configuration file, use one
               of the aforementioned keywords. To specify boolean values when supplying <emphasis>magic</emphasis>
               commands to Sydbox, you may still use
-              <constant>true</constant> or <constant>false</constant>.
+              <varname>true</varname> or <varname>false</varname>.
               In addition you can use the short forms
-              <constant>t</constant> or <constant>f</constant>
+              <varname>t</varname> or <varname>f</varname>
               and you can also use
-              <constant>1</constant> or <constant>0</constant>.
+              <varname>1</varname> or <varname>0</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -247,8 +245,8 @@
         <programlisting>
           ${PREFIX}/section/of/option${OPERATION_CHARACTER}value
         </programlisting>
-        where <varname>${PREFIX}</varname> is <filename class="directory">/dev/sydbox</filename>
-        by default (may be altered at compile-time using <varname>SYDBOX_MAGIC_PREFIX</varname> definition).
+        where <parameter>${PREFIX}</parameter> is <filename class="directory">/dev/sydbox</filename>
+        by default (may be altered at compile-time using <parameter>SYDBOX_MAGIC_PREFIX</parameter> definition).
         This prefix is only required for magic <function>stat()</function>, not for <option>-m</option> command line
         switch. Section of an option is very similar to the configuration file e.g.:
         <programlisting>
@@ -261,7 +259,7 @@
       </para>
 
       <para role="summary">
-        <varname>${OPERATION_CHARACTER}</varname> determines the operation of the magic command.
+        <parameter>${OPERATION_CHARACTER}</parameter> determines the operation of the magic command.
         Possible values are listed below:
       </para>
 
@@ -329,7 +327,7 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying how <function>execve</function><manvolnum>2</manvolnum> system call should be sandboxed.
-              Defaults to <constant>off</constant>. This value may be queried.
+              Defaults to <varname>off</varname>. This value may be queried.
               See <xref linkend="execve-sandboxing"/> for more information.
             </para>
           </listitem>
@@ -341,7 +339,7 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying how path sandboxing should be done.
-              Defaults to <constant>off</constant>. This value may be queried.
+              Defaults to <varname>off</varname>. This value may be queried.
               See <xref linkend="read-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -352,7 +350,7 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying how write sandboxing should be done.
-              Defaults to <constant>off</constant>. This value may be queried.
+              Defaults to <varname>off</varname>. This value may be queried.
               See <xref linkend="write-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -363,7 +361,7 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying how network sandboxing should be done.
-              Defaults to <constant>off</constant>. This value may be queried.
+              Defaults to <varname>off</varname>. This value may be queried.
               See <xref linkend="network-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -376,7 +374,7 @@
               A boolean specifying whether per-process directories like
               <filename class="directory">/proc/<envar>$pid</envar></filename>
               should automatically be whitelisted.
-              Defaults to <constant>true</constant>.
+              Defaults to <varname>true</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -390,7 +388,7 @@
               <function>bind</function><manvolnum>2</manvolnum> calls should be whitelisted
               for <function>connect</function><manvolnum>2</manvolnum> and
               <function>sendto</function><manvolnum>2</manvolnum> system calls.
-              Defaults to <constant>true</constant>.</para>
+              Defaults to <varname>true</varname>.</para>
           </listitem>
         </varlistentry>
 
@@ -400,7 +398,7 @@
             <para>type: <type>boolean</type></para>
             <para>
               A boolean specifying whether unknown socket families should be allowed access when network sandboxing is on.
-              Defaults to <constant>true</constant>.
+              Defaults to <varname>true</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -410,10 +408,10 @@
           <listitem>
             <para>type: <type>string</type></para>
             <para>
-              A string specifying the decision to take when tracing is aborted (i.e via <constant>SIGINT</constant>
-              signal). Possible values are <constant>contall</constant> and <constant>killall</constant>.
+              A string specifying the decision to take when tracing is aborted (i.e via <varname>SIGINT</varname>
+              signal). Possible values are <varname>contall</varname> and <varname>killall</varname>.
               The former is to resume all traced processes whereas the latter is to kill all traced processes.
-              Default is <constant>contall</constant>.</para>
+              Default is <varname>contall</varname>.</para>
           </listitem>
         </varlistentry>
 
@@ -423,10 +421,10 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying the decision to take when a panic condition like an unknown error occurs.
-              Possible values are <constant>cont</constant>, <constant>kill</constant>, <constant>contall</constant> and
-              <constant>killall</constant>. The first two operates on the guilty process responsible for the panic whereas
+              Possible values are <varname>cont</varname>, <varname>kill</varname>, <varname>contall</varname> and
+              <varname>killall</varname>. The first two operates on the guilty process responsible for the panic whereas
               the other two works on all processes
-              Default is <constant>kill</constant>.
+              Default is <varname>kill</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -437,7 +435,7 @@
             <para>type: <type>integer</type></para>
             <para>
               This setting specifies the exit code if <option>core/panic/decision</option>
-              is one of <constant>contall</constant> or <constant>killall</constant>.
+              is one of <varname>contall</varname> or <varname>killall</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -448,9 +446,9 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying the decision to take when an access violation occurs. Possible values are
-              <constant>cont</constant>, <constant>kill</constant>, <constant>contall</constant>,
-              <constant>killall</constant> and <constant>deny</constant>.
-              Default is <constant>deny</constant> which means to deny the system call and resume execution.</para>
+              <varname>cont</varname>, <varname>kill</varname>, <varname>contall</varname>,
+              <varname>killall</varname> and <varname>deny</varname>.
+              Default is <varname>deny</varname> which means to deny the system call and resume execution.</para>
           </listitem>
         </varlistentry>
 
@@ -460,8 +458,8 @@
             <para>type: <type>integer</type></para>
             <para>
               An integer specifying the exit code in case <option>core/violation/decision</option> is one of
-              <constant>contall</constant> or <constant>killall</constant>.
-              As a special case, if this integer is equal to zero, sydbox exits with <constant>128</constant> added to
+              <varname>contall</varname> or <varname>killall</varname>.
+              As a special case, if this integer is equal to zero, sydbox exits with <varname>128</varname> added to
               the eldest process' exit value in case an access violation has occured. This special case is meant for
               program tests to check whether an access violation has occured using the exit code.
             </para>
@@ -476,7 +474,7 @@
               A boolean specifying whether certain failures like errors during path resolution should be treated as
               access violations. Note this is just a switch for reporting, the access to the system call is denied
               nevertheless.
-              Defaults to <constant>false</constant>.
+              Defaults to <varname>false</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -489,10 +487,10 @@
               A boolean specifying whether certain violations which are considered safe should be reported. For
               example, <function>mkdir</function><manvolnum>2</manvolnum> is a system call which fails when it can not
               create the directory. In this special case, sydbox denies the system call with
-              <constant>EEXIST</constant> for consistency and does not raise an access violation in case
-              <option>core/violation/raise_safe</option> is set to <constant>false</constant>. Another example is the
+              <varname>EEXIST</varname> for consistency and does not raise an access violation in case
+              <option>core/violation/raise_safe</option> is set to <varname>false</varname>. Another example is the
               <function>access</function><manvolnum>2</manvolnum> system call which is silently denied with
-              <constant>EACCES</constant> if this option is not set.
+              <varname>EACCES</varname> if this option is not set.
             </para>
           </listitem>
         </varlistentry>
@@ -503,7 +501,7 @@
             <para>type: <type>boolean</type></para>
             <para>
               A boolean specifying whether Sydbox should follow forks, vforks and clones.
-              Defaults to <constant>true</constant>.
+              Defaults to <varname>true</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -514,7 +512,7 @@
             <para>type: <type>boolean</type></para>
             <para>
               A boolean specifying whether all traced processes should be waited to exit before Sydbox exits.
-              If this is <constant>false</constant>, Sydbox resumes all the traced processes and exits when the eldest
+              If this is <varname>false</varname>, Sydbox resumes all the traced processes and exits when the eldest
               process exits.
             </para>
           </listitem>
@@ -525,10 +523,10 @@
           <listitem>
             <para>type: <type>string</type></para>
             <para>
-              A string specifying the state of the magic lock. Possible values are <constant>on</constant>,
-              <constant>off</constant> and <constant>exec</constant>. If magic lock is <constant>on</constant> no magic
-              commands are allowed. Note, the magic lock is tracked per process. If <constant>exec</constant> is
-              specified, the magic lock is set to <constant>on</constant> when the process returns from the system call
+              A string specifying the state of the magic lock. Possible values are <varname>on</varname>,
+              <varname>off</varname> and <varname>exec</varname>. If magic lock is <varname>on</varname> no magic
+              commands are allowed. Note, the magic lock is tracked per process. If <varname>exec</varname> is
+              specified, the magic lock is set to <varname>on</varname> when the process returns from the system call
               <function>execve</function><manvolnum>2</manvolnum>.</para>
           </listitem>
         </varlistentry>
@@ -539,11 +537,11 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying how to handle interrupts. Possible values are
-              <constant>anywhere</constant> (don't block/ignore any signals),
-              <constant>while_wait</constant> (block fatal signals while decoding syscall),
-              <constant>never</constant> (block fatal signals),
-              <constant>block_tstp_too</constant> (block fatal signals and SIGTSTP (^Z)).
-              Default is <constant>while_wait</constant>.
+              <varname>anywhere</varname> (don't block/ignore any signals),
+              <varname>while_wait</varname> (block fatal signals while decoding syscall),
+              <varname>never</varname> (block fatal signals),
+              <varname>block_tstp_too</varname> (block fatal signals and SIGTSTP (^Z)).
+              Default is <varname>while_wait</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -565,7 +563,7 @@
             <para>type: <type>boolean</type></para>
             <para>
               A boolean specifying the case sensitivity of pattern matching.
-              Defaults to <constant>true</constant>, case sensitive matching.
+              Defaults to <varname>true</varname>, case sensitive matching.
             </para>
             <para>See <xref linkend="pattern-matching"/> for more information.</para>
           </listitem>
@@ -577,11 +575,10 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying how to match patterns with no
-              <emphasis role="bold">*</emphasis> or
-              <emphasis role="bold">?</emphasis> characters in them.
-              Possible values are <option>literal</option> and <option>prefix</option>.
-              With <option>literal</option> such patterns are matched literally, whereas
-              with <option>prefix</option> Sydbox appends <constant>/***</constant> to the
+              '<literal>*</literal>' or '<literal>?</literal>' characters in them.
+              Possible values are <varname>literal</varname> and <varname>prefix</varname>.
+              With <varname>literal</varname> such patterns are matched literally, whereas
+              with <varname>prefix</varname> Sydbox appends <literal>/***</literal> to the
               end of such patterns to make them a prefix match. Implemented mostly to provide
               compatibility with sydbox-0 patterns.
             </para>
@@ -595,7 +592,7 @@
             <para>type: <type>string</type></para>
             <para>
               A string specifying the path to the log file.
-              Defaults to "" (empty string), no logging to file.
+              Defaults to <literal>""</literal> (empty string), no logging to file.
             </para>
             <para>See <xref linkend="logging"/> for more information.</para>
           </listitem>
@@ -1107,30 +1104,32 @@
       </varlistentry>
     </variablelist>
 
-    <para><varname>/${NETMASK}</varname> may be omitted from <varname>inet:</varname> and <varname>inet6:</varname>
-    addresses and <varname>${PORT_RANGE}</varname> can either be an integer or a service name from the
-    <citerefentry><refentrytitle>services</refentrytitle><manvolnum>5</manvolnum></citerefentry> database in two forms.
-    Either as as a single entity or as a range in the form BEGIN-END.</para>
+    <para>
+      <parameter>/${NETMASK}</parameter> may be omitted from <constant>inet:</constant> and <constant>inet6:</constant>
+      addresses and <parameter>${PORT_RANGE}</parameter> can in two forms: either an integer or a service name from the
+      <citerefentry><refentrytitle>services</refentrytitle><manvolnum>5</manvolnum></citerefentry> database. Either as
+      as a single entity or as a range in the form BEGIN-END.
+    </para>
 
     <para>In addition there are some aliases, you may use instead of specifying an address:</para>
 
     <variablelist>
       <varlistentry>
-        <term><varname>LOOPBACK</varname></term>
+        <term><constant>LOOPBACK</constant></term>
         <listitem>
           <para>Expanded to <varname>inet:127.0.0.0/8</varname></para>
         </listitem>
       </varlistentry>
 
       <varlistentry>
-        <term><varname>LOOPBACK6</varname></term>
+        <term><constant>LOOPBACK6</constant></term>
         <listitem>
           <para>Expanded to <varname>inet6:::1/8</varname></para>
         </listitem>
       </varlistentry>
 
       <varlistentry>
-        <term><varname>LOCAL</varname></term>
+        <term><constant>LOCAL</constant></term>
         <listitem>
           <para>Expanded to four addresses as defined in RFC1918:</para>
           <itemizedlist>
@@ -1143,7 +1142,7 @@
       </varlistentry>
 
       <varlistentry>
-        <term><varname>LOCAL6</varname></term>
+        <term><constant>LOCAL6</constant></term>
         <listitem>
           <para>Expanded to four addresses:</para>
           <itemizedlist>
@@ -1167,8 +1166,11 @@
 
       <para>Below are some invocation examples:</para>
 
-      <para>Allow all reads, deny read access to <filename>/etc/shadow</filename>:
-      <programlisting>sydbox -m core/sandbox/read:allow -m blacklist/read+/etc/shadow -- /bin/sh</programlisting>
+      <para>
+        Allow all reads, deny read access to <filename>/etc/shadow</filename>:
+        <programlisting>
+          sydbox -m core/sandbox/read:allow -m blacklist/read+/etc/shadow -- /bin/sh
+        </programlisting>
       </para>
     </refsect2>
 
@@ -1200,19 +1202,21 @@
                         "raise_fail" : false, /* Raise access violations for simple failures like path resolution errors? */
                         "raise_safe" : false /* Raise access violations for "safe" violations like -EEXIST for mkdir() */
         },
-        "trace" : { "follow_fork"       : true, /* Follow forks? */
-                    "exit_wait_all"     : true, /* Wait all children to exit before exiting? */
-                    "magic_lock"        : "off" /* Initial state of the magic lock */
+        "trace" : { "follow_fork"   : true, /* Follow forks? */
+                    "exit_wait_all" : true, /* Wait all children to exit before exiting? */
+                    "magic_lock"    : "off", /* Initial state of the magic lock */
+                    "interrupt"     : "while_wait", /* Interrupt handling */
+                    "use_seccomp"   : true /* Use seccomp user filter  */
         },
         "match" : { "case_sensitive" : true, /* Case sensitive matching */
-                    "no_wildcard"    : "prefix" /* Append /*** to the end of patterns with no '*' or '?' in them */
+                    "no_wildcard"    : "prefix" /* Append '/***' to the end of patterns with no '*' or '?' in them */
         }
     },
 
     "log" : { "file"           : "", /* Specify a path or leave it empty for no file logging. */
               "level"          : 0, /* log level, consult manual page */
               "console_fd"     : 2, /* console file descriptor, default: stderr */
-              "console_level"  : 0 /* console log level, consult manual page */
+              "console_level"  : 1 /* console log level, consult manual page */
             },
 
     "exec" : { "resume_if_match" : [ ],
@@ -1240,8 +1244,8 @@
                       "/dev/fd/***",
                       "/dev/tty*",
                       "/dev/pty*",
-                      "/dev/tts*",
-                      "/dev/pts*",
+                      "/dev/tts",
+                      "/dev/pts",
                       "/proc/self/fd/***",
                       "/dev/shm/***",
                       "/selinux/context/***",
@@ -1278,23 +1282,32 @@
   <refsect1 id="signals">
     <title>Signals</title>
 
-    <para>Sydbox dumps information about the traced process tree to standard error upon receiving the SIGUSR1 signal.
-      Send SIGUSR2 signal for more verbose process information.</para>
+    <para>
+      Sydbox dumps information about the traced process tree to standard error upon receiving the SIGUSR1 signal.
+      Send SIGUSR2 signal for more verbose process information.
+    </para>
   </refsect1>
 
   <refsect1 id="bugs">
     <title>Bugs</title>
 
-    <para>This is unstable software and should be used with care.
-    Report bugs by direct mail to &lt;alip at exherbo dot org&gt;.
-    Attaching poems encourages consideration tremendously.</para>
+    <para>
+      This is unstable software and should be used with care.
+      Report bugs by direct mail to <email>alip@exherbo.org></email>
+    </para>
+
+    <note>
+      <para>Attaching poems encourages consideration tremendously.</para>
+    </note>
   </refsect1>
 
   <refsect1 id="security">
     <title>Security</title>
 
-    <para>Sydbox is not designed to be used as a security measure. There are many ways to circumvent the sandbox.
-    Use this for diagnosing or debugging.</para>
+    <para>
+      Sydbox is not designed to be used as a security measure. There are many ways to circumvent the sandbox.
+      Use this for diagnosing or debugging.
+    </para>
   </refsect1>
 
   <refsect1 id="see-also">
@@ -1308,7 +1321,7 @@
   <refsect1 id="copyright">
     <title>COPYRIGHT</title>
 
-    <simpara>Copyright &#169; 2010, 2011, 2012 Ali Polatel &lt;alip at exherbo dot org&gt;</simpara>
+    <para>Copyright &#169; 2010, 2011, 2012 Ali Polatel <email>alip@exherbo.org</email></para>
   </refsect1>
 </refentry>
 <!-- vim: set ts=2 sts=2 sw=2 et tw=120 nowrap spell spelllang=en : -->
