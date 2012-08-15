@@ -26,28 +26,6 @@
 
 #include "macro.h"
 
-int magic_set_violation_raise_fail(const void *val, struct pink_easy_process *current)
-{
-	sydbox->config.violation_raise_fail = PTR_TO_BOOL(val);
-	return 0;
-}
-
-int magic_query_violation_raise_fail(struct pink_easy_process *current)
-{
-	return sydbox->config.violation_raise_fail;
-}
-
-int magic_set_violation_raise_safe(const void *val, struct pink_easy_process *current)
-{
-	sydbox->config.violation_raise_safe = PTR_TO_BOOL(val);
-	return 0;
-}
-
-int magic_query_violation_raise_safe(struct pink_easy_process *current)
-{
-	return sydbox->config.violation_raise_safe;
-}
-
 int magic_set_trace_follow_fork(const void *val, struct pink_easy_process *current)
 {
 	sydbox->config.follow_fork = PTR_TO_BOOL(val);
@@ -89,35 +67,27 @@ int magic_query_trace_use_seccomp(struct pink_easy_process *current)
 #endif
 }
 
-int magic_set_whitelist_ppd(const void *val, struct pink_easy_process *current)
+int magic_set_trace_magic_lock(const void *val, struct pink_easy_process *current)
 {
-	sydbox->config.whitelist_per_process_directories = PTR_TO_BOOL(val);
+	int l;
+	const char *str = val;
+	sandbox_t *box = box_current(current);
+
+	if ((l = lock_state_from_string(str)) < 0)
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	box->magic_lock = (enum lock_state)l;
 	return 0;
 }
 
-int magic_query_whitelist_ppd(struct pink_easy_process *current)
+int magic_set_trace_interrupt(const void *val, struct pink_easy_process *current)
 {
-	return sydbox->config.whitelist_per_process_directories;
-}
+	int intr;
+	const char *str = val;
 
-int magic_set_whitelist_sb(const void *val, struct pink_easy_process *current)
-{
-	sydbox->config.whitelist_successful_bind = PTR_TO_BOOL(val);
+	if ((intr = trace_interrupt_from_string(str)) < 0)
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	sydbox->config.trace_interrupt = (enum pink_easy_intr)intr;
 	return 0;
-}
-
-int magic_query_whitelist_sb(struct pink_easy_process *current)
-{
-	return sydbox->config.whitelist_successful_bind;
-}
-
-int magic_set_whitelist_usf(const void *val, struct pink_easy_process *current)
-{
-	sydbox->config.whitelist_unsupported_socket_families = PTR_TO_BOOL(val);
-	return 0;
-}
-
-int magic_query_whitelist_usf(struct pink_easy_process *current)
-{
-	return sydbox->config.whitelist_unsupported_socket_families;
 }

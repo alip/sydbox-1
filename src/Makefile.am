@@ -30,7 +30,8 @@ noinst_HEADERS= \
 		util.h \
 		wildmatch.h \
 		sys-check.h \
-		sydbox-conf.c \
+		sydbox-conf.h \
+		sydbox-magic.h \
 		sydbox-defs.h
 sydbox_SOURCES= \
 		 JSON_parser.c \
@@ -43,16 +44,14 @@ sydbox_SOURCES= \
 		 seccomp.c \
 		 util.c \
 		 wildmatch.c \
-		 magic-bool.c \
-		 magic-int.c \
-		 magic-strlist.c \
+		 magic-panic.c \
+		 magic-sandbox.c \
 		 magic-socklist.c \
-		 magic-decision.c \
-		 magic-intr.c \
-		 magic-lock.c \
+		 magic-strlist.c \
+		 magic-trace.c \
+		 magic-whitelist.c \
 		 magic-log.c \
 		 magic-match.c \
-		 magic-sandbox.c \
 		 magic-if_match.c \
 		 sydbox-box.c \
 		 sydbox-callback.c \

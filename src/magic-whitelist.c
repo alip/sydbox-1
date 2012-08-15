@@ -19,19 +19,42 @@
 
 #include "sydbox-defs.h"
 
+#include <stdbool.h>
+#include <stdlib.h>
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
 
-int magic_set_trace_interrupt(const void *val, struct pink_easy_process *current)
+int magic_set_whitelist_ppd(const void *val, struct pink_easy_process *current)
 {
-	int intr;
-	const char *str = val;
-
-	if ((intr = trace_interrupt_from_string(str)) < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	sydbox->config.trace_interrupt = (enum pink_easy_intr)intr;
+	sydbox->config.whitelist_per_process_directories = PTR_TO_BOOL(val);
 	return 0;
+}
+
+int magic_query_whitelist_ppd(struct pink_easy_process *current)
+{
+	return sydbox->config.whitelist_per_process_directories;
+}
+
+int magic_set_whitelist_sb(const void *val, struct pink_easy_process *current)
+{
+	sydbox->config.whitelist_successful_bind = PTR_TO_BOOL(val);
+	return 0;
+}
+
+int magic_query_whitelist_sb(struct pink_easy_process *current)
+{
+	return sydbox->config.whitelist_successful_bind;
+}
+
+int magic_set_whitelist_usf(const void *val, struct pink_easy_process *current)
+{
+	sydbox->config.whitelist_unsupported_socket_families = PTR_TO_BOOL(val);
+	return 0;
+}
+
+int magic_query_whitelist_usf(struct pink_easy_process *current)
+{
+	return sydbox->config.whitelist_unsupported_socket_families;
 }

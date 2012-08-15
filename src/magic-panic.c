@@ -50,6 +50,12 @@ int magic_set_panic_decision(const void *val, struct pink_easy_process *current)
 	return 0;
 }
 
+int magic_set_panic_exit_code(const void *val, struct pink_easy_process *current)
+{
+	sydbox->config.panic_exit_code = PTR_TO_INT(val);
+	return 0;
+}
+
 int magic_set_violation_decision(const void *val, struct pink_easy_process *current)
 {
 	int d;
@@ -60,4 +66,32 @@ int magic_set_violation_decision(const void *val, struct pink_easy_process *curr
 
 	sydbox->config.violation_decision = (enum violation_decision)d;
 	return 0;
+}
+
+int magic_set_violation_exit_code(const void *val, struct pink_easy_process *current)
+{
+	sydbox->config.violation_exit_code = PTR_TO_INT(val);
+	return 0;
+}
+
+int magic_set_violation_raise_fail(const void *val, struct pink_easy_process *current)
+{
+	sydbox->config.violation_raise_fail = PTR_TO_BOOL(val);
+	return 0;
+}
+
+int magic_query_violation_raise_fail(struct pink_easy_process *current)
+{
+	return sydbox->config.violation_raise_fail;
+}
+
+int magic_set_violation_raise_safe(const void *val, struct pink_easy_process *current)
+{
+	sydbox->config.violation_raise_safe = PTR_TO_BOOL(val);
+	return 0;
+}
+
+int magic_query_violation_raise_safe(struct pink_easy_process *current)
+{
+	return sydbox->config.violation_raise_safe;
 }

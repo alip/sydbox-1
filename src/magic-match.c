@@ -26,18 +26,18 @@
 
 #include "macro.h"
 
-int magic_set_match_case_sensitive(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_set_match_case_sensitive(const void *val, struct pink_easy_process *current)
 {
 	sydbox->config.match_case_sensitive = PTR_TO_BOOL(val);
 	return 0;
 }
 
-int magic_query_match_case_sensitive(PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_query_match_case_sensitive(struct pink_easy_process *current)
 {
 	return sydbox->config.match_case_sensitive;
 }
 
-int magic_set_match_no_wildcard(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_set_match_no_wildcard(const void *val, struct pink_easy_process *current)
 {
 	int nw;
 	const char *str = val;
