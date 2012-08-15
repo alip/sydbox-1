@@ -62,11 +62,11 @@ int wildmatch_expand(const char *pattern, char ***buf)
 		strcpy(cp, p);
 		strcat(cp, WILD3_SUFFIX);
 
+		log_match("append `%s' to pattern=`%s' due to no_wildcard=prefix",
+				WILD3_SUFFIX, p);
 		free(p);
 		p = cp;
 
-		log_match("append `%s' to pattern=`%s' due to no_wildcard=prefix",
-				WILD3_SUFFIX, p);
 	}
 	p = path_kill_slashes(p);
 
