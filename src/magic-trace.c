@@ -25,6 +25,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
+#include "log.h"
 
 int magic_set_trace_follow_fork(const void *val, struct pink_easy_process *current)
 {
@@ -53,7 +54,7 @@ int magic_set_trace_use_seccomp(const void *val, struct pink_easy_process *curre
 #ifdef WANT_SECCOMP
 	sydbox->config.use_seccomp = PTR_TO_BOOL(val);
 #else
-	info("seccomp support not enabled, ignoring magic");
+	log_magic("seccomp support not enabled, ignoring magic");
 #endif
 	return 0;
 }

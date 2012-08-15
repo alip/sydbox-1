@@ -490,7 +490,7 @@ int main(int argc, char **argv)
 		ptrace_options |= PINK_TRACE_OPTION_SECCOMP;
 		ptrace_default_step = PINK_EASY_STEP_RESUME;
 #else
-		info("seccomp: not supported, disabling");
+		log_info("seccomp: not supported, disabling");
 		sydbox->config.use_seccomp = false;
 #endif
 	}
