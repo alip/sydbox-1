@@ -29,7 +29,7 @@
 
 #define WILD3_SUFFIX "/***"
 
-int wildmatch_sydbox(const char *pattern, const char *text)
+int wildmatch_ext(const char *pattern, const char *text)
 {
 	int r;
 

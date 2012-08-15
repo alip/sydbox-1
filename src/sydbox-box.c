@@ -195,7 +195,7 @@ int box_match_path(const char *path, const slist_t *patterns, const char **match
 	struct snode *node;
 
 	SLIST_FOREACH(node, patterns, up) {
-		if (wildmatch_sydbox(node->data, path)) {
+		if (wildmatch_ext(node->data, path)) {
 			if (match)
 				*match = node->data;
 			return 1;
@@ -213,7 +213,7 @@ static int box_match_path_saun(const char *path, const slist_t *patterns, const 
 	SLIST_FOREACH(node, patterns, up) {
 		m = node->data;
 		if (m->family == AF_UNIX && !m->match.sa_un.abstract) {
-			if (wildmatch_sydbox(m->match.sa_un.path, path)) {
+			if (wildmatch_ext(m->match.sa_un.path, path)) {
 				if (match)
 					*match = node->data;
 				return 1;
