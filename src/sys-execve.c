@@ -43,7 +43,7 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 
 	r = path_decode(current, 0, &path);
 	if (r < 0)
-		return deny(current);
+		return deny(current, errno);
 	else if (r /* > 0 */)
 		return r;
 
@@ -51,8 +51,7 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 		log_access("resolve path=`%s' failed (errno=%d %s)",
 				path, -r, strerror(-r));
 		log_access("deny access with errno=%s", errno_to_string(-r));
-		errno = -r;
-		r = deny(current);
+		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s(\"%s\")", name, path);
 		free(path);
@@ -84,8 +83,7 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 		abort();
 	}
 
-	errno = EACCES;
-	r = deny(current);
+	r = deny(current, EACCES);
 
 	if (!box_match_path(abspath, &sydbox->config.filter_exec, NULL))
 		violation(current, "%s(\"%s\")", name, abspath);

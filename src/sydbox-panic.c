@@ -35,7 +35,7 @@
 #include "proc.h"
 #include "strtable.h"
 
-static inline int errno2retval(void)
+static inline int errno2retval(int err_no)
 {
 #if 0
 #warning pink_ptrace() handles this oddity!
@@ -57,7 +57,7 @@ static inline int errno2retval(void)
 		return -EFAULT;
 	}
 #endif
-	return -errno;
+	return -err_no;
 }
 
 static bool cont_one(struct pink_easy_process *proc, void *userdata)
@@ -125,14 +125,14 @@ static void report(struct pink_easy_process *current, const char *fmt, va_list a
 	log_msg_va(1, fmt, ap);
 }
 
-int deny(struct pink_easy_process *current)
+int deny(struct pink_easy_process *current, int err_no)
 {
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	data->deny = true;
-	data->retval = errno2retval();
+	data->retval = errno2retval(err_no);
 
 	log_access("%s[%lu:%u] return code:%ld",
 			data->comm,

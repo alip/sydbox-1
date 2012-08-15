@@ -418,7 +418,7 @@ char *xgetcwd(void);
 
 void cont_all(void);
 void abort_all(int fatal_sig);
-int deny(struct pink_easy_process *current);
+int deny(struct pink_easy_process *current, int err_no);
 int restore(struct pink_easy_process *current);
 int panic(struct pink_easy_process *current);
 int violation(struct pink_easy_process *current, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));

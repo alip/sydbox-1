@@ -69,7 +69,7 @@ int sys_stat(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const ch
 			errno = 0;
 			break;
 		}
-		r = deny(current);
+		r = deny(current, errno);
 	}
 	else if (r > 0) {
 		/* Encode stat buffer */
@@ -85,7 +85,7 @@ int sys_stat(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const ch
 			pink_write_vm_data(tid, abi, addr, (const char *)&buf, sizeof(struct stat));
 		log_magic("accepted magic=`%s'", path);
 		errno = (r == MAGIC_QUERY_FALSE) ? ENOENT : 0;
-		r = deny(current);
+		r = deny(current, errno);
 	}
 
 	return r;

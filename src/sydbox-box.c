@@ -271,8 +271,7 @@ int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_
 
 	if (info->at_func && (r = path_prefix(current, info->arg_index-1, &prefix))) {
 		if (r < 0) {
-			errno = -r;
-			r = deny(current);
+			r = deny(current, -r);
 			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", name);
 		}
@@ -281,8 +280,7 @@ int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_
 
 	r = path_decode(current, info->arg_index, &path);
 	if (r < 0 && !(info->at_func && info->null_ok && prefix && r == -EFAULT)) {
-		errno = -r;
-		r = deny(current);
+		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s()", name);
 		goto out;
@@ -297,8 +295,7 @@ int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_
 		log_access("resolve path=`%s' for sys=%s() failed (errno=%d %s)",
 				path, name, -r, strerror(-r));
 		log_access("deny access with errno=%s", errno_to_string(-r));
-		errno = -r;
-		r = deny(current);
+		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s()", name);
 		goto out;
@@ -335,8 +332,7 @@ int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_
 
 	if (info->safe && !sydbox->config.violation_raise_safe) {
 		log_access("sys:%s() is safe, access violation filtered", name);
-		errno = deny_errno;
-		r = deny(current);
+		r = deny(current, deny_errno);
 		goto out;
 	}
 
@@ -353,15 +349,13 @@ int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_
 			deny_errno = EEXIST;
 			if (!sydbox->config.violation_raise_safe) {
 				log_access("sys:%s() is safe, access violation filtered", name);
-				errno = deny_errno;
-				r = deny(current);
+				r = deny(current, deny_errno);
 				goto out;
 			}
 		}
 	}
 
-	errno = deny_errno;
-	r = deny(current);
+	r = deny(current, deny_errno);
 
 	if (!box_match_path(abspath, info->access_filter ? info->access_filter : &sydbox->config.filter_write, NULL)) {
 		if (info->at_func)
@@ -442,8 +436,7 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sysinf
 			log_access("unsupported sockfamily:%d, access granted", psa->family);
 			goto out;
 		}
-		errno = EAFNOSUPPORT;
-		r = deny(current);
+		r = deny(current, EAFNOSUPPORT);
 		goto report;
 	}
 
@@ -457,8 +450,7 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sysinf
 				psa->u.sa_un.sun_path,
 				name, -r, strerror(-r));
 			log_access("deny access with errno=%s", errno_to_string(-r));
-			errno = -r;
-			r = deny(current);
+			r = deny(current, -r);
 			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", name);
 			goto out;
@@ -510,8 +502,7 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sysinf
 		}
 	}
 
-	errno = info->deny_errno;
-	r = deny(current);
+	r = deny(current, info->deny_errno);
 
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
