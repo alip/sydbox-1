@@ -56,7 +56,7 @@ int path_decode(struct pink_easy_process *current, unsigned ind, char **buf)
 	return 0;
 fail:
 	if (errno == EFAULT) {
-		log_warning("read_string(%lu, %d, %u) returned EFAULT",
+		log_trace("read_string(%lu, %d, %u) returned EFAULT",
 				(unsigned long)tid, abi, ind);
 		*buf = NULL;
 		return -EFAULT;
