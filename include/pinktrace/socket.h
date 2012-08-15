@@ -168,9 +168,9 @@ const char *pink_socket_subcall_name(enum pink_socket_subcall subcall)
  * @return true on success, false on failure and sets errno accordingly
  **/
 #define pink_read_socket_subcall(tid, abi, regs, decode_socketcall, subcall) \
-		(decode_socketcall) \
+		((decode_socketcall) \
 			? pink_read_argument((tid), (abi), (regs), 0, (subcall)) \
-			: pink_read_syscall((tid), (abi), (regs), (subcall))
+			: pink_read_syscall((tid), (abi), (regs), (subcall)))
 
 /**
  * Read the specified socket call argument
