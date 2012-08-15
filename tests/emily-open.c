@@ -150,7 +150,7 @@ int test_openat(int argc, char **argv)
 		{"mode",	required_argument,	NULL,	'm'},
 	};
 
-	while ((optc = getopt_long(argc, argv, "hnd:e:m:", long_options, NULL)) != EOF) {
+	while ((optc = getopt_long(argc, argv, "hcxd:e:m:", long_options, NULL)) != EOF) {
 		switch (optc) {
 		case 'h':
 			test_openat_usage(stdout, 0);
