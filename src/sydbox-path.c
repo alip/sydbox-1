@@ -88,7 +88,7 @@ int path_prefix(struct pink_easy_process *current, unsigned arg_index, char **bu
 {
 	int r;
 	long fd;
-	char *prefix;
+	char *prefix = NULL;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
