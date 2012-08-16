@@ -15,6 +15,7 @@
  * - Return -EINVAL for filenames which aren't absolute.
  * - Drop DOUBLE_SLASH_IS_DISTINCT_ROOT check
  * - Use readlink_alloc() instead of areadlink()
+ * - In stat error path, treat ELOOP like ENOENT for CAN_ALL_BUT_LAST
  */
 
 #ifdef HAVE_CONFIG_H
@@ -136,7 +137,7 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 				if (can_mode == CAN_EXISTING)
 					goto error;
 				if (can_mode == CAN_ALL_BUT_LAST) {
-					if (end[strspn(end, "/")] || saved_errno != ENOENT)
+					if (end[strspn(end, "/")] || (saved_errno != ENOENT && saved_errno != ELOOP))
 						goto error;
 					continue;
 				}
