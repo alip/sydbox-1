@@ -153,7 +153,7 @@ static int box_resolve_path_helper(const char *abspath, pid_t pid,
 	if (r == 0)
 		log_check("canonicalize `%s' to `%s'", p ? p : abspath, *res);
 	else
-		log_check("canonicalize `%s' failed", p ? p : abspath);
+		log_check("canonicalize `%s' failed (errno:%d %s)", p ? p : abspath, -r, strerror(-r));
 
 	if (p)
 		free(p);
