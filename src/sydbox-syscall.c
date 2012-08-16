@@ -213,11 +213,10 @@ int sysenter(struct pink_easy_process *current)
 		log_syscall("process %s[%lu:%u] enters syscall=`%s'",
 				data->comm, (unsigned long)tid, abi,
 				entry->name);
-	else {
+	else
 		log_sys_all("process %s[%lu:%u] enters syscall=%ld",
 				data->comm, (unsigned long)tid, abi,
 				no);
-	}
 
 	return (entry && entry->enter) ? entry->enter(current, entry->name) : 0;
 }
