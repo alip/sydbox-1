@@ -1,10 +1,20 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
+ * Return the canonical absolute name of a given file.
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Based in part upon coreutils which is:
+ * Based in part upon gnulib which is:
  *   Copyright (C) 1996-2012 Free Software Foundation, Inc.
- *   Distributed under the terms of the GNU General Public License v3 or later
+ * Distributed under the terms of the GNU General Public License v3 or later
+ */
+
+/*
+ * Imported from gnulib, commit:04b6c2e58486cfb30641633962249753052ba89f
+ * canonicalize_filename_mode() is modified:
+ * - Accept a buffer as argument and return -errno.
+ * - Return -EINVAL for filenames which aren't absolute.
+ * - Drop DOUBLE_SLASH_IS_DISTINCT_ROOT check
+ * - Use readlink_alloc() instead of areadlink()
  */
 
 #ifdef HAVE_CONFIG_H
@@ -23,13 +33,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "canonicalize.h"
 #include "file.h"
 
-/* Imported from coreutils-8.17
- * canonicalize_filename_mode() is slightly modified:
- * - Accepts a buffer as argument and returns -errno.
- */
+#include "canonicalize.h"
 
 #define MULTIPLE_BITS_SET(i) (((i) & ((i) - 1)) != 0)
 

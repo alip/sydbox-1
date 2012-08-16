@@ -2,9 +2,9 @@
 
 /*
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Based in part upon coreutils which is:
+ * Based in part upon gnulib which is:
  *   Copyright (C) 1996-2012 Free Software Foundation, Inc.
- *   Distributed under the terms of the GNU General Public License v3 or later
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #ifndef CANONICALIZE_H

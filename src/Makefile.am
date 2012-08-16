@@ -16,10 +16,7 @@ AM_CFLAGS= \
 bin_PROGRAMS= sydbox
 noinst_HEADERS= \
 		JSON_parser.h \
-		byteorder.h \
-		canonicalize.h \
 		file.h \
-		hashtable.h \
 		log.h \
 		macro.h \
 		path.h
@@ -28,22 +25,18 @@ noinst_HEADERS= \
 		slist.h \
 		strtable.h \
 		util.h \
-		wildmatch.h \
 		sys-check.h \
 		sydbox-conf.h \
 		sydbox-magic.h \
 		sydbox-defs.h
 sydbox_SOURCES= \
 		 JSON_parser.c \
-		 canonicalize.c \
 		 file.c \
-		 hashtable.c \
 		 log.c \
 		 path.c \
 		 proc.c \
 		 seccomp.c \
 		 util.c \
-		 wildmatch.c \
 		 magic-panic.c \
 		 magic-sandbox.c \
 		 magic-socklist.c \
@@ -93,6 +86,21 @@ sydbox_SOURCES= \
 		 sys-connect.c \
 		 sys-getsockname.c \
 		 sydbox.c
+
+# Imported from rsync!
+noinst_HEADERS+= \
+		 byteorder.h \
+		 hashtable.h \
+		 wildmatch.h
+sydbox_SOURCES+= \
+		 hashtable.c \
+		 wildmatch.c
+
+# Imported from gnulib!
+noinst_HEADERS+= \
+		 canonicalize.h
+sydbox_SOURCES+= \
+		 canonicalize.c
 sydbox_LDADD= \
 	      $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la \
 	      $(top_builddir)/pinktrace/easy/libpinktrace_easy_@PINKTRACE_PC_SLOT@.la
