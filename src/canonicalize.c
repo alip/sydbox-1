@@ -54,7 +54,8 @@
 
 int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **path)
 {
-	int linkcount = 0, retval = 0;
+	int r;
+	int linkcount = 0;
 	char *rname, *dest, *extra_buf = NULL;
 	const char *start;
 	const char *end;
@@ -159,9 +160,10 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 					goto error;
 				}
 
-				if ((saved_errno = readlink_alloc(rname, &buf)) < 0) {
+				if ((r = readlink_alloc(rname, &buf)) < 0) {
 					if (can_mode == CAN_MISSING && errno != ENOMEM)
 						continue;
+					saved_errno = -r;
 					goto error;
 				}
 
@@ -227,10 +229,9 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 	return 0;
 
 error:
-	retval = -saved_errno;
 	if (extra_buf)
 		free(extra_buf);
 	if (rname)
 		free(rname);
-	return retval;
+	return -saved_errno;
 }
