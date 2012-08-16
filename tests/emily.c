@@ -10,6 +10,7 @@ struct test {
 	const char *name;
 	int (*func) (int argc, char **argv);
 } test_table[] = {
+	{"stat",	test_stat},
 	{"chmod",	test_chmod},
 	{"fchmodat",	test_fchmodat},
 	{"chown",	test_chown},

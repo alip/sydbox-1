@@ -21,6 +21,7 @@ CLEANFILES+= test-lib.sh
 
 emily_SOURCES= \
 	       emily.c \
+	       emily-stat.c \
 	       emily-chmod.c \
 	       emily-chown.c \
 	       emily-open.c \
@@ -56,14 +57,15 @@ TESTS_ENVIRONMENT= $(srcdir)/test-runner.sh
 TESTS= \
 	t000-basic.sh \
 	t001-wildmatch.sh \
-	t002-chmod.sh \
-	t003-fchmodat.sh \
-	t004-chown.sh \
-	t005-lchown.sh \
-	t006-fchownat.sh \
-	t007-open.sh \
-	t008-openat.sh \
-	t009-creat.sh
+	t002-canonicalize.sh \
+	t003-chmod.sh \
+	t004-fchmodat.sh \
+	t005-chown.sh \
+	t006-lchown.sh \
+	t007-fchownat.sh \
+	t008-open.sh \
+	t009-openat.sh \
+	t010-creat.sh
 EXTRA_DIST= $(TESTS) \
 	    test-lib.sh.in \
 	    test-lib-functions.sh

@@ -89,6 +89,7 @@ static inline int do_write(int fd, const void *buf, size_t count)
 	return written;
 }
 
+extern int test_stat(int argc, char **argv);
 extern int test_chmod(int argc, char **argv);
 extern int test_fchmodat(int argc, char **argv);
 extern int test_chown(int argc, char **argv);
