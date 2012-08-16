@@ -24,7 +24,7 @@ For errno == EFAULT <octal-mode> and <file> may not be specified.\n\
 static void test_fchmodat_usage(FILE *outfile, int exitcode)
 {
 	fprintf(outfile, "\
-Usage: emily fchmodat [-hr] -d dir -e errno -m <octal-mode> <file>\
+Usage: emily fchmodat [-hn] -d dir -e errno -m <octal-mode> <file>\
 \n\
 Options:\n\
 -h, --help                           -- Show help\n\

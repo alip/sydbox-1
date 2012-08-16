@@ -25,7 +25,7 @@ For errno == EFAULT <file> may not be specified.\n\
 static void test_fchownat_usage(FILE *outfile, int exitcode)
 {
 	fprintf(outfile, "\
-Usage: emily fchownat [-hr] -d dir -e errno <file>\
+Usage: emily fchownat [-hn] -d dir -e errno <file>\
 \n\
 Options:\n\
 -h, --help                 -- Show help\n\
