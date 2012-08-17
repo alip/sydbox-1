@@ -91,7 +91,8 @@ int sys_umount2(struct pink_easy_process *current, const char *name)
 
 		return PINK_EASY_CFLAG_DROP;
 	}
-	info.no_resolve = !!(flags & UMOUNT_NOFOLLOW);
+	if (flags & UMOUNT_NOFOLLOW)
+		info.can_mode |= CAN_NOLINKS;
 #endif /* UMOUNT_NOFOLLOW */
 
 	return box_check_path(current, name, &info);

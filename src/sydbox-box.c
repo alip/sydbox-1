@@ -124,12 +124,10 @@ static void box_report_violation_sock(struct pink_easy_process *current,
 }
 
 static int box_resolve_path_helper(const char *abspath, pid_t pid,
-		enum file_exist_mode file_mode, bool no_resolve,
-		char **res)
+		can_mode_t can_mode, char **res)
 {
 	int r;
 	char *p;
-	can_mode_t can_mode;
 
 	p = NULL;
 	/* Special case for /proc/self.
@@ -145,11 +143,7 @@ static int box_resolve_path_helper(const char *abspath, pid_t pid,
 		log_check("/proc/self is `/proc/%lu'", (unsigned long)pid);
 	}
 
-	can_mode = (file_mode == FILE_MUST_EXIST) ? CAN_EXISTING : CAN_ALL_BUT_LAST;
-	if (no_resolve)
-		can_mode |= CAN_NOLINKS;
 	r = canonicalize_filename_mode(p ? p : abspath, can_mode, res);
-
 	if (r == 0)
 		log_check("canonicalize `%s' to `%s'", p ? p : abspath, *res);
 	else
@@ -162,16 +156,12 @@ static int box_resolve_path_helper(const char *abspath, pid_t pid,
 }
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid,
-		enum file_exist_mode file_mode, bool no_resolve,
-		char **res)
+		can_mode_t can_mode, char **res)
 {
 	int r;
 	char *abspath;
 
-	log_check("pid=%lu file_mode=%s resolve=%s",
-			(unsigned long)pid,
-			file_exist_mode_to_string(file_mode),
-			no_resolve ? "no" : "yes");
+	log_check("pid=%lu can_mode=%d", (unsigned long)pid, can_mode);
 	log_check("path=`%s' prefix=`%s'", path, prefix);
 
 	if (path == NULL && prefix == NULL)
@@ -185,7 +175,7 @@ int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 	if (!abspath)
 		return -errno;
 
-	r = box_resolve_path_helper(abspath, pid, file_mode, no_resolve, res);
+	r = box_resolve_path_helper(abspath, pid, can_mode, res);
 	free(abspath);
 	return r;
 }
@@ -259,11 +249,11 @@ int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_
 	log_check("%s[%lu:%u] sys=%s() arg_index=%u cwd:`%s'",
 			data->comm, (unsigned long)tid, abi, name,
 			info->arg_index, data->cwd);
-	log_check("at_func=%s null_ok=%s resolve=%s create=%s",
+	log_check("at_func=%s null_ok=%s fail_if_exist=%s can_mode=%d",
 			info->at_func ? "yes" : "no",
 			info->null_ok ? "yes" : "no",
-			info->no_resolve ? "no" : "yes",
-			file_exist_mode_to_string(info->file_mode));
+			info->fail_if_exist ? "yes" : "no",
+			info->can_mode);
 	log_check("safe=%s deny-errno=%s access_mode=%s",
 			info->safe ? "yes" : "no",
 			errno_to_string(deny_errno),
@@ -289,9 +279,7 @@ int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_
 	}
 
 	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd,
-					tid,
-					info->file_mode,
-					info->no_resolve, &abspath)) < 0) {
+					tid, info->can_mode, &abspath)) < 0) {
 		log_access("resolve path=`%s' for sys=%s() failed (errno=%d %s)",
 				path, name, -r, strerror(-r));
 		log_access("deny access with errno=%s", errno_to_string(-r));
@@ -336,12 +324,13 @@ int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_
 		goto out;
 	}
 
-	if (info->file_mode == FILE_CANT_EXIST) {
+	if (info->fail_if_exist) {
 		/* The system call *must* create the file */
 		int sr;
+		int can_flags = info->can_mode & ~CAN_MODE_MASK;
 		struct stat buf;
 
-		sr = info->no_resolve ? lstat(abspath, &buf) : stat(abspath, &buf);
+		sr = can_flags & CAN_NOLINKS ? lstat(abspath, &buf) : stat(abspath, &buf);
 		if (sr == 0) {
 			/* Yet the file exists... */
 			log_access("sys=%s() must create existant path=`%s'", name, abspath);
@@ -443,9 +432,7 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sysinf
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket, resolve the path. */
 		if ((r = box_resolve_path(psa->u.sa_un.sun_path, data->cwd,
-						tid, FILE_MAY_EXIST,
-						info->no_resolve,
-						&abspath)) < 0) {
+						tid, info->can_mode, &abspath)) < 0) {
 			log_access("resolve path=`%s' for sys=%s() failed (errno=%d %s)",
 				psa->u.sa_un.sun_path,
 				name, -r, strerror(-r));

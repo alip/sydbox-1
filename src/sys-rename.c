@@ -35,7 +35,7 @@ int sys_rename(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	init_sysinfo(&info);
-	info.no_resolve = true;
+	info.can_mode |= CAN_NOLINKS;
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
@@ -45,7 +45,8 @@ int sys_rename(struct pink_easy_process *current, const char *name)
 		 * In this case, newpath must either not exist, or it must
 		 * specify an empty directory.
 		 */
-		info.file_mode = FILE_MAY_EXIST;
+		info.can_mode &= ~CAN_MODE_MASK;
+		info.can_mode |= CAN_ALL_BUT_LAST;
 		return box_check_path(current, name, &info);
 	}
 
@@ -64,12 +65,13 @@ int sys_renameat(struct pink_easy_process *current, const char *name)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	info.no_resolve = true;
+	info.can_mode |= CAN_NOLINKS;
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
 		info.arg_index = 3;
-		info.file_mode = FILE_MAY_EXIST;
+		info.can_mode &= ~CAN_MODE_MASK;
+		info.can_mode |= CAN_ALL_BUT_LAST;
 		return box_check_path(current, name, &info);
 	}
 

@@ -39,7 +39,7 @@ int sys_connect(struct pink_easy_process *current, const char *name)
 	info.access_mode = sandbox_network_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
 	info.access_list = sandbox_network_deny(data) ? &data->config.whitelist_network_connect : &data->config.blacklist_network_connect;
 	info.access_filter = &sydbox->config.filter_network;
-	info.file_mode = FILE_MAY_EXIST;
+	info.can_mode = CAN_ALL_BUT_LAST;
 	info.arg_index = 1;
 	info.deny_errno = ECONNREFUSED;
 	if (data->subcall == PINK_SOCKET_SUBCALL_CONNECT)
@@ -60,7 +60,7 @@ int sys_sendto(struct pink_easy_process *current, const char *name)
 	info.access_mode = sandbox_network_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
 	info.access_list = sandbox_network_deny(data) ? &data->config.whitelist_network_connect : &data->config.blacklist_network_connect;
 	info.access_filter = &sydbox->config.filter_network;
-	info.file_mode = FILE_MAY_EXIST;
+	info.can_mode = CAN_ALL_BUT_LAST;
 	info.arg_index = 4;
 	info.deny_errno = ECONNREFUSED;
 	if (data->subcall == PINK_SOCKET_SUBCALL_SENDTO)
@@ -81,7 +81,7 @@ int sys_recvfrom(struct pink_easy_process *current, const char *name)
 	info.access_mode = sandbox_network_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
 	info.access_list = sandbox_network_deny(data) ? &data->config.whitelist_network_connect : &data->config.blacklist_network_connect;
 	info.access_filter = &sydbox->config.filter_network;
-	info.file_mode = FILE_MAY_EXIST;
+	info.can_mode = CAN_ALL_BUT_LAST;
 	info.arg_index = 4;
 	info.deny_errno = ECONNREFUSED;
 	if (data->subcall == PINK_SOCKET_SUBCALL_RECVFROM)

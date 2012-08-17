@@ -47,7 +47,7 @@ int sys_lremovexattr(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	init_sysinfo(&info);
-	info.no_resolve = true;
+	info.can_mode |= CAN_NOLINKS;
 
 	return box_check_path(current, name, &info);
 }

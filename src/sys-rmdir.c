@@ -33,7 +33,6 @@ int sys_rmdir(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	init_sysinfo(&info);
-	info.no_resolve = true;
 
 	return box_check_path(current, name, &info);
 }

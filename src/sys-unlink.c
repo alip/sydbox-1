@@ -39,7 +39,7 @@ int sys_unlink(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	init_sysinfo(&info);
-	info.file_mode = FILE_MAY_EXIST;
+	info.can_mode |= CAN_NOLINKS;
 
 	return box_check_path(current, name, &info);
 }
@@ -79,8 +79,8 @@ int sys_unlinkat(struct pink_easy_process *current, const char *name)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	info.file_mode = FILE_MAY_EXIST;
-	info.no_resolve = !(flags & AT_REMOVEDIR);
+	if (!(flags & AT_REMOVEDIR))
+		info.can_mode |= CAN_NOLINKS;
 
 	return box_check_path(current, name, &info);
 }

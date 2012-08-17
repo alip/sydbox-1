@@ -37,7 +37,7 @@ int sys_creat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	init_sysinfo(&info);
-	info.file_mode = FILE_MAY_EXIST;
+	info.can_mode = CAN_ALL_BUT_LAST;
 
 	return box_check_path(current, name, &info);
 }

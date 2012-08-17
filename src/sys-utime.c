@@ -88,7 +88,8 @@ int sys_utimensat(struct pink_easy_process *current, const char *name)
 	info.at_func = true;
 	info.null_ok = true;
 	info.arg_index = 1;
-	info.no_resolve = !!(flags & AT_SYMLINK_NOFOLLOW);
+	if (flags & AT_SYMLINK_NOFOLLOW)
+		info.can_mode |= CAN_NOLINKS;
 
 	return box_check_path(current, name, &info);
 }

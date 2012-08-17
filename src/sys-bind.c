@@ -55,7 +55,7 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 	info.access_list = sandbox_network_deny(data) ? &data->config.whitelist_network_bind : &data->config.blacklist_network_bind;
 	info.access_filter = &sydbox->config.filter_network;
 	info.arg_index = 1;
-	info.file_mode = FILE_MAY_EXIST;
+	info.can_mode = CAN_ALL_BUT_LAST;
 	info.deny_errno = EADDRNOTAVAIL;
 	if (data->subcall == PINK_SOCKET_SUBCALL_BIND)
 		info.decode_socketcall = true;

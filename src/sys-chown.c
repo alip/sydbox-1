@@ -52,7 +52,7 @@ int sys_lchown(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	init_sysinfo(&info);
-	info.no_resolve = true;
+	info.can_mode |= CAN_NOLINKS;
 
 	return box_check_path(current, name, &info);
 }
@@ -68,7 +68,7 @@ int sys_fchownat(struct pink_easy_process *current, const char *name)
 	if (sandbox_write_off(data))
 		return 0;
 
-	/* Check for AT_SYMLINK_FOLLOW */
+	/* Check for AT_SYMLINK_NOFOLLOW */
 	if (!pink_read_argument(tid, abi, &data->regs, 4, &flags)) {
 		if (errno != ESRCH) {
 			log_warning("read_argument(%lu, %d, 4) failed"
@@ -88,7 +88,8 @@ int sys_fchownat(struct pink_easy_process *current, const char *name)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	info.no_resolve = !(flags & AT_SYMLINK_FOLLOW);
+	if (flags & AT_SYMLINK_NOFOLLOW)
+		info.can_mode |= CAN_NOLINKS;
 
 	return box_check_path(current, name, &info);
 }

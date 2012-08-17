@@ -47,7 +47,7 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 	else if (r /* > 0 */)
 		return r;
 
-	if ((r = box_resolve_path(path, data->cwd, tid, 0, 1, &abspath)) < 0) {
+	if ((r = box_resolve_path(path, data->cwd, tid, CAN_EXISTING, &abspath)) < 0) {
 		log_access("resolve path=`%s' failed (errno=%d %s)",
 				path, -r, strerror(-r));
 		log_access("deny access with errno=%s", errno_to_string(-r));

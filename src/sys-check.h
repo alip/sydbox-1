@@ -23,19 +23,8 @@
 #include <string.h>
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
+#include "canonicalize.h"
 #include "strtable.h"
-
-enum file_exist_mode {
-	FILE_MUST_EXIST,
-	FILE_MAY_EXIST,
-	FILE_CANT_EXIST
-};
-static const char *const file_exist_mode_table[] = {
-	[FILE_MUST_EXIST] = "must-exist",
-	[FILE_MAY_EXIST] = "may-exist",
-	[FILE_CANT_EXIST] = "cant-exist"
-};
-DEFINE_STRING_TABLE_LOOKUP(file_exist_mode, int)
 
 enum sys_access_mode {
 	ACCESS_0,
@@ -62,10 +51,9 @@ typedef struct {
 
 	bool at_func; /* at suffixed functions */
 
-	bool null_ok; /* NULL argument doesn't cause -EFAULT (only valid for `at') */
-	enum file_exist_mode file_mode; /* Behaviour with missing paths */
-
-	bool no_resolve; /* Do not resolve symbolic links */
+	bool null_ok; /* NULL argument doesn't cause -EFAULT (only valid for `at_func') */
+	bool fail_if_exist; /* system call *must* create or it fails with -EEXIST */
+	can_mode_t can_mode; /* canonicalize mode */
 
 	bool decode_socketcall; /* decode socketcall() into subcall */
 

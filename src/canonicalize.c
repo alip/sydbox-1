@@ -16,6 +16,7 @@
  * - Drop DOUBLE_SLASH_IS_DISTINCT_ROOT check
  * - Use readlink_alloc() instead of areadlink()
  * - In stat error path, treat ELOOP like ENOENT for CAN_ALL_BUT_LAST
+ * - In stat error path, call lstat() for the last member of the path for CAN_EXISTING|CAN_NOLINKS
  */
 
 #ifdef HAVE_CONFIG_H
@@ -134,8 +135,11 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 				st.st_mode = 0;
 			} else if ((logical ? stat(rname, &st) : lstat(rname, &st)) != 0) {
 				saved_errno = errno;
-				if (can_mode == CAN_EXISTING)
-					goto error;
+				if (can_mode == CAN_EXISTING) {
+					if (!logical || end[strspn(end, "/")] || lstat(rname, &st) != 0)
+						goto error;
+					continue;
+				}
 				if (can_mode == CAN_ALL_BUT_LAST) {
 					if (end[strspn(end, "/")] || (saved_errno != ENOENT && saved_errno != ELOOP))
 						goto error;

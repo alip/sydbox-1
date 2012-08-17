@@ -35,8 +35,8 @@ int sys_symlink(struct pink_easy_process *current, const char *name)
 
 	init_sysinfo(&info);
 	info.arg_index = 1;
-	info.file_mode = FILE_CANT_EXIST;
-	info.no_resolve = true;
+	info.can_mode = CAN_ALL_BUT_LAST | CAN_NOLINKS;
+	info.fail_if_exist = true;
 
 	return box_check_path(current, name, &info);
 }
@@ -52,8 +52,8 @@ int sys_symlinkat(struct pink_easy_process *current, const char *name)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 2;
-	info.file_mode = FILE_CANT_EXIST;
-	info.no_resolve = true;
+	info.can_mode = CAN_ALL_BUT_LAST | CAN_NOLINKS;
+	info.fail_if_exist = true;
 
 	return box_check_path(current, name, &info);
 }

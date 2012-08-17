@@ -51,13 +51,13 @@ int sys_link(struct pink_easy_process *current, const char *name)
 	 * implementation-dependent whether or not oldpath is dereferenced if
 	 * it is a symbolic link.
 	 */
-	info.no_resolve = true;
+	info.can_mode |= CAN_NOLINKS;
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
 		info.arg_index = 1;
-		info.file_mode = FILE_CANT_EXIST;
-		info.no_resolve = false;
+		info.can_mode = CAN_ALL_BUT_LAST;
+		info.fail_if_exist = true;
 		return box_check_path(current, name, &info);
 	}
 
@@ -97,13 +97,15 @@ int sys_linkat(struct pink_easy_process *current, const char *name)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	info.no_resolve = !(flags & AT_SYMLINK_FOLLOW);
+	if (!(flags & AT_SYMLINK_FOLLOW))
+		info.can_mode |= CAN_NOLINKS;
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
 		info.arg_index = 3;
-		info.file_mode = FILE_CANT_EXIST;
-		info.no_resolve = false;
+		info.can_mode &= ~CAN_MODE_MASK;
+		info.can_mode |= CAN_ALL_BUT_LAST;
+		info.fail_if_exist = true;
 		return box_check_path(current, name, &info);
 	}
 

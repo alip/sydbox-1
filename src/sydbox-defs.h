@@ -46,6 +46,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "JSON_parser.h"
+#include "canonicalize.h"
 #include "hashtable.h"
 #include "slist.h"
 #include "util.h"
@@ -266,8 +267,7 @@ void config_parse_spec(const char *filename) PINK_GCC_ATTR((nonnull(1)));
 
 void callback_init(void);
 
-int box_resolve_path(const char *path, const char *prefix, pid_t pid,
-		enum file_exist_mode file_mode, bool no_resolve, char **res);
+int box_resolve_path(const char *path, const char *prefix, pid_t pid, can_mode_t can_mode, char **res);
 int box_match_path(const char *path, const slist_t *patterns, const char **match);
 int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_t *info);
 int box_check_socket(struct pink_easy_process *current, const char *name, sysinfo_t *info);

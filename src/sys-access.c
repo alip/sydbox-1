@@ -144,9 +144,10 @@ int sys_faccessat(struct pink_easy_process *current, const char *name)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	info.no_resolve = !!(flags & AT_SYMLINK_NOFOLLOW);
 	info.safe = true;
 	info.deny_errno = EACCES;
+	if (flags & AT_SYMLINK_NOFOLLOW)
+		info.can_mode |= CAN_NOLINKS;
 
 	r = 0;
 	if (!sandbox_write_off(data) && mode & W_OK)
