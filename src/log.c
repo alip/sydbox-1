@@ -91,6 +91,8 @@ static void log_me(FILE *fp, int level, const char *func, const char *fmt, va_li
 		fprintf(fp, "%s: ", func);
 	vfprintf(fp, fmt, ap);
 	fprintf(fp, "%s%s", s, suffix ? suffix : "");
+
+	fflush(fp);
 }
 
 int log_init(const char *filename)
