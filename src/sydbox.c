@@ -142,6 +142,7 @@ static void sydbox_init(void)
 	sydbox->violation = false;
 	sydbox->ctx = NULL;
 	config_init();
+	log_init(NULL);
 }
 
 static void sydbox_destroy(void)
