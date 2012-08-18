@@ -692,7 +692,7 @@ int magic_cast_string(struct pink_easy_process *current, const char *magic, int 
 				return MAGIC_ERROR_INVALID_QUERY;
 			query = true;
 			/* fall through */
-		case SYDBOX_MAGIC_SEP_CHAR:
+		case SYDBOX_MAGIC_SET_CHAR:
 			++cmd;
 			break;
 		case 0:

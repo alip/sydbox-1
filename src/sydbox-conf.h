@@ -53,9 +53,9 @@
 #define SYDBOX_MAGIC_PREFIX "/dev/sydbox"
 #endif /* !SYDBOX_MAGIC_PREFIX */
 
-#ifndef SYDBOX_MAGIC_SEP_CHAR
-#define SYDBOX_MAGIC_SEP_CHAR ':'
-#endif /* !SYDBOX_MAGIC_SEP_CHAR */
+#ifndef SYDBOX_MAGIC_SET_CHAR
+#define SYDBOX_MAGIC_SET_CHAR ':'
+#endif /* !SYDBOX_MAGIC_SET_CHAR */
 
 #ifndef SYDBOX_MAGIC_QUERY_CHAR
 #define SYDBOX_MAGIC_QUERY_CHAR '?'
