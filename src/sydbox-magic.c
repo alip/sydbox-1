@@ -691,8 +691,17 @@ int magic_cast_string(struct pink_easy_process *current, const char *magic, int 
 			if (key_table[key].query == NULL)
 				return MAGIC_ERROR_INVALID_QUERY;
 			query = true;
-			/* fall through */
+			++cmd;
+			break;
 		case SYDBOX_MAGIC_SET_CHAR:
+			switch (key_table[key].type) {
+			case MAGIC_TYPE_BOOLEAN:
+			case MAGIC_TYPE_INTEGER:
+			case MAGIC_TYPE_STRING:
+				break;
+			default:
+				return MAGIC_ERROR_INVALID_OPERATION;
+			}
 			++cmd;
 			break;
 		case 0:
