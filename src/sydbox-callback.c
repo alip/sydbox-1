@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sydbox-callback.c
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 #include "sydbox-defs.h"
@@ -164,17 +152,31 @@ static void callback_startup(const struct pink_easy_context *ctx,
 		}							\
 	} while (0)
 
-	SLIST_COPY_ALL(node, &inherit->whitelist_exec, up, &data->config.whitelist_exec, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->whitelist_read, up, &data->config.whitelist_read, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->whitelist_write, up, &data->config.whitelist_write, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->whitelist_network_bind, up, &data->config.whitelist_network_bind, newnode, sock_match_xdup);
-	SLIST_COPY_ALL(node, &inherit->whitelist_network_connect, up, &data->config.whitelist_network_connect, newnode, sock_match_xdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_exec, up,
+		       &data->config.whitelist_exec, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_read, up,
+		       &data->config.whitelist_read, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_write, up,
+		       &data->config.whitelist_write, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_network_bind, up,
+		       &data->config.whitelist_network_bind, newnode,
+		       sockmatch_xdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_network_connect, up,
+		       &data->config.whitelist_network_connect, newnode,
+		       sockmatch_xdup);
 
-	SLIST_COPY_ALL(node, &inherit->blacklist_exec, up, &data->config.blacklist_exec, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->blacklist_read, up, &data->config.blacklist_read, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->blacklist_write, up, &data->config.blacklist_write, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->blacklist_network_bind, up, &data->config.blacklist_network_bind, newnode, sock_match_xdup);
-	SLIST_COPY_ALL(node, &inherit->blacklist_network_connect, up, &data->config.blacklist_network_connect, newnode, sock_match_xdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_exec, up,
+		       &data->config.blacklist_exec, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_read, up,
+		       &data->config.blacklist_read, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_write, up,
+		       &data->config.blacklist_write, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_network_bind, up,
+		       &data->config.blacklist_network_bind, newnode,
+		       sockmatch_xdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_network_connect, up,
+		       &data->config.blacklist_network_connect, newnode,
+		       sockmatch_xdup);
 #undef SLIST_COPY_ALL
 
 	/* Create the fd -> address hash table */

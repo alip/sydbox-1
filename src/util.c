@@ -1,22 +1,11 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/util.c
+ *
  * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Based in part upon courier which is:
+ *   Copyright 1998-2009 Double Precision, Inc
  */
 
 #ifdef HAVE_CONFIG_H
@@ -35,8 +24,7 @@
 
 #include "util.h"
 
-int
-safe_atoi(const char *s, int *ret_i)
+int safe_atoi(const char *s, int *ret_i)
 {
 	char *x = NULL;
 	long l;
@@ -54,8 +42,7 @@ safe_atoi(const char *s, int *ret_i)
 	return 0;
 }
 
-int
-safe_atou(const char *s, unsigned *ret_u)
+int safe_atou(const char *s, unsigned *ret_u)
 {
 	char *x = NULL;
 	unsigned long l;
@@ -76,8 +63,7 @@ safe_atou(const char *s, unsigned *ret_u)
 	return 0;
 }
 
-int
-safe_atollu(const char *s, long long unsigned *ret_llu)
+int safe_atollu(const char *s, long long unsigned *ret_llu)
 {
 	char *x = NULL;
 	unsigned long long l;
@@ -95,8 +81,7 @@ safe_atollu(const char *s, long long unsigned *ret_llu)
 	return 0;
 }
 
-int
-parse_boolean(const char *s, bool *ret_bool)
+int parse_boolean(const char *s, bool *ret_bool)
 {
 	bool b;
 
@@ -114,8 +99,7 @@ parse_boolean(const char *s, bool *ret_bool)
 	return 0;
 }
 
-int
-parse_pid(const char *s, pid_t *ret_pid)
+int parse_pid(const char *s, pid_t *ret_pid)
 {
 	unsigned long ul;
 	pid_t pid;
@@ -139,8 +123,7 @@ parse_pid(const char *s, pid_t *ret_pid)
 	return 0;
 }
 
-int
-parse_port(const char *s, unsigned *ret_port)
+int parse_port(const char *s, unsigned *ret_port)
 {
 	int r;
 	unsigned port;
@@ -172,8 +155,55 @@ parse_port(const char *s, unsigned *ret_port)
 	return 0;
 }
 
-bool
-endswith(const char *s, const char *postfix)
+int parse_netmask_ip(const char *addr, unsigned *ret_netmask)
+{
+	unsigned netmask;
+	const char *p;
+
+	assert(ret_netmask);
+
+	netmask = 8;
+	p = addr;
+	while (*p != 0) {
+		if (*p++ == '.') {
+			if (*p == 0)
+				break;
+			netmask += 8;
+		}
+	}
+
+	*ret_netmask = netmask;
+	return 0;
+}
+
+int parse_netmask_ipv6(const char *addr, unsigned *ret_netmask)
+{
+	unsigned netmask;
+	const char *p;
+
+	assert(ret_netmask);
+
+	netmask = 16;
+	p = addr;
+	while (*p != 0) {
+		if (*p++ == ':') {
+			/* ip:: ends the prefix right here,
+			 * but ip::ip is a full IPv6 address.
+			 */
+			if (p[1] != '\0')
+				netmask = sizeof(struct in6_addr) * 8;
+			break;
+		}
+		if (*p == 0)
+			break;
+		netmask += 16;
+	}
+
+	*ret_netmask = netmask;
+	return 0;
+}
+
+bool endswith(const char *s, const char *postfix)
 {
 	size_t sl, pl;
 
@@ -192,8 +222,7 @@ endswith(const char *s, const char *postfix)
 	return memcmp(s + sl - pl, postfix, pl) == 0;
 }
 
-bool
-startswith(const char *s, const char *prefix)
+bool startswith(const char *s, const char *prefix)
 {
 	size_t sl, pl;
 
@@ -212,8 +241,7 @@ startswith(const char *s, const char *prefix)
 	return memcmp(s, prefix, pl) == 0;
 }
 
-int
-close_nointr(int fd)
+int close_nointr(int fd)
 {
 	assert(fd >= 0);
 

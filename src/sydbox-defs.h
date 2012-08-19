@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sydbox-defs.h
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 #ifndef SYDBOX_GUARD_DEFS_H
@@ -39,9 +27,6 @@
 #include <sys/queue.h>
 #include <sys/types.h>
 
-#include <netinet/in.h>
-#include <sys/un.h>
-
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
@@ -49,45 +34,14 @@
 #include "canonicalize.h"
 #include "hashtable.h"
 #include "slist.h"
+#include "sockmatch.h"
 #include "util.h"
+#include "xfunc.h"
 #include "sys-check.h"
 #include "sydbox-conf.h"
 #include "sydbox-magic.h"
 
 /* Type declarations */
-typedef struct {
-	char *path;
-	struct pink_sockaddr *addr;
-} sock_info_t;
-
-typedef struct {
-	/* The actual pattern, useful for disallowing */
-	char *str;
-
-	int family;
-
-	union {
-		struct {
-			bool abstract;
-			char *path;
-		} sa_un;
-
-		struct {
-			unsigned netmask;
-			unsigned port[2];
-			struct in_addr addr;
-		} sa_in;
-
-#if SYDBOX_HAVE_IPV6
-		struct {
-			unsigned netmask;
-			unsigned port[2];
-			struct in6_addr addr;
-		} sa6;
-#endif
-	} match;
-} sock_match_t;
-
 typedef struct {
 	enum sandbox_mode sandbox_exec;
 	enum sandbox_mode sandbox_read;
@@ -139,7 +93,7 @@ typedef struct {
 	char *comm;
 
 	/* Information about the last bind address with port zero */
-	sock_info_t *savebind;
+	struct sockinfo *savebind;
 
 	/* fd -> sock_info_t mappings  */
 	hashtable_t *sockmap;
@@ -223,16 +177,6 @@ typedef struct {
 extern sydbox_t *sydbox;
 
 /* Global functions */
-void die(int code, const char *fmt, ...) PINK_GCC_ATTR((noreturn, format (printf, 2, 3)));
-void die_errno(int code, const char *fmt, ...) PINK_GCC_ATTR((noreturn, format (printf, 2, 3)));
-void *xmalloc(size_t size) PINK_GCC_ATTR((malloc));
-void *xcalloc(size_t nmemb, size_t size) PINK_GCC_ATTR((malloc));
-void *xrealloc(void *ptr, size_t size);
-char *xstrdup(const char *src) PINK_GCC_ATTR((malloc));
-char *xstrndup(const char *src, size_t n) PINK_GCC_ATTR((malloc));
-int xasprintf(char **strp, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
-char *xgetcwd(void);
-
 void cont_all(void);
 void abort_all(int fatal_sig);
 int deny(struct pink_easy_process *current, int err_no);
@@ -242,14 +186,6 @@ int violation(struct pink_easy_process *current, const char *fmt, ...) PINK_GCC_
 
 int wildmatch_ext(const char *pattern, const char *text);
 int wildmatch_expand(const char *pattern, char ***buf);
-
-sock_info_t *sock_info_xdup(sock_info_t *src);
-
-int sock_match_expand(const char *src, char ***buf);
-int sock_match_new(const char *src, sock_match_t **buf);
-int sock_match_new_pink(const sock_info_t *src, sock_match_t **buf);
-sock_match_t *sock_match_xdup(const sock_match_t *src);
-int sock_match(const sock_match_t *haystack, const struct pink_sockaddr *needle);
 
 const char *magic_strerror(int error);
 const char *magic_strkey(enum magic_key key);
@@ -298,27 +234,6 @@ static inline sandbox_t *box_current(struct pink_easy_process *current)
 	return &sydbox->config.child;
 }
 
-static inline void free_sock_info(void *data)
-{
-	sock_info_t *info = data;
-
-	if (info->path)
-		free(info->path);
-	free(info->addr);
-	free(info);
-}
-
-static inline void free_sock_match(void *data)
-{
-	sock_match_t *m = data;
-
-	if (m->str)
-		free(m->str);
-	if (m->family == AF_UNIX && m->match.sa_un.path)
-		free(m->match.sa_un.path);
-	free(m);
-}
-
 static inline void free_sandbox(sandbox_t *box)
 {
 	struct snode *node;
@@ -326,14 +241,14 @@ static inline void free_sandbox(sandbox_t *box)
 	SLIST_FLUSH(node, &box->whitelist_exec, up, free);
 	SLIST_FLUSH(node, &box->whitelist_read, up, free);
 	SLIST_FLUSH(node, &box->whitelist_write, up, free);
-	SLIST_FLUSH(node, &box->whitelist_network_bind, up, free_sock_match);
-	SLIST_FLUSH(node, &box->whitelist_network_connect, up, free_sock_match);
+	SLIST_FLUSH(node, &box->whitelist_network_bind, up, free_sockmatch);
+	SLIST_FLUSH(node, &box->whitelist_network_connect, up, free_sockmatch);
 
 	SLIST_FLUSH(node, &box->blacklist_exec, up, free);
 	SLIST_FLUSH(node, &box->blacklist_read, up, free);
 	SLIST_FLUSH(node, &box->blacklist_write, up, free);
-	SLIST_FLUSH(node, &box->blacklist_network_bind, up, free_sock_match);
-	SLIST_FLUSH(node, &box->blacklist_network_connect, up, free_sock_match);
+	SLIST_FLUSH(node, &box->blacklist_network_bind, up, free_sockmatch);
+	SLIST_FLUSH(node, &box->blacklist_network_connect, up, free_sockmatch);
 }
 
 static inline void free_proc(void *data)
@@ -353,13 +268,13 @@ static inline void free_proc(void *data)
 		free(p->comm);
 
 	if (p->savebind)
-		free_sock_info(p->savebind);
+		free_sockinfo(p->savebind);
 
 	/* Free the fd -> address mappings */
 	for (int i = 0; i < p->sockmap->size; i++) {
 		ht_int64_node_t *node = HT_NODE(p->sockmap, p->sockmap->nodes, i);
 		if (node->data)
-			free_sock_info(node->data);
+			free_sockinfo(node->data);
 	}
 	hashtable_destroy(p->sockmap);
 
@@ -381,7 +296,7 @@ static inline void clear_proc(void *data)
 		p->args[i] = 0;
 
 	if (p->savebind)
-		free_sock_info(p->savebind);
+		free_sockinfo(p->savebind);
 	p->savebind = NULL;
 }
 

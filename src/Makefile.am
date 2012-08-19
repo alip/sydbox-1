@@ -23,7 +23,9 @@ noinst_HEADERS= \
 		seccomp.h \
 		slist.h \
 		strtable.h \
+		sockmatch.h \
 		util.h \
+		xfunc.h \
 		sys-check.h \
 		sydbox-conf.h \
 		sydbox-magic.h \
@@ -34,7 +36,9 @@ sydbox_SOURCES= \
 		 path.c \
 		 proc.c \
 		 seccomp.c \
+		 sockmatch.c \
 		 util.c \
+		 xfunc.c \
 		 magic-panic.c \
 		 magic-sandbox.c \
 		 magic-socklist.c \
@@ -50,12 +54,9 @@ sydbox_SOURCES= \
 		 sydbox-magic.c \
 		 sydbox-panic.c \
 		 sydbox-path.c \
-		 sydbox-sock.c \
-		 sydbox-sockinfo.c \
 		 sydbox-syscall.c \
 		 sydbox-systable.c \
 		 sydbox-wild.c \
-		 sydbox-xfunc.c \
 		 sys-access.c \
 		 sys-chdir.c \
 		 sys-execve.c \

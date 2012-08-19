@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/magic-socklist.c
+ *
  * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 #include "sydbox-defs.h"
@@ -35,7 +23,7 @@ static int magic_set_socklist(const void *val, slist_t *head)
 	const char *str = val;
 	char **list;
 	struct snode *node;
-	sock_match_t *match;
+	struct sockmatch *match;
 
 	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -45,12 +33,12 @@ static int magic_set_socklist(const void *val, slist_t *head)
 	}
 
 	/* Expand alias */
-	c = f = sock_match_expand(str, &list) - 1;
+	c = f = sockmatch_expand(str, &list) - 1;
 	for (; c >= 0; c--) {
 		switch (op) {
 		case SYDBOX_MAGIC_ADD_CHAR:
 			errno = 0;
-			if ((r = sock_match_new(list[c], &match)) < 0) {
+			if ((r = sockmatch_parse(list[c], &match)) < 0) {
 				log_warning("invalid address `%s' (errno:%d %s)",
 						list[c], -r, strerror(-r));
 				r = MAGIC_ERROR_INVALID_VALUE;
@@ -70,7 +58,7 @@ static int magic_set_socklist(const void *val, slist_t *head)
 				match = node->data;
 				if (streq(match->str, str)) {
 					SLIST_REMOVE(head, node, snode, up);
-					free_sock_match(match);
+					free_sockmatch(match);
 					free(node);
 					break;
 				}

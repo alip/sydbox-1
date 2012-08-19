@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sys-bind.c
+ *
  * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 #include "sydbox-defs.h"
@@ -92,7 +80,7 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 #if SYDBOX_HAVE_IPV6
 		case AF_INET6:
 #endif /* SYDBOX_HAVE_IPV6 */
-			data->savebind = xmalloc(sizeof(sock_info_t));
+			data->savebind = xmalloc(sizeof(struct sockinfo));
 			data->savebind->path = unix_abspath;
 			data->savebind->addr = psa;
 			/* fall through */
@@ -116,7 +104,7 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 	long retval;
 	struct snode *snode;
 	ht_int64_node_t *node;
-	sock_match_t *m;
+	struct sockmatch *m;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -145,7 +133,7 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 		log_trace("ignore failed %s() call for process %s[%lu:%u]",
 				name, data->comm, (unsigned long)tid,
 				abi);
-		free_sock_info(data->savebind);
+		free_sockinfo(data->savebind);
 		data->savebind = NULL;
 		return 0;
 	}
@@ -159,7 +147,7 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 #endif
 
 	snode = xcalloc(1, sizeof(struct snode));
-	sock_match_new_pink(data->savebind, &m);
+	m = sockmatch_new(data->savebind);
 	snode->data = m;
 	SLIST_INSERT_HEAD(&data->config.whitelist_network_connect, snode, up);
 	return 0;

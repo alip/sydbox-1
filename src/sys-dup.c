@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sys-dup.c
+ *
  * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 #include "sydbox-defs.h"
@@ -103,7 +91,7 @@ int sysx_dup(struct pink_easy_process *current, const char *name)
 	if (!(new_node = hashtable_find(data->sockmap, retval + 1, 1)))
 		die_errno(-1, "hashtable_find");
 
-	new_node->data = sock_info_xdup(old_node->data);
+	new_node->data = sockinfo_xdup(old_node->data);
 	log_check("process %s[%lu:%u] duplicated fd:%ld to fd:%ld",
 			data->comm, (unsigned long)tid, abi,
 			data->args[0], retval);

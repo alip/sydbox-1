@@ -1,22 +1,11 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * sydbox/util.h
+ *
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Based in part upon courier which is:
+ *   Copyright 1998-2009 Double Precision, Inc
  */
 
 #ifndef UTIL_H
@@ -29,12 +18,12 @@
 #include <sys/types.h>
 #include "macro.h"
 
-bool endswith(const char *s, const char *postfix);
-bool startswith(const char *s, const char *prefix);
+extern bool endswith(const char *s, const char *postfix);
+extern bool startswith(const char *s, const char *prefix);
 
-int safe_atoi(const char *s, int *ret_i);
-int safe_atou(const char *s, unsigned *ret_u);
-int safe_atollu(const char *s, long long unsigned *ret_llu);
+extern int safe_atoi(const char *s, int *ret_i);
+extern int safe_atou(const char *s, unsigned *ret_u);
+extern int safe_atollu(const char *s, long long unsigned *ret_llu);
 #if __WORDSIZE == 32
 static inline int safe_atolu(const char *s, unsigned long *ret_u) {
 	return safe_atou(s, (unsigned *) ret_u);
@@ -45,11 +34,13 @@ static inline int safe_atolu(const char *s, unsigned long *ret_u) {
 }
 #endif /* __WORDSIZE == 32 */
 
-int parse_boolean(const char *s, bool *ret_bool);
-int parse_pid(const char *s, pid_t *ret_pid);
-int parse_port(const char *s, unsigned *ret_port);
+extern int parse_boolean(const char *s, bool *ret_bool);
+extern int parse_pid(const char *s, pid_t *ret_pid);
+extern int parse_port(const char *s, unsigned *ret_port);
+extern int parse_netmask_ip(const char *addr, unsigned *ret_netmask);
+extern int parse_netmask_ipv6(const char *addr, unsigned *ret_netmask);
 
-int close_nointr(int fd);
+extern int close_nointr(int fd);
 
 #define streq(a,b) (strcmp((a),(b)) == 0)
 #define streqcase(a,b) (strcasecmp((a),(b)) == 0)

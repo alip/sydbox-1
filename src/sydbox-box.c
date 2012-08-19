@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sydbox-box.c
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 #include "sydbox-defs.h"
@@ -198,12 +186,12 @@ int box_match_path(const char *path, const slist_t *patterns, const char **match
 static int box_match_path_saun(const char *path, const slist_t *patterns, const char **match)
 {
 	struct snode *node;
-	sock_match_t *m;
+	struct sockmatch *m;
 
 	SLIST_FOREACH(node, patterns, up) {
 		m = node->data;
-		if (m->family == AF_UNIX && !m->match.sa_un.abstract) {
-			if (wildmatch_ext(m->match.sa_un.path, path)) {
+		if (m->family == AF_UNIX && !m->addr.sa_un.abstract) {
+			if (wildmatch_ext(m->addr.sa_un.path, path)) {
 				if (match)
 					*match = node->data;
 				return 1;
@@ -214,12 +202,14 @@ static int box_match_path_saun(const char *path, const slist_t *patterns, const 
 	return 0;
 }
 
-static int box_match_socket(const struct pink_sockaddr *psa, const slist_t *patterns, sock_match_t **match)
+static int box_match_socket(const struct pink_sockaddr *psa,
+			    const slist_t *patterns,
+			    struct sockmatch **match)
 {
 	struct snode *node;
 
 	SLIST_FOREACH(node, patterns, up) {
-		if (sock_match(node->data, psa)) {
+		if (sockmatch(node->data, psa)) {
 			if (match)
 				*match = node->data;
 			return 1;
@@ -369,7 +359,7 @@ int box_check_socket(struct pink_easy_process *current, const char *name, sysinf
 	int r;
 	char *abspath;
 	struct snode *node;
-	sock_match_t *m;
+	struct sockmatch *m;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);

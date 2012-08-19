@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sydbox.c
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 /*
@@ -160,7 +148,7 @@ static void sydbox_destroy(void)
 	SLIST_FLUSH(node, &sydbox->config.filter_exec, up, free);
 	SLIST_FLUSH(node, &sydbox->config.filter_read, up, free);
 	SLIST_FLUSH(node, &sydbox->config.filter_write, up, free);
-	SLIST_FLUSH(node, &sydbox->config.filter_network, up, free_sock_match);
+	SLIST_FLUSH(node, &sydbox->config.filter_network, up, free_sockmatch);
 
 	pink_easy_context_destroy(sydbox->ctx);
 
@@ -185,7 +173,7 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 	short flags = pink_easy_process_get_flags(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	struct snode *node;
-	sock_match_t *match;
+	struct sockmatch *match;
 
 	if (isatty(STDERR_FILENO)) {
 		CG = ANSI_GREEN;
