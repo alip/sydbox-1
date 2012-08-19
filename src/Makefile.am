@@ -15,7 +15,6 @@ AM_CFLAGS= \
 
 bin_PROGRAMS= sydbox
 noinst_HEADERS= \
-		JSON_parser.h \
 		file.h \
 		log.h \
 		macro.h \
@@ -30,7 +29,6 @@ noinst_HEADERS= \
 		sydbox-magic.h \
 		sydbox-defs.h
 sydbox_SOURCES= \
-		 JSON_parser.c \
 		 file.c \
 		 log.c \
 		 path.c \
@@ -101,6 +99,13 @@ noinst_HEADERS+= \
 		 canonicalize.h
 sydbox_SOURCES+= \
 		 canonicalize.c
+
+# Imported from json.org
+noinst_HEADERS+= \
+		 JSON_parser.h
+sydbox_SOURCES+= \
+		 JSON_parser.c
+
 sydbox_LDADD= \
 	      $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la \
 	      $(top_builddir)/pinktrace/easy/libpinktrace_easy_@PINKTRACE_PC_SLOT@.la
