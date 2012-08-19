@@ -1,22 +1,10 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * sydbox/log.c
+ *
+ * Copyright 2010, 2011, 2012 Ali Polatel
+ * Distributed under the terms of the GNU General Public License v2
  * Based in part upon privoxy which is:
  *   Copyright (c) 2001-2010 the Privoxy team. http://www.privoxy.org/
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 #ifdef HAVE_CONFIG_H
@@ -38,8 +26,8 @@
 #define LOG_LEVEL_MINIMUM	LOG_LEVEL_FATAL
 
 /* where to log (default: stderr) */
-static FILE *logfp = NULL;
-static FILE *logcfp = NULL;
+static FILE *logfp;
+static FILE *logcfp;
 
 /* logging detail level. */
 static int debug = (LOG_LEVEL_FATAL
@@ -54,16 +42,17 @@ static const char *prefix = LOG_DEFAULT_PREFIX;
 static const char *suffix = LOG_DEFAULT_SUFFIX;
 
 PINK_GCC_ATTR((format (printf, 4, 0)))
-static void log_me(FILE *fp, int level, const char *func, const char *fmt, va_list ap)
+static void log_me(FILE *fp, int level, const char *func,
+		   const char *fmt, va_list ap)
 {
 	int fd, tty;
 	const char *p, *s, *l;
 
-	if (fp == NULL)
+	if (!fp)
 		return;
-	if ((fd = fileno(fp)) < 0)
+	fd = fileno(fp);
+	if (fd < 0)
 		return;
-
 	tty = isatty(fd);
 
 	switch (level) {
@@ -100,12 +89,12 @@ int log_init(const char *filename)
 	if (logfp && logfp != stderr)
 		fclose(logfp);
 
-	if (logcfp == NULL)
+	if (!logcfp)
 		logcfp = stderr;
 
 	if (filename) {
 		logfp = fopen(filename, "a");
-		if (logfp == NULL)
+		if (!logfp)
 			return -errno;
 		setbuf(logfp, NULL);
 	} else {
@@ -120,7 +109,7 @@ int log_init(const char *filename)
 
 void log_close(void)
 {
-	if (logfp != NULL)
+	if (logfp)
 		fclose(logfp);
 	logfp = NULL;
 }
@@ -161,12 +150,12 @@ void log_msg_va(unsigned level, const char *fmt, va_list ap)
 {
 	va_list aq;
 
-	if (logcfp != NULL && (level & cdebug)) {
+	if (logcfp && (level & cdebug)) {
 		va_copy(aq, ap);
 		log_me(logcfp, level, NULL, fmt, aq);
 		va_end(aq);
 	}
-	if (logfp != NULL && (level & debug)) {
+	if (logfp && (level & debug)) {
 		va_copy(aq, ap);
 		log_me(logfp, level, NULL, fmt, aq);
 		va_end(aq);
@@ -182,11 +171,12 @@ void log_msg(unsigned level, const char *fmt, ...)
 	va_end(ap);
 }
 
-void log_msg_va_f(unsigned level, const char *func, const char *fmt, va_list ap)
+void log_msg_va_f(unsigned level, const char *func,
+		  const char *fmt, va_list ap)
 {
-	if (logcfp != NULL && (level & cdebug))
+	if (logcfp && (level & cdebug))
 		log_me(logcfp, level, func, fmt, ap);
-	if (logfp != NULL && (level & debug))
+	if (logfp && (level & debug))
 		log_me(logfp, level, func, fmt, ap);
 }
 
