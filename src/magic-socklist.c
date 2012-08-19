@@ -56,7 +56,7 @@ static int magic_set_socklist(const void *val, slist_t *head)
 		case SYDBOX_MAGIC_REMOVE_CHAR:
 			SLIST_FOREACH(node, head, up) {
 				match = node->data;
-				if (streq(match->str, str)) {
+				if (match->str && streq(match->str, str)) {
 					SLIST_REMOVE(head, node, snode, up);
 					free_sockmatch(match);
 					free(node);
