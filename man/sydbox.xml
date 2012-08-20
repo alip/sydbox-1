@@ -894,7 +894,7 @@
           </row>
           <row>
             <entry><varname>SYS_ALL</varname></entry>
-            <entry>1024</entry>
+            <entry>2048</entry>
             <entry>Log all system calls</entry>
           </row>
         </tbody>

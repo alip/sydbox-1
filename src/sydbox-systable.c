@@ -19,7 +19,6 @@
 
 #include "sydbox-defs.h"
 
-#include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
 
@@ -27,6 +26,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "hashtable.h"
+#include "log.h"
 
 static hashtable_t *systable[PINK_ABIS_SUPPORTED];
 
@@ -51,7 +51,7 @@ void systable_init(void)
 	for (enum pink_abi abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
 		systable[abi] = hashtable_create(syscall_entries_max(), 0);
 		if (systable[abi] == NULL)
-			die_errno(-1, "hashtable_create");
+			die_errno("hashtable_create");
 	}
 }
 

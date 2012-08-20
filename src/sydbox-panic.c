@@ -236,7 +236,7 @@ int panic(struct pink_easy_process *current)
 		log_warning("killed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	default:
-		abort();
+		assert_not_reached();
 	}
 
 	/* exit */
@@ -277,7 +277,7 @@ int violation(struct pink_easy_process *current, const char *fmt, ...)
 		log_warning("killed %u processes, exiting", count);
 		break;
 	default:
-		abort();
+		assert_not_reached();
 	}
 
 	/* exit */

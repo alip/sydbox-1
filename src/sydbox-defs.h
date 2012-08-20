@@ -20,7 +20,6 @@
 #define _GNU_SOURCE 1
 #endif /* !_GNU_SOURCE */
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>

@@ -11,12 +11,12 @@
 #ifndef UTIL_H
 #define UTIL_H 1
 
-#include <assert.h>
 #include <stdbool.h>
 #include <string.h>
 #include <limits.h>
 #include <sys/types.h>
 #include "macro.h"
+#include "log.h"
 
 extern bool endswith(const char *s, const char *postfix);
 extern bool startswith(const char *s, const char *prefix);

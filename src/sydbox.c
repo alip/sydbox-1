@@ -41,7 +41,6 @@
 
 #include "sydbox-defs.h"
 
-#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -291,7 +290,7 @@ static void sydbox_startup_child(char **argv)
 	if (strchr(filename, '/')) {
 		if (strlen(filename) > sizeof pathname - 1) {
 			errno = ENAMETOOLONG;
-			die_errno(2, "exec");
+			die_errno("exec");
 		}
 		strcpy(pathname, filename);
 	}
@@ -340,34 +339,37 @@ static void sydbox_startup_child(char **argv)
 		}
 	}
 	if (stat(pathname, &statbuf) < 0) {
-		die_errno(1, "Can't stat '%s'", filename);
+		die_errno("Can't stat '%s'", filename);
 	}
 
 	pid = fork();
 	if (pid < 0)
-		die_errno(1, "Can't fork");
+		die_errno("Can't fork");
 	else if (pid == 0) {
 #ifdef WANT_SECCOMP
 		int r;
 
 		if (sydbox->config.use_seccomp) {
 			if ((r = seccomp_init()) < 0) {
-				fprintf(stderr, "seccomp_init failed (errno:%d %s)\n",
-						-r, strerror(-r));
+				fprintf(stderr,
+					"seccomp_init failed (errno:%d %s)\n",
+					-r, strerror(-r));
 				_exit(EXIT_FAILURE);
 			}
 
 			if ((r = sysinit_seccomp()) < 0) {
-				fprintf(stderr, "seccomp_apply failed (errno:%d %s)\n",
-						-r, strerror(-r));
+				fprintf(stderr,
+					"seccomp_apply failed (errno:%d %s)\n",
+					-r, strerror(-r));
 				_exit(EXIT_FAILURE);
 			}
 		}
 #endif
 		pid = getpid();
 		if (!pink_trace_me()) {
-			fprintf(stderr, "ptrace(TRACEME) failed (errno:%d %s)\n",
-					errno, strerror(errno));
+			fprintf(stderr,
+				"ptrace(TRACEME) failed (errno:%d %s)\n",
+				errno, strerror(errno));
 			_exit(EXIT_FAILURE);
 		}
 
@@ -382,7 +384,7 @@ static void sydbox_startup_child(char **argv)
 			PINK_EASY_PROCESS_IGNORE_ONE_SIGSTOP);
 	if (current == NULL) {
 		kill(pid, SIGKILL);
-		die_errno(-1, "process_new failed, killed %lu", (unsigned long)pid);
+		die_errno("process_new failed, killed %lu", (unsigned long)pid);
 	}
 }
 
@@ -443,11 +445,12 @@ int main(int argc, char **argv)
 		case 'm':
 			r = magic_cast_string(NULL, optarg, 0);
 			if (r < 0)
-				die(1, "invalid magic: `%s': %s", optarg, magic_strerror(r));
+				die("invalid magic: `%s': %s",
+				    optarg, magic_strerror(r));
 			break;
 		case 'E':
 			if (putenv(optarg))
-				die_errno(1, "putenv");
+				die_errno("putenv");
 			break;
 		default:
 			usage(stderr, 1);
@@ -486,7 +489,7 @@ int main(int argc, char **argv)
 
 	sydbox->ctx = pink_easy_context_new(ptrace_options, &sydbox->callback_table, NULL, NULL);
 	if (sydbox->ctx == NULL)
-		die_errno(-1, "context_new failed");
+		die_errno("context_new");
 
 	/* Set default ptrace stepping */
 	pink_easy_context_set_step(sydbox->ctx, ptrace_default_step);

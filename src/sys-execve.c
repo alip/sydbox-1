@@ -80,7 +80,7 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 			return 0;
 		break;
 	default:
-		abort();
+		assert_not_reached();
 	}
 
 	r = deny(current, EACCES);

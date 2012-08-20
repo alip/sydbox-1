@@ -23,9 +23,10 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "proc.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <assert.h>
 #include <errno.h>
 #include <ctype.h>
 #include <stdbool.h>
@@ -34,7 +35,7 @@
 #include <string.h>
 
 #include "file.h"
-#include "proc.h"
+#include "log.h"
 
 /* Useful macros */
 #ifndef MAX

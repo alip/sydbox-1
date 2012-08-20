@@ -7,7 +7,6 @@
 
 #include "sydbox-defs.h"
 
-#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
@@ -39,14 +38,19 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	init_sysinfo(&info);
-	info.access_mode = sandbox_network_deny(data) ? ACCESS_WHITELIST : ACCESS_BLACKLIST;
-	info.access_list = sandbox_network_deny(data) ? &data->config.whitelist_network_bind : &data->config.blacklist_network_bind;
-	info.access_filter = &sydbox->config.filter_network;
 	info.arg_index = 1;
 	info.can_mode = CAN_ALL_BUT_LAST;
 	info.deny_errno = EADDRNOTAVAIL;
 	if (data->subcall == PINK_SOCKET_SUBCALL_BIND)
 		info.decode_socketcall = true;
+	if (sandbox_network_deny(data)) {
+		info.access_mode = ACCESS_WHITELIST;
+		info.access_list = &data->config.whitelist_network_bind;
+	} else {
+		info.access_mode = ACCESS_BLACKLIST;
+		info.access_list = &data->config.blacklist_network_bind;
+	}
+	info.access_filter = &sydbox->config.filter_network;
 
 	if (sydbox->config.whitelist_successful_bind) {
 		info.abspath = &unix_abspath;
@@ -66,10 +70,10 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 				return panic(current);
 			}
 			log_trace("read_argument(%lu, %d, 0) failed (errno:%d %s)",
-					(unsigned long)tid, abi,
-					errno, strerror(errno));
+				  (unsigned long)tid, abi,
+				  errno, strerror(errno));
 			log_trace("drop process %s[%lu:%u]",
-					data->comm, (unsigned long)tid, abi);
+				  data->comm, (unsigned long)tid, abi);
 			return PINK_EASY_CFLAG_DROP;
 		}
 		data->args[0] = fd;
@@ -109,7 +113,9 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind || !data->savebind)
+	if (sandbox_network_off(data)
+	    || !sydbox->config.whitelist_successful_bind
+	    || !data->savebind)
 		return 0;
 
 	/* Check the return value */
@@ -122,27 +128,28 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 			return panic(current);
 		}
 		log_trace("read_retval(%lu, %d) failed (errno:%d %s)",
-				(unsigned long)tid, abi,
-				errno, strerror(errno));
+			  (unsigned long)tid, abi,
+			  errno, strerror(errno));
 		log_trace("drop process %s[%lu:%u]",
-				data->comm, (unsigned long)tid, abi);
+			  data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
 	if (retval == -1) {
 		log_trace("ignore failed %s() call for process %s[%lu:%u]",
-				name, data->comm, (unsigned long)tid,
-				abi);
+			  name, data->comm, (unsigned long)tid, abi);
 		free_sockinfo(data->savebind);
 		data->savebind = NULL;
 		return 0;
 	}
 
 	/* Check for bind() with zero as port argument */
-	if (data->savebind->addr->family == AF_INET && !data->savebind->addr->u.sa_in.sin_port)
+	if (data->savebind->addr->family == AF_INET
+	    && !data->savebind->addr->u.sa_in.sin_port)
 		goto zero;
 #if SYDBOX_HAVE_IPV6
-	if (data->savebind->addr->family == AF_INET6 && !data->savebind->addr->u.sa6.sin6_port)
+	if (data->savebind->addr->family == AF_INET6
+	    && !data->savebind->addr->u.sa6.sin6_port)
 		goto zero;
 #endif
 
@@ -154,7 +161,7 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 zero:
 	node = hashtable_find(data->sockmap, data->args[0] + 1, 1);
 	if (!node)
-		die_errno(-1, "hashtable_find");
+		die_errno("hashtable_find");
 	node->data = data->savebind;
 	data->savebind = NULL;
 	return 0;

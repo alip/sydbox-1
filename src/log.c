@@ -11,7 +11,6 @@
 #include "config.h"
 #endif
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -21,9 +20,10 @@
 
 #include "log.h"
 #include "util.h"
+#include "sydbox-defs.h" /* FIXME: abort_all() */
 
 /* fatal can't be turned off! */
-#define LOG_LEVEL_MINIMUM	LOG_LEVEL_FATAL
+#define LOG_LEVEL_MINIMUM	(LOG_LEVEL_ASSERT|LOG_LEVEL_FATAL)
 
 /* where to log (default: stderr) */
 static FILE *logfp;
@@ -56,6 +56,7 @@ static void log_me(FILE *fp, int level, const char *func,
 	tty = isatty(fd);
 
 	switch (level) {
+	case LOG_LEVEL_ASSERT:
 	case LOG_LEVEL_FATAL:
 		p = tty ? ANSI_DARK_MAGENTA : "";
 		s = tty ? ANSI_NORMAL : "";
@@ -187,4 +188,54 @@ void log_msg_f(unsigned level, const char *func, const char *fmt, ...)
 	va_start(ap, fmt);
 	log_msg_va_f(level, func, fmt, ap);
 	va_end(ap);
+}
+
+void die(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	log_msg_va(LOG_LEVEL_FATAL, fmt, ap);
+	va_end(ap);
+
+	abort_all(SIGTERM);
+	exit(1);
+}
+
+void die_errno(const char *fmt, ...)
+{
+	va_list ap;
+
+	log_suffix(NULL);
+
+	va_start(ap, fmt);
+	log_msg_va(LOG_LEVEL_FATAL, fmt, ap);
+	va_end(ap);
+
+	log_prefix(NULL);
+	log_msg(LOG_LEVEL_FATAL, " (errno:%d %s)", errno, strerror(errno));
+
+	abort_all(SIGTERM);
+	exit(1);
+}
+
+void assert_(const char *expr, const char *func,
+		 const char *file, size_t line)
+{
+	log_msg(LOG_LEVEL_ASSERT,
+		"Assertion '%s' failed at %s:%zu, function %s()",
+		expr, file, line, func);
+
+	abort_all(SIGTERM);
+	abort();
+}
+
+void assert_not_reached_(const char *func, const char *file, size_t line)
+{
+	log_msg(LOG_LEVEL_ASSERT,
+		"Code must not be reached at %s:%zu, function %s()",
+		file, line, func);
+
+	abort_all(SIGTERM);
+	abort();
 }

@@ -12,7 +12,6 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <assert.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -22,6 +21,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include "log.h"
 #include "util.h"
 
 int safe_atoi(const char *s, int *ret_i)

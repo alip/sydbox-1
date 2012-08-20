@@ -11,11 +11,11 @@
 
 #include "sockmatch.h"
 
-#include <assert.h>
 #include <arpa/inet.h> /* inet_pton() */
 
 #include "pathmatch.h"
 #include "wildmatch.h"
+#include "log.h"
 #include "util.h"
 #include "xfunc.h"
 
@@ -66,7 +66,7 @@ struct sockmatch *sockmatch_xdup(const struct sockmatch *src)
 		break;
 #endif
 	default:
-		abort(); /* TODO: sydbox_assert_not_reached() */
+		assert_not_reached();
 	}
 
 	return match;
@@ -169,7 +169,7 @@ struct sockmatch *sockmatch_new(const struct sockinfo *src)
 		break;
 #endif
 	default:
-		abort();
+		assert_not_reached();
 	}
 
 	return match;

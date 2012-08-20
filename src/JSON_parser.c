@@ -65,9 +65,11 @@ SOFTWARE.
             buffer's content.
 */
 
+/*
+ * Edited by alip:
+ * Include "log.h" instead of <assert.h> to get sydbox's version of assert()
+ */
 
-
-#include <assert.h>
 #include <ctype.h>
 #include <float.h>
 #include <stddef.h>
@@ -77,6 +79,7 @@ SOFTWARE.
 #include <locale.h>
 
 #include "JSON_parser.h"
+#include "log.h"
 
 #ifdef _MSC_VER
 #   if _MSC_VER >= 1400 /* Visual Studio 2005 and up */

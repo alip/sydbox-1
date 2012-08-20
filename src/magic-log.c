@@ -40,7 +40,7 @@ int magic_set_log_file(const void *val, struct pink_easy_process *current)
 	if (*filename) {
 		if ((r = log_init(filename)) < 0) {
 			errno = -r;
-			die_errno(3, "log_init for file `%s' failed", filename);
+			die_errno("log_init for file `%s' failed", filename);
 		}
 	} else {
 		log_init(NULL);
@@ -62,7 +62,7 @@ int magic_set_log_console_fd(const void *val, struct pink_easy_process *current)
 
 	if ((r = log_console_fd(fd)) < 0) {
 		errno = -r;
-		die_errno(3, "log_console_fd for fd `%d' failed", fd);
+		die_errno("log_console_fd for fd `%d' failed", fd);
 	}
 
 	return 0;

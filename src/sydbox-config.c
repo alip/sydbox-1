@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sydbox-config.c
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 #include "sydbox-defs.h"
@@ -30,6 +18,7 @@
 #include "JSON_parser.h"
 #include "file.h"
 #include "macro.h"
+#include "log.h"
 
 struct config_state {
 	bool inarray;
@@ -80,8 +69,9 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 	case JSON_T_OBJECT_BEGIN:
 	case JSON_T_OBJECT_END:
 		if (magic_key_type(state->key) != MAGIC_TYPE_OBJECT)
-			die(2, "unexpected object for %s in `%s'",
-					magic_strkey(state->key), sydbox->config.state->filename);
+			die("Unexpected object for %s in `%s'",
+			    magic_strkey(state->key),
+			    sydbox->config.state->filename);
 
 		if (type == JSON_T_OBJECT_END) {
 			--state->depth;
@@ -93,8 +83,9 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 	case JSON_T_ARRAY_BEGIN:
 	case JSON_T_ARRAY_END:
 		if (magic_key_type(state->key) != MAGIC_TYPE_STRING_ARRAY)
-			die(2, "unexpected array for %s in `%s'",
-					magic_strkey(state->key), sydbox->config.state->filename);
+			die("Unexpected array for %s in `%s'",
+			    magic_strkey(state->key),
+			    sydbox->config.state->filename);
 
 		if (type == JSON_T_ARRAY_BEGIN)
 			state->inarray = true;
@@ -110,10 +101,10 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 	case JSON_T_FALSE:
 		if ((r = magic_cast(NULL, state->key, MAGIC_TYPE_BOOLEAN,
 						UINT_TO_PTR(type == JSON_T_TRUE))) < 0) {
-			die(2, "error parsing %s in `%s': %s",
-					magic_strkey(state->key),
-					sydbox->config.state->filename,
-					magic_strerror(r));
+			die("Error parsing %s in `%s': %s",
+			    magic_strkey(state->key),
+			    sydbox->config.state->filename,
+			    magic_strerror(r));
 		}
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
@@ -133,20 +124,23 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 		if ((r = magic_cast(NULL, state->key,
 						state->inarray ? MAGIC_TYPE_STRING_ARRAY : MAGIC_TYPE_STRING,
 						str)) < 0)
-			die(2, "error parsing %s in `%s': %s",
-					magic_strkey(state->key),
-					sydbox->config.state->filename,
-					magic_strerror(r));
+			die("Error parsing %s in `%s': %s",
+			    magic_strkey(state->key),
+			    sydbox->config.state->filename,
+			    magic_strerror(r));
 		free(str);
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
 		break;
 	case JSON_T_INTEGER:
-		if ((r = magic_cast(NULL, state->key, MAGIC_TYPE_INTEGER, INT_TO_PTR(value->vu.integer_value))) < 0)
-			die(2, "error parsing %s in `%s': %s",
-					magic_strkey(state->key),
-					sydbox->config.state->filename,
-					magic_strerror(r));
+		r = magic_cast(NULL, state->key,
+			       MAGIC_TYPE_INTEGER,
+			       INT_TO_PTR(value->vu.integer_value));
+		if (r < 0)
+			die("Error parsing %s in `%s': %s",
+			    magic_strkey(state->key),
+			    sydbox->config.state->filename,
+			    magic_strerror(r));
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
 		break;
@@ -161,9 +155,9 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 		/* fall through */
 	case JSON_T_MAX:
 	default:
-		die(2, "unexpected %s for %s in `%s'",
-				name, magic_strkey(state->key),
-				sydbox->config.state->filename);
+		die("Unexpected %s for %s in `%s'",
+		    name, magic_strkey(state->key),
+		    sydbox->config.state->filename);
 	}
 
 	return 1;
@@ -236,7 +230,7 @@ void config_parse_file(const char *filename)
 	sydbox->config.state->filename = filename;
 
 	if ((fp = fopen(filename, "r")) == NULL)
-		die_errno(2, "open(`%s')", filename);
+		die_errno("open(`%s')", filename);
 
 	debug = !!getenv(SYDBOX_JSON_DEBUG_ENV);
 	count = 0;
@@ -248,15 +242,15 @@ void config_parse_file(const char *filename)
 			fflush(stderr);
 		}
 		if (!JSON_parser_char(sydbox->config.parser, c))
-			die(2, "JSON_parser_char: byte %u, char:%#x in `%s': %s",
-					count, (unsigned)c, filename,
-					JSON_strerror(JSON_parser_get_last_error(sydbox->config.parser)));
+			die("JSON_parser_char: byte %u, char:%#x in `%s': %s",
+			    count, (unsigned)c, filename,
+			    JSON_strerror(JSON_parser_get_last_error(sydbox->config.parser)));
 	}
 
 	if (!JSON_parser_done(sydbox->config.parser))
-		die(2, "JSON_parser_done: in `%s': %s",
-				filename,
-				JSON_strerror(JSON_parser_get_last_error(sydbox->config.parser)));
+		die("JSON_parser_done: in `%s': %s",
+		    filename,
+		    JSON_strerror(JSON_parser_get_last_error(sydbox->config.parser)));
 
 	fclose(fp);
 	sydbox->config.core_disallow = true;

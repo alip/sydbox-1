@@ -19,7 +19,6 @@
 
 #include "sydbox-defs.h"
 
-#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/queue.h>
@@ -28,6 +27,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
+#include "log.h"
 #include "util.h"
 
 struct key {

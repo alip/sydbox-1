@@ -30,8 +30,8 @@
 static int callback_child_error(enum pink_easy_child_error error)
 {
 	fprintf(stderr, "child error: %s (errno:%d %s)\n",
-			pink_easy_child_strerror(error),
-			errno, strerror(errno));
+		pink_easy_child_strerror(error),
+		errno, strerror(errno));
 	return -1;
 }
 
@@ -49,23 +49,23 @@ static void callback_error(const struct pink_easy_context *ctx, ...)
 	switch (error) {
 	case PINK_EASY_ERROR_CALLBACK_ABORT:
 	case PINK_EASY_ERROR_WAIT:
-		log_fatal("%s (errno:%d %s)\n",
-				pink_easy_strerror(error),
-				errno, strerror(errno));
+		log_fatal("%s (errno:%d %s)",
+			  pink_easy_strerror(error),
+			  errno, strerror(errno));
 		break;
 	case PINK_EASY_ERROR_ALLOC:
 	case PINK_EASY_ERROR_FORK:
 		errctx = va_arg(ap, const char *);
-		log_fatal("%s: %s (errno:%d %s)\n",
-				pink_easy_strerror(error),
-				errctx, errno, strerror(errno));
+		log_fatal("%s: %s (errno:%d %s)",
+			  pink_easy_strerror(error),
+			  errctx, errno, strerror(errno));
 		break;
 	case PINK_EASY_ERROR_ATTACH:
 		tid = va_arg(ap, pid_t);
-		log_fatal("%s (process:%lu errno:%d %s)\n",
-				pink_easy_strerror(error),
-				(unsigned long)tid,
-				errno, strerror(errno));
+		log_fatal("%s (process:%lu errno:%d %s)",
+			  pink_easy_strerror(error),
+			  (unsigned long)tid,
+			  errno, strerror(errno));
 		break;
 	case PINK_EASY_ERROR_TRACE:
 	case PINK_EASY_ERROR_PROCESS:
@@ -73,23 +73,25 @@ static void callback_error(const struct pink_easy_context *ctx, ...)
 		errctx = va_arg(ap, const char *);
 		if (error == PINK_EASY_ERROR_TRACE) { /* errno is set! */
 			log_fatal("%s (ctx:%s process:%lu [abi:%d] errno:%d %s)",
-					pink_easy_strerror(error), errctx,
-					(unsigned long)pink_easy_process_get_tid(current),
-					pink_easy_process_get_abi(current),
-					errno, strerror(errno));
+				  pink_easy_strerror(error), errctx,
+				  (unsigned long)pink_easy_process_get_tid(current),
+				  pink_easy_process_get_abi(current),
+				  errno, strerror(errno));
 		} else { /* if (error == PINK_EASY_ERROR_PROCESS */
 			log_fatal("%s (process:%lu [abi:%d])",
-					pink_easy_strerror(error),
-					(unsigned long)pink_easy_process_get_tid(current),
-					pink_easy_process_get_abi(current));
+				  pink_easy_strerror(error),
+				  (unsigned long)pink_easy_process_get_tid(current),
+				  pink_easy_process_get_abi(current));
 		}
 		break;
 	default:
-		log_fatal("unknown:%u\n", error);
+		log_fatal("unknown error:%u", error);
 		break;
 	}
 
 	va_end(ap);
+
+	die("pinktrace error:%u", error);
 }
 
 static int callback_interrupt(const struct pink_easy_context *ctx, int fatal_sig)
@@ -182,7 +184,7 @@ static void callback_startup(const struct pink_easy_context *ctx,
 	/* Create the fd -> address hash table */
 	data->sockmap = hashtable_create(NR_OPEN, 1);
 	if (data->sockmap == NULL)
-		die_errno(-1, "hashtable_create");
+		die_errno("hashtable_create");
 
 	pink_easy_process_set_userdata(current, data, free_proc);
 

@@ -11,7 +11,6 @@
 
 #include "xfunc.h"
 
-#include <assert.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -21,45 +20,6 @@
 #include <errno.h>
 
 #include "log.h"
-#include "sydbox-defs.h" /* FIXME: abort_all() */
-
-void die(int code, const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	log_msg_va(LOG_LEVEL_FATAL, fmt, ap);
-	va_end(ap);
-
-	abort_all(SIGTERM);
-
-	if (code < 0)
-		abort();
-	exit(code);
-}
-
-void die_errno(int code, const char *fmt, ...)
-{
-	int save_errno;
-	va_list ap;
-
-	save_errno = errno;
-
-	log_suffix(NULL);
-	va_start(ap, fmt);
-	log_msg_va(LOG_LEVEL_FATAL, fmt, ap);
-	va_end(ap);
-	log_suffix(LOG_DEFAULT_SUFFIX);
-
-	log_prefix(NULL);
-	log_msg(LOG_LEVEL_FATAL, " (errno:%d %s)",
-		save_errno, strerror(save_errno));
-	log_prefix(LOG_DEFAULT_PREFIX);
-
-	if (code < 0)
-		abort();
-	exit(code);
-}
 
 void *xmalloc(size_t size)
 {
@@ -67,7 +27,7 @@ void *xmalloc(size_t size)
 
 	ptr = malloc(size);
 	if (!ptr)
-		die_errno(-1, "malloc");
+		die_errno("malloc");
 
 	return ptr;
 }
@@ -78,7 +38,7 @@ void *xcalloc(size_t nmemb, size_t size)
 
 	ptr = calloc(nmemb, size);
 	if (!ptr)
-		die_errno(-1, "calloc");
+		die_errno("calloc");
 
 	return ptr;
 }
@@ -89,7 +49,7 @@ void *xrealloc(void *ptr, size_t size)
 
 	nptr = realloc(ptr, size);
 	if (!nptr)
-		die_errno(-1, "realloc");
+		die_errno("realloc");
 
 	return nptr;
 }
@@ -100,7 +60,7 @@ char *xstrdup(const char *src)
 
 	dest = strdup(src);
 	if (!dest)
-		die_errno(-1, "strdup");
+		die_errno("strdup");
 
 	return dest;
 }
@@ -111,7 +71,7 @@ char *xstrndup(const char *src, size_t n)
 
 	dest = strndup(src, n);
 	if (!dest)
-		die_errno(-1, "strndup");
+		die_errno("strndup");
 
 	return dest;
 }
@@ -130,7 +90,7 @@ int xasprintf(char **strp, const char *fmt, ...)
 
 	if (r == -1) {
 		errno = ENOMEM;
-		die_errno(-1, "vasprintf");
+		die_errno("vasprintf");
 	}
 
 	*strp = dest;
@@ -147,6 +107,6 @@ char *xgetcwd(void)
 	cwd = getcwd(cwd, PATH_MAX + 1);
 #endif
 	if (!cwd)
-		die_errno(-1, "getcwd");
+		die_errno("getcwd");
 	return cwd;
 }

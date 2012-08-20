@@ -53,7 +53,7 @@ static int magic_query_sandbox(enum sandbox_type t, struct pink_easy_process *cu
 		mode = box->sandbox_network;
 		break;
 	default:
-		abort();
+		assert_not_reached();
 	}
 
 	return mode == SANDBOX_OFF ? 0 : 1;
@@ -82,7 +82,7 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str, struct pink_e
 		box->sandbox_network = r;
 		break;
 	default:
-		abort();
+		assert_not_reached();
 	}
 
 	return 0;

@@ -7,7 +7,6 @@
 
 #include "sydbox-defs.h"
 
-#include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/queue.h>
@@ -19,7 +18,7 @@
 #include "hashtable.h"
 #include "log.h"
 
-int sys_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
+int sys_getsockname(struct pink_easy_process *current, const char *name)
 {
 	bool decode_socketcall;
 	long fd;
@@ -27,7 +26,8 @@ int sys_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) c
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind)
+	if (sandbox_network_off(data)
+	    || !sydbox->config.whitelist_successful_bind)
 		return 0;
 
 	decode_socketcall = !!(data->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
@@ -58,7 +58,7 @@ int sys_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) c
 	return 0;
 }
 
-int sysx_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) const char *name)
+int sysx_getsockname(struct pink_easy_process *current, const char *name)
 {
 	bool decode_socketcall;
 	unsigned port;
@@ -70,7 +70,9 @@ int sysx_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) 
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_network_off(data) || !sydbox->config.whitelist_successful_bind || !data->args[0])
+	if (sandbox_network_off(data)
+	    || !sydbox->config.whitelist_successful_bind
+	    || !data->args[0])
 		return 0;
 
 	/* Check the return value */
@@ -142,7 +144,7 @@ int sysx_getsockname(struct pink_easy_process *current, PINK_GCC_ATTR((unused)) 
 		break;
 #endif
 	default:
-		abort();
+		assert_not_reached();
 	}
 
 	snode = xcalloc(1, sizeof(struct snode));
