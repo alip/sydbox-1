@@ -23,6 +23,7 @@ noinst_HEADERS= \
 		seccomp.h \
 		slist.h \
 		strtable.h \
+		pathdecode.h \
 		pathmatch.h \
 		sockmatch.h \
 		util.h \
@@ -37,6 +38,7 @@ sydbox_SOURCES= \
 		 path.c \
 		 proc.c \
 		 seccomp.c \
+		 pathdecode.c \
 		 pathmatch.c \
 		 sockmatch.c \
 		 util.c \
@@ -55,7 +57,6 @@ sydbox_SOURCES= \
 		 sydbox-config.c \
 		 sydbox-magic.c \
 		 sydbox-panic.c \
-		 sydbox-path.c \
 		 sydbox-syscall.c \
 		 sydbox-systable.c \
 		 sys-access.c \

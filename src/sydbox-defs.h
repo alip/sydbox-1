@@ -204,9 +204,6 @@ int box_match_path(const char *path, const slist_t *patterns, const char **match
 int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_t *info);
 int box_check_socket(struct pink_easy_process *current, const char *name, sysinfo_t *info);
 
-int path_decode(struct pink_easy_process *current, unsigned ind, char **buf);
-int path_prefix(struct pink_easy_process *current, unsigned ind, char **buf);
-
 void systable_init(void);
 void systable_free(void);
 void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit);

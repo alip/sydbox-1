@@ -145,14 +145,15 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 
 	/* Check for bind() with zero as port argument */
 	if (data->savebind->addr->family == AF_INET
-	    && !data->savebind->addr->u.sa_in.sin_port)
+	    && data->savebind->addr->u.sa_in.sin_port == 0)
 		goto zero;
 #if SYDBOX_HAVE_IPV6
 	if (data->savebind->addr->family == AF_INET6
-	    && !data->savebind->addr->u.sa6.sin6_port)
+	    && data->savebind->addr->u.sa6.sin6_port == 0)
 		goto zero;
 #endif
 
+	log_trace("whitelisting bind() address for connect()");
 	snode = xcalloc(1, sizeof(struct snode));
 	m = sockmatch_new(data->savebind);
 	snode->data = m;

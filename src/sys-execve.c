@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sys-execve.c
+ *
  * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 #include "sydbox-defs.h"
@@ -26,6 +14,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "log.h"
+#include "pathdecode.h"
 #include "strtable.h"
 
 int sys_execve(struct pink_easy_process *current, const char *name)
@@ -47,10 +36,12 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 	else if (r /* > 0 */)
 		return r;
 
-	if ((r = box_resolve_path(path, data->cwd, tid, CAN_EXISTING, &abspath)) < 0) {
+	r = box_resolve_path(path, data->cwd, tid, CAN_EXISTING, &abspath);
+	if (r < 0) {
 		log_access("resolve path=`%s' failed (errno=%d %s)",
-				path, -r, strerror(-r));
-		log_access("deny access with errno=%s", errno_to_string(-r));
+			   path, -r, strerror(-r));
+		log_access("access denied with errno=%s",
+			   errno_to_string(-r));
 		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s(\"%s\")", name, path);
