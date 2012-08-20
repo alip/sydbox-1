@@ -180,9 +180,6 @@ int restore(struct pink_easy_process *current);
 int panic(struct pink_easy_process *current);
 int violation(struct pink_easy_process *current, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
 
-int wildmatch_ext(const char *pattern, const char *text);
-int wildmatch_expand(const char *pattern, char ***buf);
-
 const char *magic_strerror(int error);
 const char *magic_strkey(enum magic_key key);
 unsigned magic_key_type(enum magic_key key);
