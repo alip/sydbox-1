@@ -25,6 +25,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
+#include "pathmatch.h"
 
 static int magic_set_strlist(const void *val, slist_t *head)
 {
@@ -42,7 +43,7 @@ static int magic_set_strlist(const void *val, slist_t *head)
 	}
 
 	/* Expand pattern */
-	c = f = wildmatch_expand(str, &list) - 1;
+	c = f = pathmatch_expand(str, &list) - 1;
 	for (; c >= 0; c--) {
 		switch (op) {
 		case SYDBOX_MAGIC_ADD_CHAR:

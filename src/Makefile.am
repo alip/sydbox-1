@@ -18,11 +18,12 @@ noinst_HEADERS= \
 		file.h \
 		log.h \
 		macro.h \
-		path.h
+		path.h \
 		proc.h \
 		seccomp.h \
 		slist.h \
 		strtable.h \
+		pathmatch.h \
 		sockmatch.h \
 		util.h \
 		xfunc.h \
@@ -36,6 +37,7 @@ sydbox_SOURCES= \
 		 path.c \
 		 proc.c \
 		 seccomp.c \
+		 pathmatch.c \
 		 sockmatch.c \
 		 util.c \
 		 xfunc.c \
@@ -56,7 +58,6 @@ sydbox_SOURCES= \
 		 sydbox-path.c \
 		 sydbox-syscall.c \
 		 sydbox-systable.c \
-		 sydbox-wild.c \
 		 sys-access.c \
 		 sys-chdir.c \
 		 sys-execve.c \

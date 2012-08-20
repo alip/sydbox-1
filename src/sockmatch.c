@@ -14,10 +14,10 @@
 #include <assert.h>
 #include <arpa/inet.h> /* inet_pton() */
 
-#include "util.h"
+#include "pathmatch.h"
 #include "wildmatch.h"
+#include "util.h"
 #include "xfunc.h"
-#include "sydbox-defs.h" /* FIXME: wildmatch_expand */
 
 struct sockinfo *sockinfo_xdup(struct sockinfo *src)
 {
@@ -81,7 +81,7 @@ int sockmatch_expand(const char *src, char ***buf)
 
 	if (startswith(src, MATCH_UNIX)
 	    || startswith(src, MATCH_UNIX_ABS)) {
-		return wildmatch_expand(src, buf);
+		return pathmatch_expand(src, buf);
 	} else if (startswith(src, ALIAS_LOOPBACK)) {
 		list = xmalloc(sizeof(char *));
 		xasprintf(&list[0], "inet:127.0.0.0/8@%s",

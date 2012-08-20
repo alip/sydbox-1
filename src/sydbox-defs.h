@@ -114,9 +114,6 @@ typedef struct {
 	sandbox_t child;
 
 	/* Non-inherited, "global" configuration data */
-	bool match_case_sensitive;
-	enum no_wildcard_mode match_no_wildcard;
-
 	bool whitelist_per_process_directories;
 	bool whitelist_successful_bind;
 	bool whitelist_unsupported_socket_families;

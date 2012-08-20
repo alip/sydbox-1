@@ -179,8 +179,6 @@ void config_init(void)
 	sydbox->config.state = xcalloc(1, sizeof(config_state_t));
 
 	/* Set sane defaults for configuration */
-	sydbox->config.match_case_sensitive = true;
-	sydbox->config.match_no_wildcard = NO_WILDCARD_LITERAL;
 	sydbox->config.follow_fork = true;
 	sydbox->config.exit_wait_all = true;
 	sydbox->config.trace_interrupt = PINK_EASY_INTR_WHILE_WAIT;

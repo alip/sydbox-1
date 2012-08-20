@@ -51,16 +51,6 @@ DEFINE_STRING_TABLE_LOOKUP(sandbox_mode, int)
 #define sandbox_network_off(data)	(!!((data)->config.sandbox_network == SANDBOX_OFF))
 #define sandbox_network_deny(data)	(!!((data)->config.sandbox_network == SANDBOX_DENY))
 
-enum no_wildcard_mode {
-	NO_WILDCARD_LITERAL,
-	NO_WILDCARD_PREFIX,
-};
-static const char *const no_wildcard_mode_table[] = {
-	[NO_WILDCARD_LITERAL] = "literal",
-	[NO_WILDCARD_PREFIX] = "prefix",
-};
-DEFINE_STRING_TABLE_LOOKUP(no_wildcard_mode, int)
-
 enum lock_state {
 	LOCK_UNSET,
 	LOCK_SET,

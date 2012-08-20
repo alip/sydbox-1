@@ -25,6 +25,7 @@
 #include "canonicalize.h"
 #include "log.h"
 #include "path.h"
+#include "pathmatch.h"
 #include "proc.h"
 #include "strtable.h"
 #include "util.h"
@@ -168,12 +169,13 @@ int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 	return r;
 }
 
-int box_match_path(const char *path, const slist_t *patterns, const char **match)
+int box_match_path(const char *path, const slist_t *patterns,
+		   const char **match)
 {
 	struct snode *node;
 
 	SLIST_FOREACH(node, patterns, up) {
-		if (wildmatch_ext(node->data, path)) {
+		if (pathmatch(node->data, path)) {
 			if (match)
 				*match = node->data;
 			return 1;
@@ -183,7 +185,8 @@ int box_match_path(const char *path, const slist_t *patterns, const char **match
 	return 0;
 }
 
-static int box_match_path_saun(const char *path, const slist_t *patterns, const char **match)
+static int box_match_path_saun(const char *path, const slist_t *patterns,
+			       const char **match)
 {
 	struct snode *node;
 	struct sockmatch *m;
@@ -191,7 +194,7 @@ static int box_match_path_saun(const char *path, const slist_t *patterns, const 
 	SLIST_FOREACH(node, patterns, up) {
 		m = node->data;
 		if (m->family == AF_UNIX && !m->addr.sa_un.abstract) {
-			if (wildmatch_ext(m->addr.sa_un.path, path)) {
+			if (pathmatch(m->addr.sa_un.path, path)) {
 				if (match)
 					*match = node->data;
 				return 1;
