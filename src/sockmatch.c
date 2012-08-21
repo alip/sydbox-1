@@ -1,8 +1,10 @@
 /*
  * sydbox/sockmatch.c
  *
+ * match socket information
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #ifndef HAVE_CONFIG_H
@@ -124,7 +126,7 @@ int sockmatch_expand(const char *src, char ***buf)
 struct sockmatch *sockmatch_new(const struct sockinfo *src)
 {
 	unsigned port;
-	char *path;
+	char *sun_path;
 	struct sockmatch *match;
 
 	assert(src);
@@ -136,19 +138,18 @@ struct sockmatch *sockmatch_new(const struct sockinfo *src)
 
 	switch (match->family) {
 	case AF_UNIX:
-		path = src->addr->u.sa_un.sun_path;
-		if (path_abstract(path)) {
+		sun_path = src->addr->u.sa_un.sun_path;
+		if (path_abstract(sun_path)) {
 			/* Abstract UNIX socket */
 			match->addr.sa_un.abstract = true;
-			match->addr.sa_un.path = xstrdup(path + 1);
-		}
-		else {
+			match->addr.sa_un.path = xstrdup(sun_path + 1);
+		} else {
 			/* Non-abstract UNIX socket */
 			match->addr.sa_un.abstract = false;
-			if (src->path)
+			if (src->path) /* resolved path */
 				match->addr.sa_un.path = xstrdup(src->path);
 			else
-				match->addr.sa_un.path = xstrdup(path);
+				match->addr.sa_un.path = xstrdup(sun_path);
 		}
 		break;
 	case AF_INET:

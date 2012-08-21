@@ -1,28 +1,12 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/file.c
+ *
+ * File related utilities
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- * The following functions are based in part upon systemd:
- *   - truncate_nl()
- *   - read_one_line_file()
- *   - path_is_absolute()
- *   - path_make_absolute()
- *   - readlink_alloc()
- *   which are:
+ * Based in part upon systemd which is
  *   Copyright 2010 Lennart Poettering
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
  */
 
 #ifdef HAVE_CONFIG_H
@@ -61,21 +45,24 @@ char *truncate_nl(char *s)
 
 int basename_alloc(const char *path, char **buf)
 {
-	char *c, *bname;
+	char *c, *bname, *retbuf;
 
 	assert(buf);
 
-	if (!(c = strdup(path)))
+	c = strdup(path);
+	if (!c)
 		return -ENOMEM;
 
 	bname = basename(c);
 
-	if (!(*buf = strdup(bname))) {
+	retbuf = strdup(bname);
+	if (!retbuf) {
 		free(c);
 		return -ENOMEM;
 	}
 
 	free(c);
+	*buf = retbuf;
 	return 0;
 }
 
@@ -95,7 +82,8 @@ int readlink_alloc(const char *path, char **buf)
 		if (!c)
 			return -ENOMEM;
 
-		if ((n = readlink(path, c, l - 1)) < 0) {
+		n = readlink(path, c, l - 1);
+		if (n < 0) {
 			int ret = -errno;
 			free(c);
 			return ret;
@@ -121,17 +109,19 @@ int read_one_line_file(const char *fn, char **line)
 	assert(fn);
 	assert(line);
 
-	if (!(f = fopen(fn, "r")))
+	f = fopen(fn, "r");
+	if (!f)
 		return -errno;
 
-	if (!(fgets(t, sizeof(t), f))) {
+	if (!fgets(t, sizeof(t), f)) {
 		r = -errno;
-		goto finish;
+		goto out;
 	}
 
-	if (!(c = strdup(t))) {
+	c = strdup(t);
+	if (!c) {
 		r = -ENOMEM;
-		goto finish;
+		goto out;
 	}
 
 	truncate_nl(c);
@@ -139,7 +129,7 @@ int read_one_line_file(const char *fn, char **line)
 	*line = c;
 	r = 0;
 
-finish:
+out:
 	fclose(f);
 	return r;
 }

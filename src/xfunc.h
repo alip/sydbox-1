@@ -2,7 +2,7 @@
  * sydbox/xfunc.h
  *
  * Copyright (c) 2010, 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #ifndef XFUNC_H

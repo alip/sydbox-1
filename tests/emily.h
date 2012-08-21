@@ -3,7 +3,7 @@
  * Copyright 2009, 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * parse_octal() is based in part upon busybox which is:
  *   Copyright (C) 2003  Manuel Novoa III  <mjn3@codepoet.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #ifndef EMILY_H

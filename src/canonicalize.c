@@ -1,7 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/canonicalize.c
+ *
  * Return the canonical absolute name of a given file.
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * Based in part upon gnulib which is:
  *   Copyright (C) 1996-2012 Free Software Foundation, Inc.
@@ -89,19 +90,18 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 		for (end = start; *end && *end != '/'; ++end)
 			/* void  */;
 
-		if (end - start == 0)
+		if (end - start == 0) {
 			break;
-		else if (end - start == 1 && start[0] == '.')
+		} else if (end - start == 1 && start[0] == '.') {
 			/* void */;
-		else if (end - start == 2 && start[0] == '.' && start[1] == '.') {
+		} else if (end - start == 2 && start[0] == '.' && start[1] == '.') {
 			/* Back up previous component, ignore if at root
 			 * already. */
 			if (dest > rname + 1) {
 				while ((--dest)[-1] != '/')
 					/* void */;
 			}
-		}
-		else {
+		} else {
 			struct stat st;
 
 			if (dest[-1] != '/')
@@ -165,7 +165,8 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 					goto error;
 				}
 
-				if ((r = readlink_alloc(rname, &buf)) < 0) {
+				r = readlink_alloc(rname, &buf);
+				if (r < 0) {
 					if (can_mode == CAN_MISSING && errno != ENOMEM)
 						continue;
 					saved_errno = -r;
@@ -180,8 +181,7 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 						? (n + len + 1)
 						: PATH_MAX;
 					extra_buf = malloc(extra_len * sizeof(char));
-				}
-				else if (n + len + 1 > extra_len) {
+				} else if (n + len + 1 > extra_len) {
 					extra_len = n + len + 1;
 					extra_buf = realloc(extra_buf, extra_len * sizeof(char));
 				}

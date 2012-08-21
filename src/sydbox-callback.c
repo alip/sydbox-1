@@ -2,7 +2,7 @@
  * sydbox/sydbox-callback.c
  *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -307,7 +307,9 @@ static int callback_exec(const struct pink_easy_context *ctx,
 
 	/* kill_if_match and resume_if_match */
 	r = 0;
-	if (box_match_path(data->abspath, &sydbox->config.exec_kill_if_match, &match)) {
+	if (box_match_path(data->abspath,
+			   &sydbox->config.exec_kill_if_match,
+			   &match)) {
 		log_warning("kill_if_match pattern=`%s'"
 				" matches execve path=`%s'",
 				match, data->abspath);
@@ -321,8 +323,9 @@ static int callback_exec(const struct pink_easy_context *ctx,
 					(unsigned long)tid,
 					errno, strerror(errno));
 		r |= PINK_EASY_CFLAG_DROP;
-	}
-	else if (box_match_path(data->abspath, &sydbox->config.exec_resume_if_match, &match)) {
+	} else if (box_match_path(data->abspath,
+				  &sydbox->config.exec_resume_if_match,
+				  &match)) {
 		log_warning("resume_if_match pattern=`%s'"
 				" matches execve path=`%s'",
 				match, data->abspath);
@@ -340,18 +343,18 @@ static int callback_exec(const struct pink_easy_context *ctx,
 	/* Update process name */
 	if ((e = basename_alloc(data->abspath, &comm))) {
 		log_warning("update name of process:%lu"
-				" [abi:%d name:\"%s\" cwd:\"%s\"] failed"
-				" (errno:%d %s)",
-				(unsigned long)tid, abi,
-				data->comm, data->cwd,
-				-e, strerror(-e));
+			    " [abi:%d name:\"%s\" cwd:\"%s\"] failed"
+			    " (errno:%d %s)",
+			    (unsigned long)tid, abi,
+			    data->comm, data->cwd,
+			    -e, strerror(-e));
 		comm = xstrdup("???");
 	} else if (strcmp(comm, data->comm)) {
 		log_info("update name of process:%lu"
-				" [abi=%d name=`%s' cwd:`%s']"
-				" to `%s' due to execve()",
-				(unsigned long)tid, abi,
-				data->comm, data->cwd, comm);
+			 " [abi=%d name=`%s' cwd:`%s']"
+			 " to `%s' due to execve()",
+			 (unsigned long)tid, abi,
+			 data->comm, data->cwd, comm);
 	}
 
 	if (data->comm)
@@ -385,7 +388,8 @@ static int callback_syscall(const struct pink_easy_context *ctx,
 	} else {
 		r = sysexit(current);
 		if (sydbox->config.use_seccomp)
-			pink_easy_process_set_step(current, PINK_EASY_STEP_RESUME);
+			pink_easy_process_set_step(current,
+						   PINK_EASY_STEP_RESUME);
 	}
 
 	return r;
@@ -416,7 +420,8 @@ static int callback_seccomp(const struct pink_easy_context *ctx,
 
 void callback_init(void)
 {
-	memset(&sydbox->callback_table, 0, sizeof(struct pink_easy_callback_table));
+	memset(&sydbox->callback_table, 0,
+	       sizeof(struct pink_easy_callback_table));
 
 	sydbox->callback_table.interrupt = callback_interrupt;
 	sydbox->callback_table.startup = callback_startup;
@@ -424,7 +429,7 @@ void callback_init(void)
 	sydbox->callback_table.exit = callback_exit;
 	sydbox->callback_table.exec = callback_exec;
 	sydbox->callback_table.syscall = callback_syscall;
-#if WANT_SECCOMP
+#ifdef WANT_SECCOMP
 	if (sydbox->config.use_seccomp)
 		sydbox->callback_table.seccomp = callback_seccomp;
 #endif

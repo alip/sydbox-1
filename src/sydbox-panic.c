@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sydbox-magic.c
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -78,8 +66,9 @@ static bool kill_one(struct pink_easy_process *proc, void *userdata)
 void cont_all(void)
 {
 	unsigned count;
-	struct pink_easy_process_list *list = pink_easy_context_get_process_list(sydbox->ctx);
+	struct pink_easy_process_list *list;
 
+	list = pink_easy_context_get_process_list(sydbox->ctx);
 	count = pink_easy_process_list_walk(list, cont_one, NULL);
 	log_info("resumed %u process%s", count, count > 1 ? "es" : "");
 }
@@ -96,17 +85,21 @@ void abort_all(int fatal_sig)
 	switch (sydbox->config.abort_decision) {
 	case ABORT_CONTALL:
 		count = pink_easy_process_list_walk(list, cont_one, NULL);
-		fprintf(stderr, PACKAGE": resumed %u process%s\n", count, count > 1 ? "es" : "");
+		fprintf(stderr, PACKAGE": resumed %u process%s\n", count,
+			count > 1 ? "es" : "");
 		break;
 	case ABORT_KILLALL:
-		count = pink_easy_process_list_walk(list, kill_one, INT_TO_PTR(fatal_sig));
-		fprintf(stderr, PACKAGE": killed %u process%s\n", count, count > 1 ? "es" : "");
+		count = pink_easy_process_list_walk(list, kill_one,
+						    INT_TO_PTR(fatal_sig));
+		fprintf(stderr, PACKAGE": killed %u process%s\n", count,
+			count > 1 ? "es" : "");
 		break;
 	}
 }
 
 PINK_GCC_ATTR((format (printf, 2, 0)))
-static void report(struct pink_easy_process *current, const char *fmt, va_list ap)
+static void report(struct pink_easy_process *current, const char *fmt,
+		   va_list ap)
 {
 	char *cmdline;
 	pid_t tid = pink_easy_process_get_tid(current);
@@ -114,7 +107,8 @@ static void report(struct pink_easy_process *current, const char *fmt, va_list a
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	log_access_v("-- Access Violation! --");
-	log_access_v("process id=%lu (abi=%d name:`%s')", (unsigned long)tid, abi, data->comm);
+	log_access_v("process id=%lu (abi=%d name:`%s')", (unsigned long)tid,
+		     abi, data->comm);
 	log_access_v("cwd: `%s'", data->cwd);
 
 	if (proc_cmdline(tid, 128, &cmdline) == 0) {
@@ -135,22 +129,22 @@ int deny(struct pink_easy_process *current, int err_no)
 	data->retval = errno2retval(err_no);
 
 	log_access("%s[%lu:%u] return code:%ld",
-			data->comm,
-			(unsigned long)tid, abi,
-			data->retval);
+		   data->comm,
+		   (unsigned long)tid, abi,
+		   data->retval);
 
 	if (!pink_write_syscall(tid, abi, PINK_SYSCALL_INVALID)) {
 		if (errno != ESRCH) {
 			log_warning("write syscall:%#x failed (errno:%d %s)",
-					PINK_SYSCALL_INVALID,
-					errno, strerror(errno));
+				    PINK_SYSCALL_INVALID,
+				    errno, strerror(errno));
 			return panic(current);
 		}
 		log_trace("write syscall:%#x failed (errno:%d %s)",
-				PINK_SYSCALL_INVALID,
-				errno, strerror(errno));
+			  PINK_SYSCALL_INVALID,
+			  errno, strerror(errno));
 		log_trace("drop process %s[%lu:%u]",
-				data->comm, (unsigned long)tid, abi);
+			  data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
 	}
 
@@ -165,20 +159,20 @@ int restore(struct pink_easy_process *current)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	log_trace("%s[%lu:%d] sys:%s()",
-			data->comm, (unsigned long)tid, abi,
-			pink_syscall_name(data->sno, abi));
+		  data->comm, (unsigned long)tid, abi,
+		  pink_syscall_name(data->sno, abi));
 
 	/* Restore system call number */
 	if (!pink_write_syscall(tid, abi, data->sno)) {
 		if (errno == ESRCH) {
 			log_trace("write syscall:%#lx failed (errno:%d %s)",
-					data->sno, errno, strerror(errno));
+				  data->sno, errno, strerror(errno));
 			log_trace("drop process %s[%lu:%d]",
-					data->comm, (unsigned long)tid, abi);
+				  data->comm, (unsigned long)tid, abi);
 			return PINK_EASY_CFLAG_DROP;
 		}
 		log_warning("write syscall:%#lx failed (errno:%d %s)",
-				data->sno, errno, strerror(errno));
+			    data->sno, errno, strerror(errno));
 		return panic(current);
 	}
 
@@ -193,18 +187,18 @@ int restore(struct pink_easy_process *current)
 	if (!pink_write_retval(tid, abi, retval, error)) {
 		if (errno == ESRCH) {
 			log_trace("write retval=%d and error=%s failed"
-					" (errno:%d %s)",
-					retval, errno_to_string(error),
-					errno, strerror(errno));
+				  " (errno:%d %s)",
+				  retval, errno_to_string(error),
+				  errno, strerror(errno));
 			log_trace("drop process %s[%lu:%d]",
-					data->comm, (unsigned long)tid, abi);
+				  data->comm, (unsigned long)tid, abi);
 			return PINK_EASY_CFLAG_DROP;
 		}
 
 		log_warning("write retval=%d and error=%s failed"
-				" (errno:%d %s)",
-				retval, errno_to_string(error),
-				errno, strerror(errno));
+			    " (errno:%d %s)",
+			    retval, errno_to_string(error),
+			    errno, strerror(errno));
 		return panic(current);
 	}
 
@@ -214,7 +208,9 @@ int restore(struct pink_easy_process *current)
 int panic(struct pink_easy_process *current)
 {
 	unsigned count;
-	struct pink_easy_process_list *list = pink_easy_context_get_process_list(sydbox->ctx);
+	struct pink_easy_process_list *list;
+
+	list = pink_easy_context_get_process_list(sydbox->ctx);
 
 	switch (sydbox->config.panic_decision) {
 	case PANIC_KILL:
@@ -228,27 +224,33 @@ int panic(struct pink_easy_process *current)
 	case PANIC_CONTALL:
 		log_warning("panic! resuming all processes");
 		count = pink_easy_process_list_walk(list, cont_one, NULL);
-		log_warning("resumed %u process%s, exiting", count, count > 1 ? "es" : "");
+		log_warning("resumed %u process%s, exiting", count,
+			    count > 1 ? "es" : "");
 		break;
 	case PANIC_KILLALL:
 		log_warning("panic! killing all processes");
-		count = pink_easy_process_list_walk(list, kill_one, INT_TO_PTR(SIGKILL));
-		log_warning("killed %u process%s, exiting", count, count > 1 ? "es" : "");
+		count = pink_easy_process_list_walk(list, kill_one,
+						    INT_TO_PTR(SIGKILL));
+		log_warning("killed %u process%s, exiting", count,
+			    count > 1 ? "es" : "");
 		break;
 	default:
 		assert_not_reached();
 	}
 
 	/* exit */
-	exit(sydbox->config.panic_exit_code > 0 ? sydbox->config.panic_exit_code : sydbox->exit_code);
+	exit(sydbox->config.panic_exit_code > 0
+	     ? sydbox->config.panic_exit_code
+	     : sydbox->exit_code);
 }
 
 int violation(struct pink_easy_process *current, const char *fmt, ...)
 {
 	unsigned count;
 	va_list ap;
-	struct pink_easy_process_list *list = pink_easy_context_get_process_list(sydbox->ctx);
+	struct pink_easy_process_list *list;
 
+	list = pink_easy_context_get_process_list(sydbox->ctx);
 	sydbox->violation = true;
 
 	va_start(ap, fmt);
@@ -273,7 +275,8 @@ int violation(struct pink_easy_process *current, const char *fmt, ...)
 		break;
 	case VIOLATION_KILLALL:
 		log_warning("killing all processes");
-		count = pink_easy_process_list_walk(list, kill_one, INT_TO_PTR(SIGKILL));
+		count = pink_easy_process_list_walk(list, kill_one,
+						    INT_TO_PTR(SIGKILL));
 		log_warning("killed %u processes, exiting", count);
 		break;
 	default:

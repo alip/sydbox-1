@@ -16,7 +16,7 @@ EXTRA_DIST= \
 dist_doc_DATA= \
 	       README.mkd \
 	       LICENSE.BSD3 \
-	       LICENSE.GPL2
+	       LICENSE.GPL3
 
 DISTCHECK_CONFIGURE_FLAGS= \
 			   --enable-ipv6

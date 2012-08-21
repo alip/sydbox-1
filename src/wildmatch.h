@@ -1,6 +1,6 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
-/* wildmatch.h */
+/*
+ * sydbox/wildmatch.h
+ */
 
 #ifndef WILDMATCH_H
 #define WILDMATCH_H 1

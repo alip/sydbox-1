@@ -1,22 +1,12 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/proc.c
+ *
+ * /proc related utilities
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
- *   Copyright 2010 Lennart Poettering
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ *   Copyright (C) 2010 Lennart Poettering
+ * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
  */
 
 #ifdef HAVE_CONFIG_H
@@ -48,10 +38,9 @@
 /*
  * resolve /proc/$pid/cwd
  */
-int
-proc_cwd(pid_t pid, char **buf)
+int proc_cwd(pid_t pid, char **buf)
 {
-	int ret;
+	int r;
 	char *cwd, *linkcwd;
 	struct stat s;
 
@@ -61,10 +50,10 @@ proc_cwd(pid_t pid, char **buf)
 	if (asprintf(&linkcwd, "/proc/%lu/cwd", (unsigned long)pid) < 0)
 		return -ENOMEM;
 
-	ret = readlink_alloc(linkcwd, &cwd);
+	r = readlink_alloc(linkcwd, &cwd);
 	free(linkcwd);
-	if (ret)
-		return ret;
+	if (r)
+		return r;
 
 	/* If the current working directory of a process is removed after the
 	 * process started, /proc/$pid/cwd is a dangling symbolic link and
@@ -127,7 +116,8 @@ int proc_cmdline(pid_t pid, size_t max_length, char **buf)
 	if (!f)
 		return -errno;
 
-	if (!(r = malloc(max_length * sizeof(char)))) {
+	r = malloc(max_length * sizeof(char));
+	if (!r) {
 		fclose(f);
 		return -ENOMEM;
 	}

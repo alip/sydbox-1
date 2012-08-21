@@ -2,7 +2,7 @@
  * sydbox/sys-bind.c
  *
  * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -59,14 +59,16 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 
 	r = box_check_socket(current, name, &info);
 
-	if (sydbox->config.whitelist_successful_bind && !r) {
-		/* Read the file descriptor, for use in exit */
+	if (r == 0 && sydbox->config.whitelist_successful_bind) {
+		/* Access granted.
+		 * Read the file descriptor, for use in exit.
+		 */
 		if (!pink_read_argument(tid, abi, &data->regs, 0, &fd)) {
 			if (errno != ESRCH) {
 				log_warning("read_argument(%lu, %d, 0) failed"
-						" (errno:%d %s)",
-						(unsigned long)tid, abi,
-						errno, strerror(errno));
+					    " (errno:%d %s)",
+					    (unsigned long)tid, abi,
+					    errno, strerror(errno));
 				return panic(current);
 			}
 			log_trace("read_argument(%lu, %d, 0) failed (errno:%d %s)",
@@ -108,7 +110,7 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 	long retval;
 	struct snode *snode;
 	ht_int64_node_t *node;
-	struct sockmatch *m;
+	struct sockmatch *match;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -122,9 +124,9 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
 		if (errno != ESRCH) {
 			log_warning("read_retval(%lu, %d) failed"
-					" (errno:%d %s)",
-					(unsigned long)tid, abi,
-					errno, strerror(errno));
+				    " (errno:%d %s)",
+				    (unsigned long)tid, abi,
+				    errno, strerror(errno));
 			return panic(current);
 		}
 		log_trace("read_retval(%lu, %d) failed (errno:%d %s)",
@@ -153,10 +155,11 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 		goto zero;
 #endif
 
-	log_trace("whitelisting bind() address for connect()");
+	log_trace("whitelist bind() address for process %s[%lu:%u]",
+		  data->comm, (unsigned long)tid, abi);
 	snode = xcalloc(1, sizeof(struct snode));
-	m = sockmatch_new(data->savebind);
-	snode->data = m;
+	match = sockmatch_new(data->savebind);
+	snode->data = match;
 	SLIST_INSERT_HEAD(&data->config.whitelist_network_connect, snode, up);
 	return 0;
 zero:

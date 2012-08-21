@@ -1,6 +1,6 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/canonicalize.h
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * Based in part upon gnulib which is:
  *   Copyright (C) 1996-2012 Free Software Foundation, Inc.

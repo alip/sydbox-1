@@ -2,7 +2,7 @@
  * sydbox/pathmatch.c
  *
  * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #ifdef HAVE_CONFIG_H
@@ -99,9 +99,9 @@ int pathmatch(const char *pattern, const char *text)
 		r = iwildmatch(pattern, text);
 
 	log_match("%smatch%s: pattern=`%s' text=`%s'",
-			r == 0 ? "no" : "",
-			match_case_sensitive ? "" : "case",
-			pattern, text);
+		  r == 0 ? "no" : "",
+		  match_case_sensitive ? "" : "case",
+		  pattern, text);
 
 	return r;
 }

@@ -2,7 +2,7 @@
  * sydbox/sydbox-box.c
  *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -63,13 +63,16 @@ static inline void box_report_violation_path_at(struct pink_easy_process *curren
 {
 	switch (arg_index) {
 	case 1:
-		violation(current, "%s(`%s', prefix=`%s')", name, path, prefix);
+		violation(current, "%s(`%s', prefix=`%s')",
+			  name, path, prefix);
 		break;
 	case 2:
-		violation(current, "%s(?, `%s', prefix=`%s')", name, path, prefix);
+		violation(current, "%s(?, `%s', prefix=`%s')",
+			  name, path, prefix);
 		break;
 	case 3:
-		violation(current, "%s(?, ?, '%s', prefix=`%s')", name, path, prefix);
+		violation(current, "%s(?, ?, '%s', prefix=`%s')",
+			  name, path, prefix);
 		break;
 	default:
 		violation(current, "%s(?)", name);
@@ -89,7 +92,9 @@ static void box_report_violation_sock(struct pink_easy_process *current,
 		violation(current, "%s(%ld, %s:%s)",
 				name,
 				info->fd ? *info->fd : -1,
-				*paddr->u.sa_un.sun_path ? "unix" : "unix-abstract",
+				*paddr->u.sa_un.sun_path
+					? "unix"
+					: "unix-abstract",
 				*paddr->u.sa_un.sun_path
 					? paddr->u.sa_un.sun_path
 					: paddr->u.sa_un.sun_path + 1);
@@ -425,7 +430,8 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 				      info->decode_socketcall,
 				      info->arg_index, info->fd, psa)) {
 		if (errno != ESRCH) {
-			log_warning("read sockaddr at index=%d failed (errno=%d %s)",
+			log_warning("read sockaddr at index=%d failed"
+				    " (errno=%d %s)",
 				    info->arg_index, errno, strerror(errno));
 			r = panic(current);
 			goto out;
@@ -461,7 +467,8 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 		if ((r = box_resolve_path(psa->u.sa_un.sun_path,
 					  data->cwd, tid,
 					  info->can_mode, &abspath)) < 0) {
-			log_access("resolve path=`%s' for sys=%s failed (errno=%d %s)",
+			log_access("resolve path=`%s' for sys=%s failed"
+				   " (errno=%d %s)",
 				   psa->u.sa_un.sun_path,
 				   name, -r, strerror(-r));
 			log_access("access denied with errno=%s",
@@ -538,7 +545,8 @@ report:
 	box_report_violation_sock(current, info, name, psa);
 
 out:
-	if (!r) {
+	if (r == 0) {
+		/* Access granted. */
 		if (info->abspath)
 			*info->abspath = abspath;
 		else if (abspath)

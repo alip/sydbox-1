@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/magic-strlist.c
+ *
  * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -74,53 +62,62 @@ static int magic_set_strlist(const void *val, slist_t *head)
 	return r;
 }
 
-int magic_set_whitelist_exec(const void *val, struct pink_easy_process *current)
+int magic_set_whitelist_exec(const void *val,
+			     struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->whitelist_exec);
 }
 
-int magic_set_whitelist_read(const void *val, struct pink_easy_process *current)
+int magic_set_whitelist_read(const void *val,
+			     struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->whitelist_read);
 }
 
-int magic_set_whitelist_write(const void *val, struct pink_easy_process *current)
+int magic_set_whitelist_write(const void *val,
+			      struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->whitelist_write);
 }
 
-int magic_set_blacklist_exec(const void *val, struct pink_easy_process *current)
+int magic_set_blacklist_exec(const void *val,
+			     struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->blacklist_exec);
 }
 
-int magic_set_blacklist_read(const void *val, struct pink_easy_process *current)
+int magic_set_blacklist_read(const void *val,
+			     struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->blacklist_read);
 }
 
-int magic_set_blacklist_write(const void *val, struct pink_easy_process *current)
+int magic_set_blacklist_write(const void *val,
+			      struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_strlist(val, &box->blacklist_write);
 }
 
-int magic_set_filter_exec(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_set_filter_exec(const void *val,
+			  struct pink_easy_process *current)
 {
 	return magic_set_strlist(val, &sydbox->config.filter_exec);
 }
 
-int magic_set_filter_read(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_set_filter_read(const void *val,
+			  struct pink_easy_process *current)
 {
 	return magic_set_strlist(val, &sydbox->config.filter_read);
 }
 
-int magic_set_filter_write(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_set_filter_write(const void *val,
+			   struct pink_easy_process *current)
 {
 	return magic_set_strlist(val, &sydbox->config.filter_write);
 }

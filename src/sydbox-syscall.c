@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sydbox-syscall.c
+ *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -124,7 +112,9 @@ void sysinit(void)
 	unsigned i;
 
 	for (i = 0; i < ELEMENTSOF(syscall_entries); i++)
-		systable_add(syscall_entries[i].name, syscall_entries[i].enter, syscall_entries[i].exit);
+		systable_add(syscall_entries[i].name,
+			     syscall_entries[i].enter,
+			     syscall_entries[i].exit);
 }
 
 #ifdef WANT_SECCOMP
@@ -194,14 +184,14 @@ int sysenter(struct pink_easy_process *current)
 	if (!pink_read_syscall(tid, abi, &data->regs, &no)) {
 		if (errno != ESRCH) {
 			log_warning("read_syscall(%lu, %d) failed"
-					" (errno:%d %s)",
-					(unsigned long)tid, abi,
-					errno, strerror(errno));
+				    " (errno:%d %s)",
+				    (unsigned long)tid, abi,
+				    errno, strerror(errno));
 			return panic(current);
 		}
 		log_trace("read_syscall(%lu, %d) failed (errno:%d %s)",
-				(unsigned long)tid, abi,
-				errno, strerror(errno));
+			  (unsigned long)tid, abi,
+			  errno, strerror(errno));
 
 		return PINK_EASY_CFLAG_DROP;
 	}
@@ -210,12 +200,11 @@ int sysenter(struct pink_easy_process *current)
 	entry = systable_lookup(no, abi);
 	if (entry)
 		log_syscall("process %s[%lu:%u] enters syscall=`%s'",
-				data->comm, (unsigned long)tid, abi,
-				entry->name);
+			    data->comm, (unsigned long)tid, abi,
+			    entry->name);
 	else
 		log_sys_all("process %s[%lu:%u] enters syscall=%ld",
-				data->comm, (unsigned long)tid, abi,
-				no);
+			    data->comm, (unsigned long)tid, abi, no);
 
 	return (entry && entry->enter) ? entry->enter(current, entry->name) : 0;
 }

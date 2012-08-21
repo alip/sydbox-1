@@ -2,7 +2,7 @@
  * sydbox/magic-socklist.c
  *
  * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -40,13 +40,14 @@ static int magic_set_socklist(const void *val, slist_t *head)
 			errno = 0;
 			if ((r = sockmatch_parse(list[c], &match)) < 0) {
 				log_warning("invalid address `%s' (errno:%d %s)",
-						list[c], -r, strerror(-r));
+					    list[c], -r, strerror(-r));
 				r = MAGIC_ERROR_INVALID_VALUE;
 				goto end;
 			}
 			if (errno == EAFNOSUPPORT) {
 				/* ipv6 support disabled? */
-				log_magic("ignore unsupported address=`%s'", list[c]);
+				log_magic("ignore unsupported address=`%s'",
+					  list[c]);
 				goto end;
 			}
 			node = xcalloc(1, sizeof(struct snode));
@@ -78,31 +79,36 @@ end:
 	return r;
 }
 
-int magic_set_whitelist_network_bind(const void *val, struct pink_easy_process *current)
+int magic_set_whitelist_network_bind(const void *val,
+				     struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_socklist(val, &box->whitelist_network_bind);
 }
 
-int magic_set_whitelist_network_connect(const void *val, struct pink_easy_process *current)
+int magic_set_whitelist_network_connect(const void *val,
+					struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_socklist(val, &box->whitelist_network_connect);
 }
 
-int magic_set_blacklist_network_bind(const void *val, struct pink_easy_process *current)
+int magic_set_blacklist_network_bind(const void *val,
+				     struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_socklist(val, &box->blacklist_network_bind);
 }
 
-int magic_set_blacklist_network_connect(const void *val, struct pink_easy_process *current)
+int magic_set_blacklist_network_connect(const void *val,
+					struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_set_socklist(val, &box->blacklist_network_connect);
 }
 
-int magic_set_filter_network(const void *val, PINK_GCC_ATTR((unused)) struct pink_easy_process *current)
+int magic_set_filter_network(const void *val,
+			     struct pink_easy_process *current)
 {
 	return magic_set_socklist(val, &sydbox->config.filter_network);
 }

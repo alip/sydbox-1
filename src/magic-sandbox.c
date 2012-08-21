@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * sydbox/magic-sandbox.c
  *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -33,7 +21,8 @@ enum sandbox_type {
 	SANDBOX_NETWORK,
 };
 
-static int magic_query_sandbox(enum sandbox_type t, struct pink_easy_process *current)
+static int magic_query_sandbox(enum sandbox_type t,
+			       struct pink_easy_process *current)
 {
 	enum sandbox_mode mode;
 	sandbox_t *box;
@@ -59,12 +48,14 @@ static int magic_query_sandbox(enum sandbox_type t, struct pink_easy_process *cu
 	return mode == SANDBOX_OFF ? 0 : 1;
 }
 
-static int magic_set_sandbox(enum sandbox_type t, const char *str, struct pink_easy_process *current)
+static int magic_set_sandbox(enum sandbox_type t, const char *str,
+			     struct pink_easy_process *current)
 {
 	int r;
 	sandbox_t *box;
 
-	if ((r = sandbox_mode_from_string(str)) < 0)
+	r = sandbox_mode_from_string(str);
+	if (r < 0)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	box = box_current(current);
@@ -108,22 +99,26 @@ int magic_query_sandbox_network(struct pink_easy_process *current)
 	return magic_query_sandbox(SANDBOX_NETWORK, current);
 }
 
-int magic_set_sandbox_exec(const void *val, struct pink_easy_process *current)
+int magic_set_sandbox_exec(const void *val,
+			   struct pink_easy_process *current)
 {
 	return magic_set_sandbox(SANDBOX_EXEC, val, current);
 }
 
-int magic_set_sandbox_read(const void *val, struct pink_easy_process *current)
+int magic_set_sandbox_read(const void *val,
+			   struct pink_easy_process *current)
 {
 	return magic_set_sandbox(SANDBOX_READ, val, current);
 }
 
-int magic_set_sandbox_write(const void *val, struct pink_easy_process *current)
+int magic_set_sandbox_write(const void *val,
+			    struct pink_easy_process *current)
 {
 	return magic_set_sandbox(SANDBOX_WRITE, val, current);
 }
 
-int magic_set_sandbox_network(const void *val, struct pink_easy_process *current)
+int magic_set_sandbox_network(const void *val,
+			      struct pink_easy_process *current)
 {
 	return magic_set_sandbox(SANDBOX_NETWORK, val, current);
 }

@@ -1,11 +1,12 @@
 /*
  * sydbox/util.c
  *
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  * Based in part upon courier which is:
  *   Copyright 1998-2009 Double Precision, Inc
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 #ifdef HAVE_CONFIG_H
@@ -248,7 +249,8 @@ int close_nointr(int fd)
 	for (;;) {
 		int r;
 
-		if ((r = close(fd)) >= 0)
+		r = close(fd);
+		if (fd >= 0)
 			return r;
 
 		if (errno != EINTR)

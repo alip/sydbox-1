@@ -2,7 +2,7 @@
  * sydbox/sydbox-config.c
  *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -74,11 +74,11 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 			    sydbox->config.state->filename);
 
 		if (type == JSON_T_OBJECT_END) {
-			--state->depth;
+			state->depth--;
 			state->key = magic_key_parent(state->key);
+		} else {
+			state->depth++;
 		}
-		else
-			++state->depth;
 		break;
 	case JSON_T_ARRAY_BEGIN:
 	case JSON_T_ARRAY_END:
@@ -87,20 +87,22 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 			    magic_strkey(state->key),
 			    sydbox->config.state->filename);
 
-		if (type == JSON_T_ARRAY_BEGIN)
+		if (type == JSON_T_ARRAY_BEGIN) {
 			state->inarray = true;
-		else {
+		} else {
 			state->inarray = false;
 			state->key = magic_key_parent(state->key);
 		}
 		break;
 	case JSON_T_KEY:
-		state->key = magic_key_lookup(state->key, value->vu.str.value, value->vu.str.length);
+		state->key = magic_key_lookup(state->key, value->vu.str.value,
+					      value->vu.str.length);
 		break;
 	case JSON_T_TRUE:
 	case JSON_T_FALSE:
-		if ((r = magic_cast(NULL, state->key, MAGIC_TYPE_BOOLEAN,
-						UINT_TO_PTR(type == JSON_T_TRUE))) < 0) {
+		r = magic_cast(NULL, state->key, MAGIC_TYPE_BOOLEAN,
+			       UINT_TO_PTR(type == JSON_T_TRUE));
+		if (r < 0) {
 			die("Error parsing %s in `%s': %s",
 			    magic_strkey(state->key),
 			    sydbox->config.state->filename,
@@ -116,18 +118,23 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 			 * and remove.
 			 */
 			str = malloc(sizeof(char) * (value->vu.str.length + 2));
-			sprintf(str, "%c%s", SYDBOX_MAGIC_ADD_CHAR, value->vu.str.value);
+			sprintf(str, "%c%s", SYDBOX_MAGIC_ADD_CHAR,
+				value->vu.str.value);
+		} else {
+			str = xstrndup(value->vu.str.value,
+				       value->vu.str.length + 1);
 		}
-		else
-			str = xstrndup(value->vu.str.value, value->vu.str.length + 1);
 
-		if ((r = magic_cast(NULL, state->key,
-						state->inarray ? MAGIC_TYPE_STRING_ARRAY : MAGIC_TYPE_STRING,
-						str)) < 0)
+		r = magic_cast(NULL, state->key,
+			       state->inarray ? MAGIC_TYPE_STRING_ARRAY
+					      : MAGIC_TYPE_STRING,
+			       str);
+		if (r < 0) {
 			die("Error parsing %s in `%s': %s",
 			    magic_strkey(state->key),
 			    sydbox->config.state->filename,
 			    magic_strerror(r));
+		}
 		free(str);
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
@@ -136,11 +143,12 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 		r = magic_cast(NULL, state->key,
 			       MAGIC_TYPE_INTEGER,
 			       INT_TO_PTR(value->vu.integer_value));
-		if (r < 0)
+		if (r < 0) {
 			die("Error parsing %s in `%s': %s",
 			    magic_strkey(state->key),
 			    sydbox->config.state->filename,
 			    magic_strerror(r));
+		}
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
 		break;
@@ -229,13 +237,15 @@ void config_parse_file(const char *filename)
 
 	sydbox->config.state->filename = filename;
 
-	if ((fp = fopen(filename, "r")) == NULL)
+	fp = fopen(filename, "r");
+	if (!fp)
 		die_errno("open(`%s')", filename);
 
 	debug = !!getenv(SYDBOX_JSON_DEBUG_ENV);
 	count = 0;
 	for (;; ++count) {
-		if ((c = fgetc(fp)) == EOF)
+		c = fgetc(fp);
+		if (c == EOF)
 			break;
 		if (debug) {
 			fputc(c, stderr);
@@ -262,7 +272,7 @@ void config_parse_spec(const char *pathspec)
 	char *filename;
 
 	if (pathspec[0] == SYDBOX_PROFILE_CHAR) {
-		++pathspec;
+		pathspec++;
 		len = sizeof(DATADIR) + sizeof(PACKAGE) + strlen(pathspec);
 		filename = xcalloc(len, sizeof(char));
 
@@ -271,7 +281,7 @@ void config_parse_spec(const char *pathspec)
 
 		config_parse_file(filename);
 		free(filename);
-	}
-	else
+	} else {
 		config_parse_file(pathspec);
+	}
 }

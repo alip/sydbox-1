@@ -1,7 +1,7 @@
 #!/bin/sh
 # vim: set sw=4 et ts=4 sts=4 tw=80 :
 # Copyright 2010, 2012 Ali Polatel <alip@exherbo.org>
-# Distributed under the terms of the GNU General Public License v2
+# Distributed under the terms of the GNU General Public License v3 or later
 
 # chmod()
 # returns EFAULT on NULL:               yes

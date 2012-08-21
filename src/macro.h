@@ -4,6 +4,7 @@
  * Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
+ * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
  */
 
 #ifndef MACRO_H

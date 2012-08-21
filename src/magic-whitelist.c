@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/magic-whitelist.c
+ *
  * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -26,7 +14,8 @@
 
 #include "macro.h"
 
-int magic_set_whitelist_ppd(const void *val, struct pink_easy_process *current)
+int magic_set_whitelist_ppd(const void *val,
+			    struct pink_easy_process *current)
 {
 	sydbox->config.whitelist_per_process_directories = PTR_TO_BOOL(val);
 	return 0;
@@ -37,7 +26,8 @@ int magic_query_whitelist_ppd(struct pink_easy_process *current)
 	return sydbox->config.whitelist_per_process_directories;
 }
 
-int magic_set_whitelist_sb(const void *val, struct pink_easy_process *current)
+int magic_set_whitelist_sb(const void *val,
+			   struct pink_easy_process *current)
 {
 	sydbox->config.whitelist_successful_bind = PTR_TO_BOOL(val);
 	return 0;
@@ -48,7 +38,8 @@ int magic_query_whitelist_sb(struct pink_easy_process *current)
 	return sydbox->config.whitelist_successful_bind;
 }
 
-int magic_set_whitelist_usf(const void *val, struct pink_easy_process *current)
+int magic_set_whitelist_usf(const void *val,
+			    struct pink_easy_process *current)
 {
 	sydbox->config.whitelist_unsupported_socket_families = PTR_TO_BOOL(val);
 	return 0;

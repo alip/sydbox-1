@@ -2,7 +2,7 @@
  * sydbox/sys-execve.c
  *
  * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -63,11 +63,13 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 	case SANDBOX_OFF:
 		return 0;
 	case SANDBOX_DENY:
-		if (box_match_path(abspath, &data->config.whitelist_exec, NULL))
+		if (box_match_path(abspath, &data->config.whitelist_exec,
+				   NULL))
 			return 0;
 		break;
 	case SANDBOX_ALLOW:
-		if (!box_match_path(abspath, &data->config.blacklist_exec, NULL))
+		if (!box_match_path(abspath, &data->config.blacklist_exec,
+				    NULL))
 			return 0;
 		break;
 	default:

@@ -2,7 +2,7 @@
  * sydbox/sys-dup.c
  *
  * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -30,9 +30,9 @@ int sys_dup(struct pink_easy_process *current, const char *name)
 	if (!pink_read_argument(tid, abi, &data->regs, 0, &fd)) {
 		if (errno != ESRCH) {
 			log_warning("read_argument(%lu, %d, 0) failed"
-					" (errno:%d %s)",
-					(unsigned long)tid, abi,
-					errno, strerror(errno));
+				    " (errno:%d %s)",
+				    (unsigned long)tid, abi,
+				    errno, strerror(errno));
 			return panic(current);
 		}
 		log_trace("read_argument(%lu, %d, 0) failed (errno:%d %s)",

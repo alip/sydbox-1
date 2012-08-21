@@ -1,20 +1,8 @@
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
-
 /*
+ * sydbox/sydbox-systable.c
+ *
  * Copyright (c) 2010, 2012 Ali Polatel <alip@exherbo.org>
- *
- * This file is part of Sydbox. sydbox is free software;
- * you can redistribute it and/or modify it under the terms of the GNU General
- * Public License version 2, as published by the Free Software Foundation.
- *
- * sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
- * Place, Suite 330, Boston, MA  02111-1307  USA
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
@@ -31,7 +19,7 @@
 static hashtable_t *systable[PINK_ABIS_SUPPORTED];
 
 static void systable_add_full(long no, enum pink_abi abi, const char *name,
-		sysfunc_t fenter, sysfunc_t fexit)
+			      sysfunc_t fenter, sysfunc_t fexit)
 {
 	sysentry_t *entry;
 
@@ -59,7 +47,9 @@ void systable_free(void)
 {
 	for (enum pink_abi abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
 		for (int i = 0; i < systable[abi]->size; i++) {
-			ht_int32_node_t *node = HT_NODE(systable[abi], systable[abi]->nodes, i);
+			ht_int32_node_t *node = HT_NODE(systable[abi],
+							systable[abi]->nodes,
+							i);
 			if (node->data)
 				free(node->data);
 		}

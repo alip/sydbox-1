@@ -2,7 +2,7 @@
  * sydbox/sydbox-defs.h
  *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #ifndef SYDBOX_GUARD_DEFS_H
@@ -178,15 +178,19 @@ void abort_all(int fatal_sig);
 int deny(struct pink_easy_process *current, int err_no);
 int restore(struct pink_easy_process *current);
 int panic(struct pink_easy_process *current);
-int violation(struct pink_easy_process *current, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
+int violation(struct pink_easy_process *current, const char *fmt, ...)
+	PINK_GCC_ATTR((format (printf, 2, 3)));
 
 const char *magic_strerror(int error);
 const char *magic_strkey(enum magic_key key);
 unsigned magic_key_type(enum magic_key key);
 unsigned magic_key_parent(enum magic_key key);
 unsigned magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len);
-int magic_cast(struct pink_easy_process *current, enum magic_key key, enum magic_type type, const void *val);
-int magic_cast_string(struct pink_easy_process *current, const char *magic, int prefix);
+int magic_cast(struct pink_easy_process *current,
+	       enum magic_key key, enum magic_type type,
+	       const void *val);
+int magic_cast_string(struct pink_easy_process *current,
+		      const char *magic, int prefix);
 
 void config_init(void);
 void config_done(void);
@@ -196,10 +200,14 @@ void config_parse_spec(const char *filename) PINK_GCC_ATTR((nonnull(1)));
 
 void callback_init(void);
 
-int box_resolve_path(const char *path, const char *prefix, pid_t pid, can_mode_t can_mode, char **res);
-int box_match_path(const char *path, const slist_t *patterns, const char **match);
-int box_check_path(struct pink_easy_process *current, const char *name, sysinfo_t *info);
-int box_check_socket(struct pink_easy_process *current, const char *name, sysinfo_t *info);
+int box_resolve_path(const char *path, const char *prefix, pid_t pid,
+		     can_mode_t can_mode, char **res);
+int box_match_path(const char *path, const slist_t *patterns,
+		   const char **match);
+int box_check_path(struct pink_easy_process *current, const char *name,
+		   sysinfo_t *info);
+int box_check_socket(struct pink_easy_process *current, const char *name,
+		     sysinfo_t *info);
 
 void systable_init(void);
 void systable_free(void);
@@ -262,7 +270,8 @@ static inline void free_proc(void *data)
 
 	/* Free the fd -> address mappings */
 	for (int i = 0; i < p->sockmap->size; i++) {
-		ht_int64_node_t *node = HT_NODE(p->sockmap, p->sockmap->nodes, i);
+		ht_int64_node_t *node = HT_NODE(p->sockmap, p->sockmap->nodes,
+						i);
 		if (node->data)
 			free_sockinfo(node->data);
 	}

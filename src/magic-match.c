@@ -2,7 +2,7 @@
  * sydbox/magic-match.c
  *
  * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
