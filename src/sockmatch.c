@@ -165,6 +165,7 @@ struct sockmatch *sockmatch_new(const struct sockinfo *src)
 		port = ntohs(src->addr->u.sa6.sin6_port);
 		match->addr.sa6.port[0] = port;
 		match->addr.sa6.port[1] = port;
+		match->addr.sa6.netmask = 64;
 		memcpy(&match->addr.sa6.addr, &src->addr->u.sa6.sin6_addr,
 		       sizeof(struct in6_addr));
 		break;
