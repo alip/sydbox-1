@@ -90,7 +90,8 @@ int path_prefix(struct pink_easy_process *current, unsigned arg_index,
 
 	if (!pink_read_argument(tid, abi, &data->regs, arg_index, &fd)) {
 		if (errno != ESRCH) {
-			log_warning("read_argument(%lu, %u, %u) failed (errno:%d %s)",
+			log_warning("read_argument(%lu, %u, %u) failed"
+				    " (errno:%d %s)",
 				    (unsigned long)tid, abi, arg_index,
 				    errno, strerror(errno));
 			return panic(current);
@@ -114,7 +115,8 @@ int path_prefix(struct pink_easy_process *current, unsigned arg_index,
 	} else {
 		r = proc_fd(tid, fd, &prefix);
 		if (r < 0) {
-			log_warning("readlink /proc/%lu/fd/%ld failed (errno:%d %s)",
+			log_warning("readlink /proc/%lu/fd/%ld failed"
+				    " (errno:%d %s)",
 				    (unsigned long)tid, fd,
 				    -r, strerror(-r));
 			if (r == -ENOENT)
