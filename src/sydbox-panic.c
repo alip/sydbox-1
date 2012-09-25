@@ -128,10 +128,11 @@ int deny(struct pink_easy_process *current, int err_no)
 	data->deny = true;
 	data->retval = errno2retval(err_no);
 
-	log_access("%s[%lu:%u] return code:%ld",
+	log_access("%s[%lu:%u] return code:%ld errno:%s",
 		   data->comm,
 		   (unsigned long)tid, abi,
-		   data->retval);
+		   data->retval,
+		   errno_to_string(err_no));
 
 	if (!pink_write_syscall(tid, abi, PINK_SYSCALL_INVALID)) {
 		if (errno != ESRCH) {
