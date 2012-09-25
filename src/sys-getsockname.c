@@ -101,7 +101,7 @@ int sysx_getsockname(struct pink_easy_process *current, const char *name)
 	decode_socketcall = !!(data->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
 	if (!pink_read_socket_address(tid, abi, &data->regs,
 				      decode_socketcall,
-				      0, NULL, &psa)) {
+				      1, NULL, &psa)) {
 		if (errno != ESRCH) {
 			log_warning("read_socket_address(%lu, %d, %s, 0)"
 				    " failed (errno:%d %s)",
