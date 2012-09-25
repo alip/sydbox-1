@@ -277,6 +277,7 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 			r = deny(current, -r);
 			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", name);
+			return r;
 		} else if (r > 0) { /* PINK_EASY_CFLAG */
 			return r;
 		}

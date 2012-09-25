@@ -130,5 +130,5 @@ int path_prefix(struct pink_easy_process *current, unsigned arg_index,
 		log_check("fd=%ld maps to prefix=`%s'", fd,
 			  fd == AT_FDCWD ? "AT_FDCWD" : prefix);
 
-	return 0;
+	return r;
 }
