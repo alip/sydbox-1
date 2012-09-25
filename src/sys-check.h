@@ -35,24 +35,35 @@ typedef struct {
 } sysentry_t;
 
 typedef struct {
-	unsigned arg_index; /* Argument index */
+	/* Argument index */
+	unsigned arg_index;
 
-	bool at_func; /* at suffixed functions */
+	/* `at' suffixed function */
+	bool at_func;
 
-	bool null_ok; /* NULL argument doesn't cause -EFAULT (only valid for `at_func') */
-	bool fail_if_exist; /* system call *must* create or it fails with -EEXIST */
-	can_mode_t can_mode; /* canonicalize mode */
+	/* NULL argument does not cause -EFAULT (only valid for `at_func') */
+	bool null_ok;
+	/* System call _must_ create the file or it fails with -EEXIST */
+	bool fail_if_exist;
+	/* Canonicalize mode */
+	can_mode_t can_mode;
 
-	bool decode_socketcall; /* decode socketcall() into subcall */
+	/* Decode socketcall() into subcall */
+	bool decode_socketcall;
 
-	bool safe; /* Safe system call, deny silently */
+	/* Safe system call, deny silently (w/o raising access violation) */
+	bool safe;
+	/* Deny errno */
 	int deny_errno;
 
-	enum sys_access_mode access_mode; /* Access control mode (whitelist, blacklist) */
-	slist_t *access_list; /* Access control list */
-	slist_t *access_filter; /* Access filter list */
+	/* Access control mode (whitelist, blacklist) */
+	enum sys_access_mode access_mode;
+	/* Access control list */
+	slist_t *access_list;
+	/* Access filter list */
+	slist_t *access_filter;
 
-	/* Return data */
+	/* Pointer to the data to be returned */
 	long *fd;
 	char **abspath;
 	struct pink_sockaddr **addr;
