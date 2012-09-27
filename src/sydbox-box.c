@@ -239,6 +239,7 @@ static int box_match_socket(const struct pink_sockaddr *psa,
 int box_check_path(struct pink_easy_process *current, const char *name,
 		   sysinfo_t *info)
 {
+	bool badfd;
 	int r, deny_errno;
 	char *prefix, *path, *abspath;
 	pid_t tid = pink_easy_process_get_tid(current);
@@ -271,9 +272,16 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 			errno_to_string(deny_errno),
 			sys_access_mode_to_string(info->access_mode));
 
+	/* Step 1: resolve file descriptor for `at' suffixed functions */
+	badfd = false;
 	if (info->at_func) {
 		r = path_prefix(current, info->arg_index - 1, &prefix);
-		if (r < 0) {
+		if (r == -EBADF) {
+			/* Using a bad directory for absolute paths is fine!
+			 * System call will be denied after path_decode()
+			 */
+			badfd = true;
+		} else if (r < 0) {
 			r = deny(current, -r);
 			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", name);
@@ -283,15 +291,29 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 		}
 	}
 
+	/* Step 2: resolve path */
 	r = path_decode(current, info->arg_index, &path);
-	if (r < 0 && !(info->at_func && info->null_ok
-		       && prefix && r == -EFAULT)) {
-		r = deny(current, -r);
-		if (sydbox->config.violation_raise_fail)
-			violation(current, "%s()", name);
+	if (r < 0) {
+		/* For EFAULT we assume path argument is NULL.
+		 * For some `at' suffixed functions, NULL as path
+		 * argument may be OK.
+		 */
+		if (!(r == -EFAULT && info->at_func && info->null_ok)) {
+			r = deny(current, -r);
+			if (sydbox->config.violation_raise_fail)
+				violation(current, "%s()", name);
+			goto out;
+		}
+	} else if (r > 0) { /* PINK_EASY_CFLAG */
 		goto out;
-	} else if (r > 0 /* PINK_EASY_CFLAG */) {
-		goto out;
+	} else { /* r == 0 */
+		if (badfd && path[0] != '/') {
+			/* Bad directory for non-absolute path! */
+			r = deny(current, -EBADF);
+			if (sydbox->config.violation_raise_fail)
+				violation(current, "%s()", name);
+			goto out;
+		}
 	}
 
 	r = box_resolve_path(path, prefix ? prefix : data->cwd, tid,
