@@ -13,7 +13,7 @@
 #define LOG_H 1
 
 #include <stdarg.h>
-#include <pinktrace/compiler.h>
+#include <pinktrace/pink.h>
 
 /* ANSI colour codes */
 #define ANSI_NORMAL		"[00;00m"
