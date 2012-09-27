@@ -477,7 +477,9 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 		break;
 	default:
 		if (sydbox->config.whitelist_unsupported_socket_families) {
-			log_access("unsupported sockfamily:%s, access granted",
+			log_access("unsupported sockfamily:%d/%s"
+				   ", access granted",
+				   psa->family,
 				   address_family_to_string(psa->family));
 			goto out;
 		}
