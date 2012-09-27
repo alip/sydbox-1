@@ -9,9 +9,11 @@ DEFS+= \
        -DDATADIR=\"$(datadir)\" \
        -DGITHEAD=\"$(GITHEAD)\"
 
+# Use -DNDEBUG so as not to require sydbox' assert() override
 AM_CFLAGS= \
-	   $(pinktrace_CFLAGS) \
-	   $(pinktrace_easy_CFLAGS) \
+	   -DNDEBUG \
+	   -I$(top_builddir)/include \
+	   -I$(top_srcdir)/include \
 	   @SYDBOX_CFLAGS@
 
 test-lib.sh: test-lib.sh.in
