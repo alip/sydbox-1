@@ -123,7 +123,6 @@ extern int sys_socketcall(struct pink_easy_process *current, const char *name);
 extern int sys_bind(struct pink_easy_process *current, const char *name);
 extern int sys_connect(struct pink_easy_process *current, const char *name);
 extern int sys_sendto(struct pink_easy_process *current, const char *name);
-extern int sys_recvfrom(struct pink_easy_process *current, const char *name);
 extern int sys_getsockname(struct pink_easy_process *current, const char *name);
 
 extern int sysx_chdir(struct pink_easy_process *current, const char *name);

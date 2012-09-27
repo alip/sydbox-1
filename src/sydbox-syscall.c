@@ -89,7 +89,6 @@ static const sysentry_t syscall_entries[] = {
 	{"bind", sys_bind, sysx_bind},
 	{"connect", sys_connect, NULL},
 	{"sendto", sys_sendto, NULL},
-	{"recvfrom", sys_recvfrom, NULL},
 	{"getsockname", sys_getsockname, sysx_getsockname},
 
 	{"setxattr", sys_setxattr, NULL},
