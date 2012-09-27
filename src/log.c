@@ -48,7 +48,7 @@ static void log_me(FILE *fp, int level, const char *func,
 		   const char *fmt, va_list ap)
 {
 	int fd, tty;
-	const char *p, *s, *l;
+	const char *p, *s;
 
 	if (!fp)
 		return;
