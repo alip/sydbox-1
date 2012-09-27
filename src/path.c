@@ -21,10 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
-inline int path_is_absolute(const char *p)
-{
-	return p[0] == '/';
-}
+#include "path.h"
 
 /* Makes every item in the list an absolute path by prepending
  * the prefix, if specified and necessary */

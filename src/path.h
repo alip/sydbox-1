@@ -12,8 +12,12 @@
 #ifndef PATH_H
 #define PATH_H 1
 
-extern int path_is_absolute(const char *p);
 extern char *path_make_absolute(const char *p, const char *prefix);
 extern char *path_kill_slashes(char *path);
+
+static inline int path_is_absolute(const char *p)
+{
+	return p[0] == '/';
+}
 
 #endif /* !PATH_H */

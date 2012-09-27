@@ -307,7 +307,7 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 	} else if (r > 0) { /* PINK_EASY_CFLAG */
 		goto out;
 	} else { /* r == 0 */
-		if (badfd && path[0] != '/') {
+		if (badfd && !path_is_absolute(path)) {
 			/* Bad directory for non-absolute path! */
 			r = deny(current, -EBADF);
 			if (sydbox->config.violation_raise_fail)
@@ -506,44 +506,52 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 
 		if (info->access_mode == ACCESS_WHITELIST) {
 			if (box_match_path_saun(abspath, info->access_list, NULL)) {
-				log_access("sun_path=`%s' is whitelisted, access granted",
+				log_access("sun_path=`%s' is whitelisted,"
+					   " access granted",
 					   abspath);
 				r = 0;
 				goto out;
 			} else {
-				log_access("sun_path=`%s isn't whitelisted, access denied",
+				log_access("sun_path=`%s isn't whitelisted,"
+					   " access denied",
 					   abspath);
 			}
 		} else if (info->access_mode == ACCESS_BLACKLIST) {
 			if (!box_match_path(abspath, info->access_list, NULL)) {
-				log_access("sun_path=`%s' isn't blacklisted, access granted",
+				log_access("sun_path=`%s' isn't blacklisted,"
+					   " access granted",
 					   abspath);
 				r = 0;
 				goto out;
 			} else {
-				log_access("sun_path=`%s is blacklisted, access denied",
+				log_access("sun_path=`%s is blacklisted,"
+					   " access denied",
 					   abspath);
 			}
 		}
 	} else {
 		if (info->access_mode == ACCESS_WHITELIST) {
 			if (box_match_socket(psa, info->access_list, NULL)) {
-				log_access("sockaddr=%p is whitelisted, access granted",
+				log_access("sockaddr=%p is whitelisted,"
+					   " access granted",
 					   psa);
 				r = 0;
 				goto out;
 			} else {
-				log_access("sockaddr=%p isn't whitelisted, access denied",
+				log_access("sockaddr=%p isn't whitelisted,"
+					   " access denied",
 					   psa);
 			}
 		} else if (info->access_mode == ACCESS_BLACKLIST) {
 			if (!box_match_socket(psa, info->access_list, NULL)) {
-				log_access("sockaddr=%p isn't blacklisted, access granted",
+				log_access("sockaddr=%p isn't blacklisted,"
+					   " access granted",
 					   psa);
 				r = 0;
 				goto out;
 			} else {
-				log_access("sockaddr=%p is blacklisted, access denied",
+				log_access("sockaddr=%p is blacklisted,"
+					   " access denied",
 					   psa);
 			}
 		}
@@ -554,13 +562,15 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
 		if (box_match_path_saun(abspath, info->access_filter, NULL)) {
-			log_access("sun_path=`%s' matches a filter pattern, access violation filtered",
+			log_access("sun_path=`%s' matches a filter pattern,"
+				   " access violation filtered",
 				   abspath);
 			goto out;
 		}
 	} else {
 		if (box_match_socket(psa, info->access_filter, NULL)) {
-			log_access("sockaddr=%p matches a filter pattern, access violation filtered",
+			log_access("sockaddr=%p matches a filter pattern,"
+				   " access violation filtered",
 				   psa);
 			goto out;
 		}
