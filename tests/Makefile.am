@@ -67,7 +67,8 @@ TESTS= \
 	t007-fchownat.sh \
 	t008-open.sh \
 	t009-openat.sh \
-	t010-creat.sh
+	t010-creat.sh \
+	t011-mkdir.sh
 EXTRA_DIST= $(TESTS) \
 	    test-lib.sh.in \
 	    test-lib-functions.sh

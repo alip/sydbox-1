@@ -34,4 +34,29 @@ test_expect_success 'whitelist mkdir()' '
     test_path_is_dir nodir.$test_count
 '
 
+test_expect_success 'whitelist mkdir() for existant directory' '
+    mkdir dir.$test_count &&
+    sydbox \
+        -m core/sandbox/write:deny \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -- emily mkdir -e EEXIST dir.$test_count
+'
+
+test_expect_success 'blacklist mkdir()' '
+    rm -rf nodir.$test_count &&
+    test_must_violate sydbox \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily mkdir -e EPERM nodir.$test_count &&
+    test_path_is_missing nodir.$test_count
+'
+
+test_expect_success 'deny mkdir() for existant directory' '
+    mkdir dir.$test_count &&
+    test_must_violate sydbox \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily mkdir -e EEXIST dir.$test_count
+'
+
 test_done
