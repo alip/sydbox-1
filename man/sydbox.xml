@@ -389,6 +389,14 @@
               for <function>connect</function><manvolnum>2</manvolnum> and
               <function>sendto</function><manvolnum>2</manvolnum> system calls.
               Defaults to <varname>true</varname>.</para>
+            <note>
+              <para>
+                These socket addresses are whitelisted globally and not per-process for
+                usability reasons. Thus, for example, a process which forks to call
+                <function>bind</function><manvolnum>2</manvolnum> will have its socket
+                address whitelisted for her parent as well.
+              </para>
+            </note>
           </listitem>
         </varlistentry>
 

@@ -155,12 +155,13 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 		goto zero;
 #endif
 
-	log_trace("whitelist bind() address for process %s[%lu:%u]",
+	log_trace("whitelist bind() address by process %s[%lu:%u]",
 		  data->comm, (unsigned long)tid, abi);
 	snode = xcalloc(1, sizeof(struct snode));
 	match = sockmatch_new(data->savebind);
 	snode->data = match;
-	SLIST_INSERT_HEAD(&data->config.whitelist_network_connect, snode, up);
+	SLIST_INSERT_HEAD(&sydbox->config.whitelist_network_connect_auto,
+			  snode, up);
 	return 0;
 zero:
 	node = hashtable_find(data->sockmap, data->args[0] + 1, 1);

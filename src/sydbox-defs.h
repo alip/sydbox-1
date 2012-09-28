@@ -141,6 +141,8 @@ typedef struct {
 	slist_t filter_read;
 	slist_t filter_write;
 	slist_t filter_network;
+
+	slist_t whitelist_network_connect_auto;
 } config_t;
 
 typedef struct {
@@ -202,7 +204,7 @@ void callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 		     can_mode_t can_mode, char **res);
-int box_match_path(const char *path, const slist_t *patterns,
+int box_match_path(const slist_t *patterns, const char *path,
 		   const char **match);
 int box_check_path(struct pink_easy_process *current, const char *name,
 		   sysinfo_t *info);

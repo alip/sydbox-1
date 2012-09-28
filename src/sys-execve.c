@@ -63,12 +63,12 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 	case SANDBOX_OFF:
 		return 0;
 	case SANDBOX_DENY:
-		if (box_match_path(abspath, &data->config.whitelist_exec,
+		if (box_match_path(&data->config.whitelist_exec, abspath,
 				   NULL))
 			return 0;
 		break;
 	case SANDBOX_ALLOW:
-		if (!box_match_path(abspath, &data->config.blacklist_exec,
+		if (!box_match_path(&data->config.blacklist_exec, abspath,
 				    NULL))
 			return 0;
 		break;
@@ -78,7 +78,7 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 
 	r = deny(current, EACCES);
 
-	if (!box_match_path(abspath, &sydbox->config.filter_exec, NULL))
+	if (!box_match_path(&sydbox->config.filter_exec, abspath, NULL))
 		violation(current, "%s(\"%s\")", name, abspath);
 
 	free(abspath);

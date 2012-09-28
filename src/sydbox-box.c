@@ -183,7 +183,7 @@ int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 	return r;
 }
 
-int box_match_path(const char *path, const slist_t *patterns,
+int box_match_path(const slist_t *patterns, const char *path,
 		   const char **match)
 {
 	struct snode *node;
@@ -199,7 +199,12 @@ int box_match_path(const char *path, const slist_t *patterns,
 	return 0;
 }
 
-static int box_match_path_saun(const char *path, const slist_t *patterns,
+static int box_match_path_(const slist_t *patterns, const void *path)
+{
+	return box_match_path(patterns, path, NULL);
+}
+
+static int box_match_path_saun(const slist_t *patterns, const char *sun_path,
 			       const char **match)
 {
 	struct snode *node;
@@ -208,7 +213,7 @@ static int box_match_path_saun(const char *path, const slist_t *patterns,
 	SLIST_FOREACH(node, patterns, up) {
 		m = node->data;
 		if (m->family == AF_UNIX && !m->addr.sa_un.abstract) {
-			if (pathmatch(m->addr.sa_un.path, path)) {
+			if (pathmatch(m->addr.sa_un.path, sun_path)) {
 				if (match)
 					*match = node->data;
 				return 1;
@@ -219,8 +224,13 @@ static int box_match_path_saun(const char *path, const slist_t *patterns,
 	return 0;
 }
 
-static int box_match_socket(const struct pink_sockaddr *psa,
-			    const slist_t *patterns,
+static int box_match_path_saun_(const slist_t *patterns, const void *sun_path)
+{
+	return box_match_path_saun(patterns, sun_path, NULL);
+}
+
+static int box_match_socket(const slist_t *patterns,
+			    const struct pink_sockaddr *psa,
 			    struct sockmatch **match)
 {
 	struct snode *node;
@@ -236,6 +246,43 @@ static int box_match_socket(const struct pink_sockaddr *psa,
 	return 0;
 }
 
+static int box_match_socket_(const slist_t *patterns,
+			     const void *psa)
+{
+	return box_match_socket(patterns, psa, NULL);
+}
+
+static int box_check_access(enum sys_access_mode mode,
+			    int (*match_func)(const slist_t *patterns,
+					      const void *needle),
+			    slist_t **pattern_list,
+			    size_t pattern_list_len,
+			    void *needle)
+{
+	unsigned i;
+
+	assert(match_func);
+
+	switch (mode) {
+	case ACCESS_WHITELIST:
+		for (i = 0; i < pattern_list_len; i++) {
+			if (pattern_list[i] &&
+			    match_func(pattern_list[i], needle))
+				return 1;
+		}
+		return 0;
+	case ACCESS_BLACKLIST:
+		for (i = 0; i < pattern_list_len; i++) {
+			if (pattern_list[i] &&
+			    match_func(pattern_list[i], needle))
+				return 0;
+		}
+		return 1;
+	default:
+		assert_not_reached();
+	}
+}
+
 int box_check_path(struct pink_easy_process *current, const char *name,
 		   sysinfo_t *info)
 {
@@ -245,19 +292,12 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	slist_t *access_list, *access_filter;
 
 	assert(current);
 	assert(info);
 
 	prefix = path = abspath = NULL;
 	deny_errno = info->deny_errno ? info->deny_errno : EPERM;
-	if (info->access_mode == ACCESS_0) {
-		if (sandbox_write_deny(data))
-			info->access_mode = ACCESS_WHITELIST;
-		else
-			info->access_mode = ACCESS_BLACKLIST;
-	}
 
 	log_check("%s[%lu:%u] sys=%s arg_index=%u cwd:`%s'",
 			data->comm, (unsigned long)tid, abi, name,
@@ -291,7 +331,7 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 		}
 	}
 
-	/* Step 2: resolve path */
+	/* Step 2: read path */
 	r = path_decode(current, info->arg_index, &path);
 	if (r < 0) {
 		/* For EFAULT we assume path argument is NULL.
@@ -316,10 +356,12 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 		}
 	}
 
+	/* Step 3: resolve path */
 	r = box_resolve_path(path, prefix ? prefix : data->cwd, tid,
 			     info->can_mode, &abspath);
 	if (r < 0) {
-		log_access("resolve path=`%s' for sys=%s() failed (errno=%d %s)",
+		log_access("resolve path=`%s' for sys=%s() failed"
+			   " (errno=%d %s)",
 			   path, name, -r, strerror(-r));
 		log_access("deny access with errno=%s", errno_to_string(-r));
 		r = deny(current, -r);
@@ -328,33 +370,32 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 		goto out;
 	}
 
-	if (info->access_list)
-		access_list = info->access_list;
-	else if (info->access_mode == ACCESS_WHITELIST)
-		access_list = &data->config.whitelist_write;
-	else /* if (info->access_mode == ACCESS_BLACKLIST) */
-		access_list = &data->config.blacklist_write;
+	/* Step 4: Check for access */
+	enum sys_access_mode access_mode;
+	slist_t *access_lists[2], *access_filter;
 
-	if (info->access_mode == ACCESS_WHITELIST) {
-		if (box_match_path(abspath, access_list, NULL)) {
-			log_access("path=`%s' is whitelisted, access granted",
-				   abspath);
-			r = 0;
-			goto out;
-		} else {
-			log_access("path=`%s' isn't whitelisted, access denied",
-				   abspath);
-		}
-	} else /* if (info->access_mode == ACCESS_BLACKLIST) */ {
-		if (!box_match_path(abspath, access_list, NULL)) {
-			log_access("path=`%s' isn't blacklisted, access granted",
-				   abspath);
-			r = 0;
-			goto out;
-		} else {
-			log_access("path=`%s' is blacklisted, access denied",
-				   abspath);
-		}
+	if (info->access_mode != ACCESS_0)
+		access_mode = info->access_mode;
+	else if (sandbox_write_deny(data))
+		access_mode = ACCESS_WHITELIST;
+	else
+		access_mode = ACCESS_BLACKLIST;
+
+	if (info->access_list)
+		access_lists[0] = info->access_list;
+	else if (access_mode == ACCESS_WHITELIST)
+		access_lists[0] = &data->config.whitelist_write;
+	else /* if (info->access_mode == ACCESS_BLACKLIST) */
+		access_lists[0] = &data->config.blacklist_write;
+	access_lists[1] = info->access_list_global;
+
+	if (box_check_access(access_mode, box_match_path_,
+			     access_lists, 2, abspath)) {
+		log_access("access to path `%s' granted", abspath);
+		r = 0;
+		goto out;
+	} else {
+		log_access("access to path `%s' denied", abspath);
 	}
 
 	if (info->safe && !sydbox->config.violation_raise_safe) {
@@ -380,7 +421,8 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 			log_access("access denied with errno=EEXIST");
 			deny_errno = EEXIST;
 			if (!sydbox->config.violation_raise_safe) {
-				log_access("sys=%s is safe, access violation filtered",
+				log_access("sys=%s is safe,"
+					   " access violation filtered",
 					   name);
 				r = deny(current, deny_errno);
 				goto out;
@@ -395,7 +437,7 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 	else
 		access_filter = &sydbox->config.filter_write;
 
-	if (!box_match_path(abspath, access_filter, NULL)) {
+	if (!box_match_path(access_filter, abspath, NULL)) {
 		if (info->at_func)
 			box_report_violation_path_at(current, name,
 						     info->arg_index,
@@ -487,11 +529,16 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 		goto report;
 	}
 
+	slist_t *access_lists[2];
+	access_lists[0] = info->access_list;
+	access_lists[1] = info->access_list_global;
+
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket, resolve the path. */
-		if ((r = box_resolve_path(psa->u.sa_un.sun_path,
-					  data->cwd, tid,
-					  info->can_mode, &abspath)) < 0) {
+		r = box_resolve_path(psa->u.sa_un.sun_path,
+				     data->cwd, tid,
+				     info->can_mode, &abspath);
+		if (r < 0) {
 			log_access("resolve path=`%s' for sys=%s failed"
 				   " (errno=%d %s)",
 				   psa->u.sa_un.sun_path,
@@ -504,56 +551,22 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 			goto out;
 		}
 
-		if (info->access_mode == ACCESS_WHITELIST) {
-			if (box_match_path_saun(abspath, info->access_list, NULL)) {
-				log_access("sun_path=`%s' is whitelisted,"
-					   " access granted",
-					   abspath);
-				r = 0;
-				goto out;
-			} else {
-				log_access("sun_path=`%s isn't whitelisted,"
-					   " access denied",
-					   abspath);
-			}
-		} else if (info->access_mode == ACCESS_BLACKLIST) {
-			if (!box_match_path(abspath, info->access_list, NULL)) {
-				log_access("sun_path=`%s' isn't blacklisted,"
-					   " access granted",
-					   abspath);
-				r = 0;
-				goto out;
-			} else {
-				log_access("sun_path=`%s is blacklisted,"
-					   " access denied",
-					   abspath);
-			}
+		if (box_check_access(info->access_mode, box_match_path_saun_,
+				     access_lists, 2, abspath)) {
+			log_access("access to sun_path `%s' granted", abspath);
+			r = 0;
+			goto out;
+		} else {
+			log_access("access to sun_path `%s' denied", abspath);
 		}
 	} else {
-		if (info->access_mode == ACCESS_WHITELIST) {
-			if (box_match_socket(psa, info->access_list, NULL)) {
-				log_access("sockaddr=%p is whitelisted,"
-					   " access granted",
-					   psa);
-				r = 0;
-				goto out;
-			} else {
-				log_access("sockaddr=%p isn't whitelisted,"
-					   " access denied",
-					   psa);
-			}
-		} else if (info->access_mode == ACCESS_BLACKLIST) {
-			if (!box_match_socket(psa, info->access_list, NULL)) {
-				log_access("sockaddr=%p isn't blacklisted,"
-					   " access granted",
-					   psa);
-				r = 0;
-				goto out;
-			} else {
-				log_access("sockaddr=%p is blacklisted,"
-					   " access denied",
-					   psa);
-			}
+		if (box_check_access(info->access_mode, box_match_socket_,
+				     access_lists, 2, psa)) {
+			log_access("access to sockaddr `%p' granted", psa);
+			r = 0;
+			goto out;
+		} else {
+			log_access("access to sockaddr `%p' denied", psa);
 		}
 	}
 
@@ -561,14 +574,14 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
-		if (box_match_path_saun(abspath, info->access_filter, NULL)) {
+		if (box_match_path_saun(info->access_filter, abspath, NULL)) {
 			log_access("sun_path=`%s' matches a filter pattern,"
 				   " access violation filtered",
 				   abspath);
 			goto out;
 		}
 	} else {
-		if (box_match_socket(psa, info->access_filter, NULL)) {
+		if (box_match_socket(info->access_filter, psa, NULL)) {
 			log_access("sockaddr=%p matches a filter pattern,"
 				   " access violation filtered",
 				   psa);

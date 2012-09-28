@@ -30,6 +30,7 @@ int sys_connect(struct pink_easy_process *current, const char *name)
 	info.access_list = sandbox_network_deny(data)
 			   ? &data->config.whitelist_network_connect
 			   : &data->config.blacklist_network_connect;
+	info.access_list_global = &sydbox->config.whitelist_network_connect_auto;
 	info.access_filter = &sydbox->config.filter_network;
 	info.can_mode = CAN_ALL_BUT_LAST;
 	info.arg_index = 1;
@@ -55,6 +56,7 @@ int sys_sendto(struct pink_easy_process *current, const char *name)
 	info.access_list = sandbox_network_deny(data)
 			   ? &data->config.whitelist_network_connect
 			   : &data->config.blacklist_network_connect;
+	info.access_list_global = &sydbox->config.whitelist_network_connect_auto;
 	info.access_filter = &sydbox->config.filter_network;
 	info.can_mode = CAN_ALL_BUT_LAST;
 	info.arg_index = 4;

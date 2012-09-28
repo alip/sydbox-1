@@ -152,6 +152,7 @@ int sysx_getsockname(struct pink_easy_process *current, const char *name)
 		  port, data->comm, (unsigned long)tid, abi);
 	snode = xcalloc(1, sizeof(struct snode));
 	snode->data = match;
-	SLIST_INSERT_HEAD(&data->config.whitelist_network_connect, snode, up);
+	SLIST_INSERT_HEAD(&sydbox->config.whitelist_network_connect_auto,
+			  snode, up);
 	return 0;
 }

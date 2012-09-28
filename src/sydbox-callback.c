@@ -297,8 +297,8 @@ static int callback_exec(const struct pink_easy_context *ctx,
 
 	/* kill_if_match and resume_if_match */
 	r = 0;
-	if (box_match_path(data->abspath,
-			   &sydbox->config.exec_kill_if_match,
+	if (box_match_path(&sydbox->config.exec_kill_if_match,
+			   data->abspath,
 			   &match)) {
 		log_warning("kill_if_match pattern=`%s'"
 			    " matches execve path=`%s'",
@@ -313,8 +313,8 @@ static int callback_exec(const struct pink_easy_context *ctx,
 				    (unsigned long)tid,
 				    errno, strerror(errno));
 		r |= PINK_EASY_CFLAG_DROP;
-	} else if (box_match_path(data->abspath,
-				  &sydbox->config.exec_resume_if_match,
+	} else if (box_match_path(&sydbox->config.exec_resume_if_match,
+				  data->abspath,
 				  &match)) {
 		log_warning("resume_if_match pattern=`%s'"
 			    " matches execve path=`%s'",

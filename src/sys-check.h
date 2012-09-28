@@ -58,9 +58,10 @@ typedef struct {
 
 	/* Access control mode (whitelist, blacklist) */
 	enum sys_access_mode access_mode;
-	/* Access control list */
+	/* Access control lists (per-process, global) */
 	slist_t *access_list;
-	/* Access filter list */
+	slist_t *access_list_global;
+	/* Access filter lists (only global) */
 	slist_t *access_filter;
 
 	/* Pointer to the data to be returned */
