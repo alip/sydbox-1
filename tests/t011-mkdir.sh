@@ -6,33 +6,32 @@
 test_description='sandbox mkdir(2)'
 . ./test-lib.sh
 
-test_expect_success setup '
-    mkdir dir1
-'
-
 test_expect_success 'deny mkdir(NULL) with EFAULT' '
     sydbox -- emily mkdir -e EFAULT
 '
 
 test_expect_success 'deny mkdir()' '
+    rm -rf nodir.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily mkdir -e EPERM dir0-non-existant &&
-    test_path_is_missing dir0-non-existant
+        -- emily mkdir -e EPERM nodir.$test_count &&
+    test_path_is_missing nodir.$test_count
 '
 
 test_expect_success 'deny mkdir() for existant directory' '
+    mkdir dir.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily mkdir -e EEXIST dir1
+        -- emily mkdir -e EEXIST dir.$test_count
 '
 
 test_expect_success 'whitelist mkdir()' '
+    rm -rf nodir.$test_count &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily mkdir -e ERRNO_0 dir2-non-existant &&
-    test_path_is_dir dir2-non-existant
+        -- emily mkdir -e ERRNO_0 nodir.$test_count &&
+    test_path_is_dir nodir.$test_count
 '
 
 test_done

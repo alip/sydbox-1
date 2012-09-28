@@ -6,49 +6,49 @@
 test_description='sandbox creat(2)'
 . ./test-lib.sh
 
-test_expect_success setup '
-'
-
-test_expect_success SYMLINKS setup-symlinks '
-    ln -sf file1-non-existant symlink-file1
-'
-
 test_expect_success 'deny creat()' '
+    rm -f nofile.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily creat -e EPERM file0-non-existant &&
-    test_path_is_missing file0-non-existant
+        -- emily creat -e EPERM nofile.$test_count &&
+    test_path_is_missing nofile.$test_count
 '
 
 test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
+    rm -f nofile.$test_count &&
+    ln -sf nofile.$test_count link.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily creat -e EPERM symlink-file1 &&
-    test_path_is_missing file1-non-existant
+        -- emily creat -e EPERM link.$test_count &&
+    test_path_is_missing nofile.$test_count
 '
 
 test_expect_success 'whitelist creat()' '
+    rm -f nofile.$test_count &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily creat -e ERRNO_0 file2-non-existant "3" &&
-    test_path_is_non_empty file2-non-existant
+        -- emily creat -e ERRNO_0 nofile.$test_count "3" &&
+    test_path_is_non_empty nofile.$test_count
 '
 
 test_expect_success 'blacklist creat()' '
+    rm -f nofile.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily creat -e EPERM file0-non-existant &&
-    test_path_is_missing file0-non-existant
+        -- emily creat -e EPERM nofile.$test_count &&
+    test_path_is_missing nofile.$test_count
 '
 
 test_expect_success SYMLINKS 'blacklist creat() for dangling symbolic link' '
+    rm -f nofile.$test_count &&
+    ln -sf nofile.$test_count link.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily creat -e EPERM symlink-file1 &&
-    test_path_is_missing file1-non-existant
+        -- emily creat -e EPERM link.$test_count &&
+    test_path_is_missing nofile.$test_count
 '
 
 test_done

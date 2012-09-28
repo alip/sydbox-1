@@ -6,91 +6,89 @@
 test_description='sandbox chown(2)'
 . ./test-lib.sh
 
-test_expect_success setup '
-    rm -f file-non-existant &&
-    touch file0 &&
-    touch file1 &&
-    touch file2 &&
-    touch file3 &&
-    touch file4 &&
-    touch file5
-'
-
-test_expect_success SYMLINKS setup-symlinks '
-    ln -sf /non/existant/file symlink-dangling &&
-    ln -sf file1 symlink-file1 &&
-    ln -sf file3 symlink-file3 &&
-    ln -sf file5 symlink-file5
-'
-
 test_expect_success 'deny chown(NULL) with EFAULT' '
     sydbox -- emily chown -e EFAULT
 '
 
-test_expect_success 'deny chown()' '
+test_expect_success 'deny chown($file)' '
+    touch file.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chown -e EPERM file0
+        -- emily chown -e EPERM file.$test_count
 '
 
-test_expect_success 'deny chown() for non-existant file' '
+test_expect_success 'deny chown($nofile)' '
+    rm -f nofile.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chown -e ENOENT file-non-existant
+        -- emily chown -e ENOENT nofile.$test_count
 '
 
-test_expect_success SYMLINKS 'deny chown() for symbolic link' '
+test_expect_success SYMLINKS 'deny chown($symlink-file)' '
+    touch file.$test_count &&
+    ln -sf file.$test_count link.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chown -e EPERM symlink-file1
+        -- emily chown -e EPERM link.$test_count
 '
 
-test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
+test_expect_success SYMLINKS 'deny chown($symlink-dangling)' '
+    rm -f nofile.$test_count &&
+    ln -sf nofile.$test_count link-dangling.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily chown -e ENOENT symlink-dangling
 '
 
-test_expect_success 'blacklist chown()' '
+test_expect_success 'blacklist chown($file)' '
+    touch file.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e EPERM file2
+        -- emily chown -e EPERM file.$test_count
 '
 
-test_expect_success 'blacklist chown() for non-existant file' '
+test_expect_success 'blacklist chown($nofile)' '
+    rm -f nofile.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e ENOENT file-non-existant
+        -- emily chown -e ENOENT nofile.$test_count
 '
 
-test_expect_success SYMLINKS 'blacklist chown() for symbolic link' '
+test_expect_success SYMLINKS 'blacklist chown($symlink-file)' '
+    touch file.$test_count &&
+    ln -sf file.$test_count link.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e EPERM symlink-file3
+        -- emily chown -e EPERM link.$test_count
 '
 
-test_expect_success SYMLINKS 'blacklist chown() for dangling symbolic link' '
+test_expect_success SYMLINKS 'blacklist chown($symlink-dangling)' '
+    rm -f nofile.$test_count &&
+    ln -sf nofile.$test_count link-dangling.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
         -- emily chown -e ENOENT symlink-dangling
 '
 
-test_expect_success 'whitelist chown()' '
+test_expect_success 'whitelist chown($file)' '
+    touch file.$test_count &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e ERRNO_0 file4
+        -- emily chown -e ERRNO_0 file.$test_count
 '
 
-test_expect_success SYMLINKS 'whitelist chown() for symbolic link' '
+test_expect_success SYMLINKS 'whitelist chown($symlink-file)' '
+    touch file.$test_count &&
+    ln -sf file.$test_count link.$test_count &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e ERRNO_0 symlink-file5
+        -- emily chown -e ERRNO_0 link.$test_count
 '
 
 test_done

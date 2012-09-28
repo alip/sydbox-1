@@ -6,167 +6,209 @@
 test_description='sandbox fchmodat()'
 . ./test-lib.sh
 
-test_expect_success setup '
-    touch file1 &&
-    touch file2 &&
-    touch file3 &&
-    touch file4 &&
-    touch file5 &&
-    touch file6 &&
-    touch file7 &&
-    touch file8 &&
-    touch file9 &&
-    touch file10 &&
-    touch file11 &&
-    touch file12
-'
-
-test_expect_success SYMLINKS setup-symlinks '
-    ln -sf /non/existant/path symlink-dangling &&
-    ln -sf file2 symlink-file2 &&
-    ln -sf file4 symlink-file4 &&
-    ln -sf file6 symlink-file6 &&
-    ln -sf file8 symlink-file8 &&
-    ln -sf file10 symlink-file10 &&
-    ln -sf file12 symlink-file12
-'
-
 test_expect_success 'deny fchmodat(AT_FDCWD, NULL) with EFAULT' '
     sydbox -- emily fchmodat -e EFAULT -d cwd
 '
 
 test_expect_success 'deny fchmodat(-1) with EBADF' '
-    sydbox -- emily fchmodat -e EBADF -d null -m 000 file0-non-existant
+    rm -f nofile.$test_count &&
+    sydbox -- emily fchmodat -e EBADF -d null -m 000 nofile.$test_count
 '
 
-test_expect_success 'deny fchmodat(AT_FDCWD, ...)' '
+test_expect_success 'deny fchmodat(-1, $abspath) with EPERM' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchmodat -e EPERM -d cwd -m 000 file1 &&
-    test_path_is_readable file1 &&
-    test_path_is_writable file1
+        -- emily fchmodat -e EPERM -d null -m 000 "$HOME_RESOLVED"/file.$test_count &&
+    test_path_is_readable file.$test_count &&
+    test_path_is_writable file.$test_count
 '
 
-test_expect_success 'deny fchmodat(AT_FDCWD, ...) for non-existant file' '
+test_expect_success 'deny fchmodat(AT_FDCWD, $file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchmodat -e ENOENT -d cwd -m 000 file-non-existant
+        -- emily fchmodat -e EPERM -d cwd -m 000 file.$test_count &&
+    test_path_is_readable file.$test_count &&
+    test_path_is_writable file.$test_count
 '
 
-test_expect_success 'deny fchmodat(AT_FDCWD, ...) for symbolic link' '
+test_expect_success 'deny fchmodat(AT_FDCWD, $nofile)' '
+    rm -f nofile.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchmodat -e EPERM -d cwd -m 000 symlink-file2 &&
-    test_path_is_readable file2 &&
-    test_path_is_writable file2
+        -- emily fchmodat -e ENOENT -d cwd -m 000 nofile.$test_count
 '
 
-test_expect_success 'deny fchmodat(fd, ...)' '
+test_expect_success 'deny fchmodat(AT_FDCWD, $symlink-file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
+    ln -sf file.$test_count link.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchmodat -e EPERM -d "$HOME" -m 000 file3 &&
-    test_path_is_readable file3 &&
-    test_path_is_writable file3
+        -- emily fchmodat -e EPERM -d cwd -m 000 link.$test_count &&
+    test_path_is_readable file.$test_count &&
+    test_path_is_writable file.$test_count
 '
 
-test_expect_success 'deny fchmodat(fd, ...) for non-existant file' '
+test_expect_success 'deny fchmodat($fd, $file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchmodat -e ENOENT -d cwd -m 000 file-non-existant
+        -- emily fchmodat -e EPERM -d "$HOME" -m 000 file.$test_count &&
+    test_path_is_readable file.$test_count &&
+    test_path_is_writable file.$test_count
 '
 
-test_expect_success 'deny fchmodat(fd, ...) for symbolic link' '
+test_expect_success 'deny fchmodat($fd, $nofile)' '
+    rm -f nofile.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily fchmodat -e EPERM -d cwd -m 000 symlink-file4 &&
-    test_path_is_readable file4 &&
-    test_path_is_writable file4
+        -- emily fchmodat -e ENOENT -d cwd -m 000 nofile.$test_count
 '
 
-test_expect_success 'blacklist fchmodat(AT_FDCWD, ...)' '
+test_expect_success SYMLINKS 'deny fchmodat($fd, $symlink-file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
+    ln -sf file.$test_count link.$test_count &&
+    test_must_violate sydbox \
+        -m core/sandbox/write:deny \
+        -- emily fchmodat -e EPERM -d cwd -m 000 link.$test_count &&
+    test_path_is_readable file.$test_count &&
+    test_path_is_writable file.$test_count
+'
+
+test_expect_success 'blacklist fchmodat(-1, $abspath)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat -e EPERM -d cwd -m 000 file5 &&
-    test_path_is_readable file5 &&
-    test_path_is_writable file5
+        -- emily fchmodat -e EPERM -d null -m 000 "$HOME_RESOLVED"/file.$test_count &&
+    test_path_is_readable file.$test_count &&
+    test_path_is_writable file.$test_count
 '
 
-test_expect_success 'blacklist fchmodat(AT_FDCWD, ...) for non-existant file' '
+test_expect_success 'blacklist fchmodat(AT_FDCWD, $file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat -e ENOENT -d cwd -m 000 file-non-existant
+        -- emily fchmodat -e EPERM -d cwd -m 000 file.$test_count &&
+    test_path_is_readable file.$test_count &&
+    test_path_is_writable file.$test_count
 '
 
-test_expect_success 'blacklist fchmodat(AT_FDCWD, ...) for symbolic link' '
+test_expect_success 'blacklist fchmodat(AT_FDCWD, $nofile)' '
+    rm -f nofile.$test_count
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat -e EPERM -d cwd -m 000 symlink-file6 &&
-    test_path_is_readable file6 &&
-    test_path_is_writable file6
+        -- emily fchmodat -e ENOENT -d cwd -m 000 nofile.$test_count
 '
 
-test_expect_success 'blacklist fchmodat(fd, ...)' '
+test_expect_success SYMLINKS 'blacklist fchmodat(AT_FDCWD, $symlink-file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
+    ln -sf file.$test_count link.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat -e EPERM -d "$HOME" -m 000 file7 &&
-    test_path_is_readable file7 &&
-    test_path_is_writable file7
+        -- emily fchmodat -e EPERM -d cwd -m 000 link.$test_count &&
+    test_path_is_readable file.$test_count &&
+    test_path_is_writable file.$test_count
 '
 
-test_expect_success 'blacklist fchmodat(fd, ...) for non-existant file' '
+test_expect_success 'blacklist fchmodat($fd, $file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat -e ENOENT -d cwd -m 000 file-non-existant
+        -- emily fchmodat -e EPERM -d "$HOME" -m 000 file.$test_count &&
+    test_path_is_readable file.$test_count &&
+    test_path_is_writable file.$test_count
 '
 
-test_expect_success 'blacklist fchmodat(fd, ...) for symbolic link' '
+test_expect_success 'blacklist fchmodat($fd, $nofile)' '
+    rm -f nofile.$test_count &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat -e EPERM -d cwd -m 000 symlink-file8 &&
-    test_path_is_readable file8 &&
-    test_path_is_writable file8
+        -- emily fchmodat -e ENOENT -d cwd -m 000 nofile.$test_count
 '
 
-test_expect_success 'whitelist fchmodat(AT_FDCWD, ...)' '
+test_expect_success SYMLINKS 'blacklist fchmodat($fd, $symlink-file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
+    ln -sf file.$test_count link.$test_count &&
+    test_must_violate sydbox \
+        -m core/sandbox/write:allow \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
+        -- emily fchmodat -e EPERM -d cwd -m 000 link.$test_count &&
+    test_path_is_readable file.$test_count &&
+    test_path_is_writable file.$test_count
+'
+
+test_expect_success 'whitelist fchmodat(-1, $abspath)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat -e ERRNO_0 -d cwd -m 000 file9 &&
-    test_path_is_not_readable file9 &&
-    test_path_is_not_writable file9
+        -- emily fchmodat -e ERRNO_0 -d null -m 000 "$HOME_RESOLVED"/file.$test_count &&
+    test_path_is_not_readable file.$test_count &&
+    test_path_is_not_writable file.$test_count
 '
 
-test_expect_success SYMLINKS 'whitelist fchmodat(AT_FDCWD) for symbolic link' '
+test_expect_success 'whitelist fchmodat(AT_FDCWD, $file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat -e ERRNO_0 -d cwd -m 000 symlink-file10 &&
-    test_path_is_not_readable file10 &&
-    test_path_is_not_writable file10
+        -- emily fchmodat -e ERRNO_0 -d cwd -m 000 file.$test_count &&
+    test_path_is_not_readable file.$test_count &&
+    test_path_is_not_writable file.$test_count
 '
 
-test_expect_success 'whitelist fchmodat(fd, ...)' '
+test_expect_success SYMLINKS 'whitelist fchmodat(AT_FDCWD, $symlink-file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
+    ln -sf file.$test_count link.$test_count &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat -e ERRNO_0 -d "$HOME" -m 000 file11 &&
-    test_path_is_not_readable file11 &&
-    test_path_is_not_writable file11
+        -- emily fchmodat -e ERRNO_0 -d cwd -m 000 link.$test_count &&
+    test_path_is_not_readable file.$test_count &&
+    test_path_is_not_writable file.$test_count
 '
 
-test_expect_success SYMLINKS 'whitelist fchmodat(fd, ...) for symbolic link' '
+test_expect_success 'whitelist fchmodat($fd, $file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily fchmodat -e ERRNO_0 -d "$HOME" -m 000 symlink-file12 &&
-    test_path_is_not_readable file12 &&
-    test_path_is_not_writable file12
+        -- emily fchmodat -e ERRNO_0 -d "$HOME" -m 000 file.$test_count &&
+    test_path_is_not_readable file.$test_count &&
+    test_path_is_not_writable file.$test_count
+'
+
+test_expect_success SYMLINKS 'whitelist fchmodat($fd, $symlink-file)' '
+    touch file.$test_count &&
+    chmod 600 file.$test_count &&
+    ln -sf file.$test_count link.$test_count &&
+    sydbox \
+        -m core/sandbox/write:deny \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
+        -- emily fchmodat -e ERRNO_0 -d "$HOME" -m 000 link.$test_count &&
+    test_path_is_not_readable file.$test_count &&
+    test_path_is_not_writable file.$test_count
 '
 
 test_done
