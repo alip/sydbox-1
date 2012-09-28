@@ -236,17 +236,21 @@ static inline void free_sandbox(sandbox_t *box)
 {
 	struct snode *node;
 
-	SLIST_FLUSH(node, &box->whitelist_exec, up, free);
-	SLIST_FLUSH(node, &box->whitelist_read, up, free);
-	SLIST_FLUSH(node, &box->whitelist_write, up, free);
-	SLIST_FLUSH(node, &box->whitelist_network_bind, up, free_sockmatch);
-	SLIST_FLUSH(node, &box->whitelist_network_connect, up, free_sockmatch);
+	SLIST_FREE_ALL(node, &box->whitelist_exec, up, free);
+	SLIST_FREE_ALL(node, &box->whitelist_read, up, free);
+	SLIST_FREE_ALL(node, &box->whitelist_write, up, free);
+	SLIST_FREE_ALL(node, &box->whitelist_network_bind, up,
+		       free_sockmatch);
+	SLIST_FREE_ALL(node, &box->whitelist_network_connect, up,
+		       free_sockmatch);
 
-	SLIST_FLUSH(node, &box->blacklist_exec, up, free);
-	SLIST_FLUSH(node, &box->blacklist_read, up, free);
-	SLIST_FLUSH(node, &box->blacklist_write, up, free);
-	SLIST_FLUSH(node, &box->blacklist_network_bind, up, free_sockmatch);
-	SLIST_FLUSH(node, &box->blacklist_network_connect, up, free_sockmatch);
+	SLIST_FREE_ALL(node, &box->blacklist_exec, up, free);
+	SLIST_FREE_ALL(node, &box->blacklist_read, up, free);
+	SLIST_FREE_ALL(node, &box->blacklist_write, up, free);
+	SLIST_FREE_ALL(node, &box->blacklist_network_bind, up,
+		       free_sockmatch);
+	SLIST_FREE_ALL(node, &box->blacklist_network_connect, up,
+		       free_sockmatch);
 }
 
 static inline void free_proc(void *data)

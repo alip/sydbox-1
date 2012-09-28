@@ -134,13 +134,14 @@ static void sydbox_destroy(void)
 	/* Free the global configuration */
 	free_sandbox(&sydbox->config.child);
 
-	SLIST_FLUSH(node, &sydbox->config.exec_kill_if_match, up, free);
-	SLIST_FLUSH(node, &sydbox->config.exec_resume_if_match, up, free);
+	SLIST_FREE_ALL(node, &sydbox->config.exec_kill_if_match, up, free);
+	SLIST_FREE_ALL(node, &sydbox->config.exec_resume_if_match, up, free);
 
-	SLIST_FLUSH(node, &sydbox->config.filter_exec, up, free);
-	SLIST_FLUSH(node, &sydbox->config.filter_read, up, free);
-	SLIST_FLUSH(node, &sydbox->config.filter_write, up, free);
-	SLIST_FLUSH(node, &sydbox->config.filter_network, up, free_sockmatch);
+	SLIST_FREE_ALL(node, &sydbox->config.filter_exec, up, free);
+	SLIST_FREE_ALL(node, &sydbox->config.filter_read, up, free);
+	SLIST_FREE_ALL(node, &sydbox->config.filter_write, up, free);
+	SLIST_FREE_ALL(node, &sydbox->config.filter_network, up,
+		       free_sockmatch);
 
 	pink_easy_context_destroy(sydbox->ctx);
 

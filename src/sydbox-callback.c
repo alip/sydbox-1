@@ -104,8 +104,8 @@ static int callback_interrupt(const struct pink_easy_context *ctx, int fatal_sig
 }
 
 static void callback_startup(const struct pink_easy_context *ctx,
-		struct pink_easy_process *current,
-		struct pink_easy_process *parent)
+			     struct pink_easy_process *current,
+			     struct pink_easy_process *parent)
 {
 	int r;
 	pid_t tid;
@@ -144,16 +144,6 @@ static void callback_startup(const struct pink_easy_context *ctx,
 	data->cwd = cwd;
 
 	/* Copy the lists  */
-#define SLIST_COPY_ALL(var, head, field, newhead, newvar, copydata)	\
-	do {								\
-		SLIST_INIT(newhead);					\
-		SLIST_FOREACH(var, head, field) {			\
-			newvar = xcalloc(1, sizeof(struct snode));	\
-			newvar->data = copydata(var->data);		\
-			SLIST_INSERT_HEAD(newhead, newvar, field);	\
-		}							\
-	} while (0)
-
 	SLIST_COPY_ALL(node, &inherit->whitelist_exec, up,
 		       &data->config.whitelist_exec, newnode, xstrdup);
 	SLIST_COPY_ALL(node, &inherit->whitelist_read, up,
@@ -179,7 +169,6 @@ static void callback_startup(const struct pink_easy_context *ctx,
 	SLIST_COPY_ALL(node, &inherit->blacklist_network_connect, up,
 		       &data->config.blacklist_network_connect, newnode,
 		       sockmatch_xdup);
-#undef SLIST_COPY_ALL
 
 	/* Create the fd -> address hash table */
 	data->sockmap = hashtable_create(NR_OPEN, 1);
@@ -197,12 +186,12 @@ static void callback_startup(const struct pink_easy_context *ctx,
 	}
 
 	log_trace("%s process %s[%lu:%u cwd=`%s']",
-			parent ? "new" : "eldest", comm,
-			(unsigned long)tid, abi, cwd);
+		  parent ? "new" : "eldest", comm,
+		  (unsigned long)tid, abi, cwd);
 	if (parent)
 		log_trace("process:%lu has parent:%lu",
-				(unsigned long)tid,
-				(unsigned long)pink_easy_process_get_tid(parent));
+			  (unsigned long)tid,
+			  (unsigned long)pink_easy_process_get_tid(parent));
 }
 
 static int callback_cleanup(const struct pink_easy_context *ctx)
@@ -229,45 +218,46 @@ static int callback_exit(const struct pink_easy_context *ctx,
 		if (WIFEXITED(status)) {
 			sydbox->exit_code = WEXITSTATUS(status);
 			log_trace("eldest process:%lu exited"
-					" with code:%d (status:%#x)",
-					(unsigned long)tid, sydbox->exit_code,
-					(unsigned)status);
+				  " with code:%d (status:%#x)",
+				  (unsigned long)tid, sydbox->exit_code,
+				  (unsigned)status);
 		} else if (WIFSIGNALED(status)) {
 			sydbox->exit_code = 128 + WTERMSIG(status);
 			log_trace("eldest process:%lu was terminated"
-					" with signal:%d (status:%#x)",
-					(unsigned long)tid, sydbox->exit_code - 128,
-					(unsigned)status);
+				  " with signal:%d (status:%#x)",
+				  (unsigned long)tid, sydbox->exit_code - 128,
+				  (unsigned)status);
 		} else {
 			sydbox->exit_code = EXIT_FAILURE;
 			log_warning("eldest process:%lu exited"
-					" with unknown status:%#x",
-					(unsigned long)tid, (unsigned)status);
+				    " with unknown status:%#x",
+				    (unsigned long)tid, (unsigned)status);
 		}
 
 		if (!sydbox->config.exit_wait_all) {
 			cont_all();
-			log_trace("loop abort due to eldest process %lu exit (status:%#x)",
-					(unsigned long)tid, (unsigned)status);
+			log_trace("loop abort due to eldest process %lu exit"
+				  " (status:%#x)",
+				  (unsigned long)tid, (unsigned)status);
 			exit(sydbox->exit_code);
 		}
 	} else {
 		if (WIFEXITED(status))
 			log_trace("process:%lu exited"
-					" with code:%d (status:%#x)",
-					(unsigned long)tid,
-					WEXITSTATUS(status),
-					(unsigned)status);
+				  " with code:%d (status:%#x)",
+				  (unsigned long)tid,
+				  WEXITSTATUS(status),
+				  (unsigned)status);
 		else if (WIFSIGNALED(status))
 			log_trace("process:%lu was terminated"
-					" with signal:%d (status:%#x)",
-					(unsigned long)tid,
-					WTERMSIG(status),
-					(unsigned)status);
+				  " with signal:%d (status:%#x)",
+				  (unsigned long)tid,
+				  WTERMSIG(status),
+				  (unsigned)status);
 		else
 			log_warning("process:%lu exited"
-					" with unknown status:%#x",
-					(unsigned long)tid, (unsigned)status);
+				    " with unknown status:%#x",
+				    (unsigned long)tid, (unsigned)status);
 	}
 
 	return 0;
@@ -287,8 +277,8 @@ static int callback_exec(const struct pink_easy_context *ctx,
 
 	if (sydbox->wait_execve) {
 		log_info("process %s[%lu:%u] entered execve() trap",
-				sydbox->program_invocation_name,
-				(unsigned long)tid, abi);
+			 sydbox->program_invocation_name,
+			 (unsigned long)tid, abi);
 		sydbox->wait_execve = false;
 		log_info("wait_execve cleared, sandboxing started");
 		return 0;
@@ -296,7 +286,7 @@ static int callback_exec(const struct pink_easy_context *ctx,
 
 	if (data->config.magic_lock == LOCK_PENDING) {
 		log_magic("lock magic commands for %s[%lu:%u]", data->comm,
-				(unsigned long)tid, abi);
+			  (unsigned long)tid, abi);
 		data->config.magic_lock = LOCK_SET;
 	}
 
@@ -311,32 +301,32 @@ static int callback_exec(const struct pink_easy_context *ctx,
 			   &sydbox->config.exec_kill_if_match,
 			   &match)) {
 		log_warning("kill_if_match pattern=`%s'"
-				" matches execve path=`%s'",
-				match, data->abspath);
+			    " matches execve path=`%s'",
+			    match, data->abspath);
 		log_warning("killing process:%lu"
-				" [abi:%d cwd:`%s']",
-				(unsigned long)tid, abi,
-				data->cwd);
+			    " [abi:%d cwd:`%s']",
+			    (unsigned long)tid, abi,
+			    data->cwd);
 		if (pink_easy_process_kill(current, SIGKILL) < 0)
 			log_warning("kill process:%lu failed"
-					" (errno:%d %s)",
-					(unsigned long)tid,
-					errno, strerror(errno));
+				    " (errno:%d %s)",
+				    (unsigned long)tid,
+				    errno, strerror(errno));
 		r |= PINK_EASY_CFLAG_DROP;
 	} else if (box_match_path(data->abspath,
 				  &sydbox->config.exec_resume_if_match,
 				  &match)) {
 		log_warning("resume_if_match pattern=`%s'"
-				" matches execve path=`%s'",
-				match, data->abspath);
+			    " matches execve path=`%s'",
+			    match, data->abspath);
 		log_warning("resuming process:%lu"
-				" [abi:%d cwd:\"%s\"]",
-				(unsigned long)tid, abi, data->cwd);
+			    " [abi:%d cwd:\"%s\"]",
+			    (unsigned long)tid, abi, data->cwd);
 		if (!pink_easy_process_resume(current, 0))
 			log_warning("resume process:%lu failed"
-					" (errno:%d %s)",
-					(unsigned long)tid,
-					errno, strerror(errno));
+				    " (errno:%d %s)",
+				    (unsigned long)tid,
+				    errno, strerror(errno));
 		r |= PINK_EASY_CFLAG_DROP;
 	}
 
