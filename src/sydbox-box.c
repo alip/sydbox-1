@@ -30,6 +30,7 @@
 #include "proc.h"
 #include "strtable.h"
 #include "util.h"
+#include "sys-check.h"
 
 static inline void box_report_violation_path(struct pink_easy_process *current,
 					     const char *name,
@@ -302,11 +303,10 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 	log_check("%s[%lu:%u] sys=%s arg_index=%u cwd:`%s'",
 			data->comm, (unsigned long)tid, abi, name,
 			info->arg_index, data->cwd);
-	log_check("at_func=%s null_ok=%s fail_if_exist=%s can_mode=%d",
+	log_check("at_func=%s null_ok=%s can_mode=%d syd_mode=%#x",
 			info->at_func ? "yes" : "no",
 			info->null_ok ? "yes" : "no",
-			info->fail_if_exist ? "yes" : "no",
-			info->can_mode);
+			info->can_mode, info->syd_mode);
 	log_check("safe=%s deny-errno=%s access_mode=%s",
 			info->safe ? "yes" : "no",
 			errno_to_string(deny_errno),
@@ -404,28 +404,53 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 		goto out;
 	}
 
-	if (info->fail_if_exist) {
-		/* The system call *must* create the file */
-		int sr;
+	/* Step 5: stat() if required */
+	if (info->syd_mode) {
+		int stat_ret, stat_errno = 0;
 		int can_flags = info->can_mode & ~CAN_MODE_MASK;
 		struct stat buf;
 
-		if (can_flags & CAN_NOLINKS)
-			sr = lstat(abspath, &buf);
+		if (info->syd_mode & SYD_IFNOLNK || can_flags & CAN_NOLINKS)
+			stat_ret = lstat(abspath, &buf);
 		else
-			sr = stat(abspath, &buf);
-		if (sr == 0) {
-			/* Yet the file exists... */
-			log_access("sys=%s must create existant path=`%s'",
-				   name, abspath);
-			log_access("access denied with errno=EEXIST");
-			deny_errno = EEXIST;
-			if (!sydbox->config.violation_raise_safe) {
-				log_access("sys=%s is safe,"
-					   " access violation filtered",
-					   name);
-				r = deny(current, deny_errno);
-				goto out;
+			stat_ret = stat(abspath, &buf);
+
+		if (stat_ret == 0) {
+			if (info->syd_mode & SYD_IFDIR &&
+			    !S_ISDIR(buf.st_mode)) {
+				/* The file must be a directory yet it isn't!
+				 * Deny with -ENOTDIR
+				 */
+				log_access("sys=%s requires a directory", name);
+				stat_errno = ENOTDIR;
+			} else if (info->syd_mode & SYD_IFNOLNK &&
+				 S_ISLNK(buf.st_mode)) {
+				/* The file must not be symlink yet it is!
+				 * Deny with -ELOOP
+				 */
+				log_access("sys=%s requires a non-link", name);
+				stat_errno = ELOOP;
+			} else if (info->syd_mode & SYD_IFNONE) {
+				/* The file can't exist yet it does!
+				 * Deny with -EEXIST
+				 */
+				log_access("sys=%s must create path", name);
+				stat_errno = EEXIST;
+			}
+
+			if (stat_errno != 0) {
+				log_access("access for path `%s'"
+					   " denied with errno=%s",
+					   abspath,
+					   errno_to_string(stat_errno));
+				deny_errno = stat_errno;
+				if (!sydbox->config.violation_raise_safe) {
+					log_access("sys=%s is safe,"
+						   " access violation filtered",
+						   name);
+					r = deny(current, deny_errno);
+					goto out;
+				}
 			}
 		}
 	}

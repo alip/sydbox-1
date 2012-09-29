@@ -23,7 +23,7 @@ int sys_mkdir(struct pink_easy_process *current, const char *name)
 
 	init_sysinfo(&info);
 	info.can_mode = CAN_ALL_BUT_LAST;
-	info.fail_if_exist = true;
+	info.syd_mode = SYD_IFNONE;
 
 	return box_check_path(current, name, &info);
 }
@@ -40,7 +40,7 @@ int sys_mkdirat(struct pink_easy_process *current, const char *name)
 	info.at_func = true;
 	info.arg_index = 1;
 	info.can_mode = CAN_ALL_BUT_LAST;
-	info.fail_if_exist = true;
+	info.syd_mode = SYD_IFNONE;
 
 	return box_check_path(current, name, &info);
 }

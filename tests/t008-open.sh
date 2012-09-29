@@ -10,6 +10,17 @@ test_expect_success 'deny open(NULL) with EFAULT' '
     sydbox -- emily open -e EFAULT
 '
 
+test_expect_success 'deny open(file, O_RDONLY|O_DIRECTORY) with ENOTDIR' '
+    touch file.$test_count
+    sydbox -- emily open -e ENOTDIR -m rdonly -D file.$test_count
+'
+
+test_expect_success SYMLINKS 'deny open(symlink-file, O_RDONLY|O_NOFOLLOW) with ELOOP' '
+    touch file.$test_count
+    ln -sf file.$test_count link.$test_count
+    sydbox -- emily open -e ELOOP -m rdonly -F link.$test_count
+'
+
 test_expect_success 'whitelist O_RDONLY' '
     touch file.$test_count &&
     sydbox \

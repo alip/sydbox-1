@@ -13,24 +13,29 @@
 #include <stdbool.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
 #include "log.h"
 
-static bool open_wr_check(long flags, can_mode_t *can_mode, bool *fail_if_exist)
+struct open_info {
+	bool may_read;
+	bool may_write;
+	can_mode_t can_mode;
+	syd_mode_t syd_mode;
+};
+
+/* TODO: Do we need to care about O_PATH? */
+static bool open_wr_check(const char *name, long flags, struct open_info *info)
 {
-	can_mode_t m;
-	bool f;
+	assert(info);
 
-	assert(can_mode);
-	assert(fail_if_exist);
-
-	f = false;
-	m = flags & O_CREAT ? CAN_ALL_BUT_LAST : CAN_EXISTING;
+	info->can_mode = flags & O_CREAT ? CAN_ALL_BUT_LAST : CAN_EXISTING;
+	info->syd_mode = 0;
 	if (flags & O_EXCL) {
-		if (m == CAN_EXISTING) {
+		if (info->can_mode == CAN_EXISTING) {
 			/* Quoting open(2):
 			 * In general, the behavior of O_EXCL is undefined if
 			 * it is used without O_CREAT.  There is one exception:
@@ -48,13 +53,15 @@ static bool open_wr_check(long flags, can_mode_t *can_mode, bool *fail_if_exist)
 			 * - When both O_CREAT and O_EXCL are specified,
 			 *   symbolic links are not followed.
 			 */
-			m |= CAN_NOLINKS;
-			f = true;
+			info->can_mode |= CAN_NOLINKS;
+			info->syd_mode |= SYD_IFNONE;
 		}
 	}
 
-	*can_mode = m;
-	*fail_if_exist = f;
+	if (flags & O_DIRECTORY)
+		info->syd_mode |= SYD_IFDIR;
+	if (flags & O_NOFOLLOW)
+		info->syd_mode |= SYD_IFNOLNK;
 
 	/* `unsafe' flag combinations:
 	 * - O_RDONLY | O_CREAT
@@ -63,15 +70,33 @@ static bool open_wr_check(long flags, can_mode_t *can_mode, bool *fail_if_exist)
 	 */
 	switch (flags & O_ACCMODE) {
 	case O_RDONLY:
-		if (flags & O_CREAT)
-			return true;
+		info->may_read = true;
+		if (flags & O_CREAT) {
+			/* file creation is `write' */
+			info->may_write = true;
+		} else {
+			info->may_write = false;
+		}
 		break;
 	case O_WRONLY:
+		info->may_read = false;
+		info->may_write = true;
+		break;
 	case O_RDWR:
-		return true;
+		info->may_read = info->may_write = true;
+		break;
+	default:
+		info->may_read = info->may_write = false;
 	}
 
-	return false;
+	log_trace("wr_check:%ld for sys:%s() returned"
+		  " may_write=%s can_mode=%d syd_mode=%#x",
+		  flags, name,
+		  info->may_write ? "true" : "false",
+		  info->can_mode,
+		  info->syd_mode);
+
+	return info->may_write;
 }
 
 int sys_open(struct pink_easy_process *current, const char *name)
@@ -84,6 +109,7 @@ int sys_open(struct pink_easy_process *current, const char *name)
 	can_mode_t can_mode;
 	long flags;
 	sysinfo_t info;
+	struct open_info open_info;
 
 	if (sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
@@ -105,17 +131,10 @@ int sys_open(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	wr = open_wr_check(flags, &can_mode, &fail_if_exist);
-	log_trace("wr_check:%ld for sys:%s() returned"
-		  " wr=%s can_mode=%d fail_if_exist=%s",
-		  flags, name,
-		  wr ? "true" : "false",
-		  can_mode,
-		  fail_if_exist ? "true" : "false");
-
+	wr = open_wr_check(name, flags, &open_info);
 	init_sysinfo(&info);
-	info.can_mode = can_mode;
-	info.fail_if_exist = fail_if_exist;
+	info.can_mode = open_info.can_mode;
+	info.syd_mode = open_info.syd_mode;
 
 	r = 0;
 	if (wr && !sandbox_write_off(data))
@@ -145,6 +164,7 @@ int sys_openat(struct pink_easy_process *current, const char *name)
 	can_mode_t can_mode;
 	long flags;
 	sysinfo_t info;
+	struct open_info open_info;
 
 	if (sandbox_read_off(data) && sandbox_write_off(data))
 		return 0;
@@ -166,19 +186,12 @@ int sys_openat(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	wr = open_wr_check(flags, &can_mode, &fail_if_exist);
-	log_trace("wr_check:%ld for sys:%s() returned"
-		  " wr=%s can_mode=%d fail_if_exist=%s",
-		  flags, name,
-		  wr ? "true" : "false",
-		  can_mode,
-		  fail_if_exist ? "true" : "false");
-
+	wr = open_wr_check(name, flags, &open_info);
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	info.can_mode = can_mode;
-	info.fail_if_exist = fail_if_exist;
+	info.can_mode = open_info.can_mode;
+	info.syd_mode = open_info.syd_mode;
 
 	r = 0;
 	if (wr && !sandbox_write_off(data))

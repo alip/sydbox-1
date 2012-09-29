@@ -14,6 +14,11 @@
 #include "canonicalize.h"
 #include "strtable.h"
 
+typedef short syd_mode_t;
+#define SYD_IFNONE	00001 /* file must not exist. */
+#define SYD_IFDIR	00002 /* file must be a directory. */
+#define SYD_IFNOLNK	00004 /* file must not be a symbolic link. */
+
 enum sys_access_mode {
 	ACCESS_0,
 	ACCESS_WHITELIST,
@@ -43,10 +48,10 @@ typedef struct {
 
 	/* NULL argument does not cause -EFAULT (only valid for `at_func') */
 	bool null_ok;
-	/* System call _must_ create the file or it fails with -EEXIST */
-	bool fail_if_exist;
 	/* Canonicalize mode */
 	can_mode_t can_mode;
+	/* Stat mode */
+	syd_mode_t syd_mode;
 
 	/* Decode socketcall() into subcall */
 	bool decode_socketcall;

@@ -15,6 +15,17 @@ test_expect_success 'deny openat(-1) with EBADF' '
     sydbox -- emily openat -e EBADF -d null -m rdonly nofile.$test_count
 '
 
+test_expect_success 'deny openat(AT_FDCWD, file, O_RDONLY|O_DIRECTORY) with ENOTDIR' '
+    touch file.$test_count
+    sydbox -- emily openat -e ENOTDIR -m rdonly -D -d cwd file.$test_count
+'
+
+test_expect_success SYMLINKS 'deny open(AT_FDCWD, symlink-file, O_RDONLY|O_NOFOLLOW) with ELOOP' '
+    touch file.$test_count
+    ln -sf file.$test_count link.$test_count
+    sydbox -- emily openat -e ELOOP -m rdonly -F -d cwd link.$test_count
+'
+
 test_expect_success 'whitelist openat(-1, $abspath, O_RDONLY)' '
     touch file.$test_count &&
     sydbox \

@@ -32,6 +32,8 @@ Options:\n\
 -m <mode>, --mode=<mode>     -- One of 'rdonly', 'wronly' or 'rdwr'\n\
 -c, --creat                  -- Specify O_CREAT in flags\n\
 -x, --excl                   -- Specify O_EXCL in flags\n\
+-D, --directory              -- Specify O_DIRECTORY in flags\n\
+-F, --no-follow              -- Specify O_NOFOLLOW in flags\n\
 \n\
 <data-to-write> must be specified for 'wronly' and 'rdwr' modes only.\n\
 For errno == EFAULT <mode>, <file> and <data-to-write> may not be specified.\n\
@@ -50,6 +52,8 @@ Options:\n\
 -m <mode>, --mode=<mode>   -- One of 'rdonly', 'wronly' or 'rdwr'\n\
 -c, --creat                -- Specify O_CREAT in flags\n\
 -x, --excl                 -- Specify O_EXCL in flags\n\
+-D, --directory            -- Specify O_DIRECTORY in flags\n\
+-F, --no-follow            -- Specify O_NOFOLLOW in flags\n\
 -d <dir>, --dir=<dir>      -- Directory name or 'cwd' or 'null'\n\
 \n\
 <data-to-write> must be specified for 'wronly' and 'rdwr' modes only.\n\
@@ -71,12 +75,15 @@ int test_open(int argc, char **argv)
 		{"help",	no_argument,		NULL,	'h'},
 		{"creat",	no_argument,		NULL,	'c'},
 		{"excl",	no_argument,		NULL,	'x'},
+		{"directory",	no_argument,		NULL,	'D'},
+		{"no-follow",	no_argument,		NULL,	'F'},
 		{"errno",	required_argument,	NULL,	'e'},
 		{"mode",	required_argument,	NULL,	'm'},
 		{NULL,		0,			NULL,	0},
 	};
 
-	while ((optc = getopt_long(argc, argv, "hcxe:m:", long_options, NULL)) != EOF) {
+	while ((optc = getopt_long(argc, argv, "hcxDFe:m:", long_options,
+				   NULL)) != EOF) {
 		switch (optc) {
 		case 'h':
 			test_open_usage(stdout, 0);
@@ -86,6 +93,12 @@ int test_open(int argc, char **argv)
 			break;
 		case 'x':
 			test_flags |= O_EXCL;
+			break;
+		case 'D':
+			test_flags |= O_DIRECTORY;
+			break;
+		case 'F':
+			test_flags |= O_NOFOLLOW;
 			break;
 		case 'e':
 			test_errno = errno_from_string(optarg);
@@ -145,12 +158,15 @@ int test_openat(int argc, char **argv)
 		{"help",	no_argument,		NULL,	'h'},
 		{"creat",	no_argument,		NULL,	'c'},
 		{"excl",	no_argument,		NULL,	'x'},
+		{"directory",	no_argument,		NULL,	'D'},
+		{"no-follow",	no_argument,		NULL,	'F'},
 		{"dir",		required_argument,	NULL,	'd'},
 		{"errno",	required_argument,	NULL,	'e'},
 		{"mode",	required_argument,	NULL,	'm'},
 	};
 
-	while ((optc = getopt_long(argc, argv, "hcxd:e:m:", long_options, NULL)) != EOF) {
+	while ((optc = getopt_long(argc, argv, "hcxDFd:e:m:", long_options,
+				   NULL)) != EOF) {
 		switch (optc) {
 		case 'h':
 			test_openat_usage(stdout, 0);
@@ -160,6 +176,12 @@ int test_openat(int argc, char **argv)
 			break;
 		case 'x':
 			test_flags |= O_EXCL;
+			break;
+		case 'D':
+			test_flags |= O_DIRECTORY;
+			break;
+		case 'F':
+			test_flags |= O_NOFOLLOW;
 			break;
 		case 'd':
 			if (streq(optarg, "cwd")) {
