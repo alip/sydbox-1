@@ -175,7 +175,7 @@
           <programlisting>
             test -e /dev/sydbox/core/sandbox/read:deny
           </programlisting>
-          which enables path sandboxing for a shell running under Sydbox. It is also possible to
+          which enables read sandboxing for a shell running under Sydbox. It is also possible to
           query certain values using the return value of the magic <function>stat</function><manvolnum>2</manvolnum>:
           <programlisting>
             test -e '/dev/sydbox/core/sandbox/read?' &amp;&amp; echo "read sandboxing on" || echo "read sandboxing off"
@@ -272,7 +272,7 @@
         </programlisting>
         maps to:
         <programlisting>
-          core/sandbox/write
+          core/sandbox/write:off
         </programlisting>
       </para>
 
@@ -356,7 +356,7 @@
           <listitem>
             <para>type: <type>string</type></para>
             <para>
-              A string specifying how path sandboxing should be done.
+              A string specifying how read sandboxing should be done.
               Defaults to <varname>off</varname>. This value may be queried.
               See <xref linkend="read-sandboxing"/> for more information.</para>
           </listitem>
@@ -512,11 +512,11 @@
             <para>
               A boolean specifying whether certain violations which are considered safe should be reported. For
               example, <function>mkdir</function><manvolnum>2</manvolnum> is a system call which fails when it can not
-              create the directory. In this special case, sydbox denies the system call with
+              create an existant directory. In this special case, sydbox denies the system call with
               <varname>EEXIST</varname> for consistency and does not raise an access violation in case
               <option>core/violation/raise_safe</option> is set to <varname>false</varname>. Another example is the
               <function>access</function><manvolnum>2</manvolnum> system call which is silently denied with
-              <varname>EACCES</varname> if this option is not set.
+              <varname>EACCES</varname> if this option is set to false.
             </para>
           </listitem>
         </varlistentry>
@@ -551,7 +551,7 @@
             <para>
               A string specifying the state of the magic lock. Possible values are <varname>on</varname>,
               <varname>off</varname> and <varname>exec</varname>. If magic lock is <varname>on</varname> no magic
-              commands are allowed. Note, the magic lock is tracked per process. If <varname>exec</varname> is
+              commands are allowed. Note, the magic lock is tracked per-process. If <varname>exec</varname> is
               specified, the magic lock is set to <varname>on</varname> when the process returns from the system call
               <function>execve</function><manvolnum>2</manvolnum>.</para>
           </listitem>
@@ -668,6 +668,14 @@
               This setting specifies a list of path patterns. If one of these patterns matches the resolved path of an
               <function>execve</function><manvolnum>2</manvolnum> system call, the process in question is resumed. See
               <xref linkend="pattern-matching"/> for more information on wildmatch patterns.
+              <note>
+                The initial <function>execve</function><manvolnum>2</manvolnum> is <emphasis>not</emphasis> checked.
+                Thus, if sydbox is called like:
+                <programlisting>
+                  $> sydbox -m exec/resume_if_match+/bin/sh -- /bin/sh
+                </programlisting>
+                she will <emphasis>not</emphasis> execute the <command>/bin/sh</command> command.
+              </note>
             </para>
           </listitem>
         </varlistentry>
@@ -680,6 +688,14 @@
               This setting specifies a list of path patterns. If one of these patterns matches the resolved path of an
               <function>execve</function><manvolnum>2</manvolnum> system call, the process in question is killed. See
               <xref linkend="pattern-matching"/> for more information on wildmatch patterns.
+              <note>
+                The initial <function>execve</function><manvolnum>2</manvolnum> is <emphasis>not</emphasis> checked.
+                Thus, if sydbox is called like:
+                <programlisting>
+                  $> sydbox -m exec/kill_if_match+/bin/sh -- /bin/sh
+                </programlisting>
+                she will execute the <command>/bin/sh</command> command.
+              </note>
             </para>
           </listitem>
         </varlistentry>
@@ -780,7 +796,7 @@
             <para>
               Specifies a list of network addresses to whitelist for
               <function>connect</function><manvolnum>2</manvolnum> and
-              <function>connect</function><manvolnum>2</manvolnum> network sandboxing.
+              <function>sendto</function><manvolnum>2</manvolnum> network sandboxing.
               See <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.
             </para>
           </listitem>
@@ -1199,7 +1215,59 @@
       <para>
         Allow all reads, deny read access to <filename>/etc/shadow</filename>:
         <programlisting>
-          sydbox -m core/sandbox/read:allow -m blacklist/read+/etc/shadow -- /bin/sh
+          $> sydbox -E LC_ALL=POSIX \
+                    -m core/sandbox/read:allow \
+                    -m blacklist/read+/etc/shadow \
+                    -- /bin/sh -c 'cat /etc/shadow'
+          sydbox@3141592653: -- Access Violation! --
+          sydbox@3141592653: process id=20926 (abi=0 name:`cat')
+          sydbox@3141592653: cwd: `/home/alip'
+          sydbox@3141592653: cmdline: `cat /etc/shadow'
+          sydbox@3141592653: open(`/etc/shadow')
+          cat: /etc/shadow: Operation not permitted
+          $>
+        </programlisting>
+      </para>
+
+      <para>
+        Deny all reads and writes, allow read access to <filename>/dev/zero</filename> and write
+        access to <filename>/dev/full</filename>. The executable dd is not static in this case thus
+        allow access to /lib64 where it will load its shared libraries from as well:
+        <note>
+          On the system of the author the <command>dd</command> binary links only to libraries under
+          /lib64, use <command>ldd</command> to check the linked libraries on your system.
+        </note>
+        <note>
+          Note the quoting to escape shell expansion.
+        </note>
+        <programlisting>
+          $> sydbox -E LC_ALL=POSIX \
+                    -m core/sandbox/read:deny \
+                    -m core/sandbox/write:deny \
+                    -m 'whitelist/read+/lib64/***' \
+                    -m whitelist/read+/dev/zero \
+                    -m whitelist/read+/dev/full \
+                    -- dd if=/dev/zero of=/dev/full count=1
+          dd: writing to '/dev/full': No space left on device
+          1+0 records in
+          0+0 records out
+          0 bytes (0 B) copied, 0.000447024 s, 0.0 kB/s
+          $>
+        </programlisting>
+      </para>
+
+      <para>
+        Kill common bittorrent applications:
+        <note>
+          The initial <function>execve</function> is <emphasis>not</emphasis> checked.
+        </note>
+        <programlisting>
+          $> sydbox -E LC_ALL=POSIX \
+                    -m exec/kill_if_match+/usr/bin/ktorrent \
+                    -m exec/kill_if_match+/usr/bin/rtorrent \
+                    -- /bin/sh -c ktorrent
+          sydbox@3141592653: callback_exec: kill_if_match pattern=`/usr/bin/ktorrent' matches execve path=`/usr/bin/ktorrent'
+          sydbox@3141592653: callback_exec: killing process:3097 [abi:0 cwd:`/home/alip']
         </programlisting>
       </para>
     </refsect2>
