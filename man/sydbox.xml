@@ -114,6 +114,24 @@
           </simpara>
         </listitem>
       </varlistentry>
+
+      <varlistentry>
+        <term><option>-E</option> <varname>var=val</varname></term>
+        <listitem>
+          <simpara>
+            Put <varname>var=val</varname> in the environment for command, may be repeated
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-E</option> <varname>var</varname></term>
+        <listitem>
+          <simpara>
+            Remove <varname>var</varname> from the environment for command, may be repeated
+          </simpara>
+        </listitem>
+      </varlistentry>
     </variablelist>
   </refsect1>
 
