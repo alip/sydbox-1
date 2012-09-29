@@ -118,7 +118,7 @@ static void sydbox_init(void)
 	sydbox = xmalloc(sizeof(sydbox_t));
 	sydbox->eldest = -1;
 	sydbox->exit_code = 0;
-	sydbox->wait_execve = true;
+	sydbox->execve_status = WAIT_EXECVE;
 	sydbox->violation = false;
 	sydbox->ctx = NULL;
 	config_init();

@@ -275,12 +275,11 @@ static int callback_exec(const struct pink_easy_context *ctx,
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sydbox->wait_execve) {
+	if (sydbox->execve_status == WAIT_EXECVE) {
 		log_info("process %s[%lu:%u] entered execve() trap",
 			 sydbox->program_invocation_name,
 			 (unsigned long)tid, abi);
-		sydbox->wait_execve = false;
-		log_info("wait_execve cleared, sandboxing started");
+		sydbox->execve_status = SEEN_EXECVE;
 		return 0;
 	}
 
@@ -365,9 +364,17 @@ static int callback_syscall(const struct pink_easy_context *ctx,
 	int r;
 	proc_data_t *data;
 
-	if (sydbox->wait_execve) {
-		log_info("waiting for execve()");
-		return 0;
+	if (!sydbox->config.use_seccomp) {
+		switch (sydbox->execve_status) {
+		case WAIT_EXECVE:
+			log_info("waiting for execve(), sysenter:%s",
+				 entering ? "true" : "false");
+			return 0;
+		case SEEN_EXECVE:
+			sydbox->execve_status = DONE_EXECVE;
+			log_info("execve() successful, sandboxing started");
+			return 0;
+		}
 	}
 
 	data = pink_easy_process_get_userdata(current);
@@ -391,8 +398,13 @@ static int callback_seccomp(const struct pink_easy_context *ctx,
 {
 	short flags;
 
-	if (sydbox->wait_execve) {
+	switch (sydbox->execve_status) {
+	case WAIT_EXECVE:
 		log_info("waiting for execve(), ret_data:%ld", ret_data);
+		return 0;
+	case SEEN_EXECVE:
+		sydbox->execve_status = DONE_EXECVE;
+		log_info("execve() successful, sandboxing started");
 		return 0;
 	}
 

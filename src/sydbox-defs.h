@@ -153,7 +153,11 @@ typedef struct {
 	int exit_code;
 
 	/* Wait for initial execve() to start sandboxing */
-	bool wait_execve;
+	enum {
+		WAIT_EXECVE, /* waiting for execve() */
+		SEEN_EXECVE, /* seen execve() trap */
+		DONE_EXECVE, /* execve() returned success */
+	} execve_status;
 
 	/* This is true if an access violation has occured, false otherwise. */
 	bool violation;
