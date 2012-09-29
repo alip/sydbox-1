@@ -573,7 +573,7 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-trace-use_seccomp">core/trace/seccomp</option></term>
+          <term><option id="core-trace-use_seccomp">core/trace/use_seccomp</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
             <para>
