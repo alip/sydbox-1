@@ -321,7 +321,7 @@ static int callback_exec(const struct pink_easy_context *ctx,
 		log_warning("resuming process:%lu"
 			    " [abi:%d cwd:\"%s\"]",
 			    (unsigned long)tid, abi, data->cwd);
-		if (!pink_easy_process_resume(current, 0))
+		if (!pink_easy_process_detach(current))
 			log_warning("resume process:%lu failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid,

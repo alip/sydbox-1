@@ -107,6 +107,14 @@ struct pink_easy_process *pink_easy_process_new(struct pink_easy_context *ctx,
 void pink_easy_process_free(struct pink_easy_context *ctx, struct pink_easy_process *proc);
 
 /**
+ * Detach from a process as necessary and resume its execution.
+ *
+ * @param proc Process entry
+ * @return true on success, false on failure and sets errno accordingly
+ **/
+bool pink_easy_process_detach(const struct pink_easy_process *proc);
+
+/**
  * Kill a process
  *
  * @note This function uses @e tgkill(2) or @e tkill(2) if available.
@@ -116,17 +124,6 @@ void pink_easy_process_free(struct pink_easy_context *ctx, struct pink_easy_proc
  * @return Same as @e kill(2)
  **/
 int pink_easy_process_kill(const struct pink_easy_process *proc, int sig);
-
-/**
- * Detach from a process as necessary and resume its execution. This function
- * calls pink_trace_detach() if the process was attached and pink_trace_resume()
- * if the process was spawned.
- *
- * @param proc Process entry
- * @param sig Same as pink_trace_cont()
- * @return true on success, false on failure and sets errno accordingly
- **/
-bool pink_easy_process_resume(const struct pink_easy_process *proc, int sig);
 
 /**
  * Returns the thread ID of the entry

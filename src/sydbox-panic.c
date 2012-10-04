@@ -51,7 +51,7 @@ static inline int errno2retval(int err_no)
 static bool cont_one(struct pink_easy_process *proc, void *userdata)
 {
 	pid_t tid = pink_easy_process_get_tid(proc);
-	pink_easy_process_resume(proc, 0);
+	pink_easy_process_detach(proc);
 	return true;
 }
 
