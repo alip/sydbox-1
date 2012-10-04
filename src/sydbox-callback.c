@@ -374,6 +374,9 @@ static int callback_syscall(const struct pink_easy_context *ctx,
 			sydbox->execve_status = DONE_EXECVE;
 			log_info("execve() successful, sandboxing started");
 			return 0;
+		case DONE_EXECVE:
+		default:
+			break;
 		}
 	}
 
@@ -406,6 +409,9 @@ static int callback_seccomp(const struct pink_easy_context *ctx,
 		sydbox->execve_status = DONE_EXECVE;
 		log_info("execve() successful, sandboxing started");
 		return 0;
+	case DONE_EXECVE:
+	default:
+		break;
 	}
 
 	/* Stop at syscall entry */
