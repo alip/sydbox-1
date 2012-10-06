@@ -48,7 +48,7 @@
 
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
-      <command>sydbox <arg choice="opt">-hVv</arg><arg choice="opt" rep="repeat">-c pathspec</arg><arg choice="opt" rep="repeat">-m magic</arg><arg choice="opt" rep="repeat">-E var=val</arg><arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command>
+      <command>sydbox <arg choice="opt">-hv</arg><arg choice="opt" rep="repeat">-c pathspec</arg><arg choice="opt" rep="repeat">-m magic</arg><arg choice="opt" rep="repeat">-E var=val</arg><arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command>
     </cmdsynopsis>
   </refsynopsisdiv>
 
@@ -78,19 +78,10 @@
       </varlistentry>
 
       <varlistentry>
-        <term><option>-V</option></term>
-        <listitem>
-          <simpara>
-            Show version and exit
-          </simpara>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry>
         <term><option>-v</option></term>
         <listitem>
           <simpara>
-            Be verbose, may be repeated
+            Show version and exit
           </simpara>
         </listitem>
       </varlistentry>

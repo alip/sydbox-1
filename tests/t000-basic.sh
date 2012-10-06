@@ -10,7 +10,7 @@ test_expect_success 'sydbox' '
     type sydbox &&
     sydbox -h &&
     sydbox --help &&
-    sydbox -V &&
+    sydbox -v &&
     sydbox --version
 '
 

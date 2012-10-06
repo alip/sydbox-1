@@ -93,10 +93,10 @@ static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITVERSION" -- ptrace based sandbox\n\
-usage: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] {-p pid...}\n\
-   or: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
+usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] {-p pid...}\n\
+   or: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
--V          -- Show version and exit\n\
+-v          -- Show version and exit\n\
 -c pathspec -- path spec to the configuration file, may be repeated\n\
 -m magic    -- run a magic command during init, may be repeated\n\
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
@@ -399,7 +399,7 @@ int main(int argc, char **argv)
 	char *profile_name;
 	struct option long_options[] = {
 		{"help",	no_argument,		NULL,	'h'},
-		{"version",	no_argument,		NULL,	'V'},
+		{"version",	no_argument,		NULL,	'v'},
 		{"profile",	required_argument,	NULL,	0},
 		{NULL,		0,		NULL,	0},
 	};
@@ -414,7 +414,7 @@ int main(int argc, char **argv)
 	   to children, but probably noone really needs that.  */
 	signal(SIGCHLD, SIG_DFL);
 
-	while ((opt = getopt_long(argc, argv, "hVc:m:E:", long_options, &options_index)) != EOF) {
+	while ((opt = getopt_long(argc, argv, "hvc:m:E:", long_options, &options_index)) != EOF) {
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name, "profile")) {
@@ -429,7 +429,7 @@ int main(int argc, char **argv)
 			usage(stderr, 1);
 		case 'h':
 			usage(stdout, 0);
-		case 'V':
+		case 'v':
 			about();
 			return 0;
 		case 'c':
