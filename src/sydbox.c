@@ -94,8 +94,7 @@ static void usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITVERSION" -- ptrace based sandbox\n\
-usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] {-p pid...}\n\
-   or: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
+usage: "PACKAGE" [-hv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
 -v          -- Show version and exit\n\
 -c pathspec -- path spec to the configuration file, may be repeated\n\
