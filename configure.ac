@@ -288,22 +288,18 @@ AC_CHECK_DECL([__NR_tgkill], [PINK_HAVE_TGKILL=1], [PINK_HAVE_TGKILL=0], [#inclu
 AC_SUBST([PINK_HAVE_TKILL])
 AC_SUBST([PINK_HAVE_TGKILL])
 
-AC_CHECK_FUNC([process_vm_readv],
-	      [PINK_HAVE_PROCESS_VM_READV=1],
-	      [AC_CHECK_DECL([__NR_process_vm_readv],
-			     [PINK_HAVE_PROCESS_VM_READV=1],
-			     [PINK_HAVE_PROCESS_VM_READV=0],
-			     [#include <asm/unistd.h>])],
-	      [PINK_HAVE_PROCESS_VM_READV=0],
-	      [#include <sys/uio.h>])
-AC_CHECK_FUNC([process_vm_writev],
-	      [PINK_HAVE_PROCESS_VM_WRITEV=1],
-	      [AC_CHECK_DECL([__NR_process_vm_writev],
-			     [PINK_HAVE_PROCESS_VM_WRITEV=1],
-			     [PINK_HAVE_PROCESS_VM_WRITEV=0],
-			     [#include <asm/unistd.h>])],
-	      [PINK_HAVE_PROCESS_VM_WRITEV=0],
-	      [#include <sys/uio.h>])
+AC_CHECK_FUNCS([process_vm_readv],
+	       [PINK_HAVE_PROCESS_VM_READV=1],
+	       [AC_CHECK_DECL([__NR_process_vm_readv],
+			      [PINK_HAVE_PROCESS_VM_READV=1],
+			      [PINK_HAVE_PROCESS_VM_READV=0],
+			      [#include <asm/unistd.h>])])
+AC_CHECK_FUNCS([process_vm_writev],
+	       [PINK_HAVE_PROCESS_VM_WRITEV=1],
+	       [AC_CHECK_DECL([__NR_process_vm_writev],
+			      [PINK_HAVE_PROCESS_VM_WRITEV=1],
+			      [PINK_HAVE_PROCESS_VM_WRITEV=0],
+			      [#include <asm/unistd.h>])])
 AC_SUBST([PINK_HAVE_PROCESS_VM_READV])
 AC_SUBST([PINK_HAVE_PROCESS_VM_WRITEV])
 
