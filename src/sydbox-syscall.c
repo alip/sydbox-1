@@ -25,80 +25,253 @@
 
 /* Order matters! Put more frequent system calls above. */
 static const sysentry_t syscall_entries[] = {
-	{"stat", sys_stat, NULL},
-	{"lstat", sys_stat, NULL},
-	{"stat64", sys_stat, NULL},
-	{"lstat64", sys_stat, NULL},
+	{
+		.name = "stat",
+		.enter = sys_stat,
+	},
+	{
+		.name = "lstat",
+		.enter = sys_stat,
+	},
+	{
+		.name = "stat64",
+		.enter = sys_stat,
+	},
+	{
+		.name = "lstat64",
+		.enter = sys_stat,
+	},
 
-	{"access", sys_access, NULL},
-	{"faccessat", sys_faccessat, NULL},
+	{
+		.name = "access",
+		.enter = sys_access,
+	},
+	{
+		.name = "faccessat",
+		.enter = sys_faccessat,
+	},
 
-	{"open", sys_open, NULL},
-	{"openat", sys_openat, NULL},
-	{"creat", sys_creat, NULL},
+	{
+		.name = "open",
+		.enter = sys_open,
+	},
+	{
+		.name = "openat",
+		.enter = sys_openat,
+	},
+	{
+		.name = "creat",
+		.enter = sys_creat,
+	},
 
-	{"dup", sys_dup, sysx_dup},
-	{"dup2", sys_dup, sysx_dup},
-	{"dup3", sys_dup, sysx_dup},
-	{"fcntl", sys_fcntl, sysx_fcntl},
-	{"fcntl64", sys_fcntl, sysx_fcntl},
+	{
+		.name = "dup",
+		.enter = sys_dup,
+		.exit = sysx_dup,
+	},
+	{
+		.name = "dup2",
+		.enter = sys_dup,
+		.exit = sysx_dup,
+	},
+	{
+		.name = "dup3",
+		.enter = sys_dup,
+		.exit = sysx_dup,
+	},
+	{
+		.name = "fcntl",
+		.enter = sys_fcntl,
+		.exit = sysx_fcntl,
+	},
+	{
+		.name = "fcntl64",
+		.enter = sys_fcntl,
+		.exit = sysx_fcntl,
+	},
 
-	{"chdir", NULL, sysx_chdir},
-	{"fchdir", NULL, sysx_chdir},
+	{
+		.name = "chdir",
+		.exit = sysx_chdir,
+	},
+	{
+		.name = "fchdir",
+		.exit = sysx_chdir,
+	},
 
-	{"chmod", sys_chmod, NULL},
-	{"fchmodat", sys_fchmodat, NULL},
+	{
+		.name = "chmod",
+		.enter = sys_chmod,
+	},
+	{
+		.name = "fchmodat",
+		.enter = sys_fchmodat,
+	},
 
-	{"chown", sys_chown, NULL},
-	{"chown32", sys_chown, NULL},
-	{"lchown", sys_lchown, NULL},
-	{"lchown32", sys_lchown, NULL},
-	{"fchownat", sys_fchownat, NULL},
+	{
+		.name = "chown",
+		.enter = sys_chown,
+	},
+	{
+		.name = "chown32",
+		.enter = sys_chown,
+	},
+	{
+		.name = "lchown",
+		.enter = sys_lchown,
+	},
+	{
+		.name = "lchown32",
+		.enter = sys_lchown,
+	},
+	{
+		.name = "fchownat",
+		.enter = sys_fchownat,
+	},
 
-	{"mkdir", sys_mkdir, NULL},
-	{"mkdirat", sys_mkdirat, NULL},
+	{
+		.name = "mkdir",
+		.enter = sys_mkdir,
+	},
+	{
+		.name = "mkdirat",
+		.enter = sys_mkdirat,
+	},
 
-	{"mknod", sys_mknod, NULL},
-	{"mknodat", sys_mknodat, NULL},
+	{
+		.name = "mknod",
+		.enter = sys_mknod,
+	},
+	{
+		.name = "mknodat",
+		.enter = sys_mknodat,
+	},
 
-	{"rmdir", sys_rmdir, NULL},
+	{
+		.name = "rmdir",
+		.enter = sys_rmdir,
+	},
 
-	{"truncate", sys_truncate, NULL},
-	{"truncate64", sys_truncate, NULL},
+	{
+		.name = "truncate",
+		.enter = sys_truncate,
+	},
+	{
+		.name = "truncate64",
+		.enter = sys_truncate,
+	},
 
-	{"utime", sys_utime, NULL},
-	{"utimes", sys_utimes, NULL},
-	{"utimensat", sys_utimensat, NULL},
-	{"futimesat", sys_futimesat, NULL},
+	{
+		.name = "utime",
+		.enter = sys_utime,
+	},
+	{
+		.name = "utimes",
+		.enter = sys_utimes,
+	},
+	{
+		.name = "utimensat",
+		.enter = sys_utimensat,
+	},
+	{
+		.name = "futimesat",
+		.enter = sys_futimesat,
+	},
 
-	{"unlink", sys_unlink, NULL},
-	{"unlinkat", sys_unlinkat, NULL},
+	{
+		.name = "unlink",
+		.enter = sys_unlink,
+	},
+	{
+		.name = "unlinkat",
+		.enter = sys_unlinkat,
+	},
 
-	{"link", sys_link, NULL},
-	{"linkat", sys_linkat, NULL},
+	{
+		.name = "link",
+		.enter = sys_link,
+	},
+	{
+		.name = "linkat",
+		.enter = sys_linkat,
+	},
 
-	{"rename", sys_rename, NULL},
-	{"renameat", sys_renameat, NULL},
+	{
+		.name = "rename",
+		.enter = sys_rename,
+	},
+	{
+		.name = "renameat",
+		.enter = sys_renameat,
+	},
 
-	{"symlink", sys_symlink, NULL},
-	{"symlinkat", sys_symlinkat, NULL},
+	{
+		.name = "symlink",
+		.enter = sys_symlink,
+	},
+	{
+		.name = "symlinkat",
+		.enter = sys_symlinkat,
+	},
 
-	{"execve", sys_execve, NULL},
+	{
+		.name = "execve",
+		.enter = sys_execve,
+	},
 
-	{"socketcall", sys_socketcall, sysx_socketcall},
-	{"bind", sys_bind, sysx_bind},
-	{"connect", sys_connect, NULL},
-	{"sendto", sys_sendto, NULL},
-	{"getsockname", sys_getsockname, sysx_getsockname},
+	{
+		.name = "socketcall",
+		.enter = sys_socketcall,
+		.exit = sysx_socketcall,
+	},
+	{
+		.name = "bind",
+		.enter = sys_bind,
+		.exit = sysx_bind,
+	},
+	{
+		.name = "connect",
+		.enter = sys_connect,
+	},
+	{
+		.name = "sendto",
+		.enter = sys_sendto,
+	},
+	{
+		.name = "getsockname",
+		.enter = sys_getsockname,
+		.exit = sysx_getsockname,
+	},
 
-	{"setxattr", sys_setxattr, NULL},
-	{"lsetxattr", sys_lsetxattr, NULL},
-	{"removexattr", sys_removexattr, NULL},
-	{"lremovexattr", sys_lremovexattr, NULL},
+	{
+		.name = "setxattr",
+		.enter = sys_setxattr,
+	},
+	{
+		.name = "lsetxattr",
+		.enter = sys_lsetxattr,
+	},
+	{
+		.name = "removexattr",
+		.enter = sys_removexattr,
+	},
+	{
+		.name = "lremovexattr",
+		.enter = sys_lremovexattr,
+	},
 
-	{"mount", sys_mount, NULL},
-	{"umount", sys_umount, NULL},
-	{"umount2", sys_umount2, NULL},
+	{
+		.name = "mount",
+		.enter = sys_mount,
+	},
+	{
+		.name = "umount",
+		.enter = sys_umount,
+	},
+	{
+		.name = "umount2",
+		.enter = sys_umount2,
+	},
 };
 
 size_t syscall_entries_max(void)
@@ -108,12 +281,19 @@ size_t syscall_entries_max(void)
 
 void sysinit(void)
 {
-	unsigned i;
-
-	for (i = 0; i < ELEMENTSOF(syscall_entries); i++)
-		systable_add(syscall_entries[i].name,
-			     syscall_entries[i].enter,
-			     syscall_entries[i].exit);
+	for (unsigned i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+		if (syscall_entries[i].name) {
+			systable_add(syscall_entries[i].name,
+				     syscall_entries[i].enter,
+				     syscall_entries[i].exit);
+		} else {
+			for (int abi = 0; abi < PINK_ABIS_SUPPORTED; abi++)
+				systable_add_full(syscall_entries[i].no,
+						  abi, NULL,
+						  syscall_entries[i].enter,
+						  syscall_entries[i].exit);
+		}
+	}
 }
 
 #ifdef WANT_SECCOMP
@@ -125,7 +305,11 @@ static size_t make_seccomp_filter(int abi, uint32_t **syscalls)
 
 	list = xmalloc(sizeof(uint32_t) * ELEMENTSOF(syscall_entries));
 	for (i = 0, j = 0; i < ELEMENTSOF(syscall_entries); i++) {
-		sysno = pink_syscall_lookup(syscall_entries[i].name, abi);
+		if (syscall_entries[i].name)
+			sysno = pink_syscall_lookup(syscall_entries[i].name,
+						    abi);
+		else
+			sysno = syscall_entries[i].no;
 		if (sysno != -1)
 			list[j++] = (uint32_t)sysno;
 	}
@@ -197,15 +381,18 @@ int sysenter(struct pink_easy_process *current)
 
 	data->sno = no;
 	entry = systable_lookup(no, abi);
-	if (entry)
-		log_syscall("process %s[%lu:%u] enters syscall=`%s'",
+	if (entry) {
+		log_syscall("process %s[%lu:%u] entered syscall=`%s'(%ld)",
 			    data->comm, (unsigned long)tid, abi,
-			    entry->name);
-	else
-		log_sys_all("process %s[%lu:%u] enters syscall=%ld",
+			    entry->name, no);
+		if (entry->enter)
+			return entry->enter(current, entry->name);
+	} else {
+		log_sys_all("process %s[%lu:%u] entered syscall=%ld",
 			    data->comm, (unsigned long)tid, abi, no);
+	}
 
-	return (entry && entry->enter) ? entry->enter(current, entry->name) : 0;
+	return 0;
 }
 
 int sysexit(struct pink_easy_process *current)

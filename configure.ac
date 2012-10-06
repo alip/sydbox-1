@@ -276,6 +276,11 @@ AC_CHECK_FUNCS([asprintf],      [], [AC_MSG_ERROR([I need asprintf])])
 AC_CHECK_FUNCS([isdigit],       [], [AC_MSG_ERROR([I need isdigit])])
 AC_CHECK_FUNCS([ntohs],         [], [AC_MSG_ERROR([I need ntohs])])
 AC_CHECK_FUNCS([getservbyname], [], [AC_MSG_ERROR([I need getservbyname])])
+AC_CHECK_FUNCS([execvpe],       [], [AC_MSG_ERROR([I need execvpe])])
+
+dnl check for declarations
+AC_CHECK_DECL([MAX_ARG_STRLEN],  [], [AC_MSG_ERROR([I need MAX_ARG_STRLEN])],  [#include <linux/binfmts.h>])
+AC_CHECK_DECL([MAX_ARG_STRINGS], [], [AC_MSG_ERROR([I need MAX_ARG_STRINGS])], [#include <linux/binfmts.h>])
 
 dnl check for system calls
 AC_CHECK_DECL([__NR_tkill],  [PINK_HAVE_TKILL=1],  [PINK_HAVE_TKILL=0],  [#include <asm/unistd.h>])

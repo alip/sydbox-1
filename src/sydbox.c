@@ -48,6 +48,7 @@
 #include <getopt.h>
 
 #include "macro.h"
+#include "pathlookup.h"
 #include "proc.h"
 #include "log.h"
 #include "util.h"
@@ -274,66 +275,17 @@ static void sig_user(int signo)
 
 static void sydbox_startup_child(char **argv)
 {
+	int r;
 	struct stat statbuf;
 	const char *filename;
-	char pathname[SYDBOX_PATH_MAX];
-	int pid = 0;
+	char *pathname;
+	pid_t pid = 0;
 	struct pink_easy_process *current;
 
-	filename = argv[0];
-	if (strchr(filename, '/')) {
-		if (strlen(filename) > sizeof pathname - 1) {
-			errno = ENAMETOOLONG;
-			die_errno("exec");
-		}
-		strcpy(pathname, filename);
-	}
-#ifdef SYDBOX_USE_DEBUGGING_EXEC
-	/*
-	 * Debuggers customarily check the current directory
-	 * first regardless of the path but doing that gives
-	 * security geeks a panic attack.
-	 */
-	else if (stat(filename, &statbuf) == 0)
-		strcpy(pathname, filename);
-#endif /* SYDBOX_USE_DEBUGGING_EXEC */
-	else {
-		const char *path;
-		int m, n, len;
-
-		for (path = getenv("PATH"); path && *path; path += m) {
-			const char *colon = strchr(path, ':');
-			if (colon) {
-				n = colon - path;
-				m = n + 1;
-			}
-			else
-				m = n = strlen(path);
-			if (n == 0) {
-				if (!getcwd(pathname, SYDBOX_PATH_MAX))
-					continue;
-				len = strlen(pathname);
-			}
-			else if ((size_t)n > sizeof pathname - 1)
-				continue;
-			else {
-				strncpy(pathname, path, n);
-				len = n;
-			}
-			if (len && pathname[len - 1] != '/')
-				pathname[len++] = '/';
-			strcpy(pathname + len, filename);
-			if (stat(pathname, &statbuf) == 0 &&
-			    /* Accept only regular files
-			       with some execute bits set.
-			       XXX not perfect, might still fail */
-			    S_ISREG(statbuf.st_mode) &&
-			    (statbuf.st_mode & 0111))
-				break;
-		}
-	}
-	if (stat(pathname, &statbuf) < 0) {
-		die_errno("Can't stat '%s'", filename);
+	r = path_lookup(argv[0], &pathname);
+	if (r < 0) {
+		errno = -r;
+		die_errno("exec");
 	}
 
 	pid = fork();
@@ -374,8 +326,10 @@ static void sydbox_startup_child(char **argv)
 		_exit(EXIT_FAILURE);
 	}
 
+	free(pathname);
+
 	current = pink_easy_process_new(sydbox->ctx, pid, -1,
-			PINK_EASY_PROCESS_IGNORE_ONE_SIGSTOP);
+					PINK_EASY_PROCESS_IGNORE_ONE_SIGSTOP);
 	if (current == NULL) {
 		kill(pid, SIGKILL);
 		die_errno("process_new failed, killed %lu", (unsigned long)pid);
@@ -438,7 +392,7 @@ int main(int argc, char **argv)
 			break;
 		case 'm':
 			r = magic_cast_string(NULL, optarg, 0);
-			if (r < 0)
+			if (MAGIC_ERROR(r))
 				die("invalid magic: `%s': %s",
 				    optarg, magic_strerror(r));
 			break;
@@ -459,8 +413,9 @@ int main(int argc, char **argv)
 		config_parse_spec(env);
 	}
 
-	pink_easy_init();
 	config_done();
+
+	pink_easy_init();
 	callback_init();
 	systable_init();
 	sysinit();

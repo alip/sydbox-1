@@ -24,7 +24,7 @@ int magic_set_match_case_sensitive(const void *val,
 
 int magic_query_match_case_sensitive(struct pink_easy_process *current)
 {
-	return pathmatch_get_case();
+	return MAGIC_BOOL(pathmatch_get_case());
 }
 
 int magic_set_match_no_wildcard(const void *val,
@@ -35,8 +35,8 @@ int magic_set_match_no_wildcard(const void *val,
 
 	no_wild = no_wildcard_from_string(str);
 	if (no_wild < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
+		return MAGIC_RET_INVALID_VALUE;
 
 	pathmatch_set_no_wildcard(no_wild);
-	return 0;
+	return MAGIC_RET_OK;
 }

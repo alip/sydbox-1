@@ -15,31 +15,24 @@
 #include "macro.h"
 #include "pathmatch.h"
 
-static int magic_set_strlist(const void *val, slist_t *head)
+static int magic_edit_strlist(const void *val, slist_t *head, bool append)
 {
-	int c, f, r = 0;
-	char op;
+	int c, f, r = MAGIC_RET_OK;
 	const char *str = val;
 	char **list;
 	struct snode *node;
 
-	if (!str || !*str || !*(str + 1))
-		return MAGIC_ERROR_INVALID_VALUE;
-	else {
-		op = *str;
-		++str;
-	}
+	if (!str || !*str)
+		return MAGIC_RET_INVALID_VALUE;
 
 	/* Expand pattern */
 	c = f = pathmatch_expand(str, &list) - 1;
 	for (; c >= 0; c--) {
-		switch (op) {
-		case SYDBOX_MAGIC_ADD_CHAR:
+		if (append) {
 			node = xcalloc(1, sizeof(struct snode));
 			node->data = xstrdup(list[c]);
 			SLIST_INSERT_HEAD(head, node, up);
-			break;
-		case SYDBOX_MAGIC_REMOVE_CHAR:
+		} else {
 			SLIST_FOREACH(node, head, up) {
 				if (streq(node->data, list[c])) {
 					SLIST_REMOVE(head, node, snode, up);
@@ -48,10 +41,6 @@ static int magic_set_strlist(const void *val, slist_t *head)
 					break;
 				}
 			}
-			break;
-		default:
-			r = MAGIC_ERROR_INVALID_OPERATION;
-			break;
 		}
 	}
 
@@ -62,62 +51,122 @@ static int magic_set_strlist(const void *val, slist_t *head)
 	return r;
 }
 
-int magic_set_whitelist_exec(const void *val,
-			     struct pink_easy_process *current)
+int magic_append_whitelist_exec(const void *val,
+				struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_set_strlist(val, &box->whitelist_exec);
+	return magic_edit_strlist(val, &box->whitelist_exec, true);
 }
 
-int magic_set_whitelist_read(const void *val,
-			     struct pink_easy_process *current)
+int magic_remove_whitelist_exec(const void *val,
+				struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_set_strlist(val, &box->whitelist_read);
+	return magic_edit_strlist(val, &box->whitelist_exec, false);
 }
 
-int magic_set_whitelist_write(const void *val,
+int magic_append_whitelist_read(const void *val,
+				struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_strlist(val, &box->whitelist_read, true);
+}
+
+int magic_remove_whitelist_read(const void *val,
+				struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_strlist(val, &box->whitelist_read, false);
+}
+
+int magic_append_whitelist_write(const void *val,
+				 struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_strlist(val, &box->whitelist_write, true);
+}
+
+int magic_remove_whitelist_write(const void *val,
+				 struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_strlist(val, &box->whitelist_write, false);
+}
+
+int magic_append_blacklist_exec(const void *val,
+				struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_strlist(val, &box->blacklist_exec, true);
+}
+
+int magic_remove_blacklist_exec(const void *val,
+				struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_strlist(val, &box->blacklist_exec, false);
+}
+
+int magic_append_blacklist_read(const void *val,
+				struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_strlist(val, &box->blacklist_read, true);
+}
+
+int magic_remove_blacklist_read(const void *val,
+				struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_strlist(val, &box->blacklist_read, false);
+}
+
+int magic_append_blacklist_write(const void *val,
+				 struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_strlist(val, &box->blacklist_write, true);
+}
+
+int magic_remove_blacklist_write(const void *val,
+				 struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_strlist(val, &box->blacklist_write, false);
+}
+
+int magic_append_filter_exec(const void *val,
+			     struct pink_easy_process *current)
+{
+	return magic_edit_strlist(val, &sydbox->config.filter_exec, true);
+}
+
+int magic_remove_filter_exec(const void *val,
+			     struct pink_easy_process *current)
+{
+	return magic_edit_strlist(val, &sydbox->config.filter_exec, false);
+}
+
+int magic_append_filter_read(const void *val,
+			     struct pink_easy_process *current)
+{
+	return magic_edit_strlist(val, &sydbox->config.filter_read, true);
+}
+
+int magic_remove_filter_read(const void *val,
+			     struct pink_easy_process *current)
+{
+	return magic_edit_strlist(val, &sydbox->config.filter_read, false);
+}
+
+int magic_append_filter_write(const void *val,
 			      struct pink_easy_process *current)
 {
-	sandbox_t *box = box_current(current);
-	return magic_set_strlist(val, &box->whitelist_write);
+	return magic_edit_strlist(val, &sydbox->config.filter_write, true);
 }
 
-int magic_set_blacklist_exec(const void *val,
-			     struct pink_easy_process *current)
-{
-	sandbox_t *box = box_current(current);
-	return magic_set_strlist(val, &box->blacklist_exec);
-}
-
-int magic_set_blacklist_read(const void *val,
-			     struct pink_easy_process *current)
-{
-	sandbox_t *box = box_current(current);
-	return magic_set_strlist(val, &box->blacklist_read);
-}
-
-int magic_set_blacklist_write(const void *val,
+int magic_remove_filter_write(const void *val,
 			      struct pink_easy_process *current)
 {
-	sandbox_t *box = box_current(current);
-	return magic_set_strlist(val, &box->blacklist_write);
-}
-
-int magic_set_filter_exec(const void *val,
-			  struct pink_easy_process *current)
-{
-	return magic_set_strlist(val, &sydbox->config.filter_exec);
-}
-
-int magic_set_filter_read(const void *val,
-			  struct pink_easy_process *current)
-{
-	return magic_set_strlist(val, &sydbox->config.filter_read);
-}
-
-int magic_set_filter_write(const void *val,
-			   struct pink_easy_process *current)
-{
-	return magic_set_strlist(val, &sydbox->config.filter_write);
+	return magic_edit_strlist(val, &sydbox->config.filter_write, false);
 }

@@ -124,6 +124,11 @@ static void callback_startup(const struct pink_easy_context *ctx,
 
 	if (parent) {
 		pdata = (proc_data_t *)pink_easy_process_get_userdata(parent);
+		if (pdata == NULL) {
+			/* No sandboxing data: ignored process */
+			comm = cwd = NULL;
+			goto skip;
+		}
 		comm = xstrdup(pdata->comm);
 		cwd = xstrdup(pdata->cwd);
 		inherit = &pdata->config;
@@ -179,12 +184,13 @@ static void callback_startup(const struct pink_easy_context *ctx,
 
 	if (sydbox->config.whitelist_per_process_directories) {
 		char *magic;
-		xasprintf(&magic, "+/proc/%lu/***", (unsigned long)tid);
-		magic_set_whitelist_read(magic, current);
-		magic_set_whitelist_write(magic, current);
+		xasprintf(&magic, "/proc/%lu/***", (unsigned long)tid);
+		magic_append_whitelist_read(magic, current);
+		magic_append_whitelist_write(magic, current);
 		free(magic);
 	}
 
+skip:
 	log_trace("%s process %s[%lu:%u cwd=`%s']",
 		  parent ? "new" : "eldest", comm,
 		  (unsigned long)tid, abi, cwd);
@@ -283,6 +289,11 @@ static int callback_exec(const struct pink_easy_context *ctx,
 		return 0;
 	}
 
+	if (data == NULL) {
+		/* No sandboxing data: ignored process */
+		return 0;
+	}
+
 	if (data->config.magic_lock == LOCK_PENDING) {
 		log_magic("lock magic commands for %s[%lu:%u]", data->comm,
 			  (unsigned long)tid, abi);
@@ -312,12 +323,27 @@ static int callback_exec(const struct pink_easy_context *ctx,
 				    (unsigned long)tid,
 				    errno, strerror(errno));
 		r |= PINK_EASY_CFLAG_DROP;
+		goto out;
 	} else if (box_match_path(&sydbox->config.exec_resume_if_match,
 				  data->abspath,
 				  &match)) {
 		log_warning("resume_if_match pattern=`%s'"
 			    " matches execve path=`%s'",
 			    match, data->abspath);
+#ifdef WANT_SECCOMP
+		if (sydbox->config.use_seccomp) {
+			/*
+			 * Careful! Detaching here would cause the untraced
+			 * process' observed system calls to return -ENOSYS.
+			 */
+			log_warning("ignoring process:%lu"
+				    " [abi:%d cwd:\"%s\"]",
+				    (unsigned long)tid, abi, data->cwd);
+			free_proc(data);
+			pink_easy_process_set_userdata(current, NULL, NULL);
+			return 0;
+		}
+#endif
 		log_warning("resuming process:%lu"
 			    " [abi:%d cwd:\"%s\"]",
 			    (unsigned long)tid, abi, data->cwd);
@@ -327,6 +353,7 @@ static int callback_exec(const struct pink_easy_context *ctx,
 				    (unsigned long)tid,
 				    errno, strerror(errno));
 		r |= PINK_EASY_CFLAG_DROP;
+		goto out;
 	}
 
 	/* Update process name */
@@ -346,6 +373,7 @@ static int callback_exec(const struct pink_easy_context *ctx,
 			 data->comm, data->cwd, comm);
 	}
 
+out:
 	if (data->comm)
 		free(data->comm);
 	data->comm = comm;
@@ -357,9 +385,9 @@ static int callback_exec(const struct pink_easy_context *ctx,
 }
 
 static int callback_syscall(const struct pink_easy_context *ctx,
-		struct pink_easy_process *current,
-		const pink_regs_t *regs,
-		bool entering)
+			    struct pink_easy_process *current,
+			    const pink_regs_t *regs,
+			    bool entering)
 {
 	int r;
 	proc_data_t *data;
@@ -381,8 +409,12 @@ static int callback_syscall(const struct pink_easy_context *ctx,
 	}
 
 	data = pink_easy_process_get_userdata(current);
-	memcpy(&data->regs, regs, sizeof(pink_regs_t));
+	if (data == NULL) {
+		/* No sandboxing data: ignored process */
+		return 0;
+	}
 
+	memcpy(&data->regs, regs, sizeof(pink_regs_t));
 	if (entering) {
 		r = sysenter(current);
 	} else {
@@ -395,7 +427,7 @@ static int callback_syscall(const struct pink_easy_context *ctx,
 	return r;
 }
 
-#if WANT_SECCOMP
+#ifdef WANT_SECCOMP
 static int callback_seccomp(const struct pink_easy_context *ctx,
 		struct pink_easy_process *current, long ret_data)
 {
@@ -412,6 +444,11 @@ static int callback_seccomp(const struct pink_easy_context *ctx,
 	case DONE_EXECVE:
 	default:
 		break;
+	}
+
+	if (!pink_easy_process_get_userdata(current)) {
+		/* No sandboxing data: ignored process */
+		return 0;
 	}
 
 	/* Stop at syscall entry */

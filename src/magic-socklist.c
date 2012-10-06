@@ -16,32 +16,26 @@
 #include "macro.h"
 #include "log.h"
 
-static int magic_set_socklist(const void *val, slist_t *head)
+static int magic_edit_socklist(const void *val, slist_t *head, bool append)
 {
-	char op;
-	int c, f, r = 0;
+	int c, f, r = MAGIC_RET_OK;
 	const char *str = val;
 	char **list;
 	struct snode *node;
 	struct sockmatch *match;
 
-	if (!str || !*str || !*(str + 1))
-		return MAGIC_ERROR_INVALID_VALUE;
-	else {
-		op = *str;
-		++str;
-	}
+	if (!str || !*str)
+		return MAGIC_RET_INVALID_VALUE;
 
 	/* Expand alias */
 	c = f = sockmatch_expand(str, &list) - 1;
 	for (; c >= 0; c--) {
-		switch (op) {
-		case SYDBOX_MAGIC_ADD_CHAR:
+		if (append) {
 			errno = 0;
 			if ((r = sockmatch_parse(list[c], &match)) < 0) {
 				log_warning("invalid address `%s' (errno:%d %s)",
 					    list[c], -r, strerror(-r));
-				r = MAGIC_ERROR_INVALID_VALUE;
+				r = MAGIC_RET_INVALID_VALUE;
 				goto end;
 			}
 			if (errno == EAFNOSUPPORT) {
@@ -53,8 +47,7 @@ static int magic_set_socklist(const void *val, slist_t *head)
 			node = xcalloc(1, sizeof(struct snode));
 			node->data = match;
 			SLIST_INSERT_HEAD(head, node, up);
-			break;
-		case SYDBOX_MAGIC_REMOVE_CHAR:
+		} else {
 			SLIST_FOREACH(node, head, up) {
 				match = node->data;
 				if (match->str && streq(match->str, str)) {
@@ -64,10 +57,6 @@ static int magic_set_socklist(const void *val, slist_t *head)
 					break;
 				}
 			}
-			break;
-		default:
-			r = MAGIC_ERROR_INVALID_OPERATION;
-			break;
 		}
 	}
 
@@ -79,36 +68,70 @@ end:
 	return r;
 }
 
-int magic_set_whitelist_network_bind(const void *val,
-				     struct pink_easy_process *current)
-{
-	sandbox_t *box = box_current(current);
-	return magic_set_socklist(val, &box->whitelist_network_bind);
-}
-
-int magic_set_whitelist_network_connect(const void *val,
+int magic_append_whitelist_network_bind(const void *val,
 					struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_set_socklist(val, &box->whitelist_network_connect);
+	return magic_edit_socklist(val, &box->whitelist_network_bind, true);
 }
 
-int magic_set_blacklist_network_bind(const void *val,
-				     struct pink_easy_process *current)
-{
-	sandbox_t *box = box_current(current);
-	return magic_set_socklist(val, &box->blacklist_network_bind);
-}
-
-int magic_set_blacklist_network_connect(const void *val,
+int magic_remove_whitelist_network_bind(const void *val,
 					struct pink_easy_process *current)
 {
 	sandbox_t *box = box_current(current);
-	return magic_set_socklist(val, &box->blacklist_network_connect);
+	return magic_edit_socklist(val, &box->whitelist_network_bind, false);
 }
 
-int magic_set_filter_network(const void *val,
-			     struct pink_easy_process *current)
+int magic_append_whitelist_network_connect(const void *val,
+					   struct pink_easy_process *current)
 {
-	return magic_set_socklist(val, &sydbox->config.filter_network);
+	sandbox_t *box = box_current(current);
+	return magic_edit_socklist(val, &box->whitelist_network_connect, true);
+}
+
+int magic_remove_whitelist_network_connect(const void *val,
+					   struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_socklist(val, &box->whitelist_network_connect, false);
+}
+
+int magic_append_blacklist_network_bind(const void *val,
+					struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_socklist(val, &box->blacklist_network_bind, true);
+}
+
+int magic_remove_blacklist_network_bind(const void *val,
+					struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_socklist(val, &box->blacklist_network_bind, false);
+}
+
+int magic_append_blacklist_network_connect(const void *val,
+					   struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_socklist(val, &box->blacklist_network_connect, true);
+}
+
+int magic_remove_blacklist_network_connect(const void *val,
+					   struct pink_easy_process *current)
+{
+	sandbox_t *box = box_current(current);
+	return magic_edit_socklist(val, &box->blacklist_network_connect, false);
+}
+
+int magic_append_filter_network(const void *val,
+				struct pink_easy_process *current)
+{
+	return magic_edit_socklist(val, &sydbox->config.filter_network, true);
+}
+
+int magic_remove_filter_network(const void *val,
+				struct pink_easy_process *current)
+{
+	return magic_edit_socklist(val, &sydbox->config.filter_network, false);
 }

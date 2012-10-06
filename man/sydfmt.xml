@@ -1,0 +1,96 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+        "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<!--
+   Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+   Distributed under the terms of the GNU General Public License v3 or later
+-->
+
+<refentry id="sydfmt" lang="en">
+  <refentryinfo>
+    <title>sydfmt</title>
+    <productname>sydfmt</productname>
+
+    <authorgroup>
+      <author>
+        <contrib>Developer</contrib>
+        <firstname>Ali</firstname>
+        <surname>Polatel</surname>
+        <email>alip@exherbo.org</email>
+      </author>
+    </authorgroup>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>sydfmt</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">sydfmt</refmiscinfo>
+    <refmiscinfo class="manual">sydfmt</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>sydfmt</refname>
+    <refpurpose>sydbox magic command formatter</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv id="synopsis">
+    <cmdsynopsis>
+      <itemizedlist>
+        <listitem><command>sydfmt <arg choice="opt">-hv</arg></command></listitem>
+        <listitem><command>sydfmt <arg choice="req">exec</arg><arg choice="opt">--</arg><arg choice="req">program</arg><arg choice="opt" rep="repeat">args</arg></command></listitem>
+      </itemizedlist>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1 id="description">
+    <title>Description</title>
+
+    <para>
+      <command>sydfmt</command> formats special magic commands for
+      <citerefentry><refentrytitle>sydbox</refentrytitle><manvolnum>1</manvolnum></citerefentry>.
+    </para>
+  </refsect1>
+
+  <refsect1 id="options">
+    <title>Options</title>
+
+    <simpara>The following options are understood:</simpara>
+
+    <variablelist>
+      <varlistentry>
+        <term><option>-h</option></term>
+        <listitem>
+          <simpara>
+            Show usage and exit
+          </simpara>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-v</option></term>
+        <listitem>
+          <simpara>
+            Show version and exit
+          </simpara>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1 id="see-also">
+    <title>See Also</title>
+    <para>
+      <citerefentry><refentrytitle>sydbox</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+      <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>strace</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+    </para>
+  </refsect1>
+
+  <refsect1 id="copyright">
+    <title>COPYRIGHT</title>
+
+    <para>Copyright &#169; 2012 Ali Polatel <email>alip@exherbo.org</email></para>
+  </refsect1>
+</refentry>
+<!-- vim: set ts=2 sts=2 sw=2 et tw=120 nowrap spell spelllang=en : -->

@@ -13,12 +13,16 @@ AM_CFLAGS= \
 	   -I$(top_srcdir)/include \
 	   @SYDBOX_CFLAGS@
 
-bin_PROGRAMS= sydbox
+bin_PROGRAMS= sydbox sydfmt
+sydbox_CPPFLAGS= -DSYDBOX
+sydfmt_CPPFLAGS= -DSYDFMT
 noinst_HEADERS= \
 		file.h \
 		log.h \
 		macro.h \
+		magic.h \
 		path.h \
+		pathlookup.h \
 		proc.h \
 		seccomp.h \
 		slist.h \
@@ -30,12 +34,12 @@ noinst_HEADERS= \
 		xfunc.h \
 		sys-check.h \
 		sydbox-conf.h \
-		sydbox-magic.h \
 		sydbox-defs.h
 sydbox_SOURCES= \
 		 file.c \
 		 log.c \
 		 path.c \
+		 pathlookup.c \
 		 proc.c \
 		 seccomp.c \
 		 pathdecode.c \
@@ -52,10 +56,11 @@ sydbox_SOURCES= \
 		 magic-log.c \
 		 magic-match.c \
 		 magic-if_match.c \
+		 magic-cmd.c \
+		 magic.c \
 		 sydbox-box.c \
 		 sydbox-callback.c \
 		 sydbox-config.c \
-		 sydbox-magic.c \
 		 sydbox-panic.c \
 		 sydbox-syscall.c \
 		 sydbox-systable.c \
@@ -87,6 +92,8 @@ sydbox_SOURCES= \
 		 sys-connect.c \
 		 sys-getsockname.c \
 		 sydbox.c
+sydfmt_SOURCES= \
+		sydfmt.c
 
 # Imported from rsync!
 noinst_HEADERS+= \

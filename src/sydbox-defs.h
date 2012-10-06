@@ -32,13 +32,13 @@
 #include "JSON_parser.h"
 #include "canonicalize.h"
 #include "hashtable.h"
+#include "magic.h"
 #include "slist.h"
 #include "sockmatch.h"
 #include "util.h"
 #include "xfunc.h"
 #include "sys-check.h"
 #include "sydbox-conf.h"
-#include "sydbox-magic.h"
 
 /* Type declarations */
 typedef struct {
@@ -187,17 +187,6 @@ int panic(struct pink_easy_process *current);
 int violation(struct pink_easy_process *current, const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 2, 3)));
 
-const char *magic_strerror(int error);
-const char *magic_strkey(enum magic_key key);
-unsigned magic_key_type(enum magic_key key);
-unsigned magic_key_parent(enum magic_key key);
-unsigned magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len);
-int magic_cast(struct pink_easy_process *current,
-	       enum magic_key key, enum magic_type type,
-	       const void *val);
-int magic_cast_string(struct pink_easy_process *current,
-		      const char *magic, int prefix);
-
 void config_init(void);
 void config_done(void);
 void config_reset(void);
@@ -217,6 +206,8 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 
 void systable_init(void);
 void systable_free(void);
+void systable_add_full(long no, enum pink_abi abi, const char *name,
+		       sysfunc_t fenter, sysfunc_t fexit);
 void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit);
 const sysentry_t *systable_lookup(long no, enum pink_abi abi);
 

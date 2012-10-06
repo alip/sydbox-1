@@ -1,12 +1,12 @@
 /*
- * sydbox/sydbox-magic.h
+ * sydbox/magic.h
  *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#ifndef SYDBOX_MAGIC_H
-#define SYDBOX_MAGIC_H 1
+#ifndef MAGIC_H
+#define MAGIC_H 1
 
 #include <pinktrace/easy/pink.h>
 #include "strtable.h"
@@ -99,8 +99,13 @@ static const char *const trace_interrupt_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(trace_interrupt, int)
 
-#define MAGIC_QUERY_TRUE	1
-#define MAGIC_QUERY_FALSE	2
+enum magic_op {
+	MAGIC_OP_SET,
+	MAGIC_OP_APPEND,
+	MAGIC_OP_REMOVE,
+	MAGIC_OP_QUERY,
+	MAGIC_OP_EXEC,
+};
 
 enum magic_type {
 	MAGIC_TYPE_NONE,
@@ -110,6 +115,7 @@ enum magic_type {
 	MAGIC_TYPE_INTEGER,
 	MAGIC_TYPE_STRING,
 	MAGIC_TYPE_STRING_ARRAY,
+	MAGIC_TYPE_COMMAND,
 
 	MAGIC_TYPE_INVALID,
 };
@@ -188,18 +194,45 @@ enum magic_key {
 	MAGIC_KEY_FILTER_WRITE,
 	MAGIC_KEY_FILTER_NETWORK,
 
+	MAGIC_KEY_CMD,
+	MAGIC_KEY_CMD_EXEC,
+
 	MAGIC_KEY_INVALID,
 };
 
-#define MAGIC_ERROR_SUCCESS		( 0)
-#define MAGIC_ERROR_NOT_SUPPORTED	(-1)
-#define MAGIC_ERROR_INVALID_KEY		(-2)
-#define MAGIC_ERROR_INVALID_TYPE	(-3)
-#define MAGIC_ERROR_INVALID_VALUE	(-4)
-#define MAGIC_ERROR_INVALID_QUERY	(-5)
-#define MAGIC_ERROR_INVALID_OPERATION	(-6)
-#define MAGIC_ERROR_NOPERM		(-7)
-#define MAGIC_ERROR_OOM			(-8)
+enum magic_ret {
+	MAGIC_RET_NOOP = 1,
+	MAGIC_RET_OK,
+	MAGIC_RET_TRUE,
+	MAGIC_RET_FALSE,
+	MAGIC_RET_ERROR_0,
+	MAGIC_RET_NOT_SUPPORTED,
+	MAGIC_RET_INVALID_KEY,
+	MAGIC_RET_INVALID_TYPE,
+	MAGIC_RET_INVALID_VALUE,
+	MAGIC_RET_INVALID_QUERY,
+	MAGIC_RET_INVALID_COMMAND,
+	MAGIC_RET_INVALID_OPERATION,
+	MAGIC_RET_NOPERM,
+	MAGIC_RET_OOM,
+	MAGIC_RET_PROCESS_TERMINATED,
+};
+
+#define MAGIC_BOOL(b)	((b) ? MAGIC_RET_TRUE : MAGIC_RET_FALSE)
+#define MAGIC_ERROR(r)	((r) < 0 || (r) >= MAGIC_RET_ERROR_0)
+
+extern const char *magic_strerror(int error);
+extern const char *magic_strkey(enum magic_key key);
+extern unsigned magic_key_type(enum magic_key key);
+extern unsigned magic_key_parent(enum magic_key key);
+extern unsigned magic_key_lookup(enum magic_key key, const char *nkey,
+				 ssize_t len);
+extern int magic_cast(struct pink_easy_process *current,
+		      enum magic_op op,
+		      enum magic_key key,
+		      const void *val);
+extern int magic_cast_string(struct pink_easy_process *current,
+		      const char *magic, int prefix);
 
 extern int magic_set_panic_exit_code(const void *val, struct pink_easy_process *current);
 extern int magic_set_violation_exit_code(const void *val, struct pink_easy_process *current);
@@ -220,20 +253,34 @@ extern int magic_set_whitelist_sb(const void *val, struct pink_easy_process *cur
 extern int magic_query_whitelist_sb(struct pink_easy_process *current);
 extern int magic_set_whitelist_usf(const void *val, struct pink_easy_process *current);
 extern int magic_query_whitelist_usf(struct pink_easy_process *current);
-extern int magic_set_whitelist_exec(const void *val, struct pink_easy_process *current);
-extern int magic_set_whitelist_read(const void *val, struct pink_easy_process *current);
-extern int magic_set_whitelist_write(const void *val, struct pink_easy_process *current);
-extern int magic_set_blacklist_exec(const void *val, struct pink_easy_process *current);
-extern int magic_set_blacklist_read(const void *val, struct pink_easy_process *current);
-extern int magic_set_blacklist_write(const void *val, struct pink_easy_process *current);
-extern int magic_set_filter_exec(const void *val, struct pink_easy_process *current);
-extern int magic_set_filter_read(const void *val, struct pink_easy_process *current);
-extern int magic_set_filter_write(const void *val, struct pink_easy_process *current);
-extern int magic_set_whitelist_network_bind(const void *val, struct pink_easy_process *current);
-extern int magic_set_whitelist_network_connect(const void *val, struct pink_easy_process *current);
-extern int magic_set_blacklist_network_bind(const void *val, struct pink_easy_process *current);
-extern int magic_set_blacklist_network_connect(const void *val, struct pink_easy_process *current);
-extern int magic_set_filter_network(const void *val, struct pink_easy_process *current);
+extern int magic_append_whitelist_exec(const void *val, struct pink_easy_process *current);
+extern int magic_remove_whitelist_exec(const void *val, struct pink_easy_process *current);
+extern int magic_append_whitelist_read(const void *val, struct pink_easy_process *current);
+extern int magic_remove_whitelist_read(const void *val, struct pink_easy_process *current);
+extern int magic_append_whitelist_write(const void *val, struct pink_easy_process *current);
+extern int magic_remove_whitelist_write(const void *val, struct pink_easy_process *current);
+extern int magic_append_blacklist_exec(const void *val, struct pink_easy_process *current);
+extern int magic_remove_blacklist_exec(const void *val, struct pink_easy_process *current);
+extern int magic_append_blacklist_read(const void *val, struct pink_easy_process *current);
+extern int magic_remove_blacklist_read(const void *val, struct pink_easy_process *current);
+extern int magic_append_blacklist_write(const void *val, struct pink_easy_process *current);
+extern int magic_remove_blacklist_write(const void *val, struct pink_easy_process *current);
+extern int magic_append_filter_exec(const void *val, struct pink_easy_process *current);
+extern int magic_remove_filter_exec(const void *val, struct pink_easy_process *current);
+extern int magic_append_filter_read(const void *val, struct pink_easy_process *current);
+extern int magic_remove_filter_read(const void *val, struct pink_easy_process *current);
+extern int magic_append_filter_write(const void *val, struct pink_easy_process *current);
+extern int magic_remove_filter_write(const void *val, struct pink_easy_process *current);
+extern int magic_append_whitelist_network_bind(const void *val, struct pink_easy_process *current);
+extern int magic_remove_whitelist_network_bind(const void *val, struct pink_easy_process *current);
+extern int magic_append_whitelist_network_connect(const void *val, struct pink_easy_process *current);
+extern int magic_remove_whitelist_network_connect(const void *val, struct pink_easy_process *current);
+extern int magic_append_blacklist_network_bind(const void *val, struct pink_easy_process *current);
+extern int magic_remove_blacklist_network_bind(const void *val, struct pink_easy_process *current);
+extern int magic_append_blacklist_network_connect(const void *val, struct pink_easy_process *current);
+extern int magic_remove_blacklist_network_connect(const void *val, struct pink_easy_process *current);
+extern int magic_append_filter_network(const void *val, struct pink_easy_process *current);
+extern int magic_remove_filter_network(const void *val, struct pink_easy_process *current);
 extern int magic_set_abort_decision(const void *val, struct pink_easy_process *current);
 extern int magic_set_panic_decision(const void *val, struct pink_easy_process *current);
 extern int magic_set_violation_decision(const void *val, struct pink_easy_process *current);
@@ -250,10 +297,13 @@ extern int magic_set_sandbox_exec(const void *val, struct pink_easy_process *cur
 extern int magic_set_sandbox_read(const void *val, struct pink_easy_process *current);
 extern int magic_set_sandbox_write(const void *val, struct pink_easy_process *current);
 extern int magic_set_sandbox_network(const void *val, struct pink_easy_process *current);
-extern int magic_set_exec_kill_if_match(const void *val, struct pink_easy_process *current);
-extern int magic_set_exec_resume_if_match(const void *val, struct pink_easy_process *current);
+extern int magic_append_exec_kill_if_match(const void *val, struct pink_easy_process *current);
+extern int magic_remove_exec_kill_if_match(const void *val, struct pink_easy_process *current);
+extern int magic_append_exec_resume_if_match(const void *val, struct pink_easy_process *current);
+extern int magic_remove_exec_resume_if_match(const void *val, struct pink_easy_process *current);
 extern int magic_query_match_case_sensitive(struct pink_easy_process *current);
 extern int magic_set_match_case_sensitive(const void *val, struct pink_easy_process *current);
 extern int magic_set_match_no_wildcard(const void *val, struct pink_easy_process *current);
 
+extern int magic_cmd_exec(const void *val, struct pink_easy_process *current);
 #endif

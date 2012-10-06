@@ -1,11 +1,12 @@
 /*
- * sydbox/sydbox-magic.c
+ * sydbox/magic.c
  *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #include "sydbox-defs.h"
+#include "magic.h"
 
 #include <errno.h>
 #include <string.h>
@@ -15,7 +16,6 @@
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
-#include "log.h"
 #include "util.h"
 
 struct key {
@@ -24,7 +24,10 @@ struct key {
 	unsigned parent;
 	enum magic_type type;
 	int (*set) (const void *val, struct pink_easy_process *current);
+	int (*append) (const void *val, struct pink_easy_process *current);
+	int (*remove) (const void *val, struct pink_easy_process *current);
 	int (*query) (struct pink_easy_process *current);
+	int (*cmd) (const void *val, struct pink_easy_process *current);
 };
 
 static const struct key key_table[] = {
@@ -134,6 +137,13 @@ static const struct key key_table[] = {
 		.name   = "network",
 		.lname  = "blacklist.network",
 		.parent = MAGIC_KEY_BLACKLIST,
+		.type   = MAGIC_TYPE_OBJECT,
+	},
+
+	[MAGIC_KEY_CMD] = {
+		.name   = "cmd",
+		.lname  = "cmd",
+		.parent = MAGIC_KEY_NONE,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
 
@@ -338,14 +348,16 @@ static const struct key key_table[] = {
 		.lname  = "exec.kill_if_match",
 		.parent = MAGIC_KEY_EXEC,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_exec_kill_if_match,
+		.append = magic_append_exec_kill_if_match,
+		.remove = magic_remove_exec_kill_if_match,
 	},
 	[MAGIC_KEY_EXEC_RESUME_IF_MATCH] = {
 		.name   = "resume_if_match",
 		.lname  = "exec.resume_if_match",
 		.parent = MAGIC_KEY_EXEC,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_exec_resume_if_match,
+		.append = magic_append_exec_resume_if_match,
+		.remove = magic_remove_exec_resume_if_match,
 	},
 
 	[MAGIC_KEY_WHITELIST_EXEC] = {
@@ -353,35 +365,40 @@ static const struct key key_table[] = {
 		.lname  = "whitelist.exec",
 		.parent = MAGIC_KEY_WHITELIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_whitelist_exec,
+		.append = magic_append_whitelist_exec,
+		.remove = magic_remove_whitelist_exec,
 	},
 	[MAGIC_KEY_WHITELIST_READ] = {
 		.name   = "read",
 		.lname  = "whitelist.read",
 		.parent = MAGIC_KEY_WHITELIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_whitelist_read,
+		.append = magic_append_whitelist_read,
+		.remove = magic_remove_whitelist_read,
 	},
 	[MAGIC_KEY_WHITELIST_WRITE] = {
 		.name   = "write",
 		.lname  = "whitelist.write",
 		.parent = MAGIC_KEY_WHITELIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_whitelist_write,
+		.append = magic_append_whitelist_write,
+		.remove = magic_remove_whitelist_write,
 	},
 	[MAGIC_KEY_WHITELIST_NETWORK_BIND] = {
 		.name   = "bind",
 		.lname  = "whitelist.network.bind",
 		.parent = MAGIC_KEY_WHITELIST_NETWORK,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_whitelist_network_bind,
+		.append = magic_append_whitelist_network_bind,
+		.remove = magic_remove_whitelist_network_bind,
 	},
 	[MAGIC_KEY_WHITELIST_NETWORK_CONNECT] = {
 		.name   = "connect",
 		.lname  = "whitelist.network.connect",
 		.parent = MAGIC_KEY_WHITELIST_NETWORK,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_whitelist_network_connect,
+		.append = magic_append_whitelist_network_connect,
+		.remove = magic_remove_whitelist_network_connect,
 	},
 
 	[MAGIC_KEY_BLACKLIST_EXEC] = {
@@ -389,35 +406,40 @@ static const struct key key_table[] = {
 		.lname  = "blacklist.exec",
 		.parent = MAGIC_KEY_BLACKLIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_blacklist_exec,
+		.append = magic_append_blacklist_exec,
+		.remove = magic_remove_blacklist_exec,
 	},
 	[MAGIC_KEY_BLACKLIST_READ] = {
 		.name   = "read",
 		.lname  = "blacklist.read",
 		.parent = MAGIC_KEY_BLACKLIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_blacklist_read,
+		.append = magic_append_blacklist_read,
+		.remove = magic_remove_blacklist_read,
 	},
 	[MAGIC_KEY_BLACKLIST_WRITE] = {
 		.name   = "write",
 		.lname  = "blacklist.write",
 		.parent = MAGIC_KEY_BLACKLIST,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_blacklist_write,
+		.append = magic_append_blacklist_write,
+		.remove = magic_remove_blacklist_write,
 	},
 	[MAGIC_KEY_BLACKLIST_NETWORK_BIND] = {
 		.name   = "bind",
 		.lname  = "blacklist.network.bind",
 		.parent = MAGIC_KEY_BLACKLIST_NETWORK,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_blacklist_network_bind,
+		.append = magic_append_blacklist_network_bind,
+		.remove = magic_remove_blacklist_network_bind,
 	},
 	[MAGIC_KEY_BLACKLIST_NETWORK_CONNECT] = {
 		.name   = "connect",
 		.lname  = "blacklist.network.connect",
 		.parent = MAGIC_KEY_BLACKLIST_NETWORK,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_blacklist_network_connect,
+		.append = magic_append_blacklist_network_connect,
+		.remove = magic_remove_blacklist_network_connect,
 	},
 
 	[MAGIC_KEY_FILTER_EXEC] = {
@@ -425,28 +447,40 @@ static const struct key key_table[] = {
 		.lname  = "filter.exec",
 		.parent = MAGIC_KEY_FILTER,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_filter_exec,
+		.append = magic_append_filter_exec,
+		.remove = magic_remove_filter_exec,
 	},
 	[MAGIC_KEY_FILTER_READ] = {
 		.name   = "read",
 		.lname  = "filter.read",
 		.parent = MAGIC_KEY_FILTER,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_filter_read,
+		.append = magic_append_filter_read,
+		.remove = magic_remove_filter_read,
 	},
 	[MAGIC_KEY_FILTER_WRITE] = {
 		.name   = "write",
 		.lname  = "filter.write",
 		.parent = MAGIC_KEY_FILTER,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_filter_write,
+		.append = magic_append_filter_write,
+		.remove = magic_remove_filter_write,
 	},
 	[MAGIC_KEY_FILTER_NETWORK] = {
 		.name   = "network",
 		.lname  = "filter.network",
 		.parent = MAGIC_KEY_FILTER,
 		.type   = MAGIC_TYPE_STRING_ARRAY,
-		.set    = magic_set_filter_network,
+		.append = magic_append_filter_network,
+		.remove = magic_remove_filter_network,
+	},
+
+	[MAGIC_KEY_CMD_EXEC] = {
+		.name   = "exec",
+		.lname  = "cmd.exec",
+		.parent = MAGIC_KEY_CMD,
+		.type   = MAGIC_TYPE_COMMAND,
+		.cmd    = magic_cmd_exec,
 	},
 
 	[MAGIC_KEY_INVALID] = {
@@ -457,27 +491,42 @@ static const struct key key_table[] = {
 
 const char *magic_strerror(int error)
 {
+	if (error < 0)
+		return strerror(-error);
+
 	switch (error) {
-	case MAGIC_ERROR_SUCCESS:
-		return "Success";
-	case MAGIC_ERROR_NOT_SUPPORTED:
-		return "Not supported";
-	case MAGIC_ERROR_INVALID_KEY:
-		return "Invalid key";
-	case MAGIC_ERROR_INVALID_TYPE:
-		return "Invalid type";
-	case MAGIC_ERROR_INVALID_VALUE:
-		return "Invalid value";
-	case MAGIC_ERROR_INVALID_QUERY:
-		return "Invalid query";
-	case MAGIC_ERROR_INVALID_OPERATION:
-		return "Invalid operation";
-	case MAGIC_ERROR_NOPERM:
-		return "No permission";
-	case MAGIC_ERROR_OOM:
-		return "Out of memory";
+	case 0:
+		return "success";
+	case MAGIC_RET_NOOP:
+		return "noop";
+	case MAGIC_RET_OK:
+		return "ok";
+	case MAGIC_RET_TRUE:
+		return "true";
+	case MAGIC_RET_FALSE:
+		return "false";
+	case MAGIC_RET_NOT_SUPPORTED:
+		return "not supported";
+	case MAGIC_RET_INVALID_KEY:
+		return "invalid key";
+	case MAGIC_RET_INVALID_TYPE:
+		return "invalid type";
+	case MAGIC_RET_INVALID_VALUE:
+		return "invalid value";
+	case MAGIC_RET_INVALID_QUERY:
+		return "invalid query";
+	case MAGIC_RET_INVALID_COMMAND:
+		return "invalid command";
+	case MAGIC_RET_INVALID_OPERATION:
+		return "invalid operation";
+	case MAGIC_RET_NOPERM:
+		return "no permission";
+	case MAGIC_RET_OOM:
+		return "out of memory";
+	case MAGIC_RET_PROCESS_TERMINATED:
+		return "process terminated";
 	default:
-		return "Unknown error";
+		return "unknown error";
 	}
 }
 
@@ -522,39 +571,84 @@ unsigned magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len)
 	return MAGIC_KEY_INVALID;
 }
 
-int magic_cast(struct pink_easy_process *current, enum magic_key key,
-	       enum magic_type type, const void *val)
+static int magic_ok(struct key entry, enum magic_op op)
 {
-	struct key entry;
+	/* Step 1: Check type */
+	switch (op) {
+	case MAGIC_OP_SET:
+		switch (entry.type) {
+		case MAGIC_TYPE_BOOLEAN:
+		case MAGIC_TYPE_INTEGER:
+		case MAGIC_TYPE_STRING:
+			if (entry.set == NULL)
+				return MAGIC_RET_INVALID_OPERATION;
+			break;
+		default:
+			return MAGIC_RET_INVALID_TYPE;
+		}
+		break;
+	case MAGIC_OP_QUERY:
+		if (entry.query == NULL)
+			return MAGIC_RET_INVALID_OPERATION;
+		break;
+	case MAGIC_OP_APPEND:
+	case MAGIC_OP_REMOVE:
+		if (entry.type != MAGIC_TYPE_STRING_ARRAY)
+			return MAGIC_RET_INVALID_TYPE;
+		if (op == MAGIC_OP_APPEND && entry.append == NULL)
+			return MAGIC_RET_INVALID_OPERATION;
+		if (op == MAGIC_OP_REMOVE && entry.remove == NULL)
+			return MAGIC_RET_INVALID_OPERATION;
+		break;
+	case MAGIC_OP_EXEC:
+		if (entry.cmd == NULL)
+			return MAGIC_RET_INVALID_OPERATION;
+		break;
+	}
 
-	if (key >= MAGIC_KEY_INVALID)
-		return MAGIC_ERROR_INVALID_KEY;
-
-	entry = key_table[key];
-	if (entry.type != type)
-		return MAGIC_ERROR_INVALID_TYPE;
-
+	/* Step 2: Check access */
 	if (sydbox->config.core_disallow) {
 		enum magic_key k = entry.parent;
 		do {
 			if (k == MAGIC_KEY_CORE)
-				return MAGIC_ERROR_NOPERM;
+				return MAGIC_RET_NOPERM;
 			k = key_table[k].parent;
 		} while (k != MAGIC_KEY_NONE);
 	}
 
-	return entry.set(val, current);
+	return MAGIC_RET_OK;
 }
 
-static int magic_query(struct pink_easy_process *current, enum magic_key key)
+int magic_cast(struct pink_easy_process *current,
+	       enum magic_op op,
+	       enum magic_key key,
+	       const void *val)
 {
+	int r;
 	struct key entry;
 
 	if (key >= MAGIC_KEY_INVALID)
-		return MAGIC_ERROR_INVALID_KEY;
-	entry = key_table[key];
+		return MAGIC_RET_INVALID_KEY;
 
-	return entry.query ? entry.query(current) : MAGIC_ERROR_INVALID_QUERY;
+	entry = key_table[key];
+	r = magic_ok(entry, op);
+	if (r != MAGIC_RET_OK)
+		return r;
+
+	switch (op) {
+	case MAGIC_OP_SET:
+		return entry.set(val, current);
+	case MAGIC_OP_QUERY:
+		return entry.query(current);
+	case MAGIC_OP_APPEND:
+		return entry.append(val, current);
+	case MAGIC_OP_REMOVE:
+		return entry.remove(val, current);
+	case MAGIC_OP_EXEC:
+		return entry.cmd(val, current);
+	default:
+		return MAGIC_RET_INVALID_OPERATION;
+	}
 }
 
 static inline enum magic_key magic_next_key(const char *magic,
@@ -575,27 +669,28 @@ static inline enum magic_key magic_next_key(const char *magic,
 int magic_cast_string(struct pink_easy_process *current, const char *magic,
 		      int prefix)
 {
-	bool query = false, bval;
+	bool bval;
 	int r, ival;
 	enum magic_key key;
+	enum magic_op op;
 	const char *cmd;
 	struct key entry;
 
 	if (prefix) {
 		if (!startswith(magic, SYDBOX_MAGIC_PREFIX)) {
-			/* No magic */
-			return 0;
+			/* no magic */
+			return MAGIC_RET_NOOP;
 		}
 
 		cmd = magic + sizeof(SYDBOX_MAGIC_PREFIX) - 1;
 		if (!*cmd) {
-			/* Magic without command */
-			return 1;
+			/* magic without command */
+			return MAGIC_RET_OK;
 		} else if (*cmd != '/') {
-			/* No magic, e.g. /dev/sydboxFOO */
-			return 0;
+			/* no magic, e.g. /dev/sydboxFOO */
+			return MAGIC_RET_NOOP;
 		} else {
-			++cmd; /* Skip the '/' */
+			cmd++; /* Skip the '/' */
 		}
 	} else {
 		cmd = magic;
@@ -604,86 +699,70 @@ int magic_cast_string(struct pink_easy_process *current, const char *magic,
 	/* Figure out the magic command */
 	for (key = MAGIC_KEY_NONE;;) {
 		key = magic_next_key(cmd, key);
-		if (key == MAGIC_KEY_INVALID) /* Invalid key */
-			return MAGIC_ERROR_INVALID_KEY;
+		if (key == MAGIC_KEY_INVALID)
+			return MAGIC_RET_INVALID_KEY;
 
 		cmd += strlen(key_table[key].name);
-		switch (*cmd) {
-		case '/':
+		if (*cmd == '/') {
 			if (key_table[key].type != MAGIC_TYPE_OBJECT)
-				return MAGIC_ERROR_INVALID_KEY;
-			++cmd;
+				return MAGIC_RET_INVALID_KEY;
+			cmd++;
 			continue;
-		case SYDBOX_MAGIC_ADD_CHAR:
-		case SYDBOX_MAGIC_REMOVE_CHAR:
-			if (key_table[key].type != MAGIC_TYPE_STRING_ARRAY)
-				return MAGIC_ERROR_INVALID_OPERATION;
-			/* Don't skip the magic separator character for string
-			 * arrays so that the magic callback can distinguish
-			 * between add and remove operations.
-			 */
+		} else if (*cmd == SYDBOX_MAGIC_SET_CHAR) {
+			op = MAGIC_OP_SET;
 			break;
-		case SYDBOX_MAGIC_QUERY_CHAR:
-			if (key_table[key].query == NULL)
-				return MAGIC_ERROR_INVALID_QUERY;
-			query = true;
-			++cmd;
+		} else if (*cmd == SYDBOX_MAGIC_APPEND_CHAR) {
+			op = MAGIC_OP_APPEND;
 			break;
-		case SYDBOX_MAGIC_SET_CHAR:
-			switch (key_table[key].type) {
-			case MAGIC_TYPE_BOOLEAN:
-			case MAGIC_TYPE_INTEGER:
-			case MAGIC_TYPE_STRING:
-				break;
-			default:
-				return MAGIC_ERROR_INVALID_OPERATION;
-			}
-			++cmd;
+		} else if (*cmd == SYDBOX_MAGIC_REMOVE_CHAR) {
+			op = MAGIC_OP_REMOVE;
 			break;
-		case 0:
+		} else if (*cmd == SYDBOX_MAGIC_QUERY_CHAR) {
+			op = MAGIC_OP_QUERY;
+			break;
+		} else if (*cmd == SYDBOX_MAGIC_EXEC_CHAR) {
+			op = MAGIC_OP_EXEC;
+			break;
+		} else if (*cmd == 0) {
 			if (key_table[key].type == MAGIC_TYPE_NONE) {
-				/* Special path, i.e /dev/sydbox/${majorver} */
-				return 1;
+				/*
+				 * special path.
+				 * for example: /dev/sydbox/${majorver}
+				 */
+				return MAGIC_RET_OK;
 			}
-			/* fall through */
-		default:
-			return MAGIC_ERROR_INVALID_KEY;
+			return MAGIC_RET_INVALID_KEY;
+		} else {
+			return MAGIC_RET_INVALID_KEY;
 		}
-		break;
 	}
 
+	cmd++; /* skip operation character */
 	entry = key_table[key];
-	if (query) {
-		r = magic_query(current, key);
-		return r < 0 ? r : r == 0 ? MAGIC_QUERY_FALSE : MAGIC_QUERY_TRUE;
-	}
-
-	switch (entry.type) {
-	case MAGIC_TYPE_BOOLEAN:
-		if (parse_boolean(cmd, &bval) < 0)
-			return MAGIC_ERROR_INVALID_VALUE;
-		r = magic_cast(current, key, MAGIC_TYPE_BOOLEAN,
-			       BOOL_TO_PTR(bval));
-		if (r < 0)
-			return r;
-		break;
-	case MAGIC_TYPE_INTEGER:
-		if (safe_atoi(cmd, &ival) < 0)
-			return MAGIC_ERROR_INVALID_VALUE;
-		r = magic_cast(current, key, MAGIC_TYPE_INTEGER,
-			       INT_TO_PTR(ival));
-		if (r < 0)
-			return r;
-		break;
-	case MAGIC_TYPE_STRING_ARRAY:
-	case MAGIC_TYPE_STRING:
-		r = magic_cast(current, key, entry.type, cmd);
-		if (r < 0)
-			return r;
-		break;
+	switch (op) {
+	case MAGIC_OP_SET:
+		switch (entry.type) {
+		case MAGIC_TYPE_BOOLEAN:
+			if (parse_boolean(cmd, &bval) < 0)
+				return MAGIC_RET_INVALID_VALUE;
+			return magic_cast(current, op, key, BOOL_TO_PTR(bval));
+		case MAGIC_TYPE_INTEGER:
+			if (safe_atoi(cmd, &ival) < 0)
+				return MAGIC_RET_INVALID_VALUE;
+			return magic_cast(current, op, key, INT_TO_PTR(ival));
+		case MAGIC_TYPE_STRING:
+			return magic_cast(current, op, key, cmd);
+		default:
+			return MAGIC_RET_INVALID_TYPE;
+		}
+	case MAGIC_OP_APPEND:
+	case MAGIC_OP_REMOVE:
+		return magic_cast(current, op, key, cmd);
+	case MAGIC_OP_QUERY:
+		return magic_cast(current, op, key, NULL);
+	case MAGIC_OP_EXEC:
+		return magic_cast(current, op, key, cmd);
 	default:
-		break;
+		return MAGIC_RET_INVALID_OPERATION;
 	}
-
-	return 1;
 }

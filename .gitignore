@@ -81,8 +81,11 @@ Makefile
 # Specific ignores
 man/sydbox.1
 man/sydbox.html
+man/sydfmt.1
+man/sydfmt.html
 
 src/sydbox
+src/sydfmt
 
 tests/test-lib.sh
 tests/test-results

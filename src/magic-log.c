@@ -21,7 +21,7 @@ int magic_set_log_file(const void *val, struct pink_easy_process *current)
 	const char *filename = val;
 
 	if (!filename /* || !*filename */)
-		return MAGIC_ERROR_INVALID_VALUE;
+		return MAGIC_RET_INVALID_VALUE;
 
 	log_close();
 
@@ -34,13 +34,13 @@ int magic_set_log_file(const void *val, struct pink_easy_process *current)
 		log_init(NULL);
 	}
 
-	return 0;
+	return MAGIC_RET_OK;
 }
 
 int magic_set_log_level(const void *val, struct pink_easy_process *current)
 {
 	log_debug_level(PTR_TO_INT(val));
-	return 0;
+	return MAGIC_RET_OK;
 }
 
 int magic_set_log_console_fd(const void *val, struct pink_easy_process *current)
@@ -53,11 +53,11 @@ int magic_set_log_console_fd(const void *val, struct pink_easy_process *current)
 		die_errno("log_console_fd for fd `%d' failed", fd);
 	}
 
-	return 0;
+	return MAGIC_RET_OK;
 }
 
 int magic_set_log_console_level(const void *val, struct pink_easy_process *current)
 {
 	log_debug_console_level(PTR_TO_INT(val));
-	return 0;
+	return MAGIC_RET_OK;
 }

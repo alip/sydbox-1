@@ -4,19 +4,7 @@
 
 <!--
    Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
-
-   This file is part of Sydbox. sydbox is free software;
-   you can redistribute it and/or modify it under the terms of the GNU General
-   Public License version 2, as published by the Free Software Foundation.
-
-   sydbox is distributed in the hope that it will be useful, but WITHOUT ANY
-   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-   FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
-   details.
-
-   You should have received a copy of the GNU General Public License along with
-   this program; if not, write to the Free Software Foundation, Inc., 59 Temple
-   Place, Suite 330, Boston, MA  02111-1307  USA
+   Distributed under the terms of the GNU General Public License v3 or later
 -->
 
 <refentry id="sydbox" lang="en">
@@ -241,6 +229,21 @@
             </para>
           </listitem>
         </varlistentry>
+
+        <varlistentry>
+          <term><option>command</option></term>
+          <listitem>
+            <para>
+              This is a special type which is used to make sydbox execute certain functions.
+              It is meant to be used as a basic interprocess communication to workaround some tracing limitations.
+            </para>
+
+            <note>
+              Magic commands of this type can only be used with the magic
+              <function>stat</function><manvolnum>2</manvolnum> system call.
+            </note>
+          </listitem>
+        </varlistentry>
       </variablelist>
     </refsect2>
 
@@ -306,6 +309,15 @@
           <listitem>
             <simpara>
               This is used to remove an element from a string array.
+            </simpara>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>!</term>
+          <listitem>
+            <simpara>
+              This is used to execute a special sydbox command.
             </simpara>
           </listitem>
         </varlistentry>
@@ -667,6 +679,15 @@
                 </programlisting>
                 she will <emphasis>not</emphasis> execute the <command>/bin/sh</command> command.
               </note>
+              <note>
+                This functionality does <emphasis>not</emphasis> work with seccomp because once enabled, seccomp mode
+                can not be disabled. If sydbox detaches from the process all observed system calls of the process will
+                fail with <constant>ENOSYS</constant>. Due to this fact upon receiving this command when seccomp is
+                enabled sydbox goes on to trace the process but stops sandboxing and frees all sandboxing related data
+                structures of the process. The process is <emphasis>ignored</emphasis>. However, this workaround may not
+                be enough for some cases, for example, when the process in question is a daemon and must resume its
+                execution after sydbox exits. For such cases use <command>cmd/exec</command>.
+              </note>
             </para>
           </listitem>
         </varlistentry>
@@ -851,6 +872,22 @@
           </listitem>
         </varlistentry>
 
+        <varlistentry>
+          <term><option id="cmd-exec">cmd/exec</option></term>
+          <listitem>
+            <para>type: <type>command</type></para>
+            <para>
+              Makes sydbox execute an external command without sandboxing. The program name and arguments must be
+              separated with the <constant>US</constant> (unit separator, octal: 037) character.
+              <citerefentry><refentrytitle>sydfmt</refentrytitle><manvolnum>1</manvolnum></citerefentry> may be used
+              to do this. Consult its manual page for more information.
+            </para>
+            <note>
+              This command can only be used with the magic <function>stat</function><manvolnum>2</manvolnum>
+              system call.
+            </note>
+          </listitem>
+        </varlistentry>
       </variablelist>
     </refsect2>
   </refsect1>
@@ -1098,7 +1135,7 @@
       </listitem>
       <listitem>
         <para>A trailing "dir_name/***" will match both the directory (as if "dir_name/" had been specified) and
-        everything  in  the  directory (as if "dir_name/**" had been specified).</para>
+        everything in the directory (as if "dir_name/**" had been specified).</para>
       </listitem>
     </itemizedlist>
   </refsect1>
@@ -1206,17 +1243,17 @@
       <para>
         Allow all reads, deny read access to <filename>/etc/shadow</filename>:
         <programlisting>
-          $> sydbox -E LC_ALL=POSIX \
-                    -m core/sandbox/read:allow \
-                    -m blacklist/read+/etc/shadow \
-                    -- /bin/sh -c 'cat /etc/shadow'
+          $&gt; sydbox -E LC_ALL=POSIX \
+                       -m core/sandbox/read:allow \
+                       -m blacklist/read+/etc/shadow \
+                       -- /bin/sh -c 'cat /etc/shadow'
           sydbox@3141592653: -- Access Violation! --
           sydbox@3141592653: process id=20926 (abi=0 name:`cat')
           sydbox@3141592653: cwd: `/home/alip'
           sydbox@3141592653: cmdline: `cat /etc/shadow'
           sydbox@3141592653: open(`/etc/shadow')
           cat: /etc/shadow: Operation not permitted
-          $>
+          $&gt;
         </programlisting>
       </para>
 
@@ -1232,18 +1269,18 @@
           Note the quoting to escape shell expansion.
         </note>
         <programlisting>
-          $> sydbox -E LC_ALL=POSIX \
-                    -m core/sandbox/read:deny \
-                    -m core/sandbox/write:deny \
-                    -m 'whitelist/read+/lib64/***' \
-                    -m whitelist/read+/dev/zero \
-                    -m whitelist/read+/dev/full \
-                    -- dd if=/dev/zero of=/dev/full count=1
+          $&gt; sydbox -E LC_ALL=POSIX \
+                       -m core/sandbox/read:deny \
+                       -m core/sandbox/write:deny \
+                       -m 'whitelist/read+/lib64/***' \
+                       -m whitelist/read+/dev/zero \
+                       -m whitelist/read+/dev/full \
+                       -- dd if=/dev/zero of=/dev/full count=1
           dd: writing to '/dev/full': No space left on device
           1+0 records in
           0+0 records out
           0 bytes (0 B) copied, 0.000447024 s, 0.0 kB/s
-          $>
+          $&gt;
         </programlisting>
       </para>
 
@@ -1253,14 +1290,28 @@
           The initial <function>execve</function> is <emphasis>not</emphasis> checked.
         </note>
         <programlisting>
-          $> sydbox -E LC_ALL=POSIX \
-                    -m exec/kill_if_match+/usr/bin/ktorrent \
-                    -m exec/kill_if_match+/usr/bin/rtorrent \
-                    -- /bin/sh -c ktorrent
+          $&gt; sydbox -E LC_ALL=POSIX \
+                       -m exec/kill_if_match+/usr/bin/ktorrent \
+                       -m exec/kill_if_match+/usr/bin/rtorrent \
+                       -- /bin/sh -c ktorrent
           sydbox@3141592653: callback_exec: kill_if_match pattern=`/usr/bin/ktorrent' matches execve path=`/usr/bin/ktorrent'
           sydbox@3141592653: callback_exec: killing process:3097 [abi:0 cwd:`/home/alip']
         </programlisting>
       </para>
+
+      <para>
+        Execute a process without sandboxing so it will continue execution after sandboxing:
+        <programlisting>
+          $&gt; ./sydbox -- sh -c 'stat "$(./sydfmt exec echo hello world)"'
+          hello world
+            File: ‘/dev/sydbox/cmd/exec!echo\037hello\037world’
+            Size: 0               Blocks: 0          IO Block: 512    character special file
+          Device: 0h/0d   Inode: 0           Links: 0     Device type: 1,3
+          Access: (0666/crw-rw-rw-)  Uid: (    0/    root)   Gid: (    0/    root)
+          $&gt;
+        </programlisting>
+      </para>
+
     </refsect2>
 
     <refsect2 id="configuration-example">
@@ -1402,6 +1453,7 @@
   <refsect1 id="see-also">
     <title>See Also</title>
     <para>
+      <citerefentry><refentrytitle>sydfmt</refentrytitle><manvolnum>1</manvolnum></citerefentry>
       <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
       <citerefentry><refentrytitle>strace</refentrytitle><manvolnum>1</manvolnum></citerefentry>
     </para>

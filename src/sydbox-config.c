@@ -61,7 +61,6 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 {
 	int r;
 	const char *name;
-	char *str;
 	config_state_t *state = ctx;
 
 	name = NULL;
@@ -100,9 +99,9 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 		break;
 	case JSON_T_TRUE:
 	case JSON_T_FALSE:
-		r = magic_cast(NULL, state->key, MAGIC_TYPE_BOOLEAN,
-			       UINT_TO_PTR(type == JSON_T_TRUE));
-		if (r < 0) {
+		r = magic_cast(NULL, MAGIC_OP_SET, state->key,
+			       BOOL_TO_PTR(type == JSON_T_TRUE));
+		if (MAGIC_ERROR(r)) {
 			die("Error parsing %s in `%s': %s",
 			    magic_strkey(state->key),
 			    sydbox->config.state->filename,
@@ -112,38 +111,24 @@ static int parser_callback(void *ctx, int type, const JSON_value *value)
 			state->key = magic_key_parent(state->key);
 		break;
 	case JSON_T_STRING:
-		if (state->inarray) {
-			/* Slight hack, magic_cast expects operation character
-			 * in front of the string to distinguish between add
-			 * and remove.
-			 */
-			str = malloc(sizeof(char) * (value->vu.str.length + 2));
-			sprintf(str, "%c%s", SYDBOX_MAGIC_ADD_CHAR,
-				value->vu.str.value);
-		} else {
-			str = xstrndup(value->vu.str.value,
-				       value->vu.str.length + 1);
-		}
-
-		r = magic_cast(NULL, state->key,
-			       state->inarray ? MAGIC_TYPE_STRING_ARRAY
-					      : MAGIC_TYPE_STRING,
-			       str);
-		if (r < 0) {
+		r = magic_cast(NULL,
+			       state->inarray ? MAGIC_OP_APPEND
+					      : MAGIC_OP_SET,
+			       state->key, value->vu.str.value);
+		if (MAGIC_ERROR(r)) {
 			die("Error parsing %s in `%s': %s",
 			    magic_strkey(state->key),
 			    sydbox->config.state->filename,
 			    magic_strerror(r));
 		}
-		free(str);
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
 		break;
 	case JSON_T_INTEGER:
-		r = magic_cast(NULL, state->key,
-			       MAGIC_TYPE_INTEGER,
+		r = magic_cast(NULL, MAGIC_OP_SET,
+			       state->key,
 			       INT_TO_PTR(value->vu.integer_value));
-		if (r < 0) {
+		if (MAGIC_ERROR(r)) {
 			die("Error parsing %s in `%s': %s",
 			    magic_strkey(state->key),
 			    sydbox->config.state->filename,

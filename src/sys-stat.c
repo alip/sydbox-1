@@ -42,26 +42,38 @@ int sys_stat(struct pink_easy_process *current, const char *name)
 	path[SYDBOX_PATH_MAX-1] = '\0';
 
 	r = magic_cast_string(current, path, 1);
-	if (r < 0) {
+	if (r == MAGIC_RET_NOOP) {
+		/* no magic */
+		return 0;
+	} else if (MAGIC_ERROR(r)) {
 		log_warning("failed to cast magic=`%s': %s", path,
 			    magic_strerror(r));
-		switch (r) {
-		case MAGIC_ERROR_INVALID_KEY:
-		case MAGIC_ERROR_INVALID_TYPE:
-		case MAGIC_ERROR_INVALID_VALUE:
-		case MAGIC_ERROR_INVALID_QUERY:
-			errno = EINVAL;
-			break;
-		case MAGIC_ERROR_OOM:
-			errno = ENOMEM;
-			break;
-		default:
-			errno = 0;
-			break;
+		if (r == MAGIC_RET_PROCESS_TERMINATED) {
+			r = PINK_EASY_CFLAG_DROP;
+		} else {
+			switch (r) {
+			case MAGIC_RET_NOT_SUPPORTED:
+				errno = ENOTSUP;
+				break;
+			case MAGIC_RET_INVALID_KEY:
+			case MAGIC_RET_INVALID_TYPE:
+			case MAGIC_RET_INVALID_VALUE:
+			case MAGIC_RET_INVALID_QUERY:
+			case MAGIC_RET_INVALID_COMMAND:
+			case MAGIC_RET_INVALID_OPERATION:
+				errno = EINVAL;
+				break;
+			case MAGIC_RET_OOM:
+				errno = ENOMEM;
+				break;
+			case MAGIC_RET_NOPERM:
+			default:
+				errno = EPERM;
+				break;
+			}
+			r = deny(current, errno);
 		}
-		r = deny(current, errno);
-	}
-	else if (r > 0) {
+	} else if (r != MAGIC_RET_NOOP) {
 		/* Encode stat buffer */
 		memset(&buf, 0, sizeof(struct stat));
 		buf.st_mode = S_IFCHR |
@@ -79,9 +91,18 @@ int sys_stat(struct pink_easy_process *current, const char *name)
 					   (const char *)&buf,
 					   sizeof(struct stat));
 		log_magic("accepted magic=`%s'", path);
-		errno = (r == MAGIC_QUERY_FALSE) ? ENOENT : 0;
+		if (r < 0)
+			errno = -r;
+		else if (r == MAGIC_RET_FALSE)
+			errno = ENOENT;
+		else
+			errno = 0;
 		r = deny(current, errno);
 	}
 
+	/* r is one of:
+	 * - return value of deny()
+	 * - PINK_EASY_CFLAG_DROP
+	 */
 	return r;
 }

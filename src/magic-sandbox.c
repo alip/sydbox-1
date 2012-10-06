@@ -45,7 +45,7 @@ static int magic_query_sandbox(enum sandbox_type t,
 		assert_not_reached();
 	}
 
-	return mode == SANDBOX_OFF ? 0 : 1;
+	return MAGIC_BOOL(mode != SANDBOX_OFF);
 }
 
 static int magic_set_sandbox(enum sandbox_type t, const char *str,
@@ -56,7 +56,7 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str,
 
 	r = sandbox_mode_from_string(str);
 	if (r < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
+		return MAGIC_RET_INVALID_VALUE;
 
 	box = box_current(current);
 	switch (t) {
@@ -76,7 +76,7 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str,
 		assert_not_reached();
 	}
 
-	return 0;
+	return MAGIC_RET_OK;
 }
 
 int magic_query_sandbox_exec(struct pink_easy_process *current)

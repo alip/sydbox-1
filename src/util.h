@@ -1,7 +1,7 @@
 /*
  * sydbox/util.h
  *
- * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  * Based in part upon courier which is:
@@ -42,6 +42,7 @@ extern int parse_netmask_ip(const char *addr, unsigned *ret_netmask);
 extern int parse_netmask_ipv6(const char *addr, unsigned *ret_netmask);
 
 extern int close_nointr(int fd);
+extern int waitpid_nointr(pid_t pid, int *status, int options);
 
 #define streq(a,b) (strcmp((a),(b)) == 0)
 #define streqcase(a,b) (strcasecmp((a),(b)) == 0)

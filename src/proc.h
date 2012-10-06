@@ -31,6 +31,7 @@ int proc_cwd(pid_t pid, char **buf);
 int proc_fd(pid_t pid, int dfd, char **buf);
 int proc_cmdline(pid_t pid, size_t max_length, char **buf);
 int proc_comm(pid_t pid, char **name);
+int proc_environ(pid_t pid, char ***envp);
 int proc_stat(pid_t pid, struct proc_statinfo *info);
 
 #endif /* !PROC_H */

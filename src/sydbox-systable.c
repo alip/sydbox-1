@@ -18,8 +18,8 @@
 
 static hashtable_t *systable[PINK_ABIS_SUPPORTED];
 
-static void systable_add_full(long no, enum pink_abi abi, const char *name,
-			      sysfunc_t fenter, sysfunc_t fexit)
+void systable_add_full(long no, enum pink_abi abi, const char *name,
+		       sysfunc_t fenter, sysfunc_t fexit)
 {
 	sysentry_t *entry;
 

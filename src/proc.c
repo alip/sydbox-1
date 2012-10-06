@@ -23,8 +23,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <linux/binfmts.h>
 
 #include "file.h"
+#include "macro.h"
 #include "log.h"
 
 /* Useful macros */
@@ -179,6 +181,78 @@ int proc_comm(pid_t pid, char **name)
 		return r;
 
 	return 0;
+}
+
+/*
+ * read /proc/$pid/environ
+ */
+int proc_environ(pid_t pid, char ***envp)
+{
+	int c, r;
+	unsigned i, j;
+	char *p;
+	FILE *f;
+	char **env = NULL;
+
+	assert(pid >= 1);
+	assert(envp);
+
+	if (asprintf(&p, "/proc/%lu/environ", (unsigned long)pid) < 0)
+		return -ENOMEM;
+
+	f = fopen(p, "r");
+	free(p); /* XXX: May free() modify errno? */
+	if (!f)
+		return -errno;
+
+	i = 0;
+	env = malloc(sizeof(char *) * (i+2));
+	if (!env)
+		return -ENOMEM;
+	env[i] = malloc(sizeof(char) * MAX_ARG_STRLEN);
+	if (!env[i])
+		return -ENOMEM;
+	env[i][0] = '\0';
+	env[i+1] = NULL;
+	j = 0;
+	while ((c = fgetc(f)) != EOF) {
+		if (j >= MAX_ARG_STRLEN) {
+			r = -E2BIG;
+			goto err;
+		}
+		env[i][j] = c;
+		if (c == '\0') { /* end of unit */
+			i++;
+			if (i+2 >= MAX_ARG_STRINGS) {
+				r = -E2BIG;
+				goto err;
+			}
+			env = realloc(env, sizeof(char *) * (i+2));
+			if (!env)
+				return -ENOMEM;
+			env[i] = malloc(sizeof(char) * MAX_ARG_STRLEN);
+			if (!env[i])
+				return -ENOMEM;
+			env[i][0] = '\0';
+			env[i+1] = NULL;
+			j = 0;
+		} else {
+			j++;
+		}
+	}
+
+	fclose(f);
+
+	*envp = env;
+	return 0;
+err:
+	for (i = 0; i < ELEMENTSOF(env); i++) {
+		if (env[i])
+			free(env[i]);
+	}
+	free(env);
+
+	return r;
 }
 
 /*

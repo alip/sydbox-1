@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <ctype.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -251,6 +253,23 @@ int close_nointr(int fd)
 
 		r = close(fd);
 		if (fd >= 0)
+			return r;
+
+		if (errno != EINTR)
+			return r;
+	}
+	/* never reached */
+}
+
+int waitpid_nointr(pid_t pid, int *status, int options)
+{
+	assert(pid >= 0);
+
+	for (;;) {
+		int r;
+
+		r = waitpid(pid, status, options);
+		if (r >= 0)
 			return r;
 
 		if (errno != EINTR)

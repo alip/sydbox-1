@@ -35,6 +35,9 @@ typedef int (*sysfunc_t) (struct pink_easy_process *current, const char *name);
 
 typedef struct {
 	const char *name;
+	long no; /* Used only if `name' is NULL.
+		  * May be used to implement virtual system calls.
+		  */
 	sysfunc_t enter;
 	sysfunc_t exit;
 } sysentry_t;

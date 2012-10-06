@@ -14,26 +14,19 @@
 
 #include "slist.h"
 
-static int magic_set_global_if_match(const void *val, slist_t *if_match)
+static int magic_edit_if_match(const void *val, slist_t *if_match, bool append)
 {
-	char op;
 	const char *str = val;
 	struct snode *node;
 
-	if (!str || !*str || !*(str + 1))
-		return MAGIC_ERROR_INVALID_VALUE;
-	else {
-		op = *str;
-		++str;
-	}
+	if (!str || !*str)
+		return MAGIC_RET_INVALID_VALUE;
 
-	switch (op) {
-	case SYDBOX_MAGIC_ADD_CHAR:
+	if (append) {
 		node = xcalloc(1, sizeof(struct snode));
 		node->data = xstrdup(str);
 		SLIST_INSERT_HEAD(if_match, node, up);
-		return 0;
-	case SYDBOX_MAGIC_REMOVE_CHAR:
+	} else {
 		SLIST_FOREACH(node, if_match, up) {
 			if (streq(node->data, str)) {
 				SLIST_REMOVE(if_match, node, snode, up);
@@ -42,18 +35,35 @@ static int magic_set_global_if_match(const void *val, slist_t *if_match)
 				break;
 			}
 		}
-		return 0;
-	default:
-		return MAGIC_ERROR_INVALID_OPERATION;
 	}
+
+	return MAGIC_RET_OK;
 }
 
-int magic_set_exec_kill_if_match(const void *val, struct pink_easy_process *current)
+int magic_append_exec_kill_if_match(const void *val,
+				    struct pink_easy_process *current)
 {
-	return magic_set_global_if_match(val, &sydbox->config.exec_kill_if_match);
+	return magic_edit_if_match(val, &sydbox->config.exec_kill_if_match,
+				   true);
 }
 
-int magic_set_exec_resume_if_match(const void *val, struct pink_easy_process *current)
+int magic_remove_exec_kill_if_match(const void *val,
+				    struct pink_easy_process *current)
 {
-	return magic_set_global_if_match(val, &sydbox->config.exec_resume_if_match);
+	return magic_edit_if_match(val, &sydbox->config.exec_kill_if_match,
+				   false);
+}
+
+int magic_append_exec_resume_if_match(const void *val,
+				      struct pink_easy_process *current)
+{
+	return magic_edit_if_match(val, &sydbox->config.exec_resume_if_match,
+				   true);
+}
+
+int magic_remove_exec_resume_if_match(const void *val,
+				      struct pink_easy_process *current)
+{
+	return magic_edit_if_match(val, &sydbox->config.exec_resume_if_match,
+				   false);
 }

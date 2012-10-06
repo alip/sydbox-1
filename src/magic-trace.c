@@ -19,24 +19,29 @@ int magic_set_trace_follow_fork(const void *val,
 				struct pink_easy_process *current)
 {
 	sydbox->config.follow_fork = PTR_TO_BOOL(val);
-	return 0;
+	return MAGIC_RET_OK;
 }
 
 int magic_query_trace_follow_fork(struct pink_easy_process *current)
 {
-	return sydbox->config.follow_fork;
+	return MAGIC_BOOL(sydbox->config.follow_fork);
 }
 
 int magic_set_trace_exit_wait_all(const void *val,
 				  struct pink_easy_process *current)
 {
+#ifdef WANT_SECCOMP
+	log_magic("seccomp support enabled, force exit_wait_all to true");
+	sydbox->config.exit_wait_all = true;
+#else
 	sydbox->config.exit_wait_all = PTR_TO_BOOL(val);
-	return 0;
+#endif
+	return MAGIC_RET_OK;
 }
 
 int magic_query_trace_exit_wait_all(struct pink_easy_process *current)
 {
-	return sydbox->config.exit_wait_all;
+	return MAGIC_BOOL(sydbox->config.exit_wait_all);
 }
 
 int magic_set_trace_use_seccomp(const void *val,
@@ -47,7 +52,7 @@ int magic_set_trace_use_seccomp(const void *val,
 #else
 	log_magic("seccomp support not enabled, ignoring magic");
 #endif
-	return 0;
+	return MAGIC_RET_OK;
 }
 
 int magic_query_trace_use_seccomp(struct pink_easy_process *current)
@@ -55,7 +60,7 @@ int magic_query_trace_use_seccomp(struct pink_easy_process *current)
 #ifdef WANT_SECCOMP
 	return sydbox->config.use_seccomp;
 #else
-	return MAGIC_ERROR_NOT_SUPPORTED;
+	return MAGIC_RET_NOT_SUPPORTED;
 #endif
 }
 
@@ -68,10 +73,10 @@ int magic_set_trace_magic_lock(const void *val,
 
 	l = lock_state_from_string(str);
 	if (l < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
+		return MAGIC_RET_INVALID_VALUE;
 
 	box->magic_lock = (enum lock_state)l;
-	return 0;
+	return MAGIC_RET_OK;
 }
 
 int magic_set_trace_interrupt(const void *val,
@@ -82,8 +87,8 @@ int magic_set_trace_interrupt(const void *val,
 
 	intr = trace_interrupt_from_string(str);
 	if (intr < 0)
-		return MAGIC_ERROR_INVALID_VALUE;
+		return MAGIC_RET_INVALID_VALUE;
 
 	sydbox->config.trace_interrupt = (enum pink_easy_intr)intr;
-	return 0;
+	return MAGIC_RET_OK;
 }
