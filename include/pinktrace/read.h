@@ -94,7 +94,9 @@ bool pink_read_abi(pid_t tid, const pink_regs_t *regs, enum pink_abi *abi);
  * Read len bytes of data of process @b pid, at address @b addr, to our address
  * space @b dest
  *
- * @note This function uses @c process_vm_readv() if available
+ * @note This function uses @c process_vm_readv() if available and falls back to
+ *       the old @e ptrace(2) based method in case this system call fails with
+ *       @e ENOSYS.
  * @see #PINK_HAVE_PROCESS_VM_READV
  *
  * @param tid Thread ID

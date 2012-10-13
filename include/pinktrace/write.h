@@ -73,7 +73,9 @@ bool pink_write_word_data(pid_t tid, long off, long val);
 /**
  * Write the given data argument @b src to address @b addr
  *
- * @note This function uses @c process_vm_writev() if available
+ * @note This function uses @c process_vm_writev() if available and falls back
+ *       to the old @e ptrace(2) based method in case this system call fails
+ *       with @e ENOSYS.
  * @see #PINK_HAVE_PROCESS_VM_WRITEV
  *
  * @param tid Thread ID

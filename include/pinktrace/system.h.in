@@ -226,6 +226,8 @@
  * Define to 1 if @e process_vm_readv(2) system call is available, 0 otherwise
  *
  * @note This system call is supported on Linux-3.2 and newer.
+ * @note The kernel option @e CONFIG_CROSS_MEMORY_ATTACH must be enabled for
+ *       this system call to work.
  * @see pink_read_vm_data()
  **/
 #define PINK_HAVE_PROCESS_VM_READV	@PINK_HAVE_PROCESS_VM_READV@
@@ -233,6 +235,8 @@
  * Define to 1 if @e process_vm_writev(2) system call is available, 0 otherwise
  *
  * @note This system call is supported on Linux-3.2 and newer.
+ * @note The kernel option @e CONFIG_CROSS_MEMORY_ATTACH must be enabled for
+ *       this system call to work.
  * @see pink_write_vm_data()
  **/
 #define PINK_HAVE_PROCESS_VM_WRITEV	@PINK_HAVE_PROCESS_VM_WRITEV@
