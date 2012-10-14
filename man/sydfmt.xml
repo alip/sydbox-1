@@ -81,7 +81,7 @@
   <refsect1 id="see-also">
     <title>See Also</title>
     <para>
-      <citerefentry><refentrytitle>sydbox</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+      <citerefentry><refentrytitle>sydbox</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
       <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
       <citerefentry><refentrytitle>strace</refentrytitle><manvolnum>1</manvolnum></citerefentry>
     </para>

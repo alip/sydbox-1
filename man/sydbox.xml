@@ -36,7 +36,7 @@
 
   <refsynopsisdiv id="synopsis">
     <cmdsynopsis>
-      <command>sydbox <arg choice="opt">-hv</arg><arg choice="opt" rep="repeat">-c pathspec</arg><arg choice="opt" rep="repeat">-m magic</arg><arg choice="opt" rep="repeat">-E var=val</arg><arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command>
+      <command>sydbox <arg choice="opt">-hv</arg> <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command>
     </cmdsynopsis>
   </refsynopsisdiv>
 
@@ -1453,7 +1453,7 @@
   <refsect1 id="see-also">
     <title>See Also</title>
     <para>
-      <citerefentry><refentrytitle>sydfmt</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+      <citerefentry><refentrytitle>sydfmt</refentrytitle><manvolnum>1</manvolnum></citerefentry>,
       <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
       <citerefentry><refentrytitle>strace</refentrytitle><manvolnum>1</manvolnum></citerefentry>
     </para>
