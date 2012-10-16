@@ -173,7 +173,11 @@ const char *pink_socket_subcall_name(enum pink_socket_subcall subcall)
 			: pink_read_syscall((tid), (abi), (regs), (subcall)))
 
 /**
- * Read the specified socket call argument
+ * Read the specified socket call argument.
+ *
+ * @note For decode_socketcall == `false', this function is equivalent to
+ *       pink_read_argument(). For decode_socketcall == `true' this function
+ *       decodes the second argument of the @e socketcall(2) system call.
  *
  * @param tid Thread ID
  * @param abi System call ABI; see pink_read_abi()
