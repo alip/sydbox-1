@@ -11,8 +11,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/user.h>
 #include <linux/binfmts.h>
 
 #include <pinktrace/pink.h>
