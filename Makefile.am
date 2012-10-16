@@ -69,5 +69,9 @@ EXTRA_DIST+= \
 #pinktrace_easy_include_HEADERS= $(pinktrace_easy_DIST)
 #endif # WANT_EASY
 
+upload:
+	make -C data upload
+	make -C man upload
+.PHONY: upload
 
 SUBDIRS= pinktrace src data man pkg-config tests .

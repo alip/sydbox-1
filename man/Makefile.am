@@ -28,10 +28,10 @@ dist_html_DATA= \
 		sydbox.html \
 		sydfmt.html
 
-upload-html: sydbox.html sydfmt.html
+upload: sydbox.html sydfmt.html
 	rsync --progress -avze ssh sydbox.html tchaikovsky.exherbo.org:public_html/sydbox/
 	rsync --progress -avze ssh sydfmt.html tchaikovsky.exherbo.org:public_html/sydbox/
-.PHONY: upload-html
+.PHONY: upload
 else
 sydbox.1:
 	@echo "You don't have xsltproc installed!"
