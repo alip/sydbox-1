@@ -63,16 +63,21 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 		/* Access granted.
 		 * Read the file descriptor, for use in exit.
 		 */
-		if (!pink_read_argument(tid, abi, &data->regs, 0, &fd)) {
+		if (!pink_read_socket_argument(tid, abi, &data->regs,
+					       info.decode_socketcall,
+					       0, &fd)) {
 			if (errno != ESRCH) {
-				log_warning("read_argument(%lu, %d, 0) failed"
+				log_warning("read_socket_argument(%lu, %d, %s, 0) failed"
 					    " (errno:%d %s)",
 					    (unsigned long)tid, abi,
+					    info.decode_socketcall ? "true" : "false",
 					    errno, strerror(errno));
 				return panic(current);
 			}
-			log_trace("read_argument(%lu, %d, 0) failed (errno:%d %s)",
+			log_trace("read_socket_argument(%lu, %d, %s, 0) failed"
+				  " (errno:%d %s)",
 				  (unsigned long)tid, abi,
+				  info.decode_socketcall ? "true" : "false",
 				  errno, strerror(errno));
 			log_trace("drop process %s[%lu:%u]",
 				  data->comm, (unsigned long)tid, abi);
