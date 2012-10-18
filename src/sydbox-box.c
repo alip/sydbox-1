@@ -558,7 +558,7 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 	access_lists[0] = info->access_list;
 	access_lists[1] = info->access_list_global;
 
-	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
+	if (psa->family == AF_UNIX && !path_abstract(psa->u.sa_un.sun_path)) {
 		/* Non-abstract UNIX socket, resolve the path. */
 		r = box_resolve_path(psa->u.sa_un.sun_path,
 				     data->cwd, tid,

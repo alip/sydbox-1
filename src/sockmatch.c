@@ -81,8 +81,7 @@ int sockmatch_expand(const char *src, char ***buf)
 
 	assert(buf);
 
-	if (startswith(src, MATCH_UNIX)
-	    || startswith(src, MATCH_UNIX_ABS)) {
+	if (startswith(src, MATCH_UNIX) || startswith(src, MATCH_UNIX_ABS)) {
 		return pathmatch_expand(src, buf);
 	} else if (startswith(src, ALIAS_LOOPBACK)) {
 		list = xmalloc(sizeof(char *));
@@ -377,7 +376,7 @@ int sockmatch(const struct sockmatch *haystack,
 		if (path_abstract(needle->u.sa_un.sun_path))
 			/* Abstract UNIX socket */
 			return haystack->addr.sa_un.abstract
-				&& wildmatch(haystack->addr.sa_un.path,
+				&& pathmatch(haystack->addr.sa_un.path,
 					     needle->u.sa_un.sun_path + 1);
 		/* Non-abstract UNIX socket
 		 * This needs path resolving, expect the caller handled this.
