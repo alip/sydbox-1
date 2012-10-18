@@ -3,6 +3,16 @@
 #ifndef JSON_PARSER_H
 #define JSON_PARSER_H
 
+/*** sydbox ***/
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_FEATURES_H
+#include <features.h>
+#endif
+/*** sydbox ***/
+
 /* JSON_parser.h */
 
 

@@ -122,6 +122,7 @@ sydbox_LDADD= \
 
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \
+		 -D__STDC_VERSION__=199901L \
 		 -Wbitwise -Wcast-to-as -Wdefault-bitfield-sign \
 		 -Wparen-string -Wptr-subtraction-blows \
 		 -Wreturn-void -Wshadow -Wtypesign -Wundef \
