@@ -418,15 +418,13 @@ AC_MSG_CHECKING([for IPV6 support])
 AC_MSG_RESULT([$WANT_IPV6])
 if test x"$WANT_IPV6" = x"yes"; then
 	PINK_HAVE_IPV6=1
-	SYDBOX_HAVE_IPV6=1
+	AC_DEFINE([SYDBOX_HAVE_IPV6], 1, [Define for Sydbox IPv6 support])
 else
 	PINK_HAVE_IPV6=0
-	SYDBOX_HAVE_IPV6=0
+	AC_DEFINE([SYDBOX_HAVE_IPV6], 0, [Define for Sydbox IPv6 support])
 fi
 AC_SUBST([PINK_HAVE_IPV6])
 AM_CONDITIONAL(PINK_HAVE_IPV6, test x"$PINK_HAVE_IPV6" = x"1")
-AC_SUBST([SYDBOX_HAVE_IPV6])
-AM_CONDITIONAL(SYDBOX_HAVE_IPV6, test x"$SYDBOX_HAVE_IPV6" = x"1")
 
 dnl check for Netlink support
 AC_CHECK_HEADER([linux/netlink.h],

@@ -300,7 +300,7 @@ out:
 			match->addr.sa_in.addr = addr;
 #if SYDBOX_HAVE_IPV6
 		else if (family == AF_INET6)
-			match->addr.sa_in.addr6 = addr6;
+			match->addr.sa6.addr = addr6;
 #endif
 		else
 			return -EINVAL;
