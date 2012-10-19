@@ -467,9 +467,6 @@ yes () {
 	done
 }
 
-# Wildmatching code
-test -x "${TEST_DIRECTORY}"/wildtest && test_set_prereq WILDMATCH
-
 # test whether the filesystem supports fifos
 mknod x p 2>/dev/null && test -p x 2>/dev/null && test_set_prereq FIFOS
 rm -f x

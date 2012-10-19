@@ -21,6 +21,7 @@
  * Modified by Ali Polatel <alip@exherbo.org>
  * - Use getopt_long() instead of popt
  * - Set output_iterations to 1
+ * - Exit non-zero in case of errors, `exit_code' in main()
  */
 
 /*#define COMPARE_WITH_FNMATCH*/
@@ -142,6 +143,7 @@ main(int argc, char **argv)
     FILE *fp;
     int opt, line, i, flag[2];
     int option_index = 0;
+    int exit_code = EXIT_SUCCESS;
 
     while ((opt = getopt_long(argc, argv, "ie:x:", long_options, &option_index)) != EOF) {
 	switch(opt) {
@@ -232,18 +234,22 @@ main(int argc, char **argv)
 
     if (!wildmatch_errors)
 	fputs("No", stdout);
-    else
+    else {
 	printf("%d", wildmatch_errors);
+	exit_code = EXIT_FAILURE;
+    }
     printf(" wildmatch error%s found.\n", wildmatch_errors == 1? "" : "s");
 
 #ifdef COMPARE_WITH_FNMATCH
     if (!fnmatch_errors)
 	fputs("No", stdout);
-    else
+    else {
 	printf("%d", fnmatch_errors);
+	exit_code = EXIT_FAILURE;
+    }
     printf(" fnmatch error%s found.\n", fnmatch_errors == 1? "" : "s");
 
 #endif
 
-    return 0;
+    return exit_code;
 }

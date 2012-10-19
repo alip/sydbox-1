@@ -6,10 +6,8 @@
 test_description='check wildmatch'
 . ./test-lib.sh
 
-# The test script will output its own plan
-test_external_has_tap=1
-
-test_external_without_stderr WILDMATCH 'matching filenames or pathnames' \
+test_expect_success 'matching filenames or pathnames' '
     "${TEST_DIRECTORY}"/wildtest "${TEST_DIRECTORY}"/wildtest.txt
+'
 
 test_done
