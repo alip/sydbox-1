@@ -1,7 +1,5 @@
 #!/bin/sh
 
-base=$(basename "$0")
-
 TRACK_ORIGINS=
 
 VALGRIND_VERSION=$(valgrind --version)
@@ -13,7 +11,7 @@ TRACK_ORIGINS=--track-origins=yes
 
 exec valgrind -q --error-exitcode=126 \
 	--leak-check=full \
-	--suppressions="$SYDBOX_VALGRIND/default.supp" \
+	--suppressions="$SYDBOX_VALGRIND"/default.supp \
 	--gen-suppressions=all \
 	$TRACK_ORIGINS \
 	--log-fd=4 \
