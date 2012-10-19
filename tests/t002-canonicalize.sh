@@ -7,8 +7,8 @@ test_description='test pathname canonicalization'
 . ./test-lib.sh
 
 test_expect_success SYMLINKS setup-symlinks '
-    ln -sf self self
-    ln -sf loop0 loop1
+    ln -sf self self &&
+    ln -sf loop0 loop1 &&
     ln -sf loop1 loop0
 '
 
