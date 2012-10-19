@@ -69,7 +69,9 @@ TESTS= \
 	t009-openat.sh \
 	t010-creat.sh \
 	t011-mkdir.sh
-EXTRA_DIST= $(TESTS) \
+EXTRA_DIST= \
+	    README \
+	    $(TESTS) \
 	    test-lib.sh.in \
 	    test-lib-functions.sh
 
