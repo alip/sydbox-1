@@ -10,7 +10,7 @@
  */
 
 /*
- * Imported from gnulib, commit:04b6c2e58486cfb30641633962249753052ba89f
+ * Imported from gnulib, commit:573dad2ce496fa87dac2e79f37bae62e0be1d2c6
  * canonicalize_filename_mode() is modified:
  * - Accept a buffer as argument and return -errno.
  * - Return -EINVAL for filenames which aren't absolute.
@@ -66,10 +66,13 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 	size_t extra_len = 0;
 	int saved_errno;
 	int can_flags = can_mode & ~CAN_MODE_MASK;
-	can_mode &= CAN_MODE_MASK;
 	bool logical = can_flags & CAN_NOLINKS;
 
+	can_mode &= CAN_MODE_MASK;
+
 	if (!name || name[0] == '\0' || name[0] != '/')
+		return -EINVAL;
+	if (!path)
 		return -EINVAL;
 	if (MULTIPLE_BITS_SET(can_mode))
 		return -EINVAL;
