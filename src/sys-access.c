@@ -20,6 +20,29 @@
 
 #include "log.h"
 
+static inline bool access_wr_check(const char *name,
+				   const proc_data_t *data,
+				   int mode)
+{
+	bool r;
+
+	assert(data);
+
+	if (mode & R_OK && !sandbox_read_off(data))
+		r = true;
+	else if (mode & W_OK && !sandbox_write_off(data))
+		r = true;
+	else if (mode & X_OK && !sandbox_exec_off(data))
+		r = true;
+	else
+		r = false;
+
+	log_trace("wr_check:%d for sys:%s() returned %s",
+		  mode, name, r ? "true" : "false");
+
+	return r;
+}
+
 int sys_access(struct pink_easy_process *current, const char *name)
 {
 	int r;
@@ -50,9 +73,7 @@ int sys_access(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	if (!((mode & R_OK) && sandbox_read_off(data))
-	    && !((mode & W_OK) && sandbox_write_off(data))
-	    && !((mode & X_OK) && sandbox_exec_off(data)))
+	if (!access_wr_check(name, data, mode))
 		return 0;
 
 	init_sysinfo(&info);
@@ -119,9 +140,7 @@ int sys_faccessat(struct pink_easy_process *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	if (!((mode & R_OK) && sandbox_read_off(data))
-	    && !((mode & W_OK) && sandbox_write_off(data))
-	    && !((mode & X_OK) && sandbox_exec_off(data)))
+	if (!access_wr_check(name, data, mode))
 		return 0;
 
 	/* Check for AT_SYMLINK_NOFOLLOW */
