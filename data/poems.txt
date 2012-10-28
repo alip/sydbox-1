@@ -232,3 +232,27 @@ Date: 2012-10-23
 16:42:14 <nicoo> wrought of code well-worn
 16:42:28 <nicoo> Pastafarian mess; rid of GLib, the thorn
 18:28:44 <alip> i owe you a beer!
+
+From: Philantrop
+Date: 2012-10-27
+
+From ab3ba10b8db9463b783c00a2664acf87c7912688 Mon Sep 17 00:00:00 2001
+Message-Id: <ab3ba10b8db9463b783c00a2664acf87c7912688.1351426741.git.alip@exherbo.org>
+From: "Wulf C. Krueger" <philantrop@exherbo.org>
+Date: Sat, 27 Oct 2012 13:59:27 +0200
+Subject: [PATCH] x11.graveyard: Bury openmotif in the graveyard. Epitaph
+ follows.
+Organization: Pink Floyd
+
+A graphical user interface toolkit you were.
+When first we met in 1997, I thought you were swell,
+abandoned you soon were, for LessTif came to make me purr.
+Back you made your way from the dead (which was quite well!),
+Openmotif beat LessTif and did not cost a dime,
+and still, today we hear your death knell's last chime.
+-O<-
+ x11.graveyard | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/x11.graveyard b/x11.graveyard
+index ecb8c42..ea9a096 100644
