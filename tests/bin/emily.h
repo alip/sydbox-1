@@ -9,6 +9,16 @@
 #ifndef EMILY_H
 #define EMILY_H 1
 
+/*
+ * gcc's _FORTIFY_SOURCE may trigger an abort due to invalid system call usages.
+ * e.g. open(foo, O_RDONLY|O_CREAT) triggers:
+ *      *** invalid open call: O_CREAT without mode ***
+ * However, we need to test whether sydbox handles such cases gracefully.
+ */
+#ifdef _FORTIFY_SOURCE
+#undef _FORTIFY_SOURCE
+#endif
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
