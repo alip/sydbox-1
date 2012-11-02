@@ -325,3 +325,12 @@ Date: 2012-11-02
 04:55:49 < eternaleye> But using ptrace
 04:55:49 < eternaleye> Forced him into a race
 04:55:49 < eternaleye> Thanks, Seccomp! He later would bid.
+
+From: ivanm
+Date: 2012-11-02
+
+11:53:02 < ivanm> There once was a hacker named alip,
+11:53:03 < ivanm> The sandboxing problem, he thought he could whip.
+11:53:03 < ivanm> Whilst at first he was tickled pink[trace]
+11:53:03 < ivanm> He then started to think,
+11:53:03 < ivanm> And gave the old version the snip!
