@@ -70,7 +70,12 @@ int canonicalize_filename_mode(const char *name, can_mode_t can_mode, char **pat
 
 	can_mode &= CAN_MODE_MASK;
 
-	if (!name || name[0] == '\0' || name[0] != '/')
+	/* sanity checks */
+	if (!name)
+		return -EINVAL;
+	if (name[0] == '\0')
+		return -ENOENT;
+	if (name[0] != '/')
 		return -EINVAL;
 	if (!path)
 		return -EINVAL;
