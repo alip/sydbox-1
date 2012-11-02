@@ -223,7 +223,19 @@ static int sockmatch_parse_ip(int family, const char *src,
 
 	match = *buf;
 
-	p = src + STRLEN_LITERAL(MATCH_INET);
+	switch (family) {
+	case AF_INET:
+		p = src + STRLEN_LITERAL(MATCH_INET);
+		break;
+#if SYDBOX_HAVE_IPV6
+	case AF_INET6:
+		p = src + STRLEN_LITERAL(MATCH_INET6);
+		break;
+#endif
+	default:
+		return -EINVAL;
+	}
+
 	if (p[0] == '\0')
 		return -EINVAL;
 
