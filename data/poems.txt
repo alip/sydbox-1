@@ -315,3 +315,13 @@ Now that goat, will be more nice,
 and eat those oats, with sugar and spice.
 
 -Rick Tankard
+
+From: eternaleye
+Date: 2012-11-02
+
+04:55:41 < eternaleye> alip:
+04:55:48 < eternaleye> There once was a young man named Syd
+04:55:49 < eternaleye> And sandboxing was what he did
+04:55:49 < eternaleye> But using ptrace
+04:55:49 < eternaleye> Forced him into a race
+04:55:49 < eternaleye> Thanks, Seccomp! He later would bid.
