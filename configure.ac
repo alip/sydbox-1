@@ -493,6 +493,7 @@ dnl output
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 tests/Makefile
+		 tests/bin/Makefile
 		 data/Makefile
 		 man/Makefile
 		 include/pinktrace/about.h

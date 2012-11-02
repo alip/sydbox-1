@@ -143,9 +143,35 @@ write_script () {
 # capital letters by convention).
 
 test_set_prereq () {
-	satisfied="$satisfied$1 "
+	satisfied_prereq="$satisfied_prereq$1 "
 }
-satisfied=" "
+satisfied_prereq=" "
+lazily_testable_prereq= lazily_tested_prereq=
+
+# Usage: test_lazy_prereq PREREQ 'script'
+test_lazy_prereq () {
+	lazily_testable_prereq="$lazily_testable_prereq$1 "
+	eval test_prereq_lazily_$1=\$2
+}
+
+test_run_lazy_prereq_ () {
+	script='
+mkdir -p "$TRASH_DIRECTORY/prereq-test-dir" &&
+(
+	cd "$TRASH_DIRECTORY/prereq-test-dir" &&'"$2"'
+)'
+	say >&3 "checking prerequisite: $1"
+	say >&3 "$script"
+	test_eval_ "$script"
+	eval_ret=$?
+	rm -rf "$TRASH_DIRECTORY/prereq-test-dir"
+	if test "$eval_ret" = 0; then
+		say >&3 "prerequisite $1 ok"
+	else
+		say >&3 "prerequisite $1 not satisfied"
+	fi
+	return $eval_ret
+}
 
 test_have_prereq () {
 	# prerequisites can be concatenated with ','
@@ -160,8 +186,24 @@ test_have_prereq () {
 
 	for prerequisite
 	do
+		case " $lazily_tested_prereq " in
+		*" $prerequisite "*)
+			;;
+		*)
+			case " $lazily_testable_prereq " in
+			*" $prerequisite "*)
+				eval "script=\$test_prereq_lazily_$prerequisite" &&
+				if test_run_lazy_prereq_ "$prerequisite" "$script"
+				then
+					test_set_prereq $prerequisite
+				fi
+				lazily_tested_prereq="$lazily_tested_prereq$prerequisite "
+			esac
+			;;
+		esac
+
 		total_prereq=$(($total_prereq + 1))
-		case $satisfied in
+		case "$satisfied_prereq" in
 		*" $prerequisite "*)
 			ok_prereq=$(($ok_prereq + 1))
 			;;
@@ -396,17 +438,30 @@ test_path_is_non_empty() {
 }
 
 test_must_violate() {
+	retval=0
+	old_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
+	SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS -mcore/violation/exit_code:0"
+	export SYDBOX_TEST_OPTIONS
 	"$@"
 	exit_code=$?
 	if test $exit_code -eq 0
 	then
-		echo "Command succeeded. $*"
-		false
+		echo >&2 "test_must_violate: command succeeded. $*"
+		retval=1
+	elif test $exit_code -gt 129 -a $exit_code -le 192; then
+		echo >&2 "test_must_violate: died by signal: $*"
+		retval=1
+	elif test $exit_code = 127; then
+		echo >&2 "test_must_violate: command not found: $*"
+		retval=1
 	elif test $exit_code -ne 128
 	then
-		echo "Abnormal exit with code:$exit_code $*"
-		false
+		echo >&2 "test_must_violate: abnormal exit with code:$exit_code $*"
+		retval=1
 	fi
+	SYDBOX_TEST_OPTIONS="$old_SYDBOX_TEST_OPTIONS"
+	export SYDBOX_TEST_OPTIONS
+	return $retval
 }
 
 # test_line_count checks that a file has the number of lines it
@@ -520,6 +575,27 @@ test_expect_code () {
 
 test_cmp() {
 	$SYDBOX_TEST_CMP "$@"
+}
+
+# Print a sequence of numbers or letters in increasing order.  This is
+# similar to GNU seq(1), but the latter might not be available
+# everywhere (and does not do letters).  It may be used like:
+#
+#	for i in `test_seq 100`; do
+#		for j in `test_seq 10 20`; do
+#			for k in `test_seq a z`; do
+#				echo $i-$j-$k
+#			done
+#		done
+#	done
+
+test_seq () {
+	case $# in
+	1)	set 1 "$@" ;;
+	2)	;;
+	*)	error "bug in the test script: not 1 or 2 parameters to test_seq" ;;
+	esac
+	"$PERL_PATH" -le 'print for $ARGV[0]..$ARGV[1]' -- "$@"
 }
 
 # This function can be used to schedule some commands to be run

@@ -15,6 +15,48 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see http://www.gnu.org/licenses/ .
 
+# Keep the original TERM for say_color
+ORIGINAL_TERM=$TERM
+
+# Test the binaries we have just built.  The tests are kept in
+# t/ subdirectory and are run in 'trash directory' subdirectory.
+if test -z "$TEST_DIRECTORY"
+then
+	# We allow tests to override this, in case they want to run tests
+	# outside of t/, e.g. for running tests on the test library
+	# itself.
+	TEST_DIRECTORY=$(pwd)
+fi
+if test -z "$TEST_OUTPUT_DIRECTORY"
+then
+	# Similarly, override this to store the test-results subdir
+	# elsewhere
+	TEST_OUTPUT_DIRECTORY=$TEST_DIRECTORY
+fi
+PATH="$TEST_DIRECTORY/bin:$PATH"
+DIFF="diff"
+SHELL_PATH="/bin/sh"
+PERL_PATH="perl"
+export PATH
+export DIFF PERL_PATH SHELL_PATH
+
+SYDBOX_BUILD_DIR="@TOP_BUILDDIR@/src"
+SYDBOX="$SYDBOX_BUILD_DIR"/sydbox
+SYDFMT="$SYDBOX_BUILD_DIR"/sydfmt
+if test -z "$SYDBOX_TEST_INSTALLED"
+then
+	# It appears that people try to run tests without building...
+	"$SYDBOX" >/dev/null 2>&1
+	if test $? != 1
+	then
+		echo >&2 'error: you do not seem to have built sydbox yet.'
+		exit 1
+	fi
+else
+	SYDBOX=sydbox
+	SYDFMT=sydfmt
+fi
+
 # if --tee was passed, write the output not only to the terminal, but
 # additionally to the file test-results/$BASENAME.out, too.
 case "$SYDBOX_TEST_TEE_STARTED, $* " in
@@ -24,15 +66,12 @@ done,*)
 *' --tee '*|*' --va'*)
 	mkdir -p test-results
 	BASE=test-results/$(basename "$0" .sh)
-	(SYDBOX_TEST_TEE_STARTED=done ${SHELL-sh} "$0" "$@" 2>&1;
+	(SYDBOX_TEST_TEE_STARTED=done ${SHELL_PATH} "$0" "$@" 2>&1;
 	 echo $? > $BASE.exit) | tee $BASE.out
 	test "$(cat $BASE.exit)" = 0
 	exit
 	;;
 esac
-
-# Keep the original TERM for say_color
-ORIGINAL_TERM=$TERM
 
 # For repeatability, reset the environment to known value.
 LANG=C
@@ -46,7 +85,7 @@ EDITOR=:
 # /usr/xpg4/bin/sh and /bin/ksh to bail out.  So keep the unsets
 # deriving from the command substitution clustered with the other
 # ones.
-unset VISUAL EMAIL LANGUAGE COLUMNS SYDBOX_CONFIG $(perl -e '
+unset VISUAL EMAIL LANGUAGE COLUMNS SYDBOX_CONFIG $($PERL_PATH -e '
 	my @env = keys %ENV;
 	my $ok = join("|", qw(
 		TRACE
@@ -70,12 +109,12 @@ unset CDPATH
 unset GREP_OPTIONS
 
 case $(echo $SYDBOX_TRACE |tr "[A-Z]" "[a-z]") in
-	1|2|true)
-		echo "* warning: Some tests will not work if SYDBOX_TRACE" \
-			"is set as to trace on STDERR ! *"
-		echo "* warning: Please set SYDBOX_TRACE to something" \
-			"other than 1, 2 or true ! *"
-		;;
+1|2|true)
+	echo "* warning: Some tests will not work if SYDBOX_TRACE" \
+		"is set as to trace on STDERR ! *"
+	echo "* warning: Please set SYDBOX_TRACE to something" \
+		"other than 1, 2 or true ! *"
+	;;
 esac
 
 # Line feed
@@ -133,17 +172,23 @@ do
 	esac
 done
 
-if test -n "$color"; then
+if test -n "$color"
+then
 	say_color () {
 		(
 		TERM=$ORIGINAL_TERM
 		export TERM
 		case "$1" in
-			error) tput bold; tput setaf 1;; # bold red
-			skip)  tput bold; tput setaf 2;; # bold green
-			pass)  tput setaf 2;;            # green
-			info)  tput setaf 3;;            # brown
-			*) test -n "$quiet" && return;;
+		error)
+			tput bold; tput setaf 1;; # bold red
+		skip)
+			tput bold; tput setaf 2;; # bold green
+		pass)
+			tput setaf 2;;            # green
+		info)
+			tput setaf 3;;            # brown
+		*)
+			test -n "$quiet" && return;;
 		esac
 		shift
 		printf "%s" "$*"
@@ -211,7 +256,7 @@ trap 'die' EXIT
 
 # The user-facing functions are loaded from a separate file so that
 # test_perf subshells can have them too
-. "${TEST_DIRECTORY:-.}"/test-lib-functions.sh
+. "$TEST_DIRECTORY/test-lib-functions.sh"
 
 # You are not expected to call test_ok_ and test_failure_ directly, use
 # the text_expect_* functions instead.
@@ -259,7 +304,8 @@ test_run_ () {
 	then
 		test_eval_ "$test_cleanup"
 	fi
-	if test "$verbose" = "t" && test -n "$HARNESS_ACTIVE"; then
+	if test "$verbose" = "t" && test -n "$HARNESS_ACTIVE"
+	then
 		echo ""
 	fi
 	return "$eval_ret"
@@ -307,11 +353,11 @@ test_at_end_hook_ () {
 test_done () {
 	SYDBOX_EXIT_OK=t
 
-	if test -z "$HARNESS_ACTIVE"; then
+	if test -z "$HARNESS_ACTIVE"
+	then
 		test_results_dir="$TEST_OUTPUT_DIRECTORY/test-results"
 		mkdir -p "$test_results_dir"
-		#test_results_path="$test_results_dir/${0%.sh}-$$.counts"
-		test_results_path="$test_results_dir/$(basename $0 sh)-$$.counts"
+		test_results_path="$test_results_dir/$(basename $0 .sh)-$$.counts"
 
 		cat >>"$test_results_path" <<-EOF
 		total $test_count
@@ -337,10 +383,18 @@ test_done () {
 	case "$test_failure" in
 	0)
 		# Maybe print SKIP message
+		if test -n "$skip_all" && test $test_count -gt 0
+		then
+			error "Can't use skip_all after running some tests"
+		fi
 		[ -z "$skip_all" ] || skip_all=" # SKIP $skip_all"
 
-		if test $test_external_has_tap -eq 0; then
-			say_color pass "# passed all $msg"
+		if test $test_external_has_tap -eq 0
+		then
+			if test $test_count -gt 0
+			then
+				say_color pass "# passed all $msg"
+			fi
 			say "1..$test_count$skip_all"
 		fi
 
@@ -353,7 +407,8 @@ test_done () {
 		exit 0 ;;
 
 	*)
-		if test $test_external_has_tap -eq 0; then
+		if test $test_external_has_tap -eq 0
+		then
 			say_color error "# failed $test_failure among $msg"
 			say "1..$test_count"
 		fi
@@ -363,49 +418,45 @@ test_done () {
 	esac
 }
 
-# Test the binaries we have just built.  The tests are kept in
-# t/ subdirectory and are run in 'trash directory' subdirectory.
-if test -z "$TEST_DIRECTORY"
-then
-	# We allow tests to override this, in case they want to run tests
-	# outside of t/, e.g. for running tests on the test library
-	# itself.
-	TEST_DIRECTORY=$(pwd)
-fi
-if test -z "$TEST_OUTPUT_DIRECTORY"
-then
-	# Similarly, override this to store the test-results subdir
-	# elsewhere
-	TEST_OUTPUT_DIRECTORY=$TEST_DIRECTORY
-fi
-SYDBOX_BUILD_DIR="@TOP_BUILDDIR@/src"
-SYDBOX="$SYDBOX_BUILD_DIR"/sydbox
-SYDBOX_OPTIONS='
-    -m core/violation/exit_code:0
-    -m core/violation/raise_fail:1
-    -m core/violation/raise_safe:1
-'
-
-if test "$verbose" = "t"
-then
-	SYDBOX_OPTIONS="$SYDBOX_OPTIONS -m log/console_level:511"
-fi
-
 if test -n "$valgrind"
 then
 	SYDBOX_VALGRIND="$TEST_DIRECTORY"/valgrind
-	SYDBOX_OPTIONS="$SYDBOX_OPTIONS -m log/console_level:511"
-	PATH=$SYDBOX_VALGRIND/bin:$PATH
-	export SYDBOX_VALGRIND
-#elif test -n "$SYDBOX_TEST_INSTALLED" ; then
-#	PATH=$SYDBOX_TEST_INSTALLED:$SYDBOX_BUILD_DIR:$PATH
-else # normal case, use bin-wrappers
-	PATH="$TEST_DIRECTORY"/bin-wrappers:$PATH
+
+	TRACK_ORIGINS=
+
+	VALGRIND_VERSION=$(valgrind --version)
+	VALGRIND_MAJOR=$(expr "$VALGRIND_VERSION" : '[^0-9]*\([0-9]*\)')
+	VALGRIND_MINOR=$(expr "$VALGRIND_VERSION" : '[^0-9]*[0-9]*\.\([0-9]*\)')
+	test 3 -gt "$VALGRIND_MAJOR" ||
+	test 3 -eq "$VALGRIND_MAJOR" -a 4 -gt "$VALGRIND_MINOR" ||
+	TRACK_ORIGINS=--track-origins=yes
+
+	sydbox() {
+		valgrind -q --error-exitcode=126 \
+			--leak-check=full \
+			--suppressions="$SYDBOX_VALGRIND"/default.supp \
+			$TRACK_ORIGINS \
+			--log-fd=4 \
+			--input-fd=4 \
+			"$SYDBOX" $SYDBOX_TEST_OPTIONS "$@"
+	}
+	sydfmt() {
+		command "$SYDFMT" $SYDFMT_TEST_OPTIONS "$@"
+	}
+else
+	sydbox() {
+		command "$SYDBOX" $SYDBOX_TEST_OPTIONS "$@"
+	}
+	sydfmt() {
+		command "$SYDFMT" $SYDFMT_TEST_OPTIONS "$@"
+	}
 fi
-PATH="$TEST_DIRECTORY:$PATH"
-export PATH
-export SYDBOX
-export SYDBOX_OPTIONS
+
+if test -n "$verbose" -o -n "$valgrind"
+then
+	SYDBOX_TEST_OPTIONS="-m log/console_level:1023 $SYDBOX_TEST_OPTIONS"
+fi
+export SYDBOX_TEST_OPTIONS
 
 if test -z "$SYDBOX_TEST_CMP"
 then
@@ -467,13 +518,15 @@ yes () {
 	done
 }
 
-# test whether the filesystem supports fifos
-mknod x p 2>/dev/null && test -p x 2>/dev/null && test_set_prereq FIFOS
-rm -f x
+test_lazy_prereq FIFOS '
+        # test whether the filesystem supports fifos
+        mknod x p && test -p x
+'
 
-# test whether the filesystem supports symbolic links
-ln -s x y 2>/dev/null && test -h y 2>/dev/null && test_set_prereq SYMLINKS
-rm -f y
+test_lazy_prereq SYMLINKS '
+	# test whether the filesystem supports symbolic links
+	ln -s x y && test -h y
+'
 
 # When the tests are run as root, permission tests will report that
 # things are writable when they shouldn't be.
