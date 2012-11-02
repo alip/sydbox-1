@@ -410,7 +410,9 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 		int can_flags = info->can_mode & ~CAN_MODE_MASK;
 		struct stat buf;
 
-		if (info->syd_mode & SYD_IFNOLNK || can_flags & CAN_NOLINKS)
+		if (info->syd_mode & SYD_IFNONE
+		    || info->syd_mode & SYD_IFNOLNK
+		    || can_flags & CAN_NOLINKS)
 			stat_ret = lstat(abspath, &buf);
 		else
 			stat_ret = stat(abspath, &buf);
