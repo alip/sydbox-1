@@ -334,3 +334,17 @@ Date: 2012-11-02
 11:53:03 < ivanm> Whilst at first he was tickled pink[trace]
 11:53:03 < ivanm> He then started to think,
 11:53:03 < ivanm> And gave the old version the snip!
+
+From: moben
+Date: 2012-11-25
+
+22:12:51 < moben> alip: I just upgraded to sydbox-1 and it is working so far, so here is your poem:
+
+My dog is quite hip
+Except when he takes a dip
+He looks like a fool
+when he jumps in the pool
+and reminds me of a sinking ship
+
+---
+Kathlene Bouzek
