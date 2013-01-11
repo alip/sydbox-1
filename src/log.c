@@ -15,14 +15,15 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <time.h>
 
 #include "log.h"
 #include "util.h"
-#include "sydbox-defs.h" /* FIXME: abort_all() */
 
 /* fatal can't be turned off! */
 #define LOG_LEVEL_MINIMUM	(LOG_LEVEL_ASSERT|LOG_LEVEL_FATAL)
@@ -42,6 +43,9 @@ static int cdebug = (LOG_LEVEL_FATAL
 
 static const char *prefix = LOG_DEFAULT_PREFIX;
 static const char *suffix = LOG_DEFAULT_SUFFIX;
+
+/* abort function. */
+static void (*abort_func)(int sig) = NULL;
 
 PINK_GCC_ATTR((format (printf, 4, 0)))
 static void log_me(FILE *fp, int level, const char *func,
@@ -115,6 +119,11 @@ void log_close(void)
 	if (logfp)
 		fclose(logfp);
 	logfp = NULL;
+}
+
+void log_abort_func(void (*func)(int))
+{
+	abort_func = func;
 }
 
 int log_console_fd(int fd)
@@ -200,7 +209,8 @@ void die(const char *fmt, ...)
 	log_msg_va(LOG_LEVEL_FATAL, fmt, ap);
 	va_end(ap);
 
-	abort_all(SIGTERM);
+	if (abort_func)
+		abort_func(SIGTERM);
 	exit(1);
 }
 
@@ -217,7 +227,8 @@ void die_errno(const char *fmt, ...)
 	log_prefix(NULL);
 	log_msg(LOG_LEVEL_FATAL, " (errno:%d %s)", errno, strerror(errno));
 
-	abort_all(SIGTERM);
+	if (abort_func)
+		abort_func(SIGTERM);
 	exit(1);
 }
 
@@ -228,7 +239,8 @@ void assert_(const char *expr, const char *func,
 		"Assertion '%s' failed at %s:%zu, function %s()",
 		expr, file, line, func);
 
-	abort_all(SIGTERM);
+	if (abort_func)
+		abort_func(SIGTERM);
 	abort();
 }
 
@@ -238,6 +250,7 @@ void assert_not_reached_(const char *func, const char *file, size_t line)
 		"Code must not be reached at %s:%zu, function %s()",
 		file, line, func);
 
-	abort_all(SIGTERM);
+	if (abort_func)
+		abort_func(SIGTERM);
 	abort();
 }

@@ -123,6 +123,7 @@ static void sydbox_init(void)
 	sydbox->ctx = NULL;
 	config_init();
 	log_init(NULL);
+	log_abort_func(abort_all);
 }
 
 static void sydbox_destroy(void)

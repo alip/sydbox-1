@@ -45,6 +45,7 @@
 extern int log_init(const char *filename);
 extern void log_close(void);
 
+extern void log_abort_func(void (*func)(int));
 extern int log_console_fd(int fd);
 extern void log_debug_level(int debug_level);
 extern void log_debug_console_level(int debug_level);
