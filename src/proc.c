@@ -203,7 +203,7 @@ int proc_environ(pid_t pid, char ***envp)
 		return -ENOMEM;
 
 	f = fopen(p, "r");
-	free(p); /* XXX: May free() modify errno? */
+	free(p);
 	if (!f)
 		return -errno;
 
