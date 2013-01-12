@@ -148,4 +148,22 @@ test_expect_success 'rename("", "") returns ENOENT' '
     sydbox -- emily rename -e ENOENT "" ""
 '
 
+test_expect_success 'rename($olddir, $newfile) returns ENOTDIR' '
+    mkdir dir.$test_count &&
+    touch file.$test_count &&
+    sydbox -- emily rename -e ENOTDIR dir.$test_count file.$test_count &&
+    test_path_is_dir dir.$test_count &&
+    test_path_is_file file.$test_count
+'
+
+test_expect_success 'rename($olddir, $new-nonempty-dir) returns ENOTEMPTY' '
+    mkdir olddir.$test_count &&
+    mkdir newdir.$test_count &&
+    touch newdir.$test_count/file &&
+    sydbox -- emily rename -e ENOTEMPTY olddir.$test_count newdir.$test_count &&
+    test_path_is_dir olddir.$test_count &&
+    test_path_is_dir newdir.$test_count &&
+    test_path_is_file newdir.$test_count/file
+'
+
 test_done
