@@ -25,6 +25,8 @@ struct test {
 	{"mkdirat",	test_mkdirat},
 	{"mknod",	test_mknod},
 	{"mknodat",	test_mknodat},
+	{"rename",	test_rename},
+	{"renameat",	test_renameat},
 	{NULL,		NULL},
 };
 

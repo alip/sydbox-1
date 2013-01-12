@@ -118,5 +118,7 @@ extern int test_mkdir(int argc, char **argv);
 extern int test_mkdirat(int argc, char **argv);
 extern int test_mknod(int argc, char **argv);
 extern int test_mknodat(int argc, char **argv);
+extern int test_rename(int argc, char **argv);
+extern int test_renameat(int argc, char **argv);
 
 #endif /* !EMILY_H */

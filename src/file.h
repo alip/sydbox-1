@@ -18,4 +18,6 @@ int basename_alloc(const char *path, char **buf);
 int readlink_alloc(const char *path, char **buf);
 int read_one_line_file(const char *fn, char **line);
 
+int empty_dir(const char *dname);
+
 #endif /* !FILE_H */

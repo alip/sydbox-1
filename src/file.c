@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 #include "file.h"
 
@@ -131,5 +132,26 @@ int read_one_line_file(const char *fn, char **line)
 
 out:
 	fclose(f);
+	return r;
+}
+
+/* TODO: Use getdents() on Linux for a slight performance gain. */
+int empty_dir(const char *dname)
+{
+	int r;
+	DIR *d;
+
+	d = opendir(dname);
+	if (!d)
+		return -errno;
+
+	r = 0;
+	for (unsigned n = 0; readdir(d) != NULL; n++) {
+		if (n > 2) {
+			r = -ENOTEMPTY;
+			break;
+		}
+	}
+	closedir(d);
 	return r;
 }

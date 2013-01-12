@@ -377,6 +377,14 @@ test_path_is_fifo () {
 	fi
 }
 
+test_path_is_symlink() {
+	if ! [ -h "$1" ]
+	then
+		echo "Symbolic link $1 doesn't exist. $*"
+		false
+	fi
+}
+
 test_path_is_missing () {
 	if [ -e "$1" ]
 	then

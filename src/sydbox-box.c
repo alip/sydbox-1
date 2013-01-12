@@ -22,6 +22,7 @@
 
 #include "macro.h"
 #include "canonicalize.h"
+#include "file.h"
 #include "log.h"
 #include "path.h"
 #include "pathdecode.h"
@@ -405,7 +406,7 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 	}
 
 	/* Step 5: stat() if required */
-	if (info->syd_mode) {
+	if (info->syd_mode || info->isdir) {
 		int stat_ret, stat_errno = 0;
 		int can_flags = info->can_mode & ~CAN_MODE_MASK;
 		struct stat buf;
@@ -416,6 +417,9 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 			stat_ret = lstat(abspath, &buf);
 		else
 			stat_ret = stat(abspath, &buf);
+
+		if (info->isdir)
+			*(info->isdir) = !!(stat_ret == 0 && S_ISDIR(buf.st_mode));
 
 		if (stat_ret == 0) {
 			if (info->syd_mode & SYD_IFDIR &&
@@ -438,6 +442,15 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 				 */
 				log_access("sys=%s must create path", name);
 				stat_errno = EEXIST;
+			} else if (info->syd_mode & SYD_IFBAREDIR &&
+				   empty_dir(abspath) == -ENOTEMPTY) {
+				/* The file must be an empty directory,
+				 * yet it isn't!
+				 * Deny with -ENOTEMPTY
+				 */
+				log_access("sys=%s requires an empty directory",
+					   name);
+				stat_errno = ENOTEMPTY;
 			}
 
 			if (stat_errno != 0) {
