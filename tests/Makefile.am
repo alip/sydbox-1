@@ -53,9 +53,10 @@ TESTS= \
 	t3020-fs-link.sh \
 	t3021-fs-linkat.sh \
 	t3022-fs-rename.sh \
-	t3023-fs-symlink.sh \
-	t3024-fs-symlinkat.sh \
-	t3035-fs-mount.sh
+	t3023-fs-renameat.sh \
+	t3024-fs-symlink.sh \
+	t3025-fs-symlinkat.sh \
+	t3026-fs-mount.sh
 EXTRA_DIST+= \
 	     README \
 	     $(TESTS) \
