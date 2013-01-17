@@ -20,9 +20,12 @@ noinst_DATA+= wildtest.txt
 noinst_DATA+= valgrind/default.supp
 noinst_SCRIPTS+= valgrind/analyze.sh
 
+SYDBOX_CHECK_OPTIONS= --verbose
+export SYDBOX_CHECK_OPTIONS
+
 .PHONY: check-valgrind
 check-valgrind:
-	$(MAKE) SYDBOX_CHECK_OPTS="$(SYDBOX_CHECK_OPTS) --valgrind" check
+	$(MAKE) SYDBOX_CHECK_OPTIONS="$(SYDBOX_CHECK_OPTIONS) --valgrind" check
 
 TESTS_ENVIRONMENT= $(srcdir)/test-runner.sh
 TESTS= \
