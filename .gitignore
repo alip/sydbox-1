@@ -70,6 +70,10 @@ GTAGS
 Makefile.in
 Makefile
 
+# tests
+*.log
+*.trs
+
 # libtool
 .deps
 .libs
