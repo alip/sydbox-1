@@ -1,9 +1,9 @@
 #!/bin/sh
 # vim: set sw=4 et ts=4 sts=4 tw=80 :
-# Copyright 2010, 2012 Ali Polatel <alip@exherbo.org>
+# Copyright 2010, 2012, 2013 Ali Polatel <alip@exherbo.org>
 # Distributed under the terms of the GNU General Public License v3 or later
 
-test_description='sandbox chmod()'
+test_description='sandbox chmod(2)'
 . ./test-lib.sh
 
 SYDBOX_TEST_OPTIONS="
@@ -20,7 +20,7 @@ test_expect_success 'chmod($file) returns ERRNO_0' '
     test_path_is_not_writable file.$test_count
 '
 
-test_expect_success 'chmod($symlink) returns ERRNO_0' '
+test_expect_success SYMLINKS 'chmod($symlink) returns ERRNO_0' '
     touch file.$test_count &&
     chmod 600 file.$test_count &&
     ln -sf file.$test_count link.$test_count
@@ -33,9 +33,29 @@ test_expect_success 'chmod(NULL) returns EFAULT' '
     sydbox -- emily chmod -e EFAULT
 '
 
+test_expect_success 'chmod("") returns ENOENT' '
+    sydbox -- emily chmod -e ENOENT -m 000 ""
+'
+
 test_expect_success 'chmod($nofile) returns ENOENT' '
     rm -f nofile.$test_count &&
     sydbox -- emily chmod -e ENOENT -m 000 nofile.$test_count
+'
+
+test_expect_success 'chmod($noaccess/$file) returns EACCES' '
+    mkdir noaccess.$test_count &&
+    touch noaccess.$test_count/file.$test_count &&
+    chmod 600 noaccess.$test_count/file.$test_count &&
+    chmod 000 noaccess.$test_count &&
+    sydbox -- emily chmod -e EACCES -m 000 noaccess.$test_count/file.$test_count &&
+    chmod 700 noaccess.$test_count &&
+    test_path_is_readable noaccess.$test_count/file.$test_count &&
+    test_path_is_writable noaccess.$test_count/file.$test_count
+'
+
+test_expect_success 'chmod($nodir/$file) returns ENOTDIR' '
+    touch nodir.$test_count &&
+    sydbox -- emily chmod -e ENOTDIR -m 000 nodir.$test_count/nofile.$test_count
 '
 
 test_expect_success SYMLINKS 'chmod($symlink-self) returns ELOOP' '
