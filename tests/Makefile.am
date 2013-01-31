@@ -4,7 +4,8 @@ CLEANFILES= \
 	    *.gcda \
 	    *.gcno \
 	    *.gcov \
-	    *.log
+	    *.log \
+	    *.trs
 EXTRA_DIST=
 noinst_DATA=
 noinst_HEADERS=
@@ -27,7 +28,8 @@ export SYDBOX_CHECK_OPTIONS
 check-valgrind:
 	$(MAKE) SYDBOX_CHECK_OPTIONS="$(SYDBOX_CHECK_OPTIONS) --valgrind" check
 
-TESTS_ENVIRONMENT= $(srcdir)/test-runner.sh
+TEST_EXTENSIONS= .sh
+SH_LOG_COMPILER= $(srcdir)/test-runner.sh
 TESTS= \
 	t0000-basic.sh \
 	t1000-config-json.sh \
