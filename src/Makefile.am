@@ -9,8 +9,8 @@ DEFS+= \
        -DDATADIR=\"$(datadir)\" \
        -DGITVERSION=\"$(GITVERSION)\"
 AM_CFLAGS= \
-	   -I$(top_builddir)/include \
-	   -I$(top_srcdir)/include \
+	   -I$(top_builddir) \
+	   -I$(top_srcdir) \
 	   @SYDBOX_CFLAGS@
 
 bin_PROGRAMS= sydbox sydfmt

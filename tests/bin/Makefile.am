@@ -16,8 +16,8 @@ DEFS+= \
 # Use -DNDEBUG so as not to require sydbox' assert() override
 AM_CFLAGS= \
 	   -DNDEBUG \
-	   -I$(top_builddir)/include \
-	   -I$(top_srcdir)/include \
+	   -I$(top_builddir) \
+	   -I$(top_srcdir) \
 	   -I$(top_srcdir)/src \
 	   @SYDBOX_CFLAGS@
 
