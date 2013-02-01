@@ -1,7 +1,7 @@
 /*
  * sydbox/sys-mount.c
  *
- * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -47,6 +47,7 @@ int sys_umount(struct pink_easy_process *current, const char *name)
 
 int sys_umount2(struct pink_easy_process *current, const char *name)
 {
+	int r;
 #ifdef UMOUNT_NOFOLLOW
 	long flags;
 	pid_t tid;
@@ -63,17 +64,17 @@ int sys_umount2(struct pink_easy_process *current, const char *name)
 	/* Check for UMOUNT_NOFOLLOW */
 	tid = pink_easy_process_get_tid(current);
 	abi = pink_easy_process_get_abi(current);
-	if (!pink_read_argument(tid, abi, &data->regs, 1, &flags)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_argument(tid, abi, &data->regs, 1, &flags)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("read_argument(%lu, %d, 1) failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid, abi,
-				    errno, strerror(errno));
+				    -r, strerror(-r));
 			return panic(current);
 		}
 		log_trace("read_argument(%lu, %d, 1) failed (errno:%d %s)",
 			  (unsigned long)tid, abi,
-			  errno, strerror(errno));
+			  -r, strerror(-r));
 		log_trace("drop process %s[%lu:%u]", data->comm,
 			  (unsigned long)tid, abi);
 

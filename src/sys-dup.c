@@ -1,7 +1,7 @@
 /*
  * sydbox/sys-dup.c
  *
- * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -18,6 +18,7 @@
 
 int sys_dup(struct pink_easy_process *current, const char *name)
 {
+	int r;
 	long fd;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
@@ -27,8 +28,8 @@ int sys_dup(struct pink_easy_process *current, const char *name)
 	    || !sydbox->config.whitelist_successful_bind)
 		return 0;
 
-	if (!pink_read_argument(tid, abi, &data->regs, 0, &fd)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_argument(tid, abi, &data->regs, 0, &fd)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("read_argument(%lu, %d, 0) failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid, abi,
@@ -48,6 +49,7 @@ int sys_dup(struct pink_easy_process *current, const char *name)
 
 int sysx_dup(struct pink_easy_process *current, const char *name)
 {
+	int r;
 	long retval;
 	ht_int64_node_t *old_node, *new_node;
 	pid_t tid = pink_easy_process_get_tid(current);
@@ -60,16 +62,16 @@ int sysx_dup(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	/* Check the return value */
-	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
+	if ((r = pink_read_retval(tid, abi, &data->regs, &retval, NULL)) < 0) {
 		if (errno != ESRCH) {
 			log_warning("read_retval(%lu, %d) failed (errno:%d %s)",
 				    (unsigned long)tid, abi,
-				    errno, strerror(errno));
+				    -r, strerror(-r));
 			return panic(current);
 		}
 		log_trace("read_retval(%lu, %d) failed (errno:%d %s)",
 			  (unsigned long)tid, abi,
-			  errno, strerror(errno));
+			  -r, strerror(-r));
 		log_trace("drop process %s[%lu:%u]",
 			  data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;

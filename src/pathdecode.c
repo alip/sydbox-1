@@ -1,7 +1,7 @@
 /*
  * sydbox/pathdecode.c
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -29,6 +29,7 @@
 int path_decode(struct pink_easy_process *current, unsigned arg_index,
 		char **buf)
 {
+	int r;
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 	pid_t tid = pink_easy_process_get_tid(current);
@@ -38,29 +39,30 @@ int path_decode(struct pink_easy_process *current, unsigned arg_index,
 	assert(current);
 	assert(buf);
 
-	if (!pink_read_argument(tid, abi, &data->regs, arg_index, &addr))
+	if ((r = pink_read_argument(tid, abi, &data->regs,
+				    arg_index, &addr)) < 0)
 		goto fail;
-	if (pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX) < 0)
+	if ((r = pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX)) < 0)
 		goto fail;
 	path[SYDBOX_PATH_MAX-1] = '\0';
 	*buf = xstrdup(path);
 	return 0;
 fail:
-	if (errno == EFAULT) {
+	if (r == -EFAULT) {
 		log_trace("read_string(%lu, %d, %u) returned EFAULT",
 			  (unsigned long)tid, abi, arg_index);
 		*buf = NULL;
 		return -EFAULT;
 	}
-	if (errno != ESRCH) {
+	if (r != -ESRCH) {
 		log_warning("read_string(%lu, %d, %u) failed (errno:%d %s)",
 			    (unsigned long)tid, abi, arg_index,
-			    errno, strerror(errno));
+			    -r, strerror(-r));
 		return panic(current);
 	}
 	log_trace("read_string(%lu, %d, %u) failed (errno:%d %s)",
 		  (unsigned long)tid, abi, arg_index,
-		  errno, strerror(errno));
+		  -r, strerror(-r));
 	log_trace("drop process %s[%lu:%u]",
 		  data->comm,
 		  (unsigned long)tid, abi);
@@ -88,17 +90,18 @@ int path_prefix(struct pink_easy_process *current, unsigned arg_index,
 	log_check("%s[%lu:%u] arg_index:%u", data->comm,
 		  (unsigned long)tid, abi, arg_index);
 
-	if (!pink_read_argument(tid, abi, &data->regs, arg_index, &fd)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_argument(tid, abi, &data->regs,
+				    arg_index, &fd)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("read_argument(%lu, %u, %u) failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid, abi, arg_index,
-				    errno, strerror(errno));
+				    -r, strerror(-r));
 			return panic(current);
 		}
 		log_trace("read_argument(%lu, %u, %u) failed (errno:%d %s)",
 			  (unsigned long)tid, abi, arg_index,
-			  errno, strerror(errno));
+			  -r, strerror(-r));
 		log_trace("drop process %s[%lu:%u]",
 			  data->comm,
 			  (unsigned long)tid, abi);

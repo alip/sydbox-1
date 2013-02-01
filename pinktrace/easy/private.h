@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -30,8 +30,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PINK_EASY_INTERNAL_H
-#define PINK_EASY_INTERNAL_H
+#ifndef PINK_EASY_PRIVATE_H
+#define PINK_EASY_PRIVATE_H
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -42,7 +42,7 @@
 #include <sys/types.h>
 #include <sys/queue.h>
 
-#include <pinktrace/internal.h> /* _pink_assert_not_reached() */
+#include <pinktrace/private.h> /* _pink_assert_not_reached() */
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
@@ -109,7 +109,8 @@ struct pink_easy_context {
 	/** Destructor for the user data **/
 	pink_easy_free_func_t userdata_destroy;
 };
-#define PINK_EASY_FOREACH_PROCESS(node, ctx)	SLIST_FOREACH((node), &(ctx)->process_list, entries)
+#define PINK_EASY_FOREACH_PROCESS(node, ctx) \
+	SLIST_FOREACH((node), &(ctx)->process_list, entries)
 
 extern bool pink_easy_interactive;
 

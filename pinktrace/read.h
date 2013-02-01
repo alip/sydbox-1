@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -65,9 +65,9 @@ extern "C" {
  * @param tid Thread ID
  * @param off Offset
  * @param res Result (may be NULL, e.g. to test if the given offset is readable)
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_read_word_user(pid_t tid, long off, long *res);
+int pink_read_word_user(pid_t tid, long off, long *res);
 
 /**
  * Read a word at the given offset in the tracee's memory, and place it in
@@ -76,9 +76,9 @@ bool pink_read_word_user(pid_t tid, long off, long *res);
  * @param tid Thread ID
  * @param off Offset
  * @param res Result (may be NULL, e.g. to test if the given offset is readable)
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_read_word_data(pid_t tid, long off, long *res);
+int pink_read_word_data(pid_t tid, long off, long *res);
 
 /**
  * Read system call ABI
@@ -86,9 +86,9 @@ bool pink_read_word_data(pid_t tid, long off, long *res);
  * @param tid Thread ID
  * @param regs Pointer to the structure of registers; see pink_trace_get_regs()
  * @param abi Pointer to store the result, must @b not be @e NULL
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_read_abi(pid_t tid, const pink_regs_t *regs, enum pink_abi *abi);
+int pink_read_abi(pid_t tid, const pink_regs_t *regs, enum pink_abi *abi);
 
 /**
  * Read len bytes of data of process @b pid, at address @b addr, to our address
@@ -109,7 +109,7 @@ bool pink_read_abi(pid_t tid, const pink_regs_t *regs, enum pink_abi *abi);
  *         Check the return value for partial reads.
  **/
 ssize_t pink_read_vm_data(pid_t tid, enum pink_abi abi, long addr,
-		char *dest, size_t len)
+			  char *dest, size_t len)
 	PINK_GCC_ATTR((nonnull(4)));
 
 /**
@@ -129,10 +129,10 @@ ssize_t pink_read_vm_data(pid_t tid, enum pink_abi abi, long addr,
  * @param abi System call ABI; see pink_read_abi()
  * @param regs Pointer to the structure of registers; see pink_trace_get_regs()
  * @param sysnum Pointer to store the system call, must @b not be @e NULL
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_read_syscall(pid_t tid, enum pink_abi abi,
-		const pink_regs_t *regs, long *sysnum)
+int pink_read_syscall(pid_t tid, enum pink_abi abi,
+		      const pink_regs_t *regs, long *sysnum)
 	PINK_GCC_ATTR((nonnull(3)));
 
 /**
@@ -143,11 +143,11 @@ bool pink_read_syscall(pid_t tid, enum pink_abi abi,
  * @param regs Pointer to the structure of registers; see pink_trace_get_regs()
  * @param retval Pointer to store the return value, must @b not be @e NULL
  * @param error Pointer to store the error condition, must @b not be @e NULL
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_read_retval(pid_t tid, enum pink_abi abi,
-		const pink_regs_t *regs, long *retval,
-		int *error)
+int pink_read_retval(pid_t tid, enum pink_abi abi,
+		     const pink_regs_t *regs, long *retval,
+		     int *error)
 	PINK_GCC_ATTR((nonnull(3,4)));
 
 /**
@@ -158,11 +158,11 @@ bool pink_read_retval(pid_t tid, enum pink_abi abi,
  * @param regs Pointer to the structure of registers; see pink_trace_get_regs()
  * @param arg_index Index of the argument, first argument is 0
  * @param argval Pointer to store the value of the argument, must @b not be @e NULL
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_read_argument(pid_t tid, enum pink_abi abi,
-		const pink_regs_t *regs,
-		unsigned arg_index, long *argval)
+int pink_read_argument(pid_t tid, enum pink_abi abi,
+		       const pink_regs_t *regs,
+		       unsigned arg_index, long *argval)
 	PINK_GCC_ATTR((nonnull(5)));
 
 /**
@@ -170,7 +170,7 @@ bool pink_read_argument(pid_t tid, enum pink_abi abi,
  * terminating zero-byte
  **/
 ssize_t pink_read_vm_data_nul(pid_t tid, enum pink_abi abi, long addr,
-		char *dest, size_t len)
+			      char *dest, size_t len)
 	PINK_GCC_ATTR((nonnull(4)));
 
 /**
@@ -178,7 +178,7 @@ ssize_t pink_read_vm_data_nul(pid_t tid, enum pink_abi abi, long addr,
  **/
 #define pink_read_string(tid, abi, addr, dest, len) \
 		pink_read_vm_data_nul((tid), (abi), (addr), \
-				(dest), (len))
+				      (dest), (len))
 
 /**
  * Read the requested member of a NULL-terminated string array
@@ -198,9 +198,9 @@ ssize_t pink_read_vm_data_nul(pid_t tid, enum pink_abi abi, long addr,
  * @return Same as pink_read_vm_data_nul()
  **/
 ssize_t pink_read_string_array(pid_t tid, enum pink_abi abi,
-		long arg, unsigned arr_index,
-		char *dest, size_t dest_len,
-		bool *nullptr)
+			       long arg, unsigned arr_index,
+			       char *dest, size_t dest_len,
+			       bool *nullptr)
 	PINK_GCC_ATTR((nonnull(5)));
 
 #ifdef __cplusplus

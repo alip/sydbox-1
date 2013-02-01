@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -156,9 +156,9 @@ long pink_ptrace(int req, pid_t tid, void *addr, void *data);
  * @note This function is used only by the child process; the rest are used
  *       only by the parent.
  *
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_me(void);
+int pink_trace_me(void);
 
 /**
  * Restarts the stopped child process
@@ -168,9 +168,9 @@ bool pink_trace_me(void);
  *            signal to be delivered to the child; otherwise, no signal is
  *            delivered. Thus, for example, the parent can control whether a
  *            signal sent to the child is delivered or not.
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_resume(pid_t tid, int sig);
+int pink_trace_resume(pid_t tid, int sig);
 
 /**
  * Send signal to the tracee
@@ -187,9 +187,9 @@ bool pink_trace_resume(pid_t tid, int sig);
  * @param tid Thread ID
  * @param tgid Thread group ID
  * @param sig Signal
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_kill(pid_t tid, pid_t tgid, int sig);
+int pink_trace_kill(pid_t tid, pid_t tgid, int sig);
 
 /**
  * Restarts the stopped child process and arranges it to be stopped after
@@ -197,9 +197,9 @@ bool pink_trace_kill(pid_t tid, pid_t tgid, int sig);
  *
  * @param tid Thread ID
  * @param sig Treated the same as the signal argument of pink_trace_cont()
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_singlestep(pid_t tid, int sig);
+int pink_trace_singlestep(pid_t tid, int sig);
 
 /**
  * Restarts the stopped child process and arranges it to be stopped after
@@ -207,9 +207,9 @@ bool pink_trace_singlestep(pid_t tid, int sig);
  *
  * @param tid Thread ID
  * @param sig Treated the same was as the signal argument of pink_trace_cont()
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_syscall(pid_t tid, int sig);
+int pink_trace_syscall(pid_t tid, int sig);
 
 /**
  * Retrieve a message (as an unsigned long) about the trace event that just
@@ -222,9 +222,9 @@ bool pink_trace_syscall(pid_t tid, int sig);
  *
  * @param tid Thread ID
  * @param data Pointer to store the message
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_geteventmsg(pid_t tid, unsigned long *data);
+int pink_trace_geteventmsg(pid_t tid, unsigned long *data);
 
 /**
  * Copy the child's general purpose registers to the given location
@@ -233,9 +233,9 @@ bool pink_trace_geteventmsg(pid_t tid, unsigned long *data);
  *
  * @param tid Thread ID of the tracee
  * @param regs Pointer to the structure of registers.
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_get_regs(pid_t tid, pink_regs_t *regs);
+int pink_trace_get_regs(pid_t tid, pink_regs_t *regs);
 
 /**
  * Set the child's general purpose registers
@@ -244,9 +244,9 @@ bool pink_trace_get_regs(pid_t tid, pink_regs_t *regs);
  *
  * @param tid Thread ID of the tracee
  * @param regs Same as pink_trace_get_regs()
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_set_regs(pid_t tid, const pink_regs_t *regs);
+int pink_trace_set_regs(pid_t tid, const pink_regs_t *regs);
 
 /*
  * Set the tracing options
@@ -255,9 +255,9 @@ bool pink_trace_set_regs(pid_t tid, const pink_regs_t *regs);
  *
  * @param tid Thread ID
  * @param options Bitwise OR'ed PINK_TRACE_OPTION_* flags
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_setup(pid_t tid, int options);
+int pink_trace_setup(pid_t tid, int options);
 
 /**
  * Restarts the stopped child process and arranges it to be stopped after
@@ -267,9 +267,9 @@ bool pink_trace_setup(pid_t tid, int options);
  *
  * @param tid Thread ID
  * @param sig Treated same as the signal argument of pink_trace_cont()
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_sysemu(pid_t tid, int sig);
+int pink_trace_sysemu(pid_t tid, int sig);
 
 /**
  * Restarts the stopped child process like pink_trace_sysemu() but also
@@ -279,9 +279,9 @@ bool pink_trace_sysemu(pid_t tid, int sig);
  *
  * @param tid Thread ID of the child to be restarted
  * @param sig Treated same as the signal argument of pink_trace_cont()
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_sysemu_singlestep(pid_t tid, int sig);
+int pink_trace_sysemu_singlestep(pid_t tid, int sig);
 
 /**
  * Attaches to the process specified in pid, making it a traced "child" of the
@@ -291,9 +291,9 @@ bool pink_trace_sysemu_singlestep(pid_t tid, int sig);
  * stop.
  *
  * @param tid Thread ID
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_attach(pid_t tid);
+int pink_trace_attach(pid_t tid);
 
 /**
  * Restarts the stopped child as for pink_trace_cont(), but first detaches from
@@ -301,9 +301,9 @@ bool pink_trace_attach(pid_t tid);
  *
  * @param tid Thread ID
  * @param sig Treated same as the signal argument of pink_trace_cont()
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_trace_detach(pid_t tid, int sig);
+int pink_trace_detach(pid_t tid, int sig);
 
 #ifdef __cplusplus
 }

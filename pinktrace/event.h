@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -106,7 +106,8 @@ extern "C" {
  * @param status Status argument as returned by @e waitpid(2)
  * @return One of PINK_EVENT constants
  **/
-enum pink_event pink_event_decide(int status);
+enum pink_event pink_event_decide(int status)
+	PINK_GCC_ATTR((pure));
 
 /**
  * Return a string representation of the event

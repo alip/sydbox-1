@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -165,7 +165,7 @@ const char *pink_socket_subcall_name(enum pink_socket_subcall subcall)
  * @param regs Pointer to the structure of registers; see pink_trace_get_regs()
  * @param decode_socketcall Boolean to specify decoding @e socketcall(2)
  * @param subcall Pointer to store the result, must not be @e NULL
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
 #define pink_read_socket_subcall(tid, abi, regs, decode_socketcall, subcall) \
 		((decode_socketcall) \
@@ -185,12 +185,12 @@ const char *pink_socket_subcall_name(enum pink_socket_subcall subcall)
  * @param decode_socketcall Boolean to specify decoding @e socketcall(2)
  * @param arg_index Index of the argument, first argument is 0
  * @param argval Pointer to store the value, must @b not be @e NULL
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_read_socket_argument(pid_t tid, enum pink_abi abi,
-		const pink_regs_t *regs,
-		bool decode_socketcall,
-		unsigned arg_index, long *argval)
+int pink_read_socket_argument(pid_t tid, enum pink_abi abi,
+			      const pink_regs_t *regs,
+			      bool decode_socketcall,
+			      unsigned arg_index, long *argval)
 	PINK_GCC_ATTR((nonnull(6)));
 
 /**
@@ -210,13 +210,13 @@ bool pink_read_socket_argument(pid_t tid, enum pink_abi abi,
  *           argument one with index zero. Caller may set this to @e NULL in
  *           case the file descriptor is not requested.
  * @param sockaddr Pointer to store the socket address, must @b not be @e NULL
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_read_socket_address(pid_t tid, enum pink_abi abi,
-		const pink_regs_t *regs,
-		bool decode_socketcall,
-		unsigned arg_index, long *fd,
-		struct pink_sockaddr *sockaddr)
+int pink_read_socket_address(pid_t tid, enum pink_abi abi,
+			     const pink_regs_t *regs,
+			     bool decode_socketcall,
+			     unsigned arg_index, long *fd,
+			     struct pink_sockaddr *sockaddr)
 	PINK_GCC_ATTR((nonnull(7)));
 
 #ifdef __cplusplus

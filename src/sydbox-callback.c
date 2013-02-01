@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox-callback.c
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -347,6 +347,7 @@ static int callback_exec(const struct pink_easy_context *ctx,
 		log_warning("resuming process:%lu"
 			    " [abi:%d cwd:\"%s\"]",
 			    (unsigned long)tid, abi, data->cwd);
+		/* TODO: return 0 on success, negated errno on failure */
 		if (!pink_easy_process_detach(current))
 			log_warning("resume process:%lu failed"
 				    " (errno:%d %s)",
@@ -446,6 +447,7 @@ static int callback_seccomp(const struct pink_easy_context *ctx,
 		break;
 	}
 
+	/* TODO: return 0 on success, negated errno on failure */
 	if (!pink_easy_process_get_userdata(current)) {
 		/* No sandboxing data: ignored process */
 		return 0;

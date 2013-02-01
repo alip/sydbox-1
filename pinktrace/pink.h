@@ -67,5 +67,6 @@
 #include <pinktrace/read.h>
 #include <pinktrace/write.h>
 #include <pinktrace/socket.h>
+#include <pinktrace/pipe.h>
 
 #endif

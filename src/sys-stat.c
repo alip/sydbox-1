@@ -1,7 +1,7 @@
 /*
  * sydbox/sys-stat.c
  *
- * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -32,12 +32,18 @@ int sys_stat(struct pink_easy_process *current, const char *name)
 		return 0;
 	}
 
-	if (!pink_read_argument(tid, abi, &data->regs, 0, &addr)
-	    || pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX) < 0) {
-		/* Don't bother denying the system call here.
+	r = pink_read_argument(tid, abi, &data->regs, 0, &addr);
+	if (r < 0) {
+		/*
+		 * Don't bother denying the system call here.
 		 * Because this should not be a fatal error.
 		 */
-		return (errno == ESRCH) ? PINK_EASY_CFLAG_DROP : 0;
+		return (r == -ESRCH) ? PINK_EASY_CFLAG_DROP : 0;
+	}
+	r = pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX);
+	if (r < 0) {
+		/* Likewise... */
+		return (r == -ESRCH) ? PINK_EASY_CFLAG_DROP : 0;
 	}
 	path[SYDBOX_PATH_MAX-1] = '\0';
 

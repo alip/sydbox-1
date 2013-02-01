@@ -1,7 +1,7 @@
 /*
  * sydbox/sys-getsockname.c
  *
- * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -20,32 +20,33 @@
 
 int sys_getsockname(struct pink_easy_process *current, const char *name)
 {
+	int r;
 	bool decode_socketcall;
 	long fd;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_network_off(data)
-	    || !sydbox->config.whitelist_successful_bind)
+	if (sandbox_network_off(data) ||
+	    !sydbox->config.whitelist_successful_bind)
 		return 0;
 
 	decode_socketcall = !!(data->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
-	if (!pink_read_socket_argument(tid, abi, &data->regs,
-				       decode_socketcall, 0, &fd)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_socket_argument(tid, abi, &data->regs,
+					   decode_socketcall, 0, &fd)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("read_socket_argument(%lu, %d, %s, 0)"
 				    " failed (errno:%d %s)",
 				    (unsigned long)tid, abi,
 				    decode_socketcall ? "true" : "false",
-				    errno, strerror(errno));
+				    -r, strerror(-r));
 			return panic(current);
 		}
 		log_trace("read_socket_argument(%lu, %d, %s, 0)"
 			  " failed (errno:%d %s)",
 			  (unsigned long)tid, abi,
 			  decode_socketcall ? "true" : "false",
-			  errno, strerror(errno));
+			  -r, strerror(-r));
 		log_trace("drop process %s[%lu:%u]",
 			  data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
@@ -60,6 +61,7 @@ int sys_getsockname(struct pink_easy_process *current, const char *name)
 
 int sysx_getsockname(struct pink_easy_process *current, const char *name)
 {
+	int r;
 	bool decode_socketcall;
 	unsigned port;
 	long retval;
@@ -69,23 +71,23 @@ int sysx_getsockname(struct pink_easy_process *current, const char *name)
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_network_off(data)
-	    || !sydbox->config.whitelist_successful_bind
-	    || !data->args[0])
+	if (sandbox_network_off(data) ||
+	    !sydbox->config.whitelist_successful_bind ||
+	    !data->args[0])
 		return 0;
 
 	/* Check the return value */
-	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_retval(tid, abi, &data->regs, &retval, NULL)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("read_retval(%lu, %d) failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid, abi,
-				    errno, strerror(errno));
+				    -r, strerror(-r));
 			return panic(current);
 		}
 		log_trace("read_retval(%lu, %d) failed (errno:%d %s)",
 			  (unsigned long)tid, abi,
-			  errno, strerror(errno));
+			  -r, strerror(-r));
 		log_trace("drop process %s[%lu:%u]",
 			  data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
@@ -99,22 +101,22 @@ int sysx_getsockname(struct pink_easy_process *current, const char *name)
 	}
 
 	decode_socketcall = !!(data->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
-	if (!pink_read_socket_address(tid, abi, &data->regs,
-				      decode_socketcall,
-				      1, NULL, &psa)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_socket_address(tid, abi, &data->regs,
+					  decode_socketcall, 1,
+					  NULL, &psa)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("read_socket_address(%lu, %d, %s, 0)"
 				    " failed (errno:%d %s)",
 				    (unsigned long)tid, abi,
 				    decode_socketcall ? "true" : "false",
-				    errno, strerror(errno));
+				    -r, strerror(-r));
 			return panic(current);
 		}
 		log_trace("read_socket_address(%lu, %d, %s, 0) failed"
 			  " (errno:%d %s)",
 			  (unsigned long)tid, abi,
 			  decode_socketcall ? "true" : "false",
-			  errno, strerror(errno));
+			  -r, strerror(-r));
 		log_trace("drop process %s[%lu:%u]", data->comm,
 			  (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;

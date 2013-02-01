@@ -9,15 +9,15 @@ dnl suffix: For prerelease, alpha, beta versions
 m4_define([sydbox_version_major],  [1])
 m4_define([sydbox_version_minor],  [0])
 m4_define([sydbox_version_micro],  [0])
-m4_define([sydbox_version_suffix], [])
+m4_define([sydbox_version_suffix], [_beta])
 m4_define([sydbox_version_full],   [sydbox_version_major.sydbox_version_minor.sydbox_version_micro[]sydbox_version_suffix])
 m4_define([sydbox_version],        [sydbox_version_full])
 
-dnl pinktrace-0.2
-m4_define([pinktrace_version_major],  [0])
-m4_define([pinktrace_version_minor],  [2])
+dnl pinktrace-1.0
+m4_define([pinktrace_version_major],  [1])
+m4_define([pinktrace_version_minor],  [0])
 m4_define([pinktrace_version_micro],  [0])
-m4_define([pinktrace_version_suffix], [])
+m4_define([pinktrace_version_suffix], [_beta])
 m4_define([pinktrace_version_full],   [pinktrace_version_major.pinktrace_version_minor.pinktrace_version_micro[]pinktrace_version_suffix])
 m4_define([pinktrace_version],        [pinktrace_version_full])
 m4_define([pinktrace_lib_current],    [m4_eval(100 * pinktrace_version_major + pinktrace_version_minor)])
@@ -281,6 +281,7 @@ AC_CHECK_FUNCS([isdigit],       [], [AC_MSG_ERROR([I need isdigit])])
 AC_CHECK_FUNCS([ntohs],         [], [AC_MSG_ERROR([I need ntohs])])
 AC_CHECK_FUNCS([getservbyname], [], [AC_MSG_ERROR([I need getservbyname])])
 AC_CHECK_FUNCS([execvpe],       [], [AC_MSG_ERROR([I need execvpe])])
+AC_CHECK_FUNCS([pipe2])
 
 dnl check for declarations
 AC_CHECK_DECL([MAX_ARG_STRLEN],  [], [AC_MSG_ERROR([I need MAX_ARG_STRLEN])],  [#include <linux/binfmts.h>])
@@ -485,6 +486,17 @@ PKG_CHECK_MODULES([check], [check >= $CHECK_REQ],
 		  [HAVE_CHECK=no])
 AM_CONDITIONAL([HAVE_CHECK], test x"$HAVE_CHECK" = x"yes")
 
+dnl doxygen
+AC_MSG_CHECKING([whether doxygen should be enabled])
+AC_ARG_ENABLE([doxygen],
+	      AS_HELP_STRING([--enable-doxygen], [Enable 'make doxygen' (developer docs)]),
+	      [HAVE_DOXYGEN=$enableval
+	       AC_MSG_RESULT([$enableval])],
+	      [AC_MSG_RESULT([autodetect])
+	       AC_CHECK_PROG(HAVE_DOXYGEN, [doxygen], [yes], [no])])
+AC_SUBST([HAVE_DOXYGEN])
+AM_CONDITIONAL([HAVE_DOXYGEN], test "x$HAVE_DOXYGEN" = "xyes")
+
 dnl built sources
 GENERATED_FILE=misc/generated-file.txt
 AC_SUBST_FILE([GENERATED_FILE])
@@ -495,11 +507,15 @@ AC_CONFIG_FILES([Makefile
 		 tests/Makefile
 		 tests/bin/Makefile
 		 data/Makefile
+		 doc/Makefile
+		 doc/api/Makefile
+		 doc/api/c/Makefile
+		 doc/api/c/doxygen.conf
 		 man/Makefile
-		 include/pinktrace/about.h
-		 include/pinktrace/system.h
 		 pkg-config/Makefile
 		 pinktrace/Makefile
+		 pinktrace/about.h
+		 pinktrace/system.h
 		 pinktrace/easy/Makefile
 		 pinktrace/linux/Makefile
 		 pinktrace/linux/i386/Makefile

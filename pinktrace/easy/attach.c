@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pinktrace/easy/internal.h>
+#include <pinktrace/easy/private.h>
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
@@ -46,7 +46,7 @@ bool pink_easy_attach(struct pink_easy_context *ctx, pid_t tid, pid_t tgid)
 	if (current != NULL && current->flags & PINK_EASY_PROCESS_ATTACHED)
 		return true;
 
-	if (!pink_trace_attach(tid)) {
+	if (pink_trace_attach(tid) < 0) {
 		ctx->callback_table.error(ctx, PINK_EASY_ERROR_ATTACH, tid);
 		return false;
 	}

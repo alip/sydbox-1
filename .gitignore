@@ -103,9 +103,12 @@ tests/t[0-9][0-9][0-9]*
 !tests/t[0-9][0-9][0-9]*.c
 !tests/t[0-9][0-9][0-9]*.sh
 
-/include/pinktrace/about.h
-/include/pinktrace/bitness.h
-/include/pinktrace/system.h
+/doc/api/c/doxygen.conf
+/doc/api/c/pinktrace.tag
+/doc/api/c/c
+
+/pinktrace/about.h
+/pinktrace/system.h
 
 /pkg-config/pinktrace.pc
 /pkg-config/pinktrace_easy.pc

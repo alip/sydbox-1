@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox-panic.c
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -121,6 +121,7 @@ static void report(struct pink_easy_process *current, const char *fmt,
 
 int deny(struct pink_easy_process *current, int err_no)
 {
+	int r;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -134,16 +135,16 @@ int deny(struct pink_easy_process *current, int err_no)
 		   data->retval,
 		   errno_to_string(err_no));
 
-	if (!pink_write_syscall(tid, abi, PINK_SYSCALL_INVALID)) {
-		if (errno != ESRCH) {
+	if ((r = pink_write_syscall(tid, abi, PINK_SYSCALL_INVALID)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("write syscall:%#x failed (errno:%d %s)",
 				    PINK_SYSCALL_INVALID,
-				    errno, strerror(errno));
+				    -r, strerror(-r));
 			return panic(current);
 		}
 		log_trace("write syscall:%#x failed (errno:%d %s)",
 			  PINK_SYSCALL_INVALID,
-			  errno, strerror(errno));
+			  -r, strerror(-r));
 		log_trace("drop process %s[%lu:%u]",
 			  data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;
@@ -154,6 +155,7 @@ int deny(struct pink_easy_process *current, int err_no)
 
 int restore(struct pink_easy_process *current)
 {
+	int r;
 	int retval, error;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
@@ -164,16 +166,16 @@ int restore(struct pink_easy_process *current)
 		  pink_syscall_name(data->sno, abi));
 
 	/* Restore system call number */
-	if (!pink_write_syscall(tid, abi, data->sno)) {
-		if (errno == ESRCH) {
+	if ((r = pink_write_syscall(tid, abi, data->sno)) < 0) {
+		if (r == -ESRCH) {
 			log_trace("write syscall:%#lx failed (errno:%d %s)",
-				  data->sno, errno, strerror(errno));
+				  data->sno, -r, strerror(-r));
 			log_trace("drop process %s[%lu:%d]",
 				  data->comm, (unsigned long)tid, abi);
 			return PINK_EASY_CFLAG_DROP;
 		}
 		log_warning("write syscall:%#lx failed (errno:%d %s)",
-			    data->sno, errno, strerror(errno));
+			    data->sno, -r, strerror(-r));
 		return panic(current);
 	}
 
@@ -185,12 +187,12 @@ int restore(struct pink_easy_process *current)
 		retval = data->retval;
 		error = 0;
 	}
-	if (!pink_write_retval(tid, abi, retval, error)) {
-		if (errno == ESRCH) {
+	if ((r = pink_write_retval(tid, abi, retval, error)) < 0) {
+		if (r == -ESRCH) {
 			log_trace("write retval=%d and error=%s failed"
 				  " (errno:%d %s)",
 				  retval, errno_to_string(error),
-				  errno, strerror(errno));
+				  -r, strerror(-r));
 			log_trace("drop process %s[%lu:%d]",
 				  data->comm, (unsigned long)tid, abi);
 			return PINK_EASY_CFLAG_DROP;
@@ -199,7 +201,7 @@ int restore(struct pink_easy_process *current)
 		log_warning("write retval=%d and error=%s failed"
 			    " (errno:%d %s)",
 			    retval, errno_to_string(error),
-			    errno, strerror(errno));
+			    -r, strerror(-r));
 		return panic(current);
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,8 +25,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PINK_INTERNAL_H
-#define PINK_INTERNAL_H
+#ifndef PINK_PRIVATE_H
+#define PINK_PRIVATE_H
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

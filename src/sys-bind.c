@@ -1,7 +1,7 @@
 /*
  * sydbox/sys-bind.c
  *
- * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -63,22 +63,23 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 		/* Access granted.
 		 * Read the file descriptor, for use in exit.
 		 */
-		if (!pink_read_socket_argument(tid, abi, &data->regs,
-					       info.decode_socketcall,
-					       0, &fd)) {
-			if (errno != ESRCH) {
+		int pf;
+		if ((pf = pink_read_socket_argument(tid, abi, &data->regs,
+						    info.decode_socketcall, 0,
+						    &fd)) < 0) {
+			if (pf != -ESRCH) {
 				log_warning("read_socket_argument(%lu, %d, %s, 0) failed"
 					    " (errno:%d %s)",
 					    (unsigned long)tid, abi,
 					    info.decode_socketcall ? "true" : "false",
-					    errno, strerror(errno));
+					    -r, strerror(-r));
 				return panic(current);
 			}
 			log_trace("read_socket_argument(%lu, %d, %s, 0) failed"
 				  " (errno:%d %s)",
 				  (unsigned long)tid, abi,
 				  info.decode_socketcall ? "true" : "false",
-				  errno, strerror(errno));
+				  -r, strerror(-r));
 			log_trace("drop process %s[%lu:%u]",
 				  data->comm, (unsigned long)tid, abi);
 			return PINK_EASY_CFLAG_DROP;
@@ -112,6 +113,7 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 
 int sysx_bind(struct pink_easy_process *current, const char *name)
 {
+	int r;
 	long retval;
 	struct snode *snode;
 	ht_int64_node_t *node;
@@ -120,23 +122,23 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (sandbox_network_off(data)
-	    || !sydbox->config.whitelist_successful_bind
-	    || !data->savebind)
+	if (sandbox_network_off(data) ||
+	    !sydbox->config.whitelist_successful_bind ||
+	    !data->savebind)
 		return 0;
 
 	/* Check the return value */
-	if (!pink_read_retval(tid, abi, &data->regs, &retval, NULL)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_retval(tid, abi, &data->regs, &retval, NULL)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("read_retval(%lu, %d) failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid, abi,
-				    errno, strerror(errno));
+				    -r, strerror(-r));
 			return panic(current);
 		}
 		log_trace("read_retval(%lu, %d) failed (errno:%d %s)",
 			  (unsigned long)tid, abi,
-			  errno, strerror(errno));
+			  -r, strerror(-r));
 		log_trace("drop process %s[%lu:%u]",
 			  data->comm, (unsigned long)tid, abi);
 		return PINK_EASY_CFLAG_DROP;

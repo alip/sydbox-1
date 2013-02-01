@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox.c
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -292,9 +292,8 @@ static void sydbox_startup_child(char **argv)
 	if (pid < 0)
 		die_errno("Can't fork");
 	else if (pid == 0) {
-#ifdef WANT_SECCOMP
 		int r;
-
+#ifdef WANT_SECCOMP
 		if (sydbox->config.use_seccomp) {
 			if ((r = seccomp_init()) < 0) {
 				fprintf(stderr,
@@ -312,10 +311,10 @@ static void sydbox_startup_child(char **argv)
 		}
 #endif
 		pid = getpid();
-		if (!pink_trace_me()) {
+		if ((r = pink_trace_me()) < 0) {
 			fprintf(stderr,
 				"ptrace(TRACEME) failed (errno:%d %s)\n",
-				errno, strerror(errno));
+				-r, strerror(-r));
 			_exit(EXIT_FAILURE);
 		}
 

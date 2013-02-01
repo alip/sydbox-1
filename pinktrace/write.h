@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,9 +55,9 @@ extern "C" {
  * @param tid Thread ID
  * @param off Offset
  * @param val Word
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_write_word_user(pid_t tid, long off, long val);
+int pink_write_word_user(pid_t tid, long off, long val);
 
 /**
  * Copy the word val to location addr in the tracee's memory, aka
@@ -66,9 +66,9 @@ bool pink_write_word_user(pid_t tid, long off, long val);
  * @param tid Thread ID
  * @param off Offset
  * @param val Word
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_write_word_data(pid_t tid, long off, long val);
+int pink_write_word_data(pid_t tid, long off, long val);
 
 /**
  * Write the given data argument @b src to address @b addr
@@ -88,17 +88,16 @@ bool pink_write_word_data(pid_t tid, long off, long val);
  *         Check the return value for partial writes.
  **/
 ssize_t pink_write_vm_data(pid_t tid, enum pink_abi abi, long addr,
-		const char *src, size_t len);
+			   const char *src, size_t len);
 
 /**
  * Convenience macro to write an object
  *
- * @see pink_write_vm_data
+ * @see pink_write_vm_data()
  **/
 #define pink_write_vm_object(tid, abi, addr, objp) \
 		pink_write_vm_data((tid), (abi), (addr), \
-				(char *)(objp), \
-				sizeof(*(objp)))
+				   (char *)(objp), sizeof(*(objp)))
 
 /**
  * Set the system call to the given value
@@ -108,9 +107,9 @@ ssize_t pink_write_vm_data(pid_t tid, enum pink_abi abi, long addr,
  * @param tid Thread ID
  * @param abi System call ABI; see pink_read_abi()
  * @param sysnum System call number
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_write_syscall(pid_t tid, enum pink_abi abi, long sysnum);
+int pink_write_syscall(pid_t tid, enum pink_abi abi, long sysnum);
 
 /**
  * Set the system call return value
@@ -119,9 +118,9 @@ bool pink_write_syscall(pid_t tid, enum pink_abi abi, long sysnum);
  * @param abi System call ABI; see pink_read_abi()
  * @param retval Return value
  * @param error Error condition (errno)
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_write_retval(pid_t tid, enum pink_abi abi, long retval, int error);
+int pink_write_retval(pid_t tid, enum pink_abi abi, long retval, int error);
 
 /**
  * Write the specified value to the specified system call argument
@@ -130,10 +129,10 @@ bool pink_write_retval(pid_t tid, enum pink_abi abi, long retval, int error);
  * @param abi System call ABI; see pink_read_abi()
  * @param arg_index Index of the argument, first argument is 0
  * @param argval Value of the argument
- * @return true on success, false on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_write_argument(pid_t tid, enum pink_abi abi,
-		unsigned arg_index, long argval);
+int pink_write_argument(pid_t tid, enum pink_abi abi,
+			unsigned arg_index, long argval);
 
 #ifdef __cplusplus
 }

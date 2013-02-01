@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox-syscall.c
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -353,6 +353,7 @@ int sysinit_seccomp(void)
 
 int sysenter(struct pink_easy_process *current)
 {
+	int r;
 	long no;
 	const char *name;
 	pid_t tid;
@@ -364,17 +365,17 @@ int sysenter(struct pink_easy_process *current)
 	abi = pink_easy_process_get_abi(current);
 	data = pink_easy_process_get_userdata(current);
 
-	if (!pink_read_syscall(tid, abi, &data->regs, &no)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_syscall(tid, abi, &data->regs, &no)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("read_syscall(%lu, %d) failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid, abi,
-				    errno, strerror(errno));
+				    -errno, strerror(-errno));
 			return panic(current);
 		}
 		log_trace("read_syscall(%lu, %d) failed (errno:%d %s)",
 			  (unsigned long)tid, abi,
-			  errno, strerror(errno));
+			  -errno, strerror(-errno));
 
 		return PINK_EASY_CFLAG_DROP;
 	}

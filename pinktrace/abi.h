@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -114,9 +114,9 @@ extern "C" {
  *
  * @param abi System call ABI
  * @param wsize Pointer to store the word size, must @b not be @e NULL
- * @return Word size on success, -1 on failure and sets errno accordingly
+ * @return 0 on success, negated errno on failure
  **/
-bool pink_abi_wordsize(enum pink_abi abi, size_t *wsize)
+int pink_abi_wordsize(enum pink_abi abi, size_t *wsize)
 	PINK_GCC_ATTR((nonnull(2)));
 
 #ifdef __cplusplus

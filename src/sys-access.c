@@ -1,7 +1,7 @@
 /*
  * sydbox/sys-access.c
  *
- * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -57,8 +57,8 @@ int sys_access(struct pink_easy_process *current, const char *name)
 	    && sandbox_write_off(data))
 		return 0;
 
-	if (!pink_read_argument(tid, abi, &data->regs, 1, &mode)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_argument(tid, abi, &data->regs, 1, &mode) < 0)) {
+		if (r != -ESRCH) {
 			log_warning("read_argument(%lu, %d, 1) failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid, abi,
@@ -124,12 +124,12 @@ int sys_faccessat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	/* Check mode argument first */
-	if (!pink_read_argument(tid, abi, &data->regs, 2, &mode)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_argument(tid, abi, &data->regs, 2, &mode)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("read_argument(%lu, %d, 2) failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid, abi,
-				    errno, strerror(errno));
+				    -r, strerror(-r));
 			return panic(current);
 		}
 		log_trace("read_argument(%lu, %d, 2) failed (errno:%d %s)",
@@ -144,12 +144,12 @@ int sys_faccessat(struct pink_easy_process *current, const char *name)
 		return 0;
 
 	/* Check for AT_SYMLINK_NOFOLLOW */
-	if (!pink_read_argument(tid, abi, &data->regs, 3, &flags)) {
-		if (errno != ESRCH) {
+	if ((r = pink_read_argument(tid, abi, &data->regs, 3, &flags)) < 0) {
+		if (r != -ESRCH) {
 			log_warning("read_argument(%lu, %d, 3) failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid, abi,
-				    errno, strerror(errno));
+				    -r, strerror(-r));
 			return panic(current);
 		}
 		log_trace("read_argument(%lu, %d, 3) failed (errno:%d %s)",

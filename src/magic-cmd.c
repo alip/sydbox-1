@@ -1,7 +1,7 @@
 /*
  * sydbox/magic-cmd.c
  *
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -102,7 +102,10 @@ int magic_cmd_exec(const void *val, struct pink_easy_process *current)
 	if (r < 0)
 		goto out;
 
-	/* Step 3: fork and execute the process */
+	/*
+	 * Step 3: fork and execute the process
+	 * TODO: Use the new pipe(2) helpers for sane error handling
+	 */
 	pid_t childpid;
 	int err_no, status;
 
@@ -116,7 +119,7 @@ int magic_cmd_exec(const void *val, struct pink_easy_process *current)
 	} else if (childpid == 0) {
 		if (chdir(data->cwd) < 0)
 			_exit(errno);
-		if (!pink_trace_me())
+		if (pink_trace_me() < 0)
 			_exit(errno);
 		execvpe(argv[0], argv, envp);
 		_exit(errno);
@@ -134,7 +137,7 @@ int magic_cmd_exec(const void *val, struct pink_easy_process *current)
 	if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
 		log_magic("exec(`%s') successful, detaching from pid:%lu",
 			  argv[0], (unsigned long)childpid);
-		if (!pink_trace_detach(childpid, 0))
+		if (pink_trace_detach(childpid, 0) < 0)
 			log_magic("detach from pid:%lu failed (errno:%d %s)",
 				  (unsigned long)childpid,
 				  errno, strerror(errno));

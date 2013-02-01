@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox-box.c
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -531,18 +531,20 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 	abspath = NULL;
 	psa = xmalloc(sizeof(struct pink_sockaddr));
 
-	if (!pink_read_socket_address(tid, abi, &data->regs,
-				      info->decode_socketcall,
-				      info->arg_index, info->fd, psa)) {
-		if (errno != ESRCH) {
+	int pf; /* someone, please shoot me for using such variable names! */
+	if ((pf = pink_read_socket_address(tid, abi, &data->regs,
+					  info->decode_socketcall,
+					  info->arg_index, info->fd,
+					  psa)) < 0) {
+		if (pf != -ESRCH) {
 			log_warning("read sockaddr at index=%d failed"
 				    " (errno=%d %s)",
-				    info->arg_index, errno, strerror(errno));
+				    info->arg_index, -pf, strerror(-pf));
 			r = panic(current);
 			goto out;
 		}
 		log_trace("read sockaddr at index=%d failed (errno=%d %s)",
-			  info->arg_index, errno, strerror(errno));
+			  info->arg_index, -pf, strerror(-pf));
 		log_trace("drop process  %s[%lu:%u]", data->comm,
 			  (unsigned long)tid, abi);
 		r = PINK_EASY_CFLAG_DROP;
@@ -633,7 +635,7 @@ report:
 	box_report_violation_sock(current, info, name, psa);
 
 out:
-	if (r == 0) {
+	if (pf == 0) {
 		/* Access granted. */
 		if (info->abspath)
 			*info->abspath = abspath;
@@ -650,5 +652,5 @@ out:
 		free(psa);
 	}
 
-	return r;
+	return pf;
 }
