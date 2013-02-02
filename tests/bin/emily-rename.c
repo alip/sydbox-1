@@ -60,7 +60,6 @@ For errno == EFAULT <oldpath> and <newpath> may not be specified.\n\
 int test_rename(int argc, char **argv)
 {
 	int optc;
-	bool seen_mode = false;
 	int test_errno = TEST_ERRNO_INVALID;
 	const char *test_oldpath;
 	const char *test_newpath;
@@ -111,8 +110,6 @@ int test_rename(int argc, char **argv)
 int test_renameat(int argc, char **argv)
 {
 	int optc;
-	bool seen_mode = false;
-	bool test_nofollow = false;
 	int test_errno = TEST_ERRNO_INVALID;
 	int test_olddirfd = TEST_DIRFD_INVALID;
 	int test_newdirfd = TEST_DIRFD_INVALID;

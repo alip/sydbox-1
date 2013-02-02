@@ -502,10 +502,11 @@ out:
 int box_check_socket(struct pink_easy_process *current, const char *name,
 		     sysinfo_t *info)
 {
-	int r;
+	/*
+	 * FIXME: someone, please shoot me for using such short variable names!
+	 */
+	int r, pf;
 	char *abspath;
-	struct snode *node;
-	struct sockmatch *m;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -531,7 +532,6 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 	abspath = NULL;
 	psa = xmalloc(sizeof(struct pink_sockaddr));
 
-	int pf; /* someone, please shoot me for using such variable names! */
 	if ((pf = pink_read_socket_address(tid, abi, &data->regs,
 					  info->decode_socketcall,
 					  info->arg_index, info->fd,
@@ -604,11 +604,11 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 	} else {
 		if (box_check_access(info->access_mode, box_match_socket_,
 				     access_lists, 2, psa)) {
-			log_access("access to sockaddr `%p' granted", psa);
+			log_access("access to sockaddr `%p' granted", (void *)psa);
 			r = 0;
 			goto out;
 		} else {
-			log_access("access to sockaddr `%p' denied", psa);
+			log_access("access to sockaddr `%p' denied", (void *)psa);
 		}
 	}
 
@@ -626,7 +626,7 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 		if (box_match_socket(info->access_filter, psa, NULL)) {
 			log_access("sockaddr=%p matches a filter pattern,"
 				   " access violation filtered",
-				   psa);
+				   (void *)psa);
 			goto out;
 		}
 	}

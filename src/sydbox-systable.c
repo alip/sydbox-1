@@ -34,8 +34,6 @@ void systable_add_full(long no, enum pink_abi abi, const char *name,
 
 void systable_init(void)
 {
-	int r;
-
 	for (enum pink_abi abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
 		systable[abi] = hashtable_create(syscall_entries_max(), 0);
 		if (systable[abi] == NULL)

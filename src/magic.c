@@ -670,7 +670,7 @@ int magic_cast_string(struct pink_easy_process *current, const char *magic,
 		      int prefix)
 {
 	bool bval;
-	int r, ival;
+	int ival;
 	enum magic_key key;
 	enum magic_op op;
 	const char *cmd;

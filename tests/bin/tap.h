@@ -1,6 +1,6 @@
 /*
  * Simple implementation of the Test Anything Protocol
- * Copyright 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -13,9 +13,14 @@
 #include <errno.h>
 #include <string.h>
 
+#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
+#define TAP_GNUC_UNUSED		__attribute__((unused))
+#endif
+
 static int tap_test_count = 1;
 
 #define DEFINE_TAP_FUNC(func) \
+	TAP_GNUC_UNUSED \
 	static void tap_##func(const char *fmt, ...) { \
 		va_list ap; \
 		va_start(ap, fmt); \
@@ -88,6 +93,7 @@ DEFINE_TAP_FUNC(skip)
 
 #undef DEFINE_TAP_FUNC
 
+TAP_GNUC_UNUSED
 static void *tap_xmalloc(size_t size)
 {
 	void *ptr;
@@ -98,6 +104,7 @@ static void *tap_xmalloc(size_t size)
 	return ptr;
 }
 
+TAP_GNUC_UNUSED
 static void tap_xfree(void *ptr)
 {
 	if (!ptr)

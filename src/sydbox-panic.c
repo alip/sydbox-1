@@ -50,14 +50,12 @@ static inline int errno2retval(int err_no)
 
 static bool cont_one(struct pink_easy_process *proc, void *userdata)
 {
-	pid_t tid = pink_easy_process_get_tid(proc);
 	pink_easy_process_detach(proc);
 	return true;
 }
 
 static bool kill_one(struct pink_easy_process *proc, void *userdata)
 {
-	pid_t tid = pink_easy_process_get_tid(proc);
 	int fatal_sig = PTR_TO_INT(userdata);
 	pink_easy_process_kill(proc, fatal_sig);
 	return true;

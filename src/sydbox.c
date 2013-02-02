@@ -238,7 +238,7 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 		if (match->str) {
 			fprintf(stderr, "\t\t%s`%s'%s\n", CN, match->str, CE);
 		} else {
-			fprintf(stderr, "\t\t%s((%p))%s\n", CN, match, CE);
+			fprintf(stderr, "\t\t%s((%p))%s\n", CN, (void *)match, CE);
 		}
 	}
 	fprintf(stderr, "\t%sNetwork Whitelist connect():%s\n", CI, CE);
@@ -247,7 +247,7 @@ static bool dump_one_process(struct pink_easy_process *current, void *userdata)
 		if (match->str) {
 			fprintf(stderr, "\t\t%s`%s'%s\n", CN, match->str, CE);
 		} else {
-			fprintf(stderr, "\t\t%s((%p))%s\n", CN, match, CE);
+			fprintf(stderr, "\t\t%s((%p))%s\n", CN, (void *)match, CE);
 		}
 	}
 
@@ -276,8 +276,6 @@ static void sig_user(int signo)
 static void sydbox_startup_child(char **argv)
 {
 	int r;
-	struct stat statbuf;
-	const char *filename;
 	char *pathname;
 	pid_t pid = 0;
 	struct pink_easy_process *current;
@@ -338,9 +336,7 @@ static void sydbox_startup_child(char **argv)
 int main(int argc, char **argv)
 {
 	int opt, r;
-	pid_t pid;
 	const char *env;
-	struct sigaction sa;
 
 	int ptrace_options;
 	enum pink_easy_step ptrace_default_step;

@@ -324,8 +324,7 @@ out:
 int sockmatch_parse(const char *src, struct sockmatch **buf)
 {
 	int r;
-	size_t len;
-	char *addr, *netmask, *range, *d, *p;
+	char *addr;
 	struct sockmatch *match;
 
 	assert(buf);

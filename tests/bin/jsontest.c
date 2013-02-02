@@ -115,15 +115,16 @@ static int json_parse(JSON_parser jp, const char *pathname)
 	return EXIT_FAILURE;
 }
 
+#if 0
 static void json_reset(JSON_parser jp)
 {
 	JSON_parser_reset(jp);
 }
+#endif
 
 int main(int argc, char **argv)
 {
 	int r;
-	bool ok;
 	const char *pathname;
 	JSON_parser jp;
 

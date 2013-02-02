@@ -262,7 +262,6 @@ err:
  */
 int proc_stat(pid_t pid, struct proc_statinfo *info)
 {
-	int r;
 	char *p;
 	FILE *f;
 

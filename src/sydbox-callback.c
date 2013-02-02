@@ -107,11 +107,8 @@ static void callback_startup(const struct pink_easy_context *ctx,
 			     struct pink_easy_process *current,
 			     struct pink_easy_process *parent)
 {
-	int r;
 	pid_t tid;
 	enum pink_abi abi;
-	short flags;
-	bool attached;
 	char *cwd, *comm;
 	struct snode *node, *newnode;
 	proc_data_t *data, *pdata;
@@ -119,7 +116,6 @@ static void callback_startup(const struct pink_easy_context *ctx,
 
 	tid = pink_easy_process_get_tid(current);
 	abi = pink_easy_process_get_abi(current);
-	flags = pink_easy_process_get_flags(current);
 	data = xcalloc(1, sizeof(proc_data_t));
 
 	if (parent) {

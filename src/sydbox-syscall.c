@@ -355,7 +355,6 @@ int sysenter(struct pink_easy_process *current)
 {
 	int r;
 	long no;
-	const char *name;
 	pid_t tid;
 	enum pink_abi abi;
 	proc_data_t *data;

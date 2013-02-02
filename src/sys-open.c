@@ -105,8 +105,7 @@ int sys_open(struct pink_easy_process *current, const char *name)
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	bool fail_if_exist, wr;
-	can_mode_t can_mode;
+	bool wr;
 	long flags;
 	sysinfo_t info;
 	struct open_info open_info;
@@ -160,8 +159,7 @@ int sys_openat(struct pink_easy_process *current, const char *name)
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
-	bool fail_if_exist, wr;
-	can_mode_t can_mode;
+	bool wr;
 	long flags;
 	sysinfo_t info;
 	struct open_info open_info;

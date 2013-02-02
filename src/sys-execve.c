@@ -22,11 +22,9 @@ int sys_execve(struct pink_easy_process *current, const char *name)
 	int r;
 	char *path, *abspath;
 	pid_t tid;
-	enum pink_abi abi;
 	proc_data_t *data;
 
 	tid = pink_easy_process_get_tid(current);
-	abi = pink_easy_process_get_abi(current);
 	data = pink_easy_process_get_userdata(current);
 	path = abspath = NULL;
 
