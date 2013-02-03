@@ -28,6 +28,7 @@ int sys_unlink(struct pink_easy_process *current, const char *name)
 
 	init_sysinfo(&info);
 	info.can_mode |= CAN_NOLINKS;
+	info.syd_mode |= SYD_IFNODIR;
 
 	return box_check_path(current, name, &info);
 }
@@ -44,11 +45,6 @@ int sys_unlinkat(struct pink_easy_process *current, const char *name)
 	if (sandbox_write_off(data))
 		return 0;
 
-	/* If AT_REMOVEDIR flag is set in the third argument, unlinkat()
-	 * behaves like rmdir(2), otherwise it behaves like unlink(2).
-	 * The difference between the two system calls is, the former resolves
-	 * symbolic links, whereas the latter doesn't.
-	 */
 	if ((r = pink_read_argument(tid, abi, &data->regs, 2, &flags)) < 0) {
 		if (r != -ESRCH) {
 			log_warning("read_argument(%lu, %d, 2) failed"
@@ -68,8 +64,17 @@ int sys_unlinkat(struct pink_easy_process *current, const char *name)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	if (!(flags & AT_REMOVEDIR))
+
+	/* If AT_REMOVEDIR flag is set in the third argument, unlinkat()
+	 * behaves like rmdir(2), otherwise it behaves like unlink(2).
+	 */
+	if (flags & AT_REMOVEDIR) { /* rmdir */
 		info.can_mode |= CAN_NOLINKS;
+		info.syd_mode |= SYD_IFBAREDIR;
+	} else { /* unlink */
+		info.can_mode |= CAN_NOLINKS;
+		info.syd_mode |= SYD_IFNODIR;
+	}
 
 	return box_check_path(current, name, &info);
 }

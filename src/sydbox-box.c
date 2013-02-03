@@ -429,6 +429,13 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 				 */
 				log_access("sys=%s requires a directory", name);
 				stat_errno = ENOTDIR;
+			} else if (info->syd_mode & SYD_IFNODIR &&
+				   S_ISDIR(buf.st_mode)) {
+				/* The file must not be a directory yet it is!
+				 * Deny with -EISDIR
+				 */
+				log_access("sys=%s requires non-directory", name);
+				stat_errno = EISDIR;
 			} else if (info->syd_mode & SYD_IFNOLNK &&
 				   S_ISLNK(buf.st_mode)) {
 				/* The file must not be symlink yet it is!

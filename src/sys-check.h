@@ -1,7 +1,7 @@
 /*
  * sydbox/sys-check.h
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -17,8 +17,9 @@
 typedef short syd_mode_t;
 #define SYD_IFNONE	00001 /* file must not exist. */
 #define SYD_IFDIR	00002 /* file must be a directory. */
-#define SYD_IFNOLNK	00004 /* file must not be a symbolic link. */
-#define SYD_IFBAREDIR	00010 /* file must be an empty directory. */
+#define SYD_IFNODIR	00004 /* file must not be a directory. */
+#define SYD_IFNOLNK	00010 /* file must not be a symbolic link. */
+#define SYD_IFBAREDIR	00020 /* file must be an empty directory. */
 
 enum sys_access_mode {
 	ACCESS_0,
