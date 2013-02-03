@@ -32,18 +32,16 @@ int sys_stat(struct pink_easy_process *current, const char *name)
 		return 0;
 	}
 
-	r = pink_read_argument(tid, abi, &data->regs, 0, &addr);
-	if (r < 0) {
+	if ((r = pink_read_argument(tid, abi, &data->regs, 0, &addr)) < 0) {
 		/*
 		 * Don't bother denying the system call here.
 		 * Because this should not be a fatal error.
 		 */
 		return (r == -ESRCH) ? PINK_EASY_CFLAG_DROP : 0;
 	}
-	r = pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX);
-	if (r < 0) {
+	if (pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX) < 0) {
 		/* Likewise... */
-		return (r == -ESRCH) ? PINK_EASY_CFLAG_DROP : 0;
+		return (errno == ESRCH) ? PINK_EASY_CFLAG_DROP : 0;
 	}
 	path[SYDBOX_PATH_MAX-1] = '\0';
 

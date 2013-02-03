@@ -39,11 +39,12 @@ int path_decode(struct pink_easy_process *current, unsigned arg_index,
 	assert(current);
 	assert(buf);
 
-	if ((r = pink_read_argument(tid, abi, &data->regs,
-				    arg_index, &addr)) < 0)
+	if ((r = pink_read_argument(tid, abi, &data->regs, arg_index, &addr)) < 0)
 		goto fail;
-	if ((r = pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX)) < 0)
+	if (pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX) < 0) {
+		r = -errno;
 		goto fail;
+	}
 	path[SYDBOX_PATH_MAX-1] = '\0';
 	*buf = xstrdup(path);
 	return 0;
@@ -58,6 +59,7 @@ fail:
 		log_warning("read_string(%lu, %d, %u) failed (errno:%d %s)",
 			    (unsigned long)tid, abi, arg_index,
 			    -r, strerror(-r));
+		errno = -r;
 		return panic(current);
 	}
 	log_trace("read_string(%lu, %d, %u) failed (errno:%d %s)",
@@ -116,8 +118,7 @@ int path_prefix(struct pink_easy_process *current, unsigned arg_index,
 		*buf = NULL;
 		r = -EBADF;
 	} else {
-		r = proc_fd(tid, fd, &prefix);
-		if (r < 0) {
+		if ((r = proc_fd(tid, fd, &prefix)) < 0) {
 			log_warning("readlink /proc/%lu/fd/%ld failed"
 				    " (errno:%d %s)",
 				    (unsigned long)tid, fd,
