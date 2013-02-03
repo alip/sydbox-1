@@ -18,7 +18,7 @@ typedef short syd_mode_t;
 #define SYD_IFNONE	00001 /* file must not exist. */
 #define SYD_IFDIR	00002 /* file must be a directory. */
 #define SYD_IFNOLNK	00004 /* file must not be a symbolic link. */
-#define SYD_IFBAREDIR	00010 /* file must not exist or must be an empty directory. */
+#define SYD_IFBAREDIR	00010 /* file must be an empty directory. */
 
 enum sys_access_mode {
 	ACCESS_0,
