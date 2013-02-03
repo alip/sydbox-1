@@ -151,8 +151,8 @@ static int box_resolve_path_helper(const char *abspath, pid_t pid,
 		log_check("canonicalize `%s' to `%s'",
 			  p ? p : abspath, *res);
 	else
-		log_check("canonicalize `%s' failed (errno:%d %s)",
-			  p ? p : abspath, -r, strerror(-r));
+		log_check("canonicalize `%s' failed (can_mode=%d errno:%d %s)",
+			  p ? p : abspath, can_mode, -r, strerror(-r));
 
 	if (p)
 		free(p);
@@ -430,7 +430,7 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 				log_access("sys=%s requires a directory", name);
 				stat_errno = ENOTDIR;
 			} else if (info->syd_mode & SYD_IFNOLNK &&
-				 S_ISLNK(buf.st_mode)) {
+				   S_ISLNK(buf.st_mode)) {
 				/* The file must not be symlink yet it is!
 				 * Deny with -ELOOP
 				 */
