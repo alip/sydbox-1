@@ -93,7 +93,7 @@ static void box_report_violation_sock(struct pink_easy_process *current,
 	case AF_UNIX:
 		violation(current, "%s(%ld, %s:%s)",
 				name,
-				info->fd ? *info->fd : -1,
+				info->ret_fd ? *info->ret_fd : -1,
 				*paddr->u.sa_un.sun_path
 					? "unix"
 					: "unix-abstract",
@@ -105,7 +105,7 @@ static void box_report_violation_sock(struct pink_easy_process *current,
 		inet_ntop(AF_INET, &paddr->u.sa_in.sin_addr, ip, sizeof(ip));
 		violation(current, "%s(%ld, inet:%s@%d)",
 			  name,
-			  info->fd ? *info->fd : -1,
+			  info->ret_fd ? *info->ret_fd : -1,
 			  ip, ntohs(paddr->u.sa_in.sin_port));
 		break;
 #if SYDBOX_HAVE_IPV6
@@ -113,7 +113,7 @@ static void box_report_violation_sock(struct pink_easy_process *current,
 		inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
 		violation(current, "%s(%ld, inet6:%s@%d)",
 			  name,
-			  info->fd ? *info->fd : -1,
+			  info->ret_fd ? *info->ret_fd : -1,
 			  ip, ntohs(paddr->u.sa6.sin6_port));
 		break;
 #endif
@@ -285,11 +285,74 @@ static int box_check_access(enum sys_access_mode mode,
 	}
 }
 
+static int box_check_ftype(const char *path, sysinfo_t *info)
+{
+	bool call_lstat;
+	int deny_errno, stat_ret;
+	int can_flags = info->can_mode & ~CAN_MODE_MASK;
+	struct stat buf;
+
+	assert(info);
+
+	if (!info->syd_mode && !info->ret_mode)
+		return 0;
+
+	call_lstat = !!(can_flags & CAN_NOLINKS);
+	stat_ret = call_lstat ? lstat(path, &buf) : stat(path, &buf);
+
+	if (stat_ret < 0)
+		return 0; /* stat() failed, TODO: are we fine returning 0? */
+
+	if (info->ret_mode)
+		*info->ret_mode = buf.st_mode;
+
+	if (!info->syd_mode)
+		return 0;
+
+	deny_errno = 0;
+
+	/*
+	 * Note: order may matter, e.g.:
+	 *	rmdir($loop-symlink) -> -ELOOP (not ENOTDIR)
+	 */
+	if (info->syd_mode & SYD_STAT_NOEXIST) {
+		/*
+		 * stat() has *not* failed which means file exists.
+		 */
+		deny_errno = EEXIST;
+	} else if (info->syd_mode & SYD_STAT_NOFOLLOW && S_ISLNK(buf.st_mode)) {
+		/*
+		 * System call requires a non-symlink.
+		 */
+		deny_errno = ELOOP;
+	} else if (info->syd_mode & SYD_STAT_ISDIR && !S_ISDIR(buf.st_mode)) {
+		/*
+		 * System call requires a directory.
+		 */
+		deny_errno = ENOTDIR;
+	} else if (info->syd_mode & SYD_STAT_NOTDIR && S_ISDIR(buf.st_mode)) {
+		/*
+		 * System call requires a non-directory.
+		 */
+		deny_errno = EISDIR;
+	} else if (info->syd_mode & SYD_STAT_EMPTYDIR) {
+		if (!S_ISDIR(buf.st_mode))
+			deny_errno = ENOTDIR;
+		else if (!empty_dir(path))
+			deny_errno = ENOTEMPTY;
+	}
+
+	if (deny_errno != 0)
+		log_access("unexpected file type (deny_errno:%d %s)",
+			   deny_errno, errno_to_string(deny_errno));
+	return deny_errno;
+}
+
 int box_check_path(struct pink_easy_process *current, const char *name,
 		   sysinfo_t *info)
 {
 	bool badfd;
-	int r, deny_errno;
+	int r, deny_errno, stat_errno;
 	char *prefix, *path, *abspath;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
@@ -333,9 +396,9 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 	}
 
 	/* Step 2: read path */
-	r = path_decode(current, info->arg_index, &path);
-	if (r < 0) {
-		/* For EFAULT we assume path argument is NULL.
+	if ((r = path_decode(current, info->arg_index, &path)) < 0) {
+		/*
+		 * For EFAULT we assume path argument is NULL.
 		 * For some `at' suffixed functions, NULL as path
 		 * argument may be OK.
 		 */
@@ -358,9 +421,8 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 	}
 
 	/* Step 3: resolve path */
-	r = box_resolve_path(path, prefix ? prefix : data->cwd, tid,
-			     info->can_mode, &abspath);
-	if (r < 0) {
+	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd, tid,
+				  info->can_mode, &abspath)) < 0) {
 		log_access("resolve path=`%s' for sys=%s() failed"
 			   " (errno=%d %s)",
 			   path, name, -r, strerror(-r));
@@ -406,77 +468,19 @@ int box_check_path(struct pink_easy_process *current, const char *name,
 	}
 
 	/* Step 5: stat() if required */
-	if (info->syd_mode || info->isdir) {
-		int stat_ret, stat_errno = 0;
-		int can_flags = info->can_mode & ~CAN_MODE_MASK;
-		struct stat buf;
-
-		if (info->syd_mode & SYD_IFNONE
-		    || info->syd_mode & SYD_IFNOLNK
-		    || can_flags & CAN_NOLINKS)
-			stat_ret = lstat(abspath, &buf);
-		else
-			stat_ret = stat(abspath, &buf);
-
-		if (info->isdir)
-			*(info->isdir) = !!(stat_ret == 0 && S_ISDIR(buf.st_mode));
-
-		if (stat_ret == 0) {
-			if (info->syd_mode & SYD_IFDIR &&
-			    !S_ISDIR(buf.st_mode)) {
-				/* The file must be a directory yet it isn't!
-				 * Deny with -ENOTDIR
-				 */
-				log_access("sys=%s requires a directory", name);
-				stat_errno = ENOTDIR;
-			} else if (info->syd_mode & SYD_IFNODIR &&
-				   S_ISDIR(buf.st_mode)) {
-				/* The file must not be a directory yet it is!
-				 * Deny with -EISDIR
-				 */
-				log_access("sys=%s requires non-directory", name);
-				stat_errno = EISDIR;
-			} else if (info->syd_mode & SYD_IFNOLNK &&
-				   S_ISLNK(buf.st_mode)) {
-				/* The file must not be symlink yet it is!
-				 * Deny with -ELOOP
-				 */
-				log_access("sys=%s requires a non-link", name);
-				stat_errno = ELOOP;
-			} else if (info->syd_mode & SYD_IFNONE) {
-				/* The file can't exist yet it does!
-				 * Deny with -EEXIST
-				 */
-				log_access("sys=%s must create path", name);
-				stat_errno = EEXIST;
-			} else if (info->syd_mode & SYD_IFBAREDIR &&
-				   empty_dir(abspath) == -ENOTEMPTY) {
-				/* The file must be an empty directory,
-				 * yet it isn't!
-				 * Deny with -ENOTEMPTY
-				 */
-				log_access("sys=%s requires an empty directory",
-					   name);
-				stat_errno = ENOTEMPTY;
-			}
-
-			if (stat_errno != 0) {
-				log_access("access for path `%s'"
-					   " denied with errno=%s",
-					   abspath,
-					   errno_to_string(stat_errno));
-				deny_errno = stat_errno;
-				if (!sydbox->config.violation_raise_safe) {
-					log_access("sys=%s is safe,"
-						   " access violation filtered",
-						   name);
-					r = deny(current, deny_errno);
-					goto out;
-				}
-			}
+	if ((stat_errno = box_check_ftype(abspath, info)) != 0) {
+		log_access("access for path `%s' denied with errno=%s",
+			   abspath, errno_to_string(deny_errno));
+		deny_errno = stat_errno;
+		if (!sydbox->config.violation_raise_safe) {
+			log_access("sys=%s is safe, access violation filtered",
+				   name);
+			r = deny(current, deny_errno);
+			goto out;
 		}
 	}
 
+	/* Step 6: report violation */
 	r = deny(current, deny_errno);
 
 	if (info->access_filter)
@@ -541,7 +545,7 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 
 	if ((pf = pink_read_socket_address(tid, abi, &data->regs,
 					  info->decode_socketcall,
-					  info->arg_index, info->fd,
+					  info->arg_index, info->ret_fd,
 					  psa)) < 0) {
 		if (pf != -ESRCH) {
 			log_warning("read sockaddr at index=%d failed"
@@ -644,13 +648,13 @@ report:
 out:
 	if (pf == 0) {
 		/* Access granted. */
-		if (info->abspath)
-			*info->abspath = abspath;
+		if (info->ret_abspath)
+			*info->ret_abspath = abspath;
 		else if (abspath)
 			free(abspath);
 
-		if (info->addr)
-			*info->addr = psa;
+		if (info->ret_addr)
+			*info->ret_addr = psa;
 		else
 			free(psa);
 	} else {

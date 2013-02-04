@@ -14,12 +14,15 @@
 #include "canonicalize.h"
 #include "strtable.h"
 
-typedef short syd_mode_t;
-#define SYD_IFNONE	00001 /* file must not exist. */
-#define SYD_IFDIR	00002 /* file must be a directory. */
-#define SYD_IFNODIR	00004 /* file must not be a directory. */
-#define SYD_IFNOLNK	00010 /* file must not be a symbolic link. */
-#define SYD_IFBAREDIR	00020 /* file must be an empty directory. */
+enum syd_stat {
+	SYD_STAT_NONE = 0, /* no stat() information necessary */
+	SYD_STAT_LSTAT = 1, /* call lstat() instead of stat() */
+	SYD_STAT_NOEXIST = 2, /* EEXIST */
+	SYD_STAT_ISDIR = 4, /* ENOTDIR */
+	SYD_STAT_NOTDIR = 8, /* EISDIR */
+	SYD_STAT_NOFOLLOW = 16, /* ELOOP */
+	SYD_STAT_EMPTYDIR = 32, /* ENOTDIR or ENOTEMPTY */
+};
 
 enum sys_access_mode {
 	ACCESS_0,
@@ -56,7 +59,7 @@ typedef struct {
 	/* Canonicalize mode */
 	can_mode_t can_mode;
 	/* Stat mode */
-	syd_mode_t syd_mode;
+	enum syd_stat syd_mode;
 
 	/* Decode socketcall() into subcall */
 	bool decode_socketcall;
@@ -75,10 +78,10 @@ typedef struct {
 	slist_t *access_filter;
 
 	/* Pointer to the data to be returned */
-	bool *isdir;
-	long *fd;
-	char **abspath;
-	struct pink_sockaddr **addr;
+	mode_t *ret_mode;
+	long *ret_fd;
+	char **ret_abspath;
+	struct pink_sockaddr **ret_addr;
 } sysinfo_t;
 
 static inline void init_sysinfo(sysinfo_t *info)

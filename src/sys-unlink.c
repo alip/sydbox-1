@@ -28,7 +28,7 @@ int sys_unlink(struct pink_easy_process *current, const char *name)
 
 	init_sysinfo(&info);
 	info.can_mode |= CAN_NOLINKS;
-	info.syd_mode |= SYD_IFNODIR;
+	info.syd_mode |= SYD_STAT_NOTDIR;
 
 	return box_check_path(current, name, &info);
 }
@@ -70,10 +70,10 @@ int sys_unlinkat(struct pink_easy_process *current, const char *name)
 	 */
 	if (flags & AT_REMOVEDIR) { /* rmdir */
 		info.can_mode |= CAN_NOLINKS;
-		info.syd_mode |= SYD_IFBAREDIR;
+		info.syd_mode |= SYD_STAT_EMPTYDIR;
 	} else { /* unlink */
 		info.can_mode |= CAN_NOLINKS;
-		info.syd_mode |= SYD_IFNODIR;
+		info.syd_mode |= SYD_STAT_NOTDIR;
 	}
 
 	return box_check_path(current, name, &info);

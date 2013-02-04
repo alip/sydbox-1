@@ -45,7 +45,7 @@ int sys_link(struct pink_easy_process *current, const char *name)
 	if (!r && !data->deny) {
 		info.arg_index = 1;
 		info.can_mode = CAN_ALL_BUT_LAST;
-		info.syd_mode = SYD_IFNONE;
+		info.syd_mode = SYD_STAT_NOEXIST;
 		return box_check_path(current, name, &info);
 	}
 
@@ -93,7 +93,7 @@ int sys_linkat(struct pink_easy_process *current, const char *name)
 		info.arg_index = 3;
 		info.can_mode &= ~CAN_MODE_MASK;
 		info.can_mode |= CAN_ALL_BUT_LAST;
-		info.syd_mode = SYD_IFNONE;
+		info.syd_mode = SYD_STAT_NOEXIST;
 		return box_check_path(current, name, &info);
 	}
 

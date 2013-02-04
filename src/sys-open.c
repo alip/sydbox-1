@@ -24,7 +24,7 @@ struct open_info {
 	bool may_read;
 	bool may_write;
 	can_mode_t can_mode;
-	syd_mode_t syd_mode;
+	enum syd_stat syd_mode;
 };
 
 /* TODO: Do we need to care about O_PATH? */
@@ -54,14 +54,14 @@ static bool open_wr_check(const char *name, long flags, struct open_info *info)
 			 *   symbolic links are not followed.
 			 */
 			info->can_mode |= CAN_NOLINKS;
-			info->syd_mode |= SYD_IFNONE;
+			info->syd_mode |= SYD_STAT_NOEXIST;
 		}
 	}
 
 	if (flags & O_DIRECTORY)
-		info->syd_mode |= SYD_IFDIR;
+		info->syd_mode |= SYD_STAT_ISDIR;
 	if (flags & O_NOFOLLOW)
-		info->syd_mode |= SYD_IFNOLNK;
+		info->syd_mode |= SYD_STAT_NOFOLLOW;
 
 	/* `unsafe' flag combinations:
 	 * - O_RDONLY | O_CREAT

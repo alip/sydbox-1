@@ -53,8 +53,8 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 	info.access_filter = &sydbox->config.filter_network;
 
 	if (sydbox->config.whitelist_successful_bind) {
-		info.abspath = &unix_abspath;
-		info.addr = &psa;
+		info.ret_abspath = &unix_abspath;
+		info.ret_addr = &psa;
 	}
 
 	r = box_check_socket(current, name, &info);

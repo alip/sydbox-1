@@ -1,6 +1,6 @@
 /* Syd: See Emily Play!
  * Check program for sydbox tests
- * Copyright 2009, 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright 2009, 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -80,5 +80,3 @@ int test_creat(int argc, char **argv)
 	do_close(test_fd);
 	return expect_errno(0, test_errno);
 }
-
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */

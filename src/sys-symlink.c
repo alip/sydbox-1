@@ -1,7 +1,7 @@
 /*
  * sydbox/sys-symlink.c
  *
- * Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -24,7 +24,7 @@ int sys_symlink(struct pink_easy_process *current, const char *name)
 	init_sysinfo(&info);
 	info.arg_index = 1;
 	info.can_mode = CAN_ALL_BUT_LAST | CAN_NOLINKS;
-	info.syd_mode = SYD_IFNONE;
+	info.syd_mode = SYD_STAT_NOEXIST;
 
 	return box_check_path(current, name, &info);
 }
@@ -41,7 +41,7 @@ int sys_symlinkat(struct pink_easy_process *current, const char *name)
 	info.at_func = true;
 	info.arg_index = 2;
 	info.can_mode = CAN_ALL_BUT_LAST | CAN_NOLINKS;
-	info.syd_mode = SYD_IFNONE;
+	info.syd_mode = SYD_STAT_NOEXIST;
 
 	return box_check_path(current, name, &info);
 }

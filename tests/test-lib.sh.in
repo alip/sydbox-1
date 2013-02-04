@@ -452,9 +452,10 @@ else
 	}
 fi
 
+SYDBOX_TEST_OPTIONS=
 if test -n "$verbose" -o -n "$valgrind"
 then
-	SYDBOX_TEST_OPTIONS="-m log/console_level:1023 $SYDBOX_TEST_OPTIONS"
+	SYDBOX_TEST_OPTIONS="-m log/console_level:2559 $SYDBOX_TEST_OPTIONS"
 fi
 export SYDBOX_TEST_OPTIONS
 

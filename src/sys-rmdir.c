@@ -22,7 +22,7 @@ int sys_rmdir(struct pink_easy_process *current, const char *name)
 
 	init_sysinfo(&info);
 	info.can_mode |= CAN_NOLINKS;
-	info.syd_mode |= SYD_IFBAREDIR;
+	info.syd_mode |= SYD_STAT_EMPTYDIR;
 
 	return box_check_path(current, name, &info);
 }

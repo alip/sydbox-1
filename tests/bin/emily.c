@@ -1,6 +1,6 @@
 /* Syd: See Emily Play!
  * Check program for sydbox tests
- * Copyright 2009, 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright 2009, 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -27,6 +27,7 @@ struct test {
 	{"mknodat",	test_mknodat},
 	{"rename",	test_rename},
 	{"renameat",	test_renameat},
+	{"rmdir",	test_rmdir},
 	{NULL,		NULL},
 };
 
@@ -59,5 +60,3 @@ int main(int argc, char **argv)
 
 	usage(stderr, 127);
 }
-
-/* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
