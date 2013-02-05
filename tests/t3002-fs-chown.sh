@@ -1,6 +1,6 @@
 #!/bin/sh
 # vim: set sw=4 et ts=4 sts=4 tw=80 :
-# Copyright 2010, 2012 Ali Polatel <alip@exherbo.org>
+# Copyright 2010, 2012, 2013 Ali Polatel <alip@exherbo.org>
 # Distributed under the terms of the GNU General Public License v3 or later
 
 test_description='sandbox chown(2)'
@@ -17,84 +17,99 @@ test_expect_success 'deny chown(NULL) with EFAULT' '
 '
 
 test_expect_success 'deny chown($file)' '
-    touch file.$test_count &&
+    f="$(file_uniq)" &&
+    touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chown -e EPERM file.$test_count
+        -- emily chown -e EPERM "$f"
 '
 
 test_expect_success 'deny chown($nofile)' '
-    rm -f nofile.$test_count &&
+    f="no-$(file_uniq)" &&
+    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chown -e ENOENT nofile.$test_count
+        -- emily chown -e ENOENT "$f"
 '
 
 test_expect_success SYMLINKS 'deny chown($symlink-file)' '
-    touch file.$test_count &&
-    ln -sf file.$test_count link.$test_count &&
+    f="$(file_uniq)" &&
+    l="$(link_uniq)" &&
+    touch "$f" &&
+    ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chown -e EPERM link.$test_count
+        -- emily chown -e EPERM "$l"
 '
 
 test_expect_success SYMLINKS 'deny chown($symlink-dangling)' '
-    rm -f nofile.$test_count &&
-    ln -sf nofile.$test_count link-dangling.$test_count &&
+    f="no-$(file_uniq)" &&
+    l="bad-$(link_uniq)" &&
+    rm -f "$f" &&
+    ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chown -e ENOENT symlink-dangling
+        -- emily chown -e ENOENT "$l"
 '
 
 test_expect_success 'blacklist chown($file)' '
-    touch file.$test_count &&
+    f="$(file_uniq)" &&
+    touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e EPERM file.$test_count
+        -- emily chown -e EPERM "$f"
 '
 
 test_expect_success 'blacklist chown($nofile)' '
-    rm -f nofile.$test_count &&
+    f="no-$(file_uniq)" &&
+    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e ENOENT nofile.$test_count
+        -- emily chown -e ENOENT "$f"
 '
 
 test_expect_success SYMLINKS 'blacklist chown($symlink-file)' '
-    touch file.$test_count &&
-    ln -sf file.$test_count link.$test_count &&
+    f="file_uniq)" &&
+    l="$(link_uniq)" &&
+    touch "$f" &&
+    ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e EPERM link.$test_count
+        -- emily chown -e EPERM "$l"
 '
 
 test_expect_success SYMLINKS 'blacklist chown($symlink-dangling)' '
-    rm -f nofile.$test_count &&
-    ln -sf nofile.$test_count link-dangling.$test_count &&
+    f="no-$(file_uniq)" &&
+    l="bad-$(link_uniq)" &&
+    rm -f "$f" &&
+    ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e ENOENT symlink-dangling
+        -- emily chown -e ENOENT "$l"
 '
 
 test_expect_success 'whitelist chown($file)' '
-    touch file.$test_count &&
+    f="$(file_uniq)" &&
+    touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e ERRNO_0 file.$test_count
+        -- emily chown -e ERRNO_0 "$f"
 '
 
 test_expect_success SYMLINKS 'whitelist chown($symlink-file)' '
-    touch file.$test_count &&
-    ln -sf file.$test_count link.$test_count &&
+    f="$(file_uniq)" &&
+    l="$(link_uniq)" &&
+    touch "$f" &&
+    ln -sf "$f" "$l" &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily chown -e ERRNO_0 link.$test_count
+        -- emily chown -e ERRNO_0 "$l"
 '
 
 test_done

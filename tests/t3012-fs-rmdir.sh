@@ -13,19 +13,23 @@ SYDBOX_TEST_OPTIONS="
 "
 
 test_expect_success 'rmdir($empty-dir) returns ERRNO_0' '
-    mkdir empty-dir.$test_count &&
-    sydbox -- emily rmdir -e ERRNO_0 empty-dir.$test_count &&
-    test_path_is_missing empty-dir.$test_count
+    d="$(dir_uniq)" &&
+    mkdir "$d" &&
+    sydbox -- emily rmdir -e ERRNO_0 "$d" &&
+    test_path_is_missing "$d"
 '
 
 test_expect_success 'rmdir($noaccess/$empty-dir) returns EACCES' '
-    mkdir noaccess.$test_count &&
-    mkdir noaccess.$test_count/empty-dir.$test_count &&
-    chmod 700 noaccess.$test_count/empty-dir.$test_count &&
-    chmod 000 noaccess.$test_count &&
-    sydbox -- emily rmdir -e EACCES noaccess.$test_count/empty-dir.$test_count &&
-    chmod 700 noaccess.$test_count &&
-    test_path_is_dir noaccess.$test_count/empty-dir.$test_count
+    d0="no-access-$(dir_uniq)" &&
+    d1="$(dir_uniq)" &&
+    mkdir "$d0" &&
+    mkdir "$d0"/"$d1" &&
+    chmod 700 "$d0"/"$d1" &&
+    test_when_finished "chmod 700 $d0" &&
+    chmod 000 "$d0" &&
+    sydbox -- emily rmdir -e EACCES "$d0"/"$d1" &&
+    chmod 700 "$d0" &&
+    test_path_is_dir "$d0"/"$d1"
 '
 
 test_expect_success 'rmdir(NULL) returns EFAULT' '
@@ -33,86 +37,100 @@ test_expect_success 'rmdir(NULL) returns EFAULT' '
 '
 
 test_expect_success 'rmdir($empty-dir/.) returns EINVAL' '
-    mkdir empty-dir.$test_count &&
-    sydbox -- emily rmdir -e EINVAL empty-dir.$test_count/. &&
-    test_path_is_dir empty-dir.$test_count
+    d="$(dir_uniq)" &&
+    mkdir "$d" &&
+    sydbox -- emily rmdir -e EINVAL "$d"/. &&
+    test_path_is_dir "$d"
 '
 
 test_expect_success SYMLINKS 'rmdir($symlink-self/foo) returns ELOOP' '
-    ln -sf self-link.$test_count self-link.$test_count &&
-    sydbox -- emily rmdir -e ELOOP self-link.$test_count/foo
+    l="self-$(link_uniq)" &&
+    ln -sf "$l" "$l" &&
+    sydbox -- emily rmdir -e ELOOP "$l"/foo
 '
 
 test_expect_success SYMLINKS 'rmdir($symlink-circular/foo) returns ELOOP' '
-    ln -sf loop0.$test_count loop1.$test_count &&
-    ln -sf loop1.$test_count loop0.$test_count &&
-    sydbox -- emily rmdir -e ELOOP loop0.$test_count/foo
+    l0="bad-$(link_uniq)" &&
+    l1="bad-$(link_uniq)" &&
+    ln -sf "$l0" "$l1" &&
+    ln -sf "$l1" "$l0" &&
+    sydbox -- emily rmdir -e ELOOP "$l0"/foo
 '
 
 test_expect_success 'rmdir($nodir) returns ENOENT' '
-    rm -f nodir.$test_count
-    sydbox -- emily rmdir -e ENOENT nodir.$test_count
+    d="no-$(dir_uniq)" &&
+    rm -fr "$d"
+    sydbox -- emily rmdir -e ENOENT "$d"
 '
 
 test_expect_success 'rmdir($notdir) returns ENOTDIR' '
-    touch file.$test_count &&
-    sydbox -- emily rmdir -e ENOTDIR file.$test_count &&
-    test_path_is_file file.$test_count
+    f="$(file_uniq)" &&
+    touch "$f" &&
+    sydbox -- emily rmdir -e ENOTDIR "$f" &&
+    test_path_is_file "$f"
 '
 
 test_expect_success SYMLINKS 'rmdir($symlink-dangling) returns ENOTDIR' '
-    rm -f nofile.$test_count &&
-    ln -sf nofile.$test_count nolink.$test_count &&
-    sydbox -- emily rmdir -e ENOTDIR nolink.$test_count &&
-    test_path_is_symlink nolink.$test_count
+    f="$(file_uniq)" &&
+    l="$(link_uniq)" &&
+    rm -f "$f" &&
+    ln -sf "$f" "$l" &&
+    sydbox -- emily rmdir -e ENOTDIR "$l" &&
+    test_path_is_symlink "$l"
 '
 
 test_expect_success 'rmdir($not-empty-dir) returns ENOTEMPTY' '
-    mkdir dir.$test_count &&
-    touch dir.$test_count/file.$test_count &&
-    sydbox -- emily rmdir -e ENOTEMPTY dir.$test_count &&
-    test_path_is_dir dir.$test_count
+    d="$(dir_uniq)" &&
+    mkdir "$d" &&
+    touch "$d"/foo &&
+    sydbox -- emily rmdir -e ENOTEMPTY "$d" &&
+    test_path_is_dir "$d"
 '
 
 test_expect_failure 'deny rmdir()' '
-    mkdir dir.$test_count &&
+    d="$(dir_uniq)" &&
+    mkdir "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily rmdir -e EPERM dir.$test_count &&
-    test_path_is_dir dir.$test_count
+        -- emily rmdir -e EPERM "$d" &&
+    test_path_is_dir "$d"
 '
 
 test_expect_failure 'deny rmdir() for non-existant directory' '
-    rm -fr nodir.$test_count &&
+    d="no-$(dir_uniq)" &&
+    rm -fr "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily rmdir -e EPERM nodir.$test_count
+        -- emily rmdir -e EPERM "$d"
 '
 
 test_expect_failure 'whitelist rmdir()' '
-    mkdir dir.$test_count &&
+    d="no-$(dir_uniq)" &&
+    mkdir "$d" &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily rmdir -e ERRNO_0 dir.$test_count &&
-    test_path_is_missing dir.$test_count
+        -- emily rmdir -e ERRNO_0 "$d" &&
+    test_path_is_missing "$d"
 '
 
 test_expect_failure 'blacklist rmdir()' '
-    mkdir dir.$test_count &&
+    d="$(dir_uniq)" &&
+    mkdir "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily rmdir -e EPERM dir.$test_count &&
-    test_path_is_dir dir.$test_count
+        -- emily rmdir -e EPERM "$d" &&
+    test_path_is_dir "$d"
 '
 
 test_expect_failure 'blacklist rmdir() for non-existant directory' '
-    rm -fr nodir.$test_count &&
+    d="no-$(dir_uniq)" &&
+    rm -fr "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily rmdir -e EPERM nodir.$test_count
+        -- emily rmdir -e EPERM "$d"
 '
 
 test_done
