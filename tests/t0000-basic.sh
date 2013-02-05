@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2010, 2012 Ali Polatel <alip@exherbo.org>
+# Copyright 2010, 2012, 2013 Ali Polatel <alip@exherbo.org>
 # Based in part upon git's t0000-basic.sh which is:
 #   Copyright (c) 2005 Junio C Hamano
 # Distributed under the terms of the GNU General Public License v3 or later
@@ -187,31 +187,34 @@ EOF
 '
 
 test_expect_success 'magic core/violation/exit_code:0 works' '
-    rm -f nofile.$test_count &&
+    f="no-$(unique_file)"
+    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- "$SHELL_PATH" && <<EOF
-: > nofile.$test_count
+: > "$f"
 EOF
-    test_path_is_missing nofile.$test_count
+    test_path_is_missing "$f"
 '
 
 test_expect_success 'magic core/violation/raise_fail:1 works' '
-    mkdir dir.$test_count &&
+    d="$(unique_dir)"
+    mkdir "$d" &&
     test_must_violate sydbox \
         -m core/violation/raise_fail:1 \
         -- "$SHELL_PATH" && <<EOF
-: > dir.$test_count/nofile.$test_count
+: > "$d"/"$f"
 EOF
-    test_path_is_missing dir.$test_count/nofile.$test_count
+    test_path_is_missing "$d"/"$f"
 '
 
 test_expect_success 'magic core/violation/raise_safe:1 works' '
-    : > file.$test_count &&
+    f="$(unique_file)"
+    : > "$f" &&
     test_must_violate sydbox \
         -m core/violation/raise_safe:1 \
         -m core/sandbox/write:deny \
-        -- emily access -e EACCES -w file.$test_count
+        -- emily access -e EACCES -w "$f"
 '
 
 test_done

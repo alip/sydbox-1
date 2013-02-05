@@ -1,25 +1,25 @@
 #!/bin/sh
-# Copyright 2012 Ali Polatel <alip@exherbo.org>
+# Copyright 2012, 2013 Ali Polatel <alip@exherbo.org>
 # Distributed under the terms of the GNU General Public License v3 or later
 
 test_description='test pathname canonicalization'
 . ./test-lib.sh
 
 statinode() {
-    case "$(uname -s)" in
-    Linux)
-        stat -c '%i' "$@"
-        ;;
-    Darwin)
-        stat -f '%i' "$@"
-        ;;
-    FreeBSD)
-        stat -f '%i' "$@"
-        ;;
-    *)
-        ls -di "$@" | cut -d ' ' -f 1
-        ;;
-    esac
+	case "$(uname -s)" in
+	Linux)
+		stat -c '%i' "$@"
+		;;
+	Darwin)
+		stat -f '%i' "$@"
+		;;
+	FreeBSD)
+		stat -f '%i' "$@"
+		;;
+	*)
+		ls -di "$@" | cut -d ' ' -f 1
+		;;
+	esac
 }
 
 test_expect_success SYMLINKS setup-symlinks '
@@ -41,109 +41,127 @@ test_expect_success 'canonicalize empty path -> ENOENT' '
 '
 
 test_expect_success 'canontest -r works' '
-    : > file.$test_count &&
-    canontest -r file.$test_count >/dev/null
+    f="$(unique_file)"
+    : > "$f" &&
+    canontest -r "$f" >/dev/null
 '
 
 TRASH_DIRECTORY_R=$(canontest -r "$TRASH_DIRECTORY")
 export TRASH_DIRECTORY_R
 
 test_expect_success 'canonicalize ., .., intermediate // handling' '
-    :> file.$test_count &&
-    canontest -c -m existing "$TRASH_DIRECTORY_R//./..//file.$test_count"
+    f="$(unique_file)" &&
+    :> "$f" &&
+    canontest -c -m existing "$TRASH_DIRECTORY_R//./..//$f"
 '
 
 test_expect_success 'canonicalize non-directory with trailing slash yields NULL' '
-    :> file.$test_count &&
-    canontest -e ENOTDIR -m existing "$TRASH_DIRECTORY_R/file.$test_count/"
+    f="$(unique_file)" &&
+    :> "$f" &&
+    canontest -e ENOTDIR -m existing "$TRASH_DIRECTORY_R/$f/"
 '
 
 test_expect_success 'canonicalize missing directory yields NULL' '
-    canontest -e ENOENT -m existing "$TRASH_DIRECTORY_R/nodir.$test_count/.."
+    d="$(unique_dir)" &&
+    canontest -e ENOENT -m existing "$TRASH_DIRECTORY_R/$d/.."
 '
 
 test_expect_success SYMLINKS 'canonicalize: symlinks not resolved with CAN_NOLINKS' '
-    :> file.$test_count &&
-    ln -sf file.$test_count link.$test_count &&
-    canontest -m nolinks "$TRASH_DIRECTORY_R/link.$test_count" > out.$test_count &&
-    grep -q link.$test_count out.$test_count
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
+    :> "$f" &&
+    ln -sf "$f" "$l" &&
+    canontest -m nolinks "$TRASH_DIRECTORY_R/"$l"" > out &&
+    grep -q "$l" out
 '
 
 test_expect_success SYMLINKS 'canonicalize: symlinks to a file can be resolved' '
-    :> file.$test_count &&
-    ln -sf file.$test_count link.$test_count &&
-    canontest -m existing "$TRASH_DIRECTORY_R/link.$test_count" > out.$test_count &&
-    grep -q file.$test_count out.$test_count
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
+    :> "$f" &&
+    ln -sf "$f" "$l" &&
+    canontest -m existing "$TRASH_DIRECTORY_R/"$l"" > out &&
+    grep -q "$f" out
 '
 
 test_expect_success SYMLINKS 'canonicalize: symlinks to a directory can be resolved' '
-    mkdir dir.$test_count &&
-    ln -sf dir.$test_count link0.$test_count &&
-    ln -sf link0.$test_count link1.$test_count &&
-    ln -sf link1.$test_count link2.$test_count &&
-    canontest -m existing "$TRASH_DIRECTORY_R/dir.$test_count" > exp.$test_count &&
-    canontest -m existing "$TRASH_DIRECTORY_R/link0.$test_count" > out0.$test_count &&
-    canontest -m existing "$TRASH_DIRECTORY_R/link1.$test_count" > out1.$test_count &&
-    canontest -m existing "$TRASH_DIRECTORY_R/link2.$test_count" > out2.$test_count &&
-    test_cmp exp.$test_count out0.$test_count &&
-    test_cmp exp.$test_count out1.$test_count &&
-    test_cmp exp.$test_count out2.$test_count
+    d="$(unique_dir)" &&
+    l0="$(unique_link)" && l1="$(unique_link)" && l2="$(unique_link)" &&
+    mkdir "$d" &&
+    ln -sf "$d" "$l0" &&
+    ln -sf "$l0" "$l1" &&
+    ln -sf "$l1" "$l2" &&
+    canontest -m existing "$TRASH_DIRECTORY_R/$d" > exp &&
+    canontest -m existing "$TRASH_DIRECTORY_R/$l0" > out0 &&
+    canontest -m existing "$TRASH_DIRECTORY_R/$l1" > out1 &&
+    canontest -m existing "$TRASH_DIRECTORY_R/$l2" > out2 &&
+    test_cmp exp out0 &&
+    test_cmp exp out1 &&
+    test_cmp exp out2
 '
 
 test_expect_success SYMLINKS 'canonicalize: symlink to a non-existing file yields NULL' '
-    rm -f nofile.$test_count &&
-    ln -sf nofile.$test_count link.$test_count &&
-    canontest -e ENOENT -m existing "$TRASH_DIRECTORY_R/link.$test_count"
+    f="no-$(unique_file)"
+    l="$(unique_link)"
+    rm -f "$f" &&
+    ln -sf "$f" "$l" &&
+    canontest -e ENOENT -m existing "$TRASH_DIRECTORY_R/$l"
 '
 
 test_expect_success SYMLINKS 'canonicalize: non-directory symlink with a trailing slash yields NULL' '
-    : > file.$test_count &&
-    ln -sf file.$test_count link.$test_count &&
-    canontest -e ENOTDIR -m existing "$TRASH_DIRECTORY_R/link.$test_count/"
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
+    : > "$f" &&
+    ln -sf "$f" "$l" &&
+    canontest -e ENOTDIR -m existing "$TRASH_DIRECTORY_R/"$l"/"
 '
 
 test_expect_success SYMLINKS 'canonicalize: missing directory via symlink yields NULL' '
-    rm -rf nodir.$test_count &&
-    ln -sf nodir.$test_count link.$test_count &&
-    canontest -e ENOENT -m existing "$TRASH_DIRECTORY_R/link.$test_count/.."
+    d="$(unique_dir)" &&
+    l="$(unique_link)" &&
+    rm -rf "$d" &&
+    ln -sf "$d" "$l" &&
+    canontest -e ENOENT -m existing "$TRASH_DIRECTORY_R/$l/.."
 '
 
 test_expect_success SYMLINKS 'canonicalize: loop of symlinks are detected' '
-    ln -sf loop0.$test_count loop1.$test_count &&
-    ln -sf loop1.$test_count loop0.$test_count &&
-    canontest -e ELOOP -m existing "$TRASH_DIRECTORY_R/loop1.$test_count"
+    canontest -e ELOOP -m existing "$TRASH_DIRECTORY_R/loop1"
 '
 
 test_expect_success 'canonicalize: alternate modes can resolve basenames' '
-    rm -f nofile.$test_count &&
-    canontest -m all_but_last "$TRASH_DIRECTORY_R/nofile.$test_count" > out0.$test_count &&
-    grep -q nofile.$test_count out0.$test_count &&
-    canontest -m missing "$TRASH_DIRECTORY_R/nofile.$test_count" > out1.$test_count &&
-    grep -q nofile.$test_count out1.$test_count &&
-    canontest -m all_but_last "$TRASH_DIRECTORY/nofile.$test_count/" > out2.$test_count &&
-    grep -q nofile.$test_count out2.$test_count &&
-    canontest -m missing "$TRASH_DIRECTORY/nofile.$test_count/" > out3.$test_count &&
-    grep -q nofile.$test_count out3.$test_count
+    f="no-$(unique_file)" &&
+    rm -f "$f" &&
+    canontest -m all_but_last "$TRASH_DIRECTORY_R/"$f"" > out0 &&
+    grep -q "$f" out0 &&
+    canontest -m missing "$TRASH_DIRECTORY_R/"$f"" > out1 &&
+    grep -q "$f" out1 &&
+    canontest -m all_but_last "$TRASH_DIRECTORY/"$f"/" > out2 &&
+    grep -q "$f" out2 &&
+    canontest -m missing "$TRASH_DIRECTORY/"$f"/" > out3 &&
+    grep -q "$f" out3
 '
 
 test_expect_success SYMLINKS 'canonicalize: alternate modes can resolve symlink basenames' '
-    rm -f nofile.$test_count &&
-    ln -sf nofile.$test_count link.$test_count &&
-    canontest -m all_but_last "$TRASH_DIRECTORY_R/link.$test_count" > out0.$test_count &&
-    grep -q nofile.$test_count out0.$test_count &&
-    canontest -m missing "$TRASH_DIRECTORY_R/link.$test_count" > out1.$test_count &&
-    grep -q nofile.$test_count out1.$test_count &&
-    canontest -m all_but_last "$TRASH_DIRECTORY/link.$test_count/" > out2.$test_count &&
-    grep -q nofile.$test_count out2.$test_count &&
-    canontest -m missing "$TRASH_DIRECTORY/link.$test_count/" > out3.$test_count &&
-    grep -q nofile.$test_count out3.$test_count
+    f="no-$(unique_file)" &&
+    l="$(unique_link)" &&
+    rm -f "$f" &&
+    ln -sf "$f" "$l" &&
+    canontest -m all_but_last "$TRASH_DIRECTORY_R/"$l"" > out0 &&
+    grep -q "$f" out0 &&
+    canontest -m missing "$TRASH_DIRECTORY_R/"$l"" > out1 &&
+    grep -q "$f" out1 &&
+    canontest -m all_but_last "$TRASH_DIRECTORY/"$l"/" > out2 &&
+    grep -q "$f" out2 &&
+    canontest -m missing "$TRASH_DIRECTORY/"$l"/" > out3 &&
+    grep -q "$f" out3
 '
 
 test_expect_success 'canonicalize: alternate modes can handle missing dirnames' '
-    rm -fr nodir.$test_count &&
-    canontest -e ENOENT -m all_but_last "$TRASH_DIRECTORY_R/nodir.$test_count/nofile" &&
-    canontest -m missing "$TRASH_DIRECTORY_R/nodir.$test_count/nofile" > out.$test_count &&
-    grep -q nodir.$test_count/nofile out.$test_count
+    d="no-$(unique_dir)" &&
+    rm -fr no"$d" &&
+    canontest -e ENOENT -m all_but_last "$TRASH_DIRECTORY_R/$d/nofile" &&
+    canontest -m missing "$TRASH_DIRECTORY_R/$d/nofile" > out &&
+    grep -q "$d"/nofile out
 '
 
 # s -> link0
@@ -151,38 +169,42 @@ test_expect_success 'canonicalize: alternate modes can handle missing dirnames' 
 # d/2 -> file0
 # d/1 -> link3
 test_expect_success SYMLINKS 'canonicalize: recent loop bug (before 2007-09-27)' '
-    mkdir dir.$test_count &&
-    ln -sf dir.$test_count link0.$test_count &&
-    ln -sf link0.$test_count link1.$test_count &&
-    : > dir.$test_count/file0.$test_count &&
-    ln -sf ../link0.$test_count/file0.$test_count dir.$test_count/link3.$test_count &&
-    canontest -m existing "$TRASH_DIRECTORY_R" > expected.$test_count &&
-    printf /dir.$test_count/file0.$test_count >> expected.$test_count &&
-    canontest -m existing "$TRASH_DIRECTORY_R"/link1.$test_count/link3.$test_count > result.$test_count &&
-    test_cmp expected.$test_count result.$test_count
+    d="$(unique_dir)"
+    f="$(unique_file)"
+    l0="l0-$(unique_link)" && l1="l1-$(unique_link)" && l3="l3-$(unique_link)" &&
+    mkdir "$d" &&
+    ln -sf "$d" "$l0" &&
+    ln -sf "$l0" "$l1" &&
+    : > "$d"/"$f" &&
+    ln -sf ../"$l0"/"$f" "$d"/"$l3" &&
+    canontest -m existing "$TRASH_DIRECTORY_R" > expected &&
+    printf "/$d/$f" >> expected &&
+    canontest -m existing "$TRASH_DIRECTORY_R/$l1/$l3" > result &&
+    test_cmp expected result
 '
 
 test_expect_success 'canonicalize: leading // is honoured correctly' '
-    ln -sf //.//../.. link0.$test_count &&
-    statinode / > inode0.$test_count &&
-    statinode // > inode1.$test_count &&
-    canontest -m existing -r //. > result1.$test_count &&
-    canontest -m existing //. > result2.$test_count &&
-    canontest -m existing -r "$TRASH_DIRECTORY_R"/link0.$test_count > result3.$test_count &&
-    canontest -m existing "$TRASH_DIRECTORY_R"/link0.$test_count > result4.$test_count &&
-    printf / > expected0.$test_count &&
-    printf // > expected1.$test_count &&
-    if test_cmp inode0.$test_count inode1.$test_count
+    l0="$(unique_link)"
+    ln -sf //.//../.. $l0 &&
+    statinode / > inode0 &&
+    statinode // > inode1 &&
+    canontest -m existing -r //. > result1 &&
+    canontest -m existing //. > result2 &&
+    canontest -m existing -r "$TRASH_DIRECTORY_R/$l0" > result3 &&
+    canontest -m existing "$TRASH_DIRECTORY_R/$l0" > result4 &&
+    printf / > expected0 &&
+    printf // > expected1 &&
+    if test_cmp inode0 inode1
     then
-        test_cmp expected0.$test_count result1.$test_count &&
-        test_cmp expected0.$test_count result2.$test_count &&
-        test_cmp expected0.$test_count result3.$test_count &&
-        test_cmp expected0.$test_count result4.$test_count
+        test_cmp expected0 result1 &&
+        test_cmp expected0 result2 &&
+        test_cmp expected0 result3 &&
+        test_cmp expected0 result4
     else
-        test_cmp expected1.$test_count result1.$test_count &&
-        test_cmp expected1.$test_count result2.$test_count &&
-        test_cmp expected1.$test_count result3.$test_count &&
-        test_cmp expected1.$test_count result4.$test_count
+        test_cmp expected1 result1 &&
+        test_cmp expected1 result2 &&
+        test_cmp expected1 result3 &&
+        test_cmp expected1 result4
     fi
 '
 
