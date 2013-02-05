@@ -205,10 +205,20 @@ test_have_prereq () {
 		total_prereq=$(($total_prereq + 1))
 		case "$satisfied_prereq" in
 		*" $prerequisite "*)
+			satisfied_this_prereq=t
+			;;
+		*)
+			satisfied_this_prereq=
+		esac
+
+		case "$satisfied_this_prereq,$negative_prereq" in
+		t,|,t)
 			ok_prereq=$(($ok_prereq + 1))
 			;;
 		*)
-			# Keep a list of missing prerequisites
+			# Keep a list of missing prerequisites; restore
+			# the negative marker if necessary.
+			prerequisite=${negative_prereq:+!}$prerequisite
 			if test -z "$missing_prereq"
 			then
 				missing_prereq=$prerequisite
@@ -365,14 +375,6 @@ test_path_is_dir () {
 	if ! [ -d "$1" ]
 	then
 		echo "Directory $1 doesn't exist. $*"
-		false
-	fi
-}
-
-test_path_is_fifo () {
-	if ! [ -p "$1" ]
-	then
-		echo "Fifo $1 doesn't exist. $*"
 		false
 	fi
 }

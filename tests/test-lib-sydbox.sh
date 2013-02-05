@@ -6,6 +6,14 @@
 #
 # Additions to test-lib-functions.sh
 #
+test_path_is_fifo () {
+	if ! [ -p "$1" ]
+	then
+		echo "Fifo $1 doesn't exist. $*"
+		false
+	fi
+}
+
 test_path_is_symlink() {
 	if ! [ -h "$1" ]
 	then
