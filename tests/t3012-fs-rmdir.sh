@@ -59,7 +59,6 @@ test_expect_success SYMLINKS 'rmdir($symlink-circular/foo) returns ELOOP' '
 
 test_expect_success 'rmdir($nodir) returns ENOENT' '
     d="no-$(unique_dir)" &&
-    rm -fr "$d"
     sydbox -- emily rmdir -e ENOENT "$d"
 '
 
@@ -73,7 +72,6 @@ test_expect_success 'rmdir($notdir) returns ENOTDIR' '
 test_expect_success SYMLINKS 'rmdir($symlink-dangling) returns ENOTDIR' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     sydbox -- emily rmdir -e ENOTDIR "$l" &&
     test_path_is_symlink "$l"
@@ -98,7 +96,6 @@ test_expect_failure 'deny rmdir()' '
 
 test_expect_failure 'deny rmdir() for non-existant directory' '
     d="no-$(unique_dir)" &&
-    rm -fr "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily rmdir -e EPERM "$d"
@@ -126,7 +123,6 @@ test_expect_failure 'blacklist rmdir()' '
 
 test_expect_failure 'blacklist rmdir() for non-existant directory' '
     d="no-$(unique_dir)" &&
-    rm -fr "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \

@@ -50,7 +50,6 @@ test_expect_success SYMLINKS 'whitelist O_RDONLY for symbolic link' '
 
 test_expect_success 'deny O_RDONLY|O_CREAT' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily open -e EPERM -m rdonly -c "$f" &&
@@ -60,7 +59,6 @@ test_expect_success 'deny O_RDONLY|O_CREAT' '
 test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -70,7 +68,6 @@ test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
 
 test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily open -e EPERM -m rdonly -cx "$f" rdonly-creat-excl &&
@@ -88,7 +85,6 @@ test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
 test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -107,7 +103,6 @@ test_expect_success 'deny O_WRONLY' '
 
 test_expect_success 'deny O_WRONLY for non-existant file' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily open -e ENOENT -m wronly "$f" "3" &&
@@ -127,7 +122,6 @@ test_expect_success SYMLINKS 'deny O_WRONLY for symbolic link' '
 
 test_expect_success 'deny O_WRONLY|O_CREAT' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily open -e EPERM -m wronly -c "$f" "3" &&
@@ -157,7 +151,6 @@ test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link' '
 test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -167,7 +160,6 @@ test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' 
 
 test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily open -e EPERM -m wronly -cx "$f" "3" &&
@@ -195,7 +187,6 @@ test_expect_success 'whitelist O_WRONLY' '
 
 test_expect_success 'whitelist O_WRONLY|O_CREAT' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
@@ -205,7 +196,6 @@ test_expect_success 'whitelist O_WRONLY|O_CREAT' '
 
 test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
@@ -233,7 +223,6 @@ test_expect_success 'deny O_RDWR' '
 
 test_expect_success 'deny O_RDWR|O_CREAT' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily open -e EPERM -m rdwr -c "$f" &&
@@ -242,7 +231,6 @@ test_expect_success 'deny O_RDWR|O_CREAT' '
 
 test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily open -e EPERM -m rdwr -cx "$f" &&
@@ -270,7 +258,6 @@ test_expect_success 'whitelist O_RDWR' '
 
 test_expect_success 'whitelist O_RDWR|O_CREAT' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
@@ -280,7 +267,6 @@ test_expect_success 'whitelist O_RDWR|O_CREAT' '
 
 test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     sydbox \
         -ESYDBOX_TEST_SUCCESS=1 \
         -m core/sandbox/write:deny \
@@ -300,7 +286,6 @@ test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL for existing file' '
 
 test_expect_success 'blacklist O_RDONLY|O_CREAT' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -311,7 +296,6 @@ test_expect_success 'blacklist O_RDONLY|O_CREAT' '
 test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT for symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -322,7 +306,6 @@ test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT for symbolic link' '
 
 test_expect_success 'blacklist O_RDONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -342,7 +325,6 @@ test_expect_success 'blacklist O_RDONLY|O_CREAT|O_EXCL for existing file' '
 test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -363,7 +345,6 @@ test_expect_success 'blacklist O_WRONLY' '
 
 test_expect_success 'blacklist O_WRONLY for non-existant file' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -384,7 +365,6 @@ test_expect_success SYMLINKS 'blacklist O_WRONLY for symbolic link' '
 
 test_expect_success 'blacklist O_WRONLY|O_CREAT' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -417,7 +397,6 @@ test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for symbolic link' '
 test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for dangling symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -428,7 +407,6 @@ test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for dangling symbolic l
 
 test_expect_success 'blacklist O_WRONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \

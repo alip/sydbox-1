@@ -27,7 +27,6 @@ test_expect_failure 'deny truncate()' '
 
 test_expect_failure 'deny truncate() for non-existant file' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily truncate -e EPERM "$f"
@@ -47,7 +46,6 @@ test_expect_failure SYMLINKS 'deny truncate() for symbolic link' '
 test_expect_failure SYMLINKS 'deny truncate() for dangling symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf no"$l" "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \

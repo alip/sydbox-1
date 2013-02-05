@@ -68,7 +68,6 @@ test_expect_success 'fchmodat($dir, NULL) returns EFAULT' '
 
 test_expect_success 'fchmodat($badfd, $file) returns EBADF' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     sydbox -- emily fchmodat -d null -m 000 -e EBADF "$f"
 '
 
@@ -88,7 +87,6 @@ test_expect_success 'fchmodat($dir, "") returns ENOENT' '
 
 test_expect_success 'fchmodat(AT_FDCWD, $nofile) returns ENOENT' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     sydbox -- emily fchmodat -d cwd -m 000 -e ENOENT "$f"
 '
 
@@ -227,7 +225,6 @@ test_expect_success 'deny fchmodat($fd, $file)' '
 '
 
 test_expect_success 'deny fchmodat($fd, $nofile)' '
-    rm -f no"$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily fchmodat -e ENOENT -d cwd -m 000 no"$f"
@@ -272,7 +269,6 @@ test_expect_success 'blacklist fchmodat(AT_FDCWD, $file)' '
 
 test_expect_success 'blacklist fchmodat(AT_FDCWD, $nofile)' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -307,7 +303,6 @@ test_expect_success 'blacklist fchmodat($fd, $file)' '
 
 test_expect_success 'blacklist fchmodat($fd, $nofile)' '
     f="no-$(unique_file)" &&
-    rm -f no"$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \

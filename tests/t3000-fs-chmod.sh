@@ -42,7 +42,6 @@ test_expect_success 'chmod("") returns ENOENT' '
 
 test_expect_success 'chmod($nofile) returns ENOENT' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     sydbox -- emily chmod -e ENOENT -m 000 "$f"
 '
 
@@ -92,7 +91,6 @@ test_expect_success 'deny chmod($file)' '
 
 test_expect_success 'deny chmod($nofile)' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily chmod -e ENOENT -m 000 "$f"
@@ -114,7 +112,6 @@ test_expect_success SYMLINKS 'deny chmod($symlink)' '
 test_expect_success SYMLINKS 'deny chmod($symlink-dangling)' '
     f="no-$(unique_file)" &&
     l="bad-$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -134,7 +131,6 @@ test_expect_success 'blacklist chmod($file)' '
 
 test_expect_success 'blacklist chmod($nofile)' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -158,7 +154,6 @@ test_expect_success SYMLINKS 'blacklist chmod($symlink)' '
 test_expect_success SYMLINKS 'blacklist chmod($symlink-dangling)' '
     f="no-$(unique_file)" &&
     l="bad-$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \

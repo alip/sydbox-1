@@ -26,7 +26,6 @@ test_expect_success 'deny chown($file)' '
 
 test_expect_success 'deny chown($nofile)' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily chown -e ENOENT "$f"
@@ -45,7 +44,6 @@ test_expect_success SYMLINKS 'deny chown($symlink-file)' '
 test_expect_success SYMLINKS 'deny chown($symlink-dangling)' '
     f="no-$(unique_file)" &&
     l="bad-$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -63,7 +61,6 @@ test_expect_success 'blacklist chown($file)' '
 
 test_expect_success 'blacklist chown($nofile)' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -84,7 +81,6 @@ test_expect_success SYMLINKS 'blacklist chown($symlink-file)' '
 test_expect_success SYMLINKS 'blacklist chown($symlink-dangling)' '
     f="no-$(unique_file)" &&
     l="bad-$(unique_link)" &&
-    rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \

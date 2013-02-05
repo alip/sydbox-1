@@ -18,7 +18,6 @@ test_expect_success 'deny fchownat(AT_FDCWD, NULL) with EFAULT' '
 
 test_expect_success 'deny fchownat(-1, $file) with EBADF' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     sydbox -- emily fchownat -e EBADF -d null "$f"
 '
 
@@ -40,7 +39,6 @@ test_expect_success 'deny fchownat(AT_FDCWD, $file)' '
 
 test_expect_success 'deny fchownat(AT_FDCWD, $nofile)' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily fchownat -e ENOENT -d cwd "$f"
@@ -66,7 +64,6 @@ test_expect_success 'deny fchownat($fd, $file)' '
 
 test_expect_success 'deny fchownat($fd, $nofile)' '
     f="$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily fchownat -e ENOENT -d cwd "$f"
@@ -102,7 +99,6 @@ test_expect_success 'blacklist fchownat(AT_FDCWD, $file)' '
 
 test_expect_success 'blacklist fchownat(AT_FDCWD, $nofile)' '
     f="$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -131,7 +127,6 @@ test_expect_success 'blacklist fchownat($fd, $file)' '
 
 test_expect_success 'blacklist fchownat($fd, $nofile)' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \

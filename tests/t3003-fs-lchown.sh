@@ -28,7 +28,6 @@ test_expect_success SYMLINKS 'deny lchown($symlink-file)' '
 
 test_expect_success SYMLINKS 'deny lchown($nofile)' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily lchown -e ENOENT "$f"
@@ -46,7 +45,6 @@ test_expect_success SYMLINKS 'blacklist lchown($symlink-file)' '
 
 test_expect_success SYMLINKS 'blacklist lchown($nofile)' '
     f="no-$(unique_file)" &&
-    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily lchown -e ENOENT "$f"

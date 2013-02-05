@@ -9,7 +9,6 @@ test_description='sandbox utime(2)'
 # No allow tests because of possible noatime, nomtime mount options
 
 test_expect_failure setup '
-    rm -f file-non-existant
     touch file0 &&
     touch file1 &&
     touch file3 &&

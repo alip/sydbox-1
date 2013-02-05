@@ -150,8 +150,6 @@ test_expect_success SYMLINKS 'rename($file, $symlink-circular) returns ERRNO_0' 
 test_expect_success 'rename($nofile, $newfile) returns ENOENT' '
     old="no-$(unique_file)" &&
     new="new-$(unique_file)" &&
-    rm -f "$old" &&
-    rm -f "$new" &&
     sydbox -- emily rename -e ENOENT "$old" "$new" &&
     test_path_is_missing "$old" &&
     test_path_is_missing "$new"
@@ -161,7 +159,6 @@ test_expect_success 'rename($file, $nodir/$newfile) returns ENOENT' '
     f="$(unique_file)" &&
     d="$(unique_dir)" &&
     touch "$f" &&
-    rm -f "$d" &&
     sydbox -- emily rename -e ENOENT "$f" "$d"/newfile &&
     test_path_is_file "$f" &&
     test_path_is_missing "$d"/newfile &&

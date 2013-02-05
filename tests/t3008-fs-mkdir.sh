@@ -18,7 +18,6 @@ test_expect_success 'deny mkdir(NULL) with EFAULT' '
 
 test_expect_success 'deny mkdir()' '
     d="no-$(unique_dir)"
-    rm -rf "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily mkdir -e EPERM "$d" &&
@@ -35,7 +34,6 @@ test_expect_success 'deny mkdir() for existant directory' '
 
 test_expect_success 'whitelist mkdir()' '
     d="no-$(unique_dir)" &&
-    rm -rf "$d" &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
@@ -54,7 +52,6 @@ test_expect_success 'whitelist mkdir() for existant directory' '
 
 test_expect_success 'blacklist mkdir()' '
     d="no-$(unique_dir)" &&
-    rm -rf "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
