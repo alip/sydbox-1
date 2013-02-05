@@ -377,14 +377,6 @@ test_path_is_fifo () {
 	fi
 }
 
-test_path_is_symlink() {
-	if ! [ -h "$1" ]
-	then
-		echo "Symbolic link $1 doesn't exist. $*"
-		false
-	fi
-}
-
 test_path_is_missing () {
 	if [ -e "$1" ]
 	then
@@ -395,81 +387,6 @@ test_path_is_missing () {
 		fi
 		false
 	fi
-}
-
-test_path_is_readable () {
-	if ! [ -r "$1" ]
-	then
-		echo "Path $1 isn't readable. $*"
-		false
-	fi
-}
-
-test_path_is_not_readable () {
-	if [ -r "$1" ]
-	then
-		echo "Path $1 is readable. $*"
-		false
-	fi
-}
-
-test_path_is_writable () {
-	if ! [ -w "$1" ]
-	then
-		echo "Path $1 isn't writable. $*"
-		false
-	fi
-}
-
-test_path_is_not_writable () {
-	if [ -w "$1" ]
-	then
-		echo "Path $1 is writable. $*"
-		false
-	fi
-}
-
-test_path_is_empty() {
-	if [ -s "$1" ]
-	then
-		echo "File $1 isn't empty. $*"
-		false
-	fi
-}
-
-test_path_is_non_empty() {
-	if ! [ -s "$1" ]
-	then
-		echo "File $1 is empty. $*"
-		false
-	fi
-}
-
-test_must_violate() {
-	retval=0
-	old_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
-	SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS -mcore/violation/exit_code:0"
-	export SYDBOX_TEST_OPTIONS
-	"$@"
-	exit_code=$?
-	if test $exit_code -eq 0
-	then
-		echo >&2 "test_must_violate: command succeeded. $*"
-		retval=1
-	elif test $exit_code -gt 129 -a $exit_code -le 192; then
-		echo >&2 "test_must_violate: died by signal: $*"
-		retval=1
-	elif test $exit_code = 127; then
-		echo >&2 "test_must_violate: command not found: $*"
-		retval=1
-	elif test $exit_code -ne 128
-	then
-		echo >&2 "test_must_violate: abnormal exit with code:$exit_code $*"
-		retval=1
-	fi
-	SYDBOX_TEST_OPTIONS="$old_SYDBOX_TEST_OPTIONS"
-	export SYDBOX_TEST_OPTIONS
-	return $retval
 }
 
 # test_line_count checks that a file has the number of lines it

@@ -256,8 +256,8 @@ trap 'die' EXIT
 
 # The user-facing functions are loaded from a separate file so that
 # test_perf subshells can have them too
-. "$TEST_DIRECTORY/test-lib-sydbox.sh"
 . "$TEST_DIRECTORY/test-lib-functions.sh"
+. "$TEST_DIRECTORY/test-lib-sydbox.sh"
 
 # You are not expected to call test_ok_ and test_failure_ directly, use
 # the text_expect_* functions instead.
