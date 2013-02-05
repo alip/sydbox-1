@@ -137,7 +137,7 @@ int test_fchmodat(int argc, char **argv)
 			} else if (streq(optarg, "null")) {
 				test_dirfd = TEST_DIRFD_NOEXIST; /* EBADF! */
 			} else {
-				test_dirfd = open(optarg, O_RDONLY|O_DIRECTORY);
+				test_dirfd = open(optarg, O_RDONLY);
 				if (test_dirfd < 0) {
 					fprintf(stderr, "test_fchmodat: open(%s) failed (errno:%d %s)\n",
 							optarg, errno, strerror(errno));

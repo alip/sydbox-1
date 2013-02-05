@@ -13,20 +13,23 @@ SYDBOX_TEST_OPTIONS="
 "
 
 test_expect_success 'chmod($file) returns ERRNO_0' '
-    touch file.$test_count &&
-    chmod 600 file.$test_count &&
-    sydbox -- emily chmod -e ERRNO_0 -m 000 file.$test_count &&
-    test_path_is_not_readable file.$test_count &&
-    test_path_is_not_writable file.$test_count
+    f="$(file_uniq)" &&
+    touch "$f" &&
+    chmod 600 "$f" &&
+    sydbox -- emily chmod -e ERRNO_0 -m 000 "$f" &&
+    test_path_is_not_readable "$f" &&
+    test_path_is_not_writable "$f"
 '
 
 test_expect_success SYMLINKS 'chmod($symlink) returns ERRNO_0' '
-    touch file.$test_count &&
-    chmod 600 file.$test_count &&
-    ln -sf file.$test_count link.$test_count
-    sydbox -- emily chmod -e ERRNO_0 -m 000 link.$test_count
-    test_path_is_not_readable file.$test_count &&
-    test_path_is_not_writable file.$test_count
+    f="$(file_uniq)" &&
+    l="$(link_uniq)" &&
+    touch "$f" &&
+    chmod 600 "$f" &&
+    ln -sf "$f" "$l" &&
+    sydbox -- emily chmod -e ERRNO_0 -m 000 "$l"
+    test_path_is_not_readable "$f" &&
+    test_path_is_not_writable "$f"
 '
 
 test_expect_success 'chmod(NULL) returns EFAULT' '
@@ -38,147 +41,172 @@ test_expect_success 'chmod("") returns ENOENT' '
 '
 
 test_expect_success 'chmod($nofile) returns ENOENT' '
-    rm -f nofile.$test_count &&
-    sydbox -- emily chmod -e ENOENT -m 000 nofile.$test_count
+    f="no-$(file_uniq)" &&
+    rm -f "$f" &&
+    sydbox -- emily chmod -e ENOENT -m 000 "$f"
 '
 
 test_expect_success 'chmod($noaccess/$file) returns EACCES' '
-    mkdir noaccess.$test_count &&
-    touch noaccess.$test_count/file.$test_count &&
-    chmod 600 noaccess.$test_count/file.$test_count &&
-    chmod 000 noaccess.$test_count &&
-    sydbox -- emily chmod -e EACCES -m 000 noaccess.$test_count/file.$test_count &&
-    chmod 700 noaccess.$test_count &&
-    test_path_is_readable noaccess.$test_count/file.$test_count &&
-    test_path_is_writable noaccess.$test_count/file.$test_count
+    d="no-access-$(dir_uniq)" &&
+    f="$(file_uniq)" &&
+    mkdir "$d" &&
+    touch "$d"/"$f" &&
+    chmod 600 "$d"/"$f" &&
+    test_when_finished "chmod 700 $d" && chmod 000 "$d" &&
+    sydbox -- emily chmod -e EACCES -m 000 "$d"/"$f" &&
+    chmod 700 "$d" &&
+    test_path_is_readable "$d"/"$f" &&
+    test_path_is_writable "$d"/"$f"
 '
 
 test_expect_success 'chmod($nodir/$file) returns ENOTDIR' '
-    touch nodir.$test_count &&
-    sydbox -- emily chmod -e ENOTDIR -m 000 nodir.$test_count/nofile.$test_count
+    d="non-$(dir_uniq)" &&
+    touch "$d" &&
+    sydbox -- emily chmod -e ENOTDIR -m 000 "$d"/foo
 '
 
 test_expect_success SYMLINKS 'chmod($symlink-self) returns ELOOP' '
-    ln -sf self-link.$test_count self-link.$test_count &&
-    sydbox -- emily chmod -e ELOOP -m 000 self-link.$test_count
+    l="self-$(link_uniq)" &&
+    ln -sf "$l" "$l" &&
+    sydbox -- emily chmod -e ELOOP -m 000 "$l"
 '
 
 test_expect_success SYMLINKS 'chmod($symlink-circular) returns ELOOP' '
-    ln -sf loop0.$test_count loop1.$test_count &&
-    ln -sf loop1.$test_count loop0.$test_count &&
-    sydbox -- emily chmod -e ELOOP -m 000 loop0.$test_count
+    l0="loop0-$(link_uniq)" &&
+    l1="loop1-$(link_uniq)" &&
+    ln -sf "$l0" "$l1" &&
+    ln -sf "$l1" "$l0" &&
+    sydbox -- emily chmod -e ELOOP -m 000 "$l0"
 '
 
 test_expect_success 'deny chmod($file)' '
-    touch file.$test_count &&
-    chmod 600 file.$test_count &&
+    f="$(file_uniq)" &&
+    touch "$f" &&
+    chmod 600 "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chmod -e EPERM -m 000 file.$test_count &&
-    test_path_is_readable file.$test_count &&
-    test_path_is_writable file.$test_count
+        -- emily chmod -e EPERM -m 000 "$f" &&
+    test_path_is_readable "$f" &&
+    test_path_is_writable "$f"
 '
 
 test_expect_success 'deny chmod($nofile)' '
-    rm -f nofile.$test_count &&
+    f="no-$(file_uniq)" &&
+    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chmod -e ENOENT -m 000 nofile.$test_count
+        -- emily chmod -e ENOENT -m 000 "$f"
 '
 
 test_expect_success SYMLINKS 'deny chmod($symlink)' '
-    touch file.$test_count &&
-    chmod 600 file.$test_count &&
-    ln -sf file.$test_count link.$test_count &&
+    f="$(file_uniq)" &&
+    l="$(link_uniq)" &&
+    touch "$f" &&
+    chmod 600 "$f" &&
+    ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chmod -e EPERM -m 000 link.$test_count &&
-    test_path_is_readable file.$test_count &&
-    test_path_is_writable file.$test_count
+        -- emily chmod -e EPERM -m 000 "$l" &&
+    test_path_is_readable "$f" &&
+    test_path_is_writable "$f"
 '
 
 test_expect_success SYMLINKS 'deny chmod($symlink-dangling)' '
-    rm -f nofile.$test_count &&
-    ln -sf nofile.$test_count dangling-link.$test_count &&
+    f="no-$(file_uniq)" &&
+    l="bad-$(link_uniq)" &&
+    rm -f "$f" &&
+    ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -- emily chmod -e ENOENT -m 000 dangling-link.$test_count
+        -- emily chmod -e ENOENT -m 000 "$l"
 '
 
 test_expect_success 'blacklist chmod($file)' '
-    touch file.$test_count &&
-    chmod 600 file.$test_count &&
+    touch "$f" &&
+    chmod 600 "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chmod -e EPERM -m 000 file.$test_count &&
-    test_path_is_readable file.$test_count &&
-    test_path_is_writable file.$test_count
+        -- emily chmod -e EPERM -m 000 "$f" &&
+    test_path_is_readable "$f" &&
+    test_path_is_writable "$f"
 '
 
 test_expect_success 'blacklist chmod($nofile)' '
-    rm -f nofile.$test_count &&
+    f="no-$(file_uniq)" &&
+    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chmod -e ENOENT -m 000 nofile.$test_count
+        -- emily chmod -e ENOENT -m 000 "$f"
 '
 
 test_expect_success SYMLINKS 'blacklist chmod($symlink)' '
-    touch file.$test_count &&
-    chmod 600 file.$test_count &&
-    ln -sf file.$test_count link.$test_count &&
+    f="$(file_uniq)" &&
+    l="$(link_uniq)" &&
+    touch "$f" &&
+    chmod 600 "$f" &&
+    ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chmod -e EPERM -m 000 link.$test_count &&
-    test_path_is_readable file.$test_count &&
-    test_path_is_writable file.$test_count
+        -- emily chmod -e EPERM -m 000 "$l" &&
+    test_path_is_readable "$f" &&
+    test_path_is_writable "$f"
 '
 
 test_expect_success SYMLINKS 'blacklist chmod($symlink-dangling)' '
-    rm -f nofile.$test_count &&
-    ln -sf nofile.$test_count dangling-link.$test_count &&
+    f="no-$(file_uniq)" &&
+    l="bad-$(link_uniq)" &&
+    rm -f "$f" &&
+    ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
-        -- emily chmod -e ENOENT -m 000 dangling-link.$test_count
+        -- emily chmod -e ENOENT -m 000 "$l"
 '
 
 test_expect_success 'whitelist chmod($file)' '
-    touch file.$test_count &&
-    chmod 600 file.$test_count &&
+    f="$(file_uniq)" &&
+    l="$(link_uniq)" &&
+    touch "$f" &&
+    chmod 600 "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily chmod -e ERRNO_0 -m 000 file.$test_count &&
-    test_path_is_not_readable file.$test_count &&
-    test_path_is_not_writable file.$test_count
+        -- emily chmod -e ERRNO_0 -m 000 "$f" &&
+    test_path_is_not_readable "$f" &&
+    test_path_is_not_writable "$f"
 '
 
 test_expect_success SYMLINKS 'whitelist chmod($symlink)' '
-    touch file.$test_count &&
-    chmod 600 file.$test_count &&
-    ln -sf file.$test_count link.$test_count &&
+    f="$(file_uniq)" &&
+    l="$(link_uniq)" &&
+    touch "$f" &&
+    chmod 600 "$f" &&
+    ln -sf "$f" "$l" &&
     sydbox \
         -m core/sandbox/write:deny \
         -m "whitelist/write+$HOME_RESOLVED/**" \
-        -- emily chmod -e ERRNO_0 -m 000 link.$test_count &&
-    test_path_is_not_readable file.$test_count &&
-    test_path_is_not_writable file.$test_count
+        -- emily chmod -e ERRNO_0 -m 000 "$l" &&
+    test_path_is_not_readable "$f" &&
+    test_path_is_not_writable "$f"
 '
 
 test_expect_success SYMLINKS 'deny whitelisted chmod($symlink-outside)' '
-    touch file.$test_count &&
-    chmod 600 file.$test_count &&
-    mkdir dir.$test_count &&
-    ln -sf ../file.$test_count dir.$test_count/link.$test_count &&
+    f="$(file_uniq)" &&
+    l="$(link_uniq)" &&
+    d="$(dir_uniq)" &&
+    touch "$f" &&
+    chmod 600 "$f" &&
+    mkdir "$d" &&
+    ln -sf ../"$f" "$d"/"$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/dir.$test_count/**" \
-        -- emily chmod -e EPERM -m 000 dir.$test_count/link.$test_count &&
-    test_path_is_readable file.$test_count &&
-    test_path_is_writable file.$test_count
+        -m "whitelist/write+$HOME_RESOLVED/"$d"/**" \
+        -- emily chmod -e EPERM -m 000 "$d"/"$l" &&
+    test_path_is_readable "$f" &&
+    test_path_is_writable "$f"
 '
 
 test_done
