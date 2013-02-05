@@ -17,7 +17,7 @@ test_expect_success 'deny chown(NULL) with EFAULT' '
 '
 
 test_expect_success 'deny chown($file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -25,7 +25,7 @@ test_expect_success 'deny chown($file)' '
 '
 
 test_expect_success 'deny chown($nofile)' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -33,8 +33,8 @@ test_expect_success 'deny chown($nofile)' '
 '
 
 test_expect_success SYMLINKS 'deny chown($symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -43,8 +43,8 @@ test_expect_success SYMLINKS 'deny chown($symlink-file)' '
 '
 
 test_expect_success SYMLINKS 'deny chown($symlink-dangling)' '
-    f="no-$(file_uniq)" &&
-    l="bad-$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="bad-$(unique_link)" &&
     rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -53,7 +53,7 @@ test_expect_success SYMLINKS 'deny chown($symlink-dangling)' '
 '
 
 test_expect_success 'blacklist chown($file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -62,7 +62,7 @@ test_expect_success 'blacklist chown($file)' '
 '
 
 test_expect_success 'blacklist chown($nofile)' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -71,8 +71,8 @@ test_expect_success 'blacklist chown($nofile)' '
 '
 
 test_expect_success SYMLINKS 'blacklist chown($symlink-file)' '
-    f="file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -82,8 +82,8 @@ test_expect_success SYMLINKS 'blacklist chown($symlink-file)' '
 '
 
 test_expect_success SYMLINKS 'blacklist chown($symlink-dangling)' '
-    f="no-$(file_uniq)" &&
-    l="bad-$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="bad-$(unique_link)" &&
     rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -93,7 +93,7 @@ test_expect_success SYMLINKS 'blacklist chown($symlink-dangling)' '
 '
 
 test_expect_success 'whitelist chown($file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -102,8 +102,8 @@ test_expect_success 'whitelist chown($file)' '
 '
 
 test_expect_success SYMLINKS 'whitelist chown($symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     sydbox \

@@ -17,13 +17,13 @@ test_expect_success 'deny fchownat(AT_FDCWD, NULL) with EFAULT' '
 '
 
 test_expect_success 'deny fchownat(-1, $file) with EBADF' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     sydbox -- emily fchownat -e EBADF -d null "$f"
 '
 
 test_expect_success 'deny fchownat(-1, $abspath) with EPERM' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -31,7 +31,7 @@ test_expect_success 'deny fchownat(-1, $abspath) with EPERM' '
 '
 
 test_expect_success 'deny fchownat(AT_FDCWD, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -39,7 +39,7 @@ test_expect_success 'deny fchownat(AT_FDCWD, $file)' '
 '
 
 test_expect_success 'deny fchownat(AT_FDCWD, $nofile)' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -47,8 +47,8 @@ test_expect_success 'deny fchownat(AT_FDCWD, $nofile)' '
 '
 
 test_expect_success SYMLINKS 'deny fchownat(AT_FDCWD, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -57,7 +57,7 @@ test_expect_success SYMLINKS 'deny fchownat(AT_FDCWD, $symlink-file)' '
 '
 
 test_expect_success 'deny fchownat($fd, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -65,7 +65,7 @@ test_expect_success 'deny fchownat($fd, $file)' '
 '
 
 test_expect_success 'deny fchownat($fd, $nofile)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -73,8 +73,8 @@ test_expect_success 'deny fchownat($fd, $nofile)' '
 '
 
 test_expect_success SYMLINKS 'deny fchownat($fd, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -83,7 +83,7 @@ test_expect_success SYMLINKS 'deny fchownat($fd, $symlink-file)' '
 '
 
 test_expect_success 'blacklist fchownat(-1, $abspath)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -92,7 +92,7 @@ test_expect_success 'blacklist fchownat(-1, $abspath)' '
 '
 
 test_expect_success 'blacklist fchownat(AT_FDCWD, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -101,7 +101,7 @@ test_expect_success 'blacklist fchownat(AT_FDCWD, $file)' '
 '
 
 test_expect_success 'blacklist fchownat(AT_FDCWD, $nofile)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -110,8 +110,8 @@ test_expect_success 'blacklist fchownat(AT_FDCWD, $nofile)' '
 '
 
 test_expect_success SYMLINKS 'blacklist fchownat(AT_FDCWD, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -121,7 +121,7 @@ test_expect_success SYMLINKS 'blacklist fchownat(AT_FDCWD, $symlink-file)' '
 '
 
 test_expect_success 'blacklist fchownat($fd, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -130,7 +130,7 @@ test_expect_success 'blacklist fchownat($fd, $file)' '
 '
 
 test_expect_success 'blacklist fchownat($fd, $nofile)' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -139,8 +139,8 @@ test_expect_success 'blacklist fchownat($fd, $nofile)' '
 '
 
 test_expect_success SYMLINKS 'blacklist fchownat($fd, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -150,7 +150,7 @@ test_expect_success SYMLINKS 'blacklist fchownat($fd, $symlink-file)' '
 '
 
 test_expect_success 'whitelist fchownat(-1, $abspath)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -159,7 +159,7 @@ test_expect_success 'whitelist fchownat(-1, $abspath)' '
 '
 
 test_expect_success 'whitelist fchownat(AT_FDCWD, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -168,8 +168,8 @@ test_expect_success 'whitelist fchownat(AT_FDCWD, $file)' '
 '
 
 test_expect_success SYMLINKS 'whitelist fchownat(AT_FDCWD, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     sydbox \
@@ -179,7 +179,7 @@ test_expect_success SYMLINKS 'whitelist fchownat(AT_FDCWD, $symlink-file)' '
 '
 
 test_expect_success 'whitelist fchownat($fd, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -188,8 +188,8 @@ test_expect_success 'whitelist fchownat($fd, $file)' '
 '
 
 test_expect_success SYMLINKS 'whitelist fchownat($fd, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     sydbox \

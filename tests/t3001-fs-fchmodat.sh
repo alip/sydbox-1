@@ -13,7 +13,7 @@ SYDBOX_TEST_OPTIONS="
 "
 
 test_expect_success 'fchmodat(AT_FDCWD, $file) returns ERRNO_0' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     sydbox -- emily fchmodat -d cwd -m 000 -e ERRNO_0 "$f" &&
@@ -22,8 +22,8 @@ test_expect_success 'fchmodat(AT_FDCWD, $file) returns ERRNO_0' '
 '
 
 test_expect_success 'fchmodat($dir, $file) returns ERRNO_0' '
-    f="$(file_uniq)" &&
-    d="$(dir_uniq)" &&
+    f="$(unique_file)" &&
+    d="$(unique_dir)" &&
     mkdir "$d" &&
     touch "$d"/"$f" &&
     chmod 600 "$d"/"$f" &&
@@ -33,8 +33,8 @@ test_expect_success 'fchmodat($dir, $file) returns ERRNO_0' '
 '
 
 test_expect_success SYMLINKS 'fchmodat(AT_FDCWD, $symlink) returns ERRNO_0' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     ln -sf "$f" "$l" &&
@@ -44,9 +44,9 @@ test_expect_success SYMLINKS 'fchmodat(AT_FDCWD, $symlink) returns ERRNO_0' '
 '
 
 test_expect_success SYMLINKS 'fchmodat($dir, $symlink) returns ERRNO_0' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
-    d="$(dir_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
+    d="$(unique_dir)" &&
     mkdir "$d" &&
     touch "$d"/"$f" &&
     chmod 600 "$d"/"$f" &&
@@ -61,13 +61,13 @@ test_expect_success 'fchmodat(AT_FDCWD, NULL) returns EFAULT' '
 '
 
 test_expect_success 'fchmodat($dir, NULL) returns EFAULT' '
-    d="$(dir_uniq)" &&
+    d="$(unique_dir)" &&
     mkdir "$d" &&
     sydbox -- emily fchmodat -d "$d" -m 000 -e EFAULT
 '
 
 test_expect_success 'fchmodat($badfd, $file) returns EBADF' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     sydbox -- emily fchmodat -d null -m 000 -e EBADF "$f"
 '
@@ -81,27 +81,27 @@ test_expect_success 'fchmodat(AT_FDCWD, "") returns ENOENT' '
 '
 
 test_expect_success 'fchmodat($dir, "") returns ENOENT' '
-    d="$(dir_uniq)" &&
+    d="$(unique_dir)" &&
     mkdir "$d" &&
     sydbox -- emily fchmodat -d "$d" -m 000 -e ENOENT ""
 '
 
 test_expect_success 'fchmodat(AT_FDCWD, $nofile) returns ENOENT' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     sydbox -- emily fchmodat -d cwd -m 000 -e ENOENT "$f"
 '
 
 test_expect_success 'fchmodat($dir, $nofile) returns ENOENT' '
-    f="no-$(file_uniq)" &&
-    d="$(dir_uniq)" &&
+    f="no-$(unique_file)" &&
+    d="$(unique_dir)" &&
     mkdir "$d" &&
     sydbox -- emily fchmodat -d "$d" -m 000 -e ENOENT "$f"
 '
 
 test_expect_success 'fchmodat(AT_FDCWD, $noaccess/$file) returns EACCES' '
-    d="no-access-$(dir_uniq)" &&
-    f="$(file_uniq)" &&
+    d="no-access-$(unique_dir)" &&
+    f="$(unique_file)" &&
     mkdir "$d" &&
     touch "$d"/"$f" &&
     chmod 600 "$d"/"$f" &&
@@ -114,8 +114,8 @@ test_expect_success 'fchmodat(AT_FDCWD, $noaccess/$file) returns EACCES' '
 
 # TODO: emily limitation, not easy to test...
 #test_expect_success 'fchmodat($noaccess, $file) returns EACCES' '
-#    d="no-access-$(dir_uniq)" &&
-#    f="$(file_uniq)" &&
+#    d="no-access-$(unique_dir)" &&
+#    f="$(unique_file)" &&
 #    mkdir "$d" &&
 #    touch "$d"/"$f" &&
 #    chmod 600 "$d"/"$f" &&
@@ -127,26 +127,26 @@ test_expect_success 'fchmodat(AT_FDCWD, $noaccess/$file) returns EACCES' '
 #'
 
 test_expect_success 'fchmodat(AT_FDCWD, $nodir/$file) returns ENOTDIR' '
-    d="non-$(dir_uniq)" &&
+    d="non-$(unique_dir)" &&
     touch "$d" &&
     sydbox -- emily fchmodat -d cwd -m 000 -e ENOTDIR "$d"/foo
 '
 
 test_expect_success 'fchmodat($nodir, $file) returns ENOTDIR' '
-    d="non-$(dir_uniq)" &&
+    d="non-$(unique_dir)" &&
     touch "$d" &&
     sydbox -- emily fchmodat -d "$d" -m 000 -e ENOTDIR "$d"/foo
 '
 
 test_expect_success SYMLINKS 'fchmodat(AT_FDCWD, $symlink-self) returns ELOOP' '
-    l="self-$(link_uniq)" &&
+    l="self-$(unique_link)" &&
     ln -sf "$l" "$l" &&
     sydbox -- emily fchmodat -d cwd -m 000 -e ELOOP "$l"
 '
 
 test_expect_success SYMLINKS 'fchmodat($dir, $symlink-self) returns ELOOP' '
-    d="$(dir_uniq)" &&
-    l="self-$(link_uniq)" &&
+    d="$(unique_dir)" &&
+    l="self-$(unique_link)" &&
     mkdir "$d" &&
     (
         cd "$d" &&
@@ -156,17 +156,17 @@ test_expect_success SYMLINKS 'fchmodat($dir, $symlink-self) returns ELOOP' '
 '
 
 test_expect_success SYMLINKS 'fchmodat(AT_FDCWD, $symlink-circular) returns ELOOP' '
-    l0="loop0-$(link_uniq)" &&
-    l1="loop1-$(link_uniq)" &&
+    l0="loop0-$(unique_link)" &&
+    l1="loop1-$(unique_link)" &&
     ln -sf "$l0" "$l1" &&
     ln -sf "$l1" "$l0" &&
     sydbox -- emily fchmodat -d cwd -m 000 -e ELOOP "$l0"
 '
 
 test_expect_success SYMLINKS 'fchmodat($dir, $symlink-circular) returns ELOOP' '
-    d="$(dir_uniq)" &&
-    l0="loop0-$(link_uniq)" &&
-    l1="loop1-$(link_uniq)" &&
+    d="$(unique_dir)" &&
+    l0="loop0-$(unique_link)" &&
+    l1="loop1-$(unique_link)" &&
     mkdir "$d" &&
     (
         cd "$d"
@@ -177,7 +177,7 @@ test_expect_success SYMLINKS 'fchmodat($dir, $symlink-circular) returns ELOOP' '
 '
 
 test_expect_success 'deny fchmodat(-1, $abspath) with EPERM' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     test_must_violate sydbox \
@@ -188,7 +188,7 @@ test_expect_success 'deny fchmodat(-1, $abspath) with EPERM' '
 '
 
 test_expect_success 'deny fchmodat(AT_FDCWD, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     test_must_violate sydbox \
@@ -199,7 +199,7 @@ test_expect_success 'deny fchmodat(AT_FDCWD, $file)' '
 '
 
 test_expect_success 'deny fchmodat(AT_FDCWD, $nofile)' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily fchmodat -e ENOENT -d cwd -m 000 no"$f"
@@ -234,8 +234,8 @@ test_expect_success 'deny fchmodat($fd, $nofile)' '
 '
 
 test_expect_success SYMLINKS 'deny fchmodat($fd, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     ln -sf "$f" "$l" &&
@@ -247,7 +247,7 @@ test_expect_success SYMLINKS 'deny fchmodat($fd, $symlink-file)' '
 '
 
 test_expect_success 'blacklist fchmodat(-1, $abspath)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     test_must_violate sydbox \
@@ -259,7 +259,7 @@ test_expect_success 'blacklist fchmodat(-1, $abspath)' '
 '
 
 test_expect_success 'blacklist fchmodat(AT_FDCWD, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     test_must_violate sydbox \
@@ -271,7 +271,7 @@ test_expect_success 'blacklist fchmodat(AT_FDCWD, $file)' '
 '
 
 test_expect_success 'blacklist fchmodat(AT_FDCWD, $nofile)' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -280,8 +280,8 @@ test_expect_success 'blacklist fchmodat(AT_FDCWD, $nofile)' '
 '
 
 test_expect_success SYMLINKS 'blacklist fchmodat(AT_FDCWD, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     ln -sf "$f" "$l" &&
@@ -294,7 +294,7 @@ test_expect_success SYMLINKS 'blacklist fchmodat(AT_FDCWD, $symlink-file)' '
 '
 
 test_expect_success 'blacklist fchmodat($fd, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     test_must_violate sydbox \
@@ -306,7 +306,7 @@ test_expect_success 'blacklist fchmodat($fd, $file)' '
 '
 
 test_expect_success 'blacklist fchmodat($fd, $nofile)' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f no"$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -315,8 +315,8 @@ test_expect_success 'blacklist fchmodat($fd, $nofile)' '
 '
 
 test_expect_success SYMLINKS 'blacklist fchmodat($fd, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     ln -sf "$f" "$l" &&
@@ -329,7 +329,7 @@ test_expect_success SYMLINKS 'blacklist fchmodat($fd, $symlink-file)' '
 '
 
 test_expect_success 'whitelist fchmodat(-1, $abspath)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     sydbox \
@@ -341,7 +341,7 @@ test_expect_success 'whitelist fchmodat(-1, $abspath)' '
 '
 
 test_expect_success 'whitelist fchmodat(AT_FDCWD, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     sydbox \
@@ -353,8 +353,8 @@ test_expect_success 'whitelist fchmodat(AT_FDCWD, $file)' '
 '
 
 test_expect_success SYMLINKS 'whitelist fchmodat(AT_FDCWD, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     ln -sf "$f" "$l" &&
@@ -367,7 +367,7 @@ test_expect_success SYMLINKS 'whitelist fchmodat(AT_FDCWD, $symlink-file)' '
 '
 
 test_expect_success 'whitelist fchmodat($fd, $file)' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     sydbox \
@@ -379,8 +379,8 @@ test_expect_success 'whitelist fchmodat($fd, $file)' '
 '
 
 test_expect_success SYMLINKS 'whitelist fchmodat($fd, $symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     chmod 600 "$f" &&
     ln -sf "$f" "$l" &&

@@ -17,7 +17,7 @@ test_expect_success 'deny mknod(NULL) with EFAULT' '
 '
 
 test_expect_success FIFOS 'deny mknod()' '
-    p="no-$(fifo_uniq)" &&
+    p="no-$(unique_fifo)" &&
     rm -f "$p" &&
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
@@ -27,7 +27,7 @@ test_expect_success FIFOS 'deny mknod()' '
 '
 
 test_expect_success FIFOS 'deny mknod() for existant fifo' '
-    p="$(fifo_uniq)" &&
+    p="$(unique_fifo)" &&
     mknod "$p" p &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -35,7 +35,7 @@ test_expect_success FIFOS 'deny mknod() for existant fifo' '
 '
 
 test_expect_success FIFOS 'whitelist mknod()' '
-    p="no-$(fifo_uniq)" &&
+    p="no-$(unique_fifo)" &&
     rm -f "$p" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -45,7 +45,7 @@ test_expect_success FIFOS 'whitelist mknod()' '
 '
 
 test_expect_success FIFOS 'whitelist mknod() for existant fifo' '
-    p="$(fifo_uniq)" &&
+    p="$(unique_fifo)" &&
     mknod "$p" p
     sydbox \
         -m core/sandbox/write:deny \
@@ -54,7 +54,7 @@ test_expect_success FIFOS 'whitelist mknod() for existant fifo' '
 '
 
 test_expect_success FIFOS 'blacklist mknod()' '
-    p="no-$(fifo_uniq)" &&
+    p="no-$(unique_fifo)" &&
     rm -f "$p" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -64,7 +64,7 @@ test_expect_success FIFOS 'blacklist mknod()' '
 '
 
 test_expect_success FIFOS 'deny mknod() for existant fifo' '
-    p="$(fifo_uniq)" &&
+    p="$(unique_fifo)" &&
     mknod "$p" p &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \

@@ -17,7 +17,7 @@ test_expect_failure 'deny truncate(NULL) with EFAULT' '
 '
 
 test_expect_failure 'deny truncate()' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     : > "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -26,7 +26,7 @@ test_expect_failure 'deny truncate()' '
 '
 
 test_expect_failure 'deny truncate() for non-existant file' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -34,8 +34,8 @@ test_expect_failure 'deny truncate() for non-existant file' '
 '
 
 test_expect_failure SYMLINKS 'deny truncate() for symbolic link' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     echo hey syd > "$f" &&
     ln -sf "$l" "$f" &&
     test_must_violate sydbox \
@@ -45,8 +45,8 @@ test_expect_failure SYMLINKS 'deny truncate() for symbolic link' '
 '
 
 test_expect_failure SYMLINKS 'deny truncate() for dangling symbolic link' '
-    f="no-$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="$(unique_link)" &&
     rm -f "$f" &&
     ln -sf no"$l" "$f" &&
     test_must_violate sydbox \
@@ -55,7 +55,7 @@ test_expect_failure SYMLINKS 'deny truncate() for dangling symbolic link' '
 '
 
 test_expect_failure 'whitelist truncate()' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     echo hello syd > "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -65,8 +65,8 @@ test_expect_failure 'whitelist truncate()' '
 '
 
 test_expect_failure SYMLINKS 'whitelist truncate() for symbolic link' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     echo hello syd > "$f" &&
     ln -sf "$l" "$f" &&
     sydbox \

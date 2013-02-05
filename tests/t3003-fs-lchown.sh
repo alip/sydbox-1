@@ -17,8 +17,8 @@ test_expect_success 'deny lchown(NULL) with EFAULT' '
 '
 
 test_expect_success SYMLINKS 'deny lchown($symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -27,7 +27,7 @@ test_expect_success SYMLINKS 'deny lchown($symlink-file)' '
 '
 
 test_expect_success SYMLINKS 'deny lchown($nofile)' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -35,8 +35,8 @@ test_expect_success SYMLINKS 'deny lchown($nofile)' '
 '
 
 test_expect_success SYMLINKS 'blacklist lchown($symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -45,7 +45,7 @@ test_expect_success SYMLINKS 'blacklist lchown($symlink-file)' '
 '
 
 test_expect_success SYMLINKS 'blacklist lchown($nofile)' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -53,8 +53,8 @@ test_expect_success SYMLINKS 'blacklist lchown($nofile)' '
 '
 
 test_expect_success SYMLINKS 'whitelist lchown($symlink-file)' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     sydbox \

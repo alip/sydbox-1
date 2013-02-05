@@ -17,21 +17,21 @@ test_expect_success 'deny open(NULL) with EFAULT' '
 '
 
 test_expect_success 'deny open(file, O_RDONLY|O_DIRECTORY) with ENOTDIR' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     sydbox -- emily open -e ENOTDIR -m rdonly -D "$f"
 '
 
 test_expect_success SYMLINKS 'deny open(symlink-file, O_RDONLY|O_NOFOLLOW) with ELOOP' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f"
     ln -sf "$f" "$l"
     sydbox -- emily open -e ELOOP -m rdonly -F "$l"
 '
 
 test_expect_success 'whitelist O_RDONLY' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -39,8 +39,8 @@ test_expect_success 'whitelist O_RDONLY' '
 '
 
 test_expect_success SYMLINKS 'whitelist O_RDONLY for symbolic link' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     sydbox \
@@ -49,7 +49,7 @@ test_expect_success SYMLINKS 'whitelist O_RDONLY for symbolic link' '
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -58,8 +58,8 @@ test_expect_success 'deny O_RDONLY|O_CREAT' '
 '
 
 test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
-    f="no-$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="$(unique_link)" &&
     rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -69,7 +69,7 @@ test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -78,7 +78,7 @@ test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -86,8 +86,8 @@ test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
 '
 
 test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
-    f="no-$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="$(unique_link)" &&
     rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -97,7 +97,7 @@ test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
 '
 
 test_expect_success 'deny O_WRONLY' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -106,7 +106,7 @@ test_expect_success 'deny O_WRONLY' '
 '
 
 test_expect_success 'deny O_WRONLY for non-existant file' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -115,8 +115,8 @@ test_expect_success 'deny O_WRONLY for non-existant file' '
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY for symbolic link' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -126,7 +126,7 @@ test_expect_success SYMLINKS 'deny O_WRONLY for symbolic link' '
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -135,7 +135,7 @@ test_expect_success 'deny O_WRONLY|O_CREAT' '
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT for existing file' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -144,8 +144,8 @@ test_expect_success 'deny O_WRONLY|O_CREAT for existing file' '
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -155,8 +155,8 @@ test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link' '
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' '
-    f="no-$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="$(unique_link)" &&
     rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -166,7 +166,7 @@ test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' 
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -175,7 +175,7 @@ test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL for existing file' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -184,7 +184,7 @@ test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL for existing file' '
 '
 
 test_expect_success 'whitelist O_WRONLY' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -194,7 +194,7 @@ test_expect_success 'whitelist O_WRONLY' '
 '
 
 test_expect_success 'whitelist O_WRONLY|O_CREAT' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -204,7 +204,7 @@ test_expect_success 'whitelist O_WRONLY|O_CREAT' '
 '
 
 test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -214,7 +214,7 @@ test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL' '
 '
 
 test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL for existing file' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -223,7 +223,7 @@ test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL for existing file' '
 '
 
 test_expect_success 'deny O_RDWR' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -232,7 +232,7 @@ test_expect_success 'deny O_RDWR' '
 '
 
 test_expect_success 'deny O_RDWR|O_CREAT' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -241,7 +241,7 @@ test_expect_success 'deny O_RDWR|O_CREAT' '
 '
 
 test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -250,7 +250,7 @@ test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL' '
 '
 
 test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL for existing file' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -259,7 +259,7 @@ test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL for existing file' '
 '
 
 test_expect_success 'whitelist O_RDWR' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -269,7 +269,7 @@ test_expect_success 'whitelist O_RDWR' '
 '
 
 test_expect_success 'whitelist O_RDWR|O_CREAT' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -279,7 +279,7 @@ test_expect_success 'whitelist O_RDWR|O_CREAT' '
 '
 
 test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     sydbox \
         -ESYDBOX_TEST_SUCCESS=1 \
@@ -290,7 +290,7 @@ test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL' '
 '
 
 test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL for existing file' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -299,7 +299,7 @@ test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL for existing file' '
 '
 
 test_expect_success 'blacklist O_RDONLY|O_CREAT' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -309,8 +309,8 @@ test_expect_success 'blacklist O_RDONLY|O_CREAT' '
 '
 
 test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT for symbolic link' '
-    f="no-$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="$(unique_link)" &&
     rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -321,7 +321,7 @@ test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT for symbolic link' '
 '
 
 test_expect_success 'blacklist O_RDONLY|O_CREAT|O_EXCL' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -331,7 +331,7 @@ test_expect_success 'blacklist O_RDONLY|O_CREAT|O_EXCL' '
 '
 
 test_expect_success 'blacklist O_RDONLY|O_CREAT|O_EXCL for existing file' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -340,8 +340,8 @@ test_expect_success 'blacklist O_RDONLY|O_CREAT|O_EXCL for existing file' '
 '
 
 test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
-    f="no-$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="$(unique_link)" &&
     rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -352,7 +352,7 @@ test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT|O_EXCL for symbolic lin
 '
 
 test_expect_success 'blacklist O_WRONLY' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -362,7 +362,7 @@ test_expect_success 'blacklist O_WRONLY' '
 '
 
 test_expect_success 'blacklist O_WRONLY for non-existant file' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -372,7 +372,7 @@ test_expect_success 'blacklist O_WRONLY for non-existant file' '
 '
 
 test_expect_success SYMLINKS 'blacklist O_WRONLY for symbolic link' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -383,7 +383,7 @@ test_expect_success SYMLINKS 'blacklist O_WRONLY for symbolic link' '
 '
 
 test_expect_success 'blacklist O_WRONLY|O_CREAT' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -393,7 +393,7 @@ test_expect_success 'blacklist O_WRONLY|O_CREAT' '
 '
 
 test_expect_success 'blacklist O_WRONLY|O_CREAT for existing file' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -403,8 +403,8 @@ test_expect_success 'blacklist O_WRONLY|O_CREAT for existing file' '
 '
 
 test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for symbolic link' '
-    f="$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -415,8 +415,8 @@ test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for symbolic link' '
 '
 
 test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for dangling symbolic link' '
-    f="no-$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="$(unique_link)" &&
     rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -427,7 +427,7 @@ test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for dangling symbolic l
 '
 
 test_expect_success 'blacklist O_WRONLY|O_CREAT|O_EXCL' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -437,7 +437,7 @@ test_expect_success 'blacklist O_WRONLY|O_CREAT|O_EXCL' '
 '
 
 test_expect_success 'blacklist O_WRONLY|O_CREAT|O_EXCL for existing file' '
-    f="$(file_uniq)" &&
+    f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \

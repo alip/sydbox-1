@@ -31,25 +31,26 @@ test_tempnam_cwd() {
     fi
 }
 
-test_uniq_pre() {
+test_unique_with_prefix() {
     prefix="$1"
     optpre="$2"
 
     printf "%s-%s_%s.%s" "$prefix" "$optpre" "$(test_tempnam_cwd . "")" "$test_count"
 }
 
-file_uniq() {
-    test_uniq_pre "file" "$1"
+# Shorthand functions for convenience
+unique_file() {
+    test_unique_with_prefix "file" "$1"
 }
 
-dir_uniq() {
-    test_uniq_pre "dir" "$1"
+unique_dir() {
+    test_unique_with_prefix "dir" "$1"
 }
 
-link_uniq() {
-    test_uniq_pre "link" "$1"
+unique_link() {
+    test_unique_with_prefix "link" "$1"
 }
 
-fifo_uniq() {
-    test_uniq_pre "fifo" "$1"
+unique_fifo() {
+    test_unique_with_prefix "fifo" "$1"
 }

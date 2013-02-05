@@ -13,7 +13,7 @@ SYDBOX_TEST_OPTIONS="
 "
 
 test_expect_success 'deny creat()' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -22,8 +22,8 @@ test_expect_success 'deny creat()' '
 '
 
 test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
-    f="no-$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="$(unique_link)" &&
     rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
@@ -33,7 +33,7 @@ test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
 '
 
 test_expect_success 'whitelist creat()' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -43,7 +43,7 @@ test_expect_success 'whitelist creat()' '
 '
 
 test_expect_success 'blacklist creat()' '
-    f="no-$(file_uniq)" &&
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -53,8 +53,8 @@ test_expect_success 'blacklist creat()' '
 '
 
 test_expect_success SYMLINKS 'blacklist creat() for dangling symbolic link' '
-    f="no-$(file_uniq)" &&
-    l="$(link_uniq)" &&
+    f="no-$(unique_file)" &&
+    l="$(unique_link)" &&
     rm -f "$f" &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
