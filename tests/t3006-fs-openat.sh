@@ -24,15 +24,15 @@ test_expect_success 'deny openat(-1) with EBADF' '
 
 test_expect_success 'deny openat(AT_FDCWD, file, O_RDONLY|O_DIRECTORY) with ENOTDIR' '
     f="$(file_uniq)" &&
-    touch "$f"
+    touch "$f" &&
     sydbox -- emily openat -e ENOTDIR -m rdonly -D -d cwd "$f"
 '
 
 test_expect_success SYMLINKS 'deny open(AT_FDCWD, symlink-file, O_RDONLY|O_NOFOLLOW) with ELOOP' '
     f="$(file_uniq)" &&
     l="$(link_uniq)" &&
-    touch "$f"
-    ln -sf "$f" "$l"
+    touch "$f" &&
+    ln -sf "$f" "$l" &&
     sydbox -- emily openat -e ELOOP -m rdonly -F -d cwd "$l"
 '
 

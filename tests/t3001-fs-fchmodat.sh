@@ -272,7 +272,7 @@ test_expect_success 'blacklist fchmodat(AT_FDCWD, $file)' '
 
 test_expect_success 'blacklist fchmodat(AT_FDCWD, $nofile)' '
     f="no-$(file_uniq)" &&
-    rm -f "$f"
+    rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \

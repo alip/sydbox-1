@@ -26,7 +26,7 @@ test_expect_success 'deny mkdir()' '
 '
 
 test_expect_success 'deny mkdir() for existant directory' '
-    d="$(dir_uniq)"
+    d="$(dir_uniq)" &&
     mkdir "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -34,7 +34,7 @@ test_expect_success 'deny mkdir() for existant directory' '
 '
 
 test_expect_success 'whitelist mkdir()' '
-    d="no-$(dir_uniq)"
+    d="no-$(dir_uniq)" &&
     rm -rf "$d" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -44,7 +44,7 @@ test_expect_success 'whitelist mkdir()' '
 '
 
 test_expect_success 'whitelist mkdir() for existant directory' '
-    d="$(dir_uniq)"
+    d="$(dir_uniq)" &&
     mkdir "$d" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -53,7 +53,7 @@ test_expect_success 'whitelist mkdir() for existant directory' '
 '
 
 test_expect_success 'blacklist mkdir()' '
-    d="no-$(dir_uniq)"
+    d="no-$(dir_uniq)" &&
     rm -rf "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -63,7 +63,7 @@ test_expect_success 'blacklist mkdir()' '
 '
 
 test_expect_success 'deny mkdir() for existant directory' '
-    d="$(dir_uniq)"
+    d="$(dir_uniq)" &&
     mkdir "$d" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \

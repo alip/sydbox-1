@@ -125,7 +125,7 @@ test_expect_success SYMLINKS 'rename($file, $symlink-self) returns ERRNO_0' '
 test_expect_success SYMLINKS 'rename($symlink-circular, $newsymlink) returns ERRNO_0' '
     l0="loop0-$(link_uniq)" &&
     l1="loop1-$(link_uniq)" &&
-    new="loop-new-$(link_uniq)"
+    new="loop-new-$(link_uniq)" &&
     ln -sf "$l0" "$l1" &&
     ln -sf "$l1" "$l0" &&
     sydbox -- emily rename -e ERRNO_0 "$l0" "$new" &&
