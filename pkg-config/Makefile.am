@@ -2,9 +2,8 @@ MAINTAINERCLEANFILES= Makefile.in
 CLEANFILES= pinktrace.pc
 EXTRA_DIST= pinktrace.pc.in pinktrace_easy.pc.in
 
-noinst_DATA=pinktrace.pc
-#pkgconfigdir=$(libdir)/pkgconfig
-#pkgconfig_DATA=pinktrace.pc
+pkgconfigdir=$(libdir)/pkgconfig
+pkgconfig_DATA=pinktrace.pc
 
 pinktrace.pc: pinktrace.pc.in Makefile
 	$(AM_V_GEN)
@@ -19,8 +18,7 @@ pinktrace.pc: pinktrace.pc.in Makefile
 
 #if WANT_EASY
 CLEANFILES+= pinktrace_easy.pc
-noinst_DATA+= pinktrace_easy.pc
-#pkgconfig_DATA+= pinktrace_easy.pc
+pkgconfig_DATA+= pinktrace_easy.pc
 
 pinktrace_easy.pc: pinktrace_easy.pc.in Makefile
 	$(AM_V_GEN)
