@@ -23,8 +23,8 @@ SOFTWARE.
 */
 
 /*
-    Callbacks, comments, Unicode handling by Jean Gressmann (jean@0x42.de), 2007-2010.
-    
+    Callbacks, comments, Unicode handling by Jean Gressmann (jean@0x42.de), 2007-2011.
+    For my modifications the above license applies as well.
     
     Changelog:
         2010-11-25
@@ -65,11 +65,9 @@ SOFTWARE.
             buffer's content.
 */
 
-/*
- * Edited by alip:
- * Include "log.h" instead of <assert.h> to get sydbox's version of assert()
- */
 
+
+#include <assert.h>
 #include <ctype.h>
 #include <float.h>
 #include <stddef.h>
@@ -79,7 +77,6 @@ SOFTWARE.
 #include <locale.h>
 
 #include "JSON_parser.h"
-#include "log.h"
 
 #ifdef _MSC_VER
 #   if _MSC_VER >= 1400 /* Visual Studio 2005 and up */
@@ -474,6 +471,10 @@ int JSON_parser_reset(JSON_parser jc)
             jc->stack_capacity = (int)COUNTOF(jc->static_stack);
             jc->depth = -1;
             jc->stack = &jc->static_stack[0];
+            jc->type = JSON_T_NONE;
+            jc->escaped = 0;
+            jc->before_comment_state = 0;
+            jc->error = 0;
         }
         
         /* set up the parse buffer */

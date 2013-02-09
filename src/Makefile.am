@@ -110,7 +110,7 @@ noinst_HEADERS+= \
 sydbox_SOURCES+= \
 		 canonicalize.c
 
-# Imported from json.org
+# Imported from https://github.com/blackberry/JSON_parser
 noinst_HEADERS+= \
 		 JSON_parser.h
 sydbox_SOURCES+= \

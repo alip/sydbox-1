@@ -107,7 +107,7 @@ typedef struct JSON_parser_struct* JSON_parser;
 
     \return Non-zero if parsing should continue, else zero.
 */    
-typedef int (*JSON_parser_callback)(void* ctx, int type, const struct JSON_value_struct* value);
+typedef int (*JSON_parser_callback)(void* ctx, int type, const JSON_value* value);
 
 
 /**
