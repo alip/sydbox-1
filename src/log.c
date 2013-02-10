@@ -219,12 +219,12 @@ void die_errno(const char *fmt, ...)
 	va_list ap;
 
 	log_suffix(NULL);
-
 	va_start(ap, fmt);
 	log_msg_va(LOG_LEVEL_FATAL, fmt, ap);
 	va_end(ap);
 
 	log_prefix(NULL);
+	log_suffix("\n");
 	log_msg(LOG_LEVEL_FATAL, " (errno:%d %s)", errno, strerror(errno));
 
 	if (abort_func)

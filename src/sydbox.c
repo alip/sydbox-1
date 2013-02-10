@@ -283,12 +283,12 @@ static void sydbox_startup_child(char **argv)
 	r = path_lookup(argv[0], &pathname);
 	if (r < 0) {
 		errno = -r;
-		die_errno("exec");
+		die_errno("can't exec `%s'", argv[0]);
 	}
 
 	pid = fork();
 	if (pid < 0)
-		die_errno("Can't fork");
+		die_errno("can't fork");
 	else if (pid == 0) {
 		int r;
 #ifdef WANT_SECCOMP
