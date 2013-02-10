@@ -367,10 +367,10 @@ int main(int argc, char **argv)
 		switch (opt) {
 		case 0:
 			if (streq(long_options[options_index].name, "profile")) {
+				/* special case for backwards compatibility */
 				profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 1));
 				profile_name[0] = SYDBOX_PROFILE_CHAR;
 				strcat(profile_name, optarg);
-				config_reset();
 				config_parse_spec(profile_name);
 				free(profile_name);
 				break;
@@ -382,7 +382,6 @@ int main(int argc, char **argv)
 			about();
 			return 0;
 		case 'c':
-			config_reset();
 			config_parse_spec(optarg);
 			break;
 		case 'm':
@@ -403,10 +402,8 @@ int main(int argc, char **argv)
 	if (optind == argc)
 		usage(stderr, 1);
 
-	if ((env = getenv(SYDBOX_CONFIG_ENV))) {
-		config_reset();
+	if ((env = getenv(SYDBOX_CONFIG_ENV)))
 		config_parse_spec(env);
-	}
 
 	config_done();
 

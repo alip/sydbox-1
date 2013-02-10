@@ -32,7 +32,6 @@ TEST_EXTENSIONS= .sh
 SH_LOG_COMPILER= $(srcdir)/test-runner.sh
 TESTS= \
 	t0000-basic.sh \
-	t1000-config-json.sh \
 	t2000-path-wildmatch.sh \
 	t2001-path-canonicalize.sh \
 	t3000-fs-chmod.sh \
@@ -70,42 +69,3 @@ EXTRA_DIST+= \
 
 check_SCRIPTS= \
 	       test-lib.sh
-
-# Imported from: http://www.json.org/JSON_checker/test.zip
-noinst_DATA+= \
-	      json/pass1.json \
-	      json/pass2.json \
-	      json/pass3.json \
-	      json/fail1.json \
-	      json/fail2.json \
-	      json/fail3.json \
-	      json/fail4.json \
-	      json/fail5.json \
-	      json/fail6.json \
-	      json/fail7.json \
-	      json/fail8.json \
-	      json/fail9.json \
-	      json/fail10.json \
-	      json/fail11.json \
-	      json/fail12.json \
-	      json/fail13.json \
-	      json/fail14.json \
-	      json/fail15.json \
-	      json/fail16.json \
-	      json/fail17.json \
-	      json/fail18.json \
-	      json/fail19.json \
-	      json/fail20.json \
-	      json/fail21.json \
-	      json/fail22.json \
-	      json/fail23.json \
-	      json/fail24.json \
-	      json/fail25.json \
-	      json/fail26.json \
-	      json/fail27.json \
-	      json/fail28.json \
-	      json/fail29.json \
-	      json/fail30.json \
-	      json/fail31.json \
-	      json/fail32.json \
-	      json/fail33.json

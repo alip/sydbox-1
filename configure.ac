@@ -271,10 +271,6 @@ AC_CHECK_HEADER([ctype.h],      [], AC_MSG_ERROR([I need ctype.h]))
 AC_CHECK_HEADER([arpa/inet.h],  [], AC_MSG_ERROR([I need arpa/inet.h]))
 AC_CHECK_HEADER([netdb.h],      [], AC_MSG_ERROR([I need netdb.h]))
 
-dnl check for JSON_parser's requirements
-AC_CHECK_TYPES([long long])
-AC_CHECK_HEADERS([features.h], [], [])
-
 dnl check for functions
 AC_CHECK_FUNCS([asprintf],      [], [AC_MSG_ERROR([I need asprintf])])
 AC_CHECK_FUNCS([isdigit],       [], [AC_MSG_ERROR([I need isdigit])])

@@ -37,7 +37,6 @@
 #include "canonicalize.h"
 #include "file.h"
 #include "tap.h"
-#include "JSON_parser.h"
 
 #define TEST_ERRNO_INVALID -1
 #define TEST_DIRFD_INVALID STDERR_FILENO

@@ -53,15 +53,6 @@ emily_CFLAGS= \
 	      $(AM_CFLAGS) \
 	      -I$(top_srcdir)/src
 
-jsontest_SOURCES= \
-		  jsontest.c \
-		  $(top_srcdir)/src/file.c \
-		  $(top_srcdir)/src/JSON_parser.c
-jsontest_CFLAGS= \
-		 $(DEFS) \
-		 $(AM_CFLAGS) \
-		 -I$(top_srcdir)/src
-
 wildtest_SOURCES= \
 		  wildtest.c
 wildtest_CFLAGS= \
@@ -73,5 +64,4 @@ wildtest_CFLAGS= \
 check_PROGRAMS= \
 		emily \
 		canontest \
-		jsontest \
 		wildtest

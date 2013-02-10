@@ -3,7 +3,7 @@
         "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 
 <!--
-   Copyright (c) 2011, 2012 Ali Polatel <alip@exherbo.org>
+   Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
    Distributed under the terms of the GNU General Public License v3 or later
 -->
 
@@ -138,13 +138,6 @@
       </listitem>
       <listitem>
         <para>
-          Sydbox may be configured using the <option>-m</option> command line switch. This is a
-          handy way to specify configuration without having to write a configuration file or modify the configuration
-          slightly before each invocation.
-        </para>
-      </listitem>
-      <listitem>
-        <para>
           Sydbox may be configured using magic
           <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry> calls during runtime.
           This is achieved by calling <function>stat()</function> system call on the special path
@@ -188,9 +181,7 @@
             <para>
               A boolean type may have one of the two values,
               <varname>true</varname> or <varname>false</varname>.
-              This corresponds to JSON's boolean type thus to set a boolean value using the configuration file, use one
-              of the aforementioned keywords. To specify boolean values when supplying <emphasis>magic</emphasis>
-              commands to Sydbox, you may still use
+              To specify boolean values when supplying <emphasis>magic</emphasis> commands to Sydbox, you may also use
               <varname>true</varname> or <varname>false</varname>.
               In addition you can use the short forms
               <varname>t</varname> or <varname>f</varname>
@@ -205,7 +196,6 @@
           <listitem>
             <para>
               This type represents the basic integer type.
-              This corresponds to <emphasis>JSON</emphasis>'s integer type.
             </para>
           </listitem>
         </varlistentry>
@@ -215,7 +205,6 @@
           <listitem>
             <para>
               This type represents the basic string type.
-              This corresponds to <emphasis>JSON</emphasis>'s string type.
             </para>
           </listitem>
         </varlistentry>
@@ -252,8 +241,7 @@
 
       <para>
         As mentioned in <xref linkend="configuration"/> Sydbox may be configured using the so-called
-        <emphasis>magic</emphasis> commands. Format of the magic commands is simple and resembles the format of the
-        configuration file (which is <emphasis>JSON</emphasis>).
+        <emphasis>magic</emphasis> commands. Format of the magic commands is simple:
         <programlisting>
           ${PREFIX}/section/of/option${OPERATION_CHARACTER}value
         </programlisting>
@@ -328,8 +316,9 @@
       <title>Configuration File Format</title>
 
       <para role="summary">
-        Sydbox's configuration file format is <emphasis>JSON</emphasis>. All configuration is specified as one
-        <emphasis>JSON</emphasis> object enclosed in curly braces. C style comments are allowed.
+        Sydbox's configuration file format is simple. It is just a way to supply many magic commands in a convenient
+        way. All empty lines and lines starting with the number sign '<constant>#</constant>' are ignored. All the other
+        lines are treated as if they were supplied to Sydbox via the <option>-m</option> command line switch.
         See <xref linkend="configuration-example"/> for an example configuration file.
       </para>
     </refsect2>

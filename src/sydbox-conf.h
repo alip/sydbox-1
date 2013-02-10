@@ -3,7 +3,7 @@
  *
  * Compile-time configurable constants
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -34,10 +34,6 @@
 #ifndef SYDBOX_CONFIG_ENV
 #define SYDBOX_CONFIG_ENV "SYDBOX_CONFIG"
 #endif /* !SYDBOX_CONFIG_ENV */
-
-#ifndef SYDBOX_JSON_DEBUG_ENV
-#define SYDBOX_JSON_DEBUG_ENV "SYDBOX_JSON_DEBUG"
-#endif /* !SYDBOX_JSON_DEBUG_ENV */
 
 #ifndef SYDBOX_MAGIC_PREFIX
 #define SYDBOX_MAGIC_PREFIX "/dev/sydbox"

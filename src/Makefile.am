@@ -110,12 +110,6 @@ noinst_HEADERS+= \
 sydbox_SOURCES+= \
 		 canonicalize.c
 
-# Imported from https://github.com/blackberry/JSON_parser
-noinst_HEADERS+= \
-		 JSON_parser.h
-sydbox_SOURCES+= \
-		 JSON_parser.c
-
 sydbox_LDADD= \
 	      $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la \
 	      $(top_builddir)/pinktrace/easy/libpinktrace_easy_@PINKTRACE_PC_SLOT@.la

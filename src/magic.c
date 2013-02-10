@@ -607,7 +607,7 @@ static int magic_ok(struct key entry, enum magic_op op)
 	}
 
 	/* Step 2: Check access */
-	if (sydbox->config.core_disallow) {
+	if (!sydbox->config.magic_core_allow) {
 		enum magic_key k = entry.parent;
 		do {
 			if (k == MAGIC_KEY_CORE)

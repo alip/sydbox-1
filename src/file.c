@@ -36,6 +36,13 @@
 
 #define NEWLINE "\n\r"
 
+bool empty_line(const char *s)
+{
+	assert(s);
+
+	return !!(strcspn(s, NEWLINE) == 0);
+}
+
 char *truncate_nl(char *s)
 {
 	assert(s);

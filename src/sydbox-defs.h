@@ -29,7 +29,6 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-#include "JSON_parser.h"
 #include "canonicalize.h"
 #include "hashtable.h"
 #include "magic.h"
@@ -101,13 +100,9 @@ typedef struct {
 	sandbox_t config;
 } proc_data_t;
 
-typedef struct config_state config_state_t;
-
 typedef struct {
-	/* Config parser & state */
-	bool core_disallow;
-	JSON_parser parser;
-	config_state_t *state;
+	/* magic access to core.*  */
+	bool magic_core_allow;
 
 	/* Per-process sandboxing data */
 	sandbox_t child;
@@ -189,7 +184,6 @@ int violation(struct pink_easy_process *current, const char *fmt, ...)
 
 void config_init(void);
 void config_done(void);
-void config_reset(void);
 void config_parse_file(const char *filename) PINK_GCC_ATTR((nonnull(1)));
 void config_parse_spec(const char *filename) PINK_GCC_ATTR((nonnull(1)));
 
