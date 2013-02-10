@@ -173,7 +173,7 @@ test_expect_success 'magic /dev/sydbox boolean checking works' '
     sydbox -- "$SHELL_PATH" && <<EOF
 test -e /dev/sydbox/core/sandbox/write"?"
 test $? -eq 1 && exit 0
-EOF
+EOF &&
     sydbox -- "$SHELL_PATH" <<EOF
 test -e /dev/sydbox/core/sandbox/write:deny &&
 test -e /dev/sydbox/core/sandbox/write"?"
@@ -187,29 +187,30 @@ EOF
 '
 
 test_expect_success 'magic core/violation/exit_code:0 works' '
-    f="no-$(unique_file)"
+    f="no-$(unique_file)" &&
     rm -f "$f" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- "$SHELL_PATH" && <<EOF
 : > "$f"
-EOF
+EOF &&
     test_path_is_missing "$f"
 '
 
 test_expect_success 'magic core/violation/raise_fail:1 works' '
-    d="$(unique_dir)"
+    d="$(unique_dir)" &&
     mkdir "$d" &&
     test_must_violate sydbox \
         -m core/violation/raise_fail:1 \
+        -m core/sandbox/write:deny \
         -- "$SHELL_PATH" && <<EOF
 : > "$d"/"$f"
-EOF
+EOF &&
     test_path_is_missing "$d"/"$f"
 '
 
 test_expect_success 'magic core/violation/raise_safe:1 works' '
-    f="$(unique_file)"
+    f="$(unique_file)" &&
     : > "$f" &&
     test_must_violate sydbox \
         -m core/violation/raise_safe:1 \
