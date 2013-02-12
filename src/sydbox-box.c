@@ -513,10 +513,7 @@ out:
 int box_check_socket(struct pink_easy_process *current, const char *name,
 		     sysinfo_t *info)
 {
-	/*
-	 * FIXME: someone, please shoot me for using such short variable names!
-	 */
-	int r, pf;
+	int r;
 	char *abspath;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
@@ -543,19 +540,19 @@ int box_check_socket(struct pink_easy_process *current, const char *name,
 	abspath = NULL;
 	psa = xmalloc(sizeof(struct pink_sockaddr));
 
-	if ((pf = pink_read_socket_address(tid, abi, &data->regs,
+	if ((r = pink_read_socket_address(tid, abi, &data->regs,
 					  info->decode_socketcall,
 					  info->arg_index, info->ret_fd,
 					  psa)) < 0) {
-		if (pf != -ESRCH) {
+		if (r != -ESRCH) {
 			log_warning("read sockaddr at index=%d failed"
 				    " (errno=%d %s)",
-				    info->arg_index, -pf, strerror(-pf));
+				    info->arg_index, -r, strerror(-r));
 			r = panic(current);
 			goto out;
 		}
 		log_trace("read sockaddr at index=%d failed (errno=%d %s)",
-			  info->arg_index, -pf, strerror(-pf));
+			  info->arg_index, -r, strerror(-r));
 		log_trace("drop process  %s[%lu:%u]", data->comm,
 			  (unsigned long)tid, abi);
 		r = PINK_EASY_CFLAG_DROP;
@@ -646,7 +643,7 @@ report:
 	box_report_violation_sock(current, info, name, psa);
 
 out:
-	if (pf == 0) {
+	if (r == 0) {
 		/* Access granted. */
 		if (info->ret_abspath)
 			*info->ret_abspath = abspath;
@@ -658,10 +655,14 @@ out:
 		else
 			free(psa);
 	} else {
+		free(psa);
 		if (abspath)
 			free(abspath);
-		free(psa);
+		if (info->ret_abspath)
+			*info->ret_abspath = NULL;
+		if (info->ret_addr)
+			*info->ret_addr = NULL;
 	}
 
-	return pf;
+	return r;
 }
