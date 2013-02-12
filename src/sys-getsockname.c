@@ -22,7 +22,7 @@ int sys_getsockname(struct pink_easy_process *current, const char *name)
 {
 	int r;
 	bool decode_socketcall;
-	long fd;
+	unsigned long fd;
 	pid_t tid = pink_easy_process_get_tid(current);
 	enum pink_abi abi = pink_easy_process_get_abi(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);

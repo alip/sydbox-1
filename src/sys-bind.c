@@ -26,7 +26,7 @@
 int sys_bind(struct pink_easy_process *current, const char *name)
 {
 	int r;
-	long fd;
+	unsigned long fd;
 	char *unix_abspath;
 	struct pink_sockaddr *psa;
 	pid_t tid = pink_easy_process_get_tid(current);

@@ -91,7 +91,7 @@ static void box_report_violation_sock(struct pink_easy_process *current,
 
 	switch (paddr->family) {
 	case AF_UNIX:
-		violation(current, "%s(%ld, %s:%s)",
+		violation(current, "%s(%d, %s:%s)",
 				name,
 				info->ret_fd ? *info->ret_fd : -1,
 				*paddr->u.sa_un.sun_path
@@ -103,7 +103,7 @@ static void box_report_violation_sock(struct pink_easy_process *current,
 		break;
 	case AF_INET:
 		inet_ntop(AF_INET, &paddr->u.sa_in.sin_addr, ip, sizeof(ip));
-		violation(current, "%s(%ld, inet:%s@%d)",
+		violation(current, "%s(%d, inet:%s@%d)",
 			  name,
 			  info->ret_fd ? *info->ret_fd : -1,
 			  ip, ntohs(paddr->u.sa_in.sin_port));
@@ -111,7 +111,7 @@ static void box_report_violation_sock(struct pink_easy_process *current,
 #if SYDBOX_HAVE_IPV6
 	case AF_INET6:
 		inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
-		violation(current, "%s(%ld, inet6:%s@%d)",
+		violation(current, "%s(%d, inet6:%s@%d)",
 			  name,
 			  info->ret_fd ? *info->ret_fd : -1,
 			  ip, ntohs(paddr->u.sa6.sin6_port));

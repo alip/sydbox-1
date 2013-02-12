@@ -79,7 +79,7 @@ typedef struct {
 
 	/* Pointer to the data to be returned */
 	mode_t *ret_mode;
-	long *ret_fd;
+	int *ret_fd;
 	char **ret_abspath;
 	struct pink_sockaddr **ret_addr;
 } sysinfo_t;
