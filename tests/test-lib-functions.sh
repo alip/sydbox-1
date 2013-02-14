@@ -76,11 +76,11 @@ test_decode_color () {
 }
 
 nul_to_q () {
-	perl -pe 'y/\000/Q/'
+	"$PERL_PATH" -pe 'y/\000/Q/'
 }
 
 q_to_nul () {
-	perl -pe 'y/Q/\000/'
+	"$PERL_PATH" -pe 'y/Q/\000/'
 }
 
 q_to_cr () {
@@ -186,6 +186,15 @@ test_have_prereq () {
 
 	for prerequisite
 	do
+		case "$prerequisite" in
+		!*)
+			negative_prereq=t
+			prerequisite=${prerequisite#!}
+			;;
+		*)
+			negative_prereq=
+		esac
+
 		case " $lazily_tested_prereq " in
 		*" $prerequisite "*)
 			;;

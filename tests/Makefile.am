@@ -32,6 +32,7 @@ TEST_EXTENSIONS= .sh
 SH_LOG_COMPILER= $(srcdir)/test-runner.sh
 TESTS= \
 	t0000-basic.sh \
+	t0001-sydbox.sh \
 	t2000-path-wildmatch.sh \
 	t2001-path-canonicalize.sh \
 	t3000-fs-chmod.sh \

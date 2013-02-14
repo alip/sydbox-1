@@ -9,6 +9,22 @@ noinst_DATA=
 noinst_HEADERS=
 noinst_SCRIPTS=
 
+sydbox: sydbox.in Makefile
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \
+			 -e 's:@BINDIR@:$(bindir):g' \
+			 < $< > $@
+	$(AM_V_at)chmod +x $@
+CLEANFILES+= sydbox
+
+sydfmt: sydfmt.in Makefile
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \
+			 -e 's:@BINDIR@:$(bindir):g' \
+			 < $< > $@
+	$(AM_V_at)chmod +x $@
+CLEANFILES+= sydfmt
+
 DEFS+= \
        -DDATADIR=\"$(datadir)\" \
        -DGITHEAD=\"$(GITHEAD)\"
@@ -65,3 +81,7 @@ check_PROGRAMS= \
 		emily \
 		canontest \
 		wildtest
+
+check_SCRIPTS= \
+	       sydbox \
+	       sydfmt

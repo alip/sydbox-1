@@ -1,12 +1,12 @@
 #!/bin/sh
-# Copyright 2010, 2012, 2013 Ali Polatel <alip@exherbo.org>
-# Based in part upon git's t0000-basic.sh which is:
-#   Copyright (c) 2005 Junio C Hamano
-# Distributed under the terms of the GNU General Public License v3 or later
+#
+# Copyright (c) 2005 Junio C Hamano
+#
 
-test_description='test the very basics'
+test_description='Test the very basics'
 . ./test-lib.sh
 
+################################################################
 # Test harness
 test_expect_success 'success is reported like this' '
 	:
@@ -15,39 +15,159 @@ test_expect_failure 'pretend we have a known breakage' '
 	false
 '
 
-test_expect_success 'pretend we have fixed a known breakage (run in sub test-lib)' "
-	mkdir passing-todo &&
-	(cd passing-todo &&
-	cat >passing-todo.sh <<-EOF &&
-	#!$SHELL_PATH
+run_sub_test_lib_test () {
+	name="$1" descr="$2" # stdin is the body of the test code
+	mkdir "$name" &&
+	(
+		cd "$name" &&
+		cat >"$name.sh" <<-EOF &&
+		#!$SHELL_PATH
 
-	test_description='A passing TODO test
+		test_description='$descr (run in sub test-lib)
 
-	This is run in a sub test-lib so that we do not get incorrect
-	passing metrics
-	'
+		This is run in a sub test-lib so that we do not get incorrect
+		passing metrics
+		'
 
-	# Point to the t/test-lib.sh, which isn't in ../ as usual
-	TEST_DIRECTORY=\"$TEST_DIRECTORY\"
-	. \"\$TEST_DIRECTORY\"/test-lib.sh
+		# Point to the t/test-lib.sh, which isn't in ../ as usual
+		. "\$TEST_DIRECTORY"/test-lib.sh
+		EOF
+		cat >>"$name.sh" &&
+		chmod +x "$name.sh" &&
+		export TEST_DIRECTORY &&
+		./"$name.sh" >out 2>err
+	)
+}
 
-	test_expect_failure 'pretend we have fixed a known breakage' '
-		:
-	'
+check_sub_test_lib_test () {
+	name="$1" # stdin is the expected output from the test
+	(
+		cd "$name" &&
+		! test -s err &&
+		sed -e 's/^> //' -e 's/Z$//' >expect &&
+		test_cmp expect out
+	)
+}
 
+test_expect_success 'pretend we have a partially passing test suite' "
+	test_must_fail run_sub_test_lib_test \
+		partial-pass '2/3 tests passing' <<-\\EOF &&
+	test_expect_success 'passing test #1' 'true'
+	test_expect_success 'failing test #2' 'false'
+	test_expect_success 'passing test #3' 'true'
 	test_done
 	EOF
-	chmod +x passing-todo.sh &&
-	./passing-todo.sh >out 2>err &&
-	! test -s err &&
-	sed -e 's/^> //' >expect <<-\\EOF &&
-	> ok 1 - pretend we have fixed a known breakage # TODO known breakage
-	> # fixed 1 known breakage(s)
-	> # passed all 1 test(s)
+	check_sub_test_lib_test partial-pass <<-\\EOF
+	> ok 1 - passing test #1
+	> not ok 2 - failing test #2
+	#	false
+	> ok 3 - passing test #3
+	> # failed 1 among 3 test(s)
+	> 1..3
+	EOF
+"
+
+test_expect_success 'pretend we have a known breakage' "
+	run_sub_test_lib_test failing-todo 'A failing TODO test' <<-\\EOF &&
+	test_expect_success 'passing test' 'true'
+	test_expect_failure 'pretend we have a known breakage' 'false'
+	test_done
+	EOF
+	check_sub_test_lib_test failing-todo <<-\\EOF
+	> ok 1 - passing test
+	> not ok 2 - pretend we have a known breakage # TODO known breakage
+	> # still have 1 known breakage(s)
+	> # passed all remaining 1 test(s)
+	> 1..2
+	EOF
+"
+
+test_expect_success 'pretend we have fixed a known breakage' "
+	run_sub_test_lib_test passing-todo 'A passing TODO test' <<-\\EOF &&
+	test_expect_failure 'pretend we have fixed a known breakage' 'true'
+	test_done
+	EOF
+	check_sub_test_lib_test passing-todo <<-\\EOF
+	> ok 1 - pretend we have fixed a known breakage # TODO known breakage vanished
+	> # 1 known breakage(s) vanished; please update test(s)
 	> 1..1
 	EOF
-	test_cmp expect out)
 "
+
+test_expect_success 'pretend we have fixed one of two known breakages (run in sub test-lib)' "
+	run_sub_test_lib_test partially-passing-todos \
+		'2 TODO tests, one passing' <<-\\EOF &&
+	test_expect_failure 'pretend we have a known breakage' 'false'
+	test_expect_success 'pretend we have a passing test' 'true'
+	test_expect_failure 'pretend we have fixed another known breakage' 'true'
+	test_done
+	EOF
+	check_sub_test_lib_test partially-passing-todos <<-\\EOF
+	> not ok 1 - pretend we have a known breakage # TODO known breakage
+	> ok 2 - pretend we have a passing test
+	> ok 3 - pretend we have fixed another known breakage # TODO known breakage vanished
+	> # 1 known breakage(s) vanished; please update test(s)
+	> # still have 1 known breakage(s)
+	> # passed all remaining 1 test(s)
+	> 1..3
+	EOF
+"
+
+test_expect_success 'pretend we have a pass, fail, and known breakage' "
+	test_must_fail run_sub_test_lib_test \
+		mixed-results1 'mixed results #1' <<-\\EOF &&
+	test_expect_success 'passing test' 'true'
+	test_expect_success 'failing test' 'false'
+	test_expect_failure 'pretend we have a known breakage' 'false'
+	test_done
+	EOF
+	check_sub_test_lib_test mixed-results1 <<-\\EOF
+	> ok 1 - passing test
+	> not ok 2 - failing test
+	> #	false
+	> not ok 3 - pretend we have a known breakage # TODO known breakage
+	> # still have 1 known breakage(s)
+	> # failed 1 among remaining 2 test(s)
+	> 1..3
+	EOF
+"
+
+test_expect_success 'pretend we have a mix of all possible results' "
+	test_must_fail run_sub_test_lib_test \
+		mixed-results2 'mixed results #2' <<-\\EOF &&
+	test_expect_success 'passing test' 'true'
+	test_expect_success 'passing test' 'true'
+	test_expect_success 'passing test' 'true'
+	test_expect_success 'passing test' 'true'
+	test_expect_success 'failing test' 'false'
+	test_expect_success 'failing test' 'false'
+	test_expect_success 'failing test' 'false'
+	test_expect_failure 'pretend we have a known breakage' 'false'
+	test_expect_failure 'pretend we have a known breakage' 'false'
+	test_expect_failure 'pretend we have fixed a known breakage' 'true'
+	test_done
+	EOF
+	check_sub_test_lib_test mixed-results2 <<-\\EOF
+	> ok 1 - passing test
+	> ok 2 - passing test
+	> ok 3 - passing test
+	> ok 4 - passing test
+	> not ok 5 - failing test
+	> #	false
+	> not ok 6 - failing test
+	> #	false
+	> not ok 7 - failing test
+	> #	false
+	> not ok 8 - pretend we have a known breakage # TODO known breakage
+	> not ok 9 - pretend we have a known breakage # TODO known breakage
+	> ok 10 - pretend we have fixed a known breakage # TODO known breakage vanished
+	> # 1 known breakage(s) vanished; please update test(s)
+	> # still have 2 known breakage(s)
+	> # failed 3 among remaining 7 test(s)
+	> 1..10
+	EOF
+"
+
 test_set_prereq HAVEIT
 haveit=no
 test_expect_success HAVEIT 'test runs if prerequisite is satisfied' '
@@ -85,6 +205,38 @@ then
 	exit 1
 fi
 
+test_lazy_prereq LAZY_TRUE true
+havetrue=no
+test_expect_success LAZY_TRUE 'test runs if lazy prereq is satisfied' '
+	havetrue=yes
+'
+donthavetrue=yes
+test_expect_success !LAZY_TRUE 'missing lazy prereqs skip tests' '
+	donthavetrue=no
+'
+
+if test "$havetrue$donthavetrue" != yesyes
+then
+	say 'bug in test framework: lazy prerequisites do not work'
+	exit 1
+fi
+
+test_lazy_prereq LAZY_FALSE false
+nothavefalse=no
+test_expect_success !LAZY_FALSE 'negative lazy prereqs checked' '
+	nothavefalse=yes
+'
+havefalse=yes
+test_expect_success LAZY_FALSE 'missing negative lazy prereqs will skip' '
+	havefalse=no
+'
+
+if test "$nothavefalse$havefalse" != yesyes
+then
+	say 'bug in test framework: negative lazy prerequisites do not work'
+	exit 1
+fi
+
 clean=no
 test_expect_success 'tests clean up after themselves' '
 	test_when_finished clean=yes
@@ -97,19 +249,8 @@ then
 fi
 
 test_expect_success 'tests clean up even on failures' "
-	mkdir failing-cleanup &&
-	(
-	cd failing-cleanup &&
-
-	cat >failing-cleanup.sh <<-EOF &&
-	#!$SHELL_PATH
-
-	test_description='Failing tests with cleanup commands'
-
-	# Point to the t/test-lib.sh, which isn't in ../ as usual
-	TEST_DIRECTORY=\"$TEST_DIRECTORY\"
-	. \"\$TEST_DIRECTORY\"/test-lib.sh
-
+	test_must_fail run_sub_test_lib_test \
+		failing-cleanup 'Failing tests with cleanup commands' <<-\\EOF &&
 	test_expect_success 'tests clean up even after a failure' '
 		touch clean-after-failure &&
 		test_when_finished rm clean-after-failure &&
@@ -119,103 +260,21 @@ test_expect_success 'tests clean up even on failures' "
 		test_when_finished \"(exit 2)\"
 	'
 	test_done
-
 	EOF
-
-	chmod +x failing-cleanup.sh &&
-	test_must_fail ./failing-cleanup.sh >out 2>err &&
-	! test -s err &&
-	! test -f \"trash directory.failing-cleanup/clean-after-failure\" &&
-	sed -e 's/Z$//' -e 's/^> //' >expect <<-\\EOF &&
-	> not ok - 1 tests clean up even after a failure
+	check_sub_test_lib_test failing-cleanup <<-\\EOF
+	> not ok 1 - tests clean up even after a failure
 	> #	Z
 	> #	touch clean-after-failure &&
 	> #	test_when_finished rm clean-after-failure &&
 	> #	(exit 1)
 	> #	Z
-	> not ok - 2 failure to clean up causes the test to fail
+	> not ok 2 - failure to clean up causes the test to fail
 	> #	Z
 	> #	test_when_finished \"(exit 2)\"
 	> #	Z
 	> # failed 2 among 2 test(s)
 	> 1..2
 	EOF
-	test_cmp expect out
-	)
 "
-
-################################################################
-# Basics of the basics
-
-test_expect_success 'return success if child returns success' '
-    sydbox -- "$SHELL_PATH" -c "exit 0"
-'
-
-test_expect_success 'return error if child returns error' '
-    sydbox -- "$SHELL_PATH" -c "exit 1"
-    test $? -eq 1
-'
-
-test_expect_success 'compatible long options with sydbox-0' '
-    sydbox --help &&
-    sydbox --version &&
-    sydfmt --help &&
-    sydfmt --version
-'
-
-test_expect_success 'magic /dev/sydbox API is 1' '
-    sydbox -- "$SHELL_PATH" -c "test -e /dev/sydbox" &&
-    sydbox -- "$SHELL_PATH" -c "test -e /dev/sydbox/1" &&
-    sydbox -- "$SHELL_PATH" -c "test -e /dev/sydbox/0 || exit 0"
-'
-
-test_expect_success 'magic /dev/sydbox boolean checking works' '
-    sydbox -- "$SHELL_PATH" && <<EOF
-test -e /dev/sydbox/core/sandbox/write"?"
-test $? -eq 1 && exit 0
-EOF &&
-    sydbox -- "$SHELL_PATH" <<EOF
-test -e /dev/sydbox/core/sandbox/write:deny &&
-test -e /dev/sydbox/core/sandbox/write"?"
-EOF
-'
-
-test_expect_success 'magic /dev/sydbox boolean checking works with -m switch' '
-    sydbox -m core/sandbox/write:deny -- "$SHELL_PATH" <<EOF
-test -e /dev/sydbox/core/sandbox/write"?"
-EOF
-'
-
-test_expect_success 'magic core/violation/exit_code:0 works' '
-    f="no-$(unique_file)" &&
-    rm -f "$f" &&
-    test_must_violate sydbox \
-        -m core/sandbox/write:deny \
-        -- "$SHELL_PATH" && <<EOF
-: > "$f"
-EOF &&
-    test_path_is_missing "$f"
-'
-
-test_expect_success 'magic core/violation/raise_fail:1 works' '
-    d="$(unique_dir)" &&
-    mkdir "$d" &&
-    test_must_violate sydbox \
-        -m core/violation/raise_fail:1 \
-        -m core/sandbox/write:deny \
-        -- "$SHELL_PATH" && <<EOF
-: > "$d"/"$f"
-EOF &&
-    test_path_is_missing "$d"/"$f"
-'
-
-test_expect_success 'magic core/violation/raise_safe:1 works' '
-    f="$(unique_file)" &&
-    : > "$f" &&
-    test_must_violate sydbox \
-        -m core/violation/raise_safe:1 \
-        -m core/sandbox/write:deny \
-        -- emily access -e EACCES -w "$f"
-'
 
 test_done

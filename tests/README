@@ -62,8 +62,8 @@ You can also run each test individually from command line, like this:
     1..6
 
 You can pass --verbose (or -v), --debug (or -d), and --immediate (or -i)
-command line argument to the test, or by setting SYDBOX_TEST_OPTS appropriately
-before running "make check".
+command line argument to the test, or by setting SYDBOX_CHECK_OPTIONS
+appropriately before running "make check".
 
 --verbose::
 	This makes the test more verbose.  Specifically, the

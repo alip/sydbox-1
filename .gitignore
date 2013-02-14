@@ -95,6 +95,8 @@ tests/test-lib.sh
 tests/test-results
 tests/temporary*
 tests/trash*
+tests/bin/sydbox
+tests/bin/sydfmt
 tests/bin/emily
 tests/bin/canontest
 tests/bin/jsontest
