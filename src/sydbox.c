@@ -86,7 +86,27 @@ sydbox_t *sydbox = NULL;
 
 static void about(void)
 {
-	printf(PACKAGE"-"VERSION GITVERSION"\n");
+	printf(PACKAGE"-"VERSION GITVERSION);
+	printf(" (pinktrace-%d.%d.%d",
+	       PINKTRACE_VERSION_MAJOR,
+	       PINKTRACE_VERSION_MINOR,
+	       PINKTRACE_VERSION_MICRO);
+
+	if (STRLEN_LITERAL(PINKTRACE_VERSION_SUFFIX) > 0)
+		fputs(PINKTRACE_VERSION_SUFFIX, stdout);
+	if (STRLEN_LITERAL(PINKTRACE_GIT_HEAD) > 0)
+		printf(" git:%s", PINKTRACE_GIT_HEAD);
+	puts(")");
+
+	printf("Options:");
+#ifdef WANT_SECCOMP
+	printf(" seccomp:yes");
+#else
+	printf(" seccomp:no");
+#endif
+	printf(" ipv6:%s", PINK_HAVE_IPV6 ? "yes" : "no");
+	printf(" netlink:%s", PINK_HAVE_NETLINK ? "yes" : "no");
+	fputc('\n', stdout);
 }
 
 PINK_GCC_ATTR((noreturn))
