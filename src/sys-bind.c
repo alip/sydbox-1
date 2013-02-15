@@ -25,7 +25,7 @@
 
 int sys_bind(struct pink_easy_process *current, const char *name)
 {
-	int r;
+	int r, retval;
 	unsigned long fd;
 	char *unix_abspath;
 	struct pink_sockaddr *psa;
@@ -57,17 +57,16 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 		info.ret_addr = &psa;
 	}
 
-	r = box_check_socket(current, name, &info);
+	retval = box_check_socket(current, name, &info);
 
-	if (r == 0 && sydbox->config.whitelist_successful_bind) {
+	if (retval == 0 && sydbox->config.whitelist_successful_bind) {
 		/* Access granted.
 		 * Read the file descriptor, for use in exit.
 		 */
-		int pf;
-		if ((pf = pink_read_socket_argument(tid, abi, &data->regs,
-						    info.decode_socketcall, 0,
-						    &fd)) < 0) {
-			if (pf != -ESRCH) {
+		if ((r = pink_read_socket_argument(tid, abi, &data->regs,
+						   info.decode_socketcall, 0,
+						   &fd)) < 0) {
+			if (r != -ESRCH) {
 				log_warning("read_socket_argument(%lu, %d, %s, 0) failed"
 					    " (errno:%d %s)",
 					    (unsigned long)tid, abi,
@@ -97,7 +96,7 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 			data->savebind->addr = psa;
 			/* fall through */
 		default:
-			return r;
+			return retval;
 		}
 	}
 
@@ -108,7 +107,7 @@ int sys_bind(struct pink_easy_process *current, const char *name)
 			free(psa);
 	}
 
-	return r;
+	return retval;
 }
 
 int sysx_bind(struct pink_easy_process *current, const char *name)
@@ -153,12 +152,12 @@ int sysx_bind(struct pink_easy_process *current, const char *name)
 	}
 
 	/* Check for bind() with zero as port argument */
-	if (data->savebind->addr->family == AF_INET
-	    && data->savebind->addr->u.sa_in.sin_port == 0)
+	if (data->savebind->addr->family == AF_INET &&
+	    data->savebind->addr->u.sa_in.sin_port == 0)
 		goto zero;
 #if SYDBOX_HAVE_IPV6
-	if (data->savebind->addr->family == AF_INET6
-	    && data->savebind->addr->u.sa6.sin6_port == 0)
+	if (data->savebind->addr->family == AF_INET6 &&
+	    data->savebind->addr->u.sa6.sin6_port == 0)
 		goto zero;
 #endif
 
