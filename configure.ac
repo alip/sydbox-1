@@ -307,9 +307,9 @@ AC_SUBST([PINK_HAVE_PROCESS_VM_WRITEV])
 dnl check for types
 AC_CHECK_TYPES([struct pt_all_user_regs, struct ia64_fpreg],,,[#include <sys/ptrace.h>])
 
-m4_define([ptrace_include_hack],
-	  [#include <sys/ptrace.h>
-	   #ifdef __ia64__
+dnl We need a hack to include linux/ptrace.h after sys/ptrace.h on some systems.
+m4_define([include_linux_ptrace_h],
+	  [#ifdef __ia64__
 	   #ifdef HAVE_STRUCT_IA64_FPREG
 	   #define ia64_fpreg XXX_ia64_fpreg
 	   #endif
@@ -322,39 +322,58 @@ m4_define([ptrace_include_hack],
 	   #undef ia64_fpreg
 	   #undef pt_all_user_regs
 	   #endif])
+m4_define([include_ptrace_h],
+	  [#include <sys/ptrace.h>
+	   include_linux_ptrace_h
+	  ])
 
-AC_CHECK_DECL([PTRACE_TRACEME],    [], [AC_MSG_ERROR([I need PTRACE_TRACEME])],    [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_CONT],       [], [AC_MSG_ERROR([I need PTRACE_CONT])],       [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_KILL],       [], [AC_MSG_ERROR([I need PTRACE_KILL])],       [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_SINGLESTEP], [], [AC_MSG_ERROR([I need PTRACE_SINGLESTEP])], [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_SYSCALL],    [], [AC_MSG_ERROR([I need PTRACE_SYSCALL])],    [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_ATTACH],     [], [AC_MSG_ERROR([I need PTRACE_ATTACH])],     [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_DETACH],     [], [AC_MSG_ERROR([I need PTRACE_DETACH])],     [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_PEEKUSER],   [], [AC_MSG_ERROR([I need PTRACE_PEEKUSER])],   [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_PEEKDATA],   [], [AC_MSG_ERROR([I need PTRACE_PEEKDATA])],   [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_POKEUSER],   [], [AC_MSG_ERROR([I need PTRACE_POKEUSER])],   [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_GETREGS],    [], [AC_MSG_ERROR([I need PTRACE_GETREGS])],    [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_SETREGS],    [], [AC_MSG_ERROR([I need PTRACE_SETREGS])],    [ptrace_include_hack])
+AC_CHECK_DECL([PTRACE_TRACEME],    [], [AC_MSG_ERROR([I need PTRACE_TRACEME])],    [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_CONT],       [], [AC_MSG_ERROR([I need PTRACE_CONT])],       [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_KILL],       [], [AC_MSG_ERROR([I need PTRACE_KILL])],       [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_SINGLESTEP], [], [AC_MSG_ERROR([I need PTRACE_SINGLESTEP])], [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_SYSCALL],    [], [AC_MSG_ERROR([I need PTRACE_SYSCALL])],    [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_ATTACH],     [], [AC_MSG_ERROR([I need PTRACE_ATTACH])],     [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_DETACH],     [], [AC_MSG_ERROR([I need PTRACE_DETACH])],     [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_PEEKUSER],   [], [AC_MSG_ERROR([I need PTRACE_PEEKUSER])],   [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_PEEKDATA],   [], [AC_MSG_ERROR([I need PTRACE_PEEKDATA])],   [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_POKEUSER],   [], [AC_MSG_ERROR([I need PTRACE_POKEUSER])],   [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_GETREGS],    [], [AC_MSG_ERROR([I need PTRACE_GETREGS])],    [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_SETREGS],    [], [AC_MSG_ERROR([I need PTRACE_SETREGS])],    [include_ptrace_h])
 
-AC_CHECK_DECL([PTRACE_SETOPTIONS],        [PINK_HAVE_SETUP=1],             [PINK_HAVE_SETUP=0],             [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_O_TRACESYSGOOD],    [PINK_HAVE_OPTION_SYSGOOD=1],    [PINK_HAVE_OPTION_SYSGOOD=0],    [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_O_TRACEFORK],       [PINK_HAVE_OPTION_FORK=1],       [PINK_HAVE_OPTION_FORK=0],       [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_O_TRACEVFORK],      [PINK_HAVE_OPTION_VFORK=1],      [PINK_HAVE_OPTION_VFORK=0],      [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_O_TRACECLONE],      [PINK_HAVE_OPTION_CLONE=1],      [PINK_HAVE_OPTION_CLONE=0],      [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_O_TRACEEXEC],       [PINK_HAVE_OPTION_EXEC=1],       [PINK_HAVE_OPTION_EXEC=0],       [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_O_TRACEVFORKDONE],  [PINK_HAVE_OPTION_VFORKDONE=1],  [PINK_HAVE_OPTION_VFORKDONE=0],  [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_O_TRACEEXIT],       [PINK_HAVE_OPTION_EXIT=1],       [PINK_HAVE_OPTION_EXIT=0],       [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_O_TRACESECCOMP],    [PINK_HAVE_OPTION_SECCOMP=1],    [PINK_HAVE_OPTION_SECCOMP=0],    [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_EVENT_FORK],        [PINK_HAVE_EVENT_FORK=1],        [PINK_HAVE_EVENT_FORK=0],        [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_EVENT_VFORK],       [PINK_HAVE_EVENT_VFORK=1],       [PINK_HAVE_EVENT_VFORK=0],       [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_EVENT_CLONE],       [PINK_HAVE_EVENT_CLONE=1],       [PINK_HAVE_EVENT_CLONE=0],       [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_EVENT_EXEC],        [PINK_HAVE_EVENT_EXEC=1],        [PINK_HAVE_EVENT_EXEC=0],        [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_EVENT_VFORK_DONE],  [PINK_HAVE_EVENT_VFORK_DONE=1],  [PINK_HAVE_EVENT_VFORK_DONE=0],  [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_EVENT_EXIT],        [PINK_HAVE_EVENT_EXIT=1],        [PINK_HAVE_EVENT_EXIT=0],        [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_EVENT_SECCOMP],     [PINK_HAVE_EVENT_SECCOMP=1],     [PINK_HAVE_EVENT_SECCOMP=0],        [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_GETEVENTMSG],       [PINK_HAVE_GETEVENTMSG=1],       [PINK_HAVE_GETEVENTMSG=0],       [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_SYSEMU],            [PINK_HAVE_SYSEMU=1],            [PINK_HAVE_SYSEMU=0],            [ptrace_include_hack])
-AC_CHECK_DECL([PTRACE_SYSEMU_SINGLESTEP], [PINK_HAVE_SYSEMU_SINGLESTEP=1], [PINK_HAVE_SYSEMU_SINGLESTEP=0], [ptrace_include_hack])
+AC_CHECK_DECL([PTRACE_SETOPTIONS],        [PINK_HAVE_SETUP=1],             [PINK_HAVE_SETUP=0],             [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_O_TRACESYSGOOD],    [PINK_HAVE_OPTION_SYSGOOD=1],    [PINK_HAVE_OPTION_SYSGOOD=0],    [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_O_TRACEFORK],       [PINK_HAVE_OPTION_FORK=1],       [PINK_HAVE_OPTION_FORK=0],       [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_O_TRACEVFORK],      [PINK_HAVE_OPTION_VFORK=1],      [PINK_HAVE_OPTION_VFORK=0],      [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_O_TRACECLONE],      [PINK_HAVE_OPTION_CLONE=1],      [PINK_HAVE_OPTION_CLONE=0],      [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_O_TRACEEXEC],       [PINK_HAVE_OPTION_EXEC=1],       [PINK_HAVE_OPTION_EXEC=0],       [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_O_TRACEVFORKDONE],  [PINK_HAVE_OPTION_VFORKDONE=1],  [PINK_HAVE_OPTION_VFORKDONE=0],  [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_O_TRACEEXIT],       [PINK_HAVE_OPTION_EXIT=1],       [PINK_HAVE_OPTION_EXIT=0],       [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_O_TRACESECCOMP],    [PINK_HAVE_OPTION_SECCOMP=1],    [PINK_HAVE_OPTION_SECCOMP=0],    [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_EVENT_FORK],        [PINK_HAVE_EVENT_FORK=1],        [PINK_HAVE_EVENT_FORK=0],        [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_EVENT_VFORK],       [PINK_HAVE_EVENT_VFORK=1],       [PINK_HAVE_EVENT_VFORK=0],       [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_EVENT_CLONE],       [PINK_HAVE_EVENT_CLONE=1],       [PINK_HAVE_EVENT_CLONE=0],       [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_EVENT_EXEC],        [PINK_HAVE_EVENT_EXEC=1],        [PINK_HAVE_EVENT_EXEC=0],        [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_EVENT_VFORK_DONE],  [PINK_HAVE_EVENT_VFORK_DONE=1],  [PINK_HAVE_EVENT_VFORK_DONE=0],  [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_EVENT_EXIT],        [PINK_HAVE_EVENT_EXIT=1],        [PINK_HAVE_EVENT_EXIT=0],        [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_EVENT_SECCOMP],     [PINK_HAVE_EVENT_SECCOMP=1],     [PINK_HAVE_EVENT_SECCOMP=0],     [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_EVENT_STOP],        [PINK_HAVE_EVENT_STOP=1],        [PINK_HAVE_EVENT_STOP=0],        [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_GETEVENTMSG],       [PINK_HAVE_GETEVENTMSG=1],       [PINK_HAVE_GETEVENTMSG=0],       [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_SYSEMU],            [PINK_HAVE_SYSEMU=1],            [PINK_HAVE_SYSEMU=0],            [include_ptrace_h])
+AC_CHECK_DECL([PTRACE_SYSEMU_SINGLESTEP], [PINK_HAVE_SYSEMU_SINGLESTEP=1], [PINK_HAVE_SYSEMU_SINGLESTEP=0], [include_ptrace_h])
+dnl If PTRACE_SEIZE_DEVEL is available, we don't use PTRACE_SEIZE, PTRACE_INTERRUPT or PTRACE_LISTEN!
+dnl Note: We don't include <sys/ptrace.h> for these checks because glibc may have a definition of PTRACE_SEIZE_DEVEL itself.
+AC_CHECK_DECL([PTRACE_SEIZE],
+	      [AC_CHECK_DECL([PTRACE_SEIZE_DEVEL], [PINK_HAVE_SEIZE=0], [PINK_HAVE_SEIZE=1], [include_linux_ptrace_h])],
+	      [PINK_HAVE_SEIZE=0],
+	      [include_linux_ptrace_h])
+AC_CHECK_DECL([PTRACE_LISTEN],
+	      [AC_CHECK_DECL([PTRACE_SEIZE_DEVEL], [PINK_HAVE_LISTEN=0], [PINK_HAVE_LISTEN=1], [include_linux_ptrace_h])],
+	      [PINK_HAVE_LISTEN=0],
+	      [include_linux_ptrace_h])
+AC_CHECK_DECL([PTRACE_INTERRUPT],
+	      [AC_CHECK_DECL([PTRACE_SEIZE_DEVEL], [PINK_HAVE_INTERRUPT=0], [PINK_HAVE_INTERRUPT=1], [include_linux_ptrace_h])],
+	      [PINK_HAVE_SEIZE=0],
+	      [include_linux_ptrace_h])
 
 AC_SUBST([PINK_HAVE_SETUP])
 AC_SUBST([PINK_HAVE_OPTION_SYSGOOD])
@@ -375,6 +394,9 @@ AC_SUBST([PINK_HAVE_EVENT_SECCOMP])
 AC_SUBST([PINK_HAVE_GETEVENTMSG])
 AC_SUBST([PINK_HAVE_SYSEMU])
 AC_SUBST([PINK_HAVE_SYSEMU_SINGLESTEP])
+AC_SUBST([PINK_HAVE_SEIZE])
+AC_SUBST([PINK_HAVE_INTERRUPT])
+AC_SUBST([PINK_HAVE_LISTEN])
 
 dnl check for large file support
 AC_SYS_LARGEFILE
