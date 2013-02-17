@@ -1,16 +1,15 @@
 /*
  * sydbox/magic-sandbox.c
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-defs.h"
+#include "sydbox.h"
 
 #include <stdlib.h>
 
 #include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
 
 #include "macro.h"
 
@@ -21,8 +20,7 @@ enum sandbox_type {
 	SANDBOX_NETWORK,
 };
 
-static int magic_query_sandbox(enum sandbox_type t,
-			       struct pink_easy_process *current)
+static int magic_query_sandbox(enum sandbox_type t, syd_proc_t *current)
 {
 	enum sandbox_mode mode;
 	sandbox_t *box;
@@ -48,8 +46,7 @@ static int magic_query_sandbox(enum sandbox_type t,
 	return MAGIC_BOOL(mode != SANDBOX_OFF);
 }
 
-static int magic_set_sandbox(enum sandbox_type t, const char *str,
-			     struct pink_easy_process *current)
+static int magic_set_sandbox(enum sandbox_type t, const char *str, syd_proc_t *current)
 {
 	int r;
 	sandbox_t *box;
@@ -79,46 +76,42 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str,
 	return MAGIC_RET_OK;
 }
 
-int magic_query_sandbox_exec(struct pink_easy_process *current)
+int magic_query_sandbox_exec(syd_proc_t *current)
 {
 	return magic_query_sandbox(SANDBOX_EXEC, current);
 }
 
-int magic_query_sandbox_read(struct pink_easy_process *current)
+int magic_query_sandbox_read(syd_proc_t *current)
 {
 	return magic_query_sandbox(SANDBOX_READ, current);
 }
 
-int magic_query_sandbox_write(struct pink_easy_process *current)
+int magic_query_sandbox_write(syd_proc_t *current)
 {
 	return magic_query_sandbox(SANDBOX_WRITE, current);
 }
 
-int magic_query_sandbox_network(struct pink_easy_process *current)
+int magic_query_sandbox_network(syd_proc_t *current)
 {
 	return magic_query_sandbox(SANDBOX_NETWORK, current);
 }
 
-int magic_set_sandbox_exec(const void *val,
-			   struct pink_easy_process *current)
+int magic_set_sandbox_exec(const void *val, syd_proc_t *current)
 {
 	return magic_set_sandbox(SANDBOX_EXEC, val, current);
 }
 
-int magic_set_sandbox_read(const void *val,
-			   struct pink_easy_process *current)
+int magic_set_sandbox_read(const void *val, syd_proc_t *current)
 {
 	return magic_set_sandbox(SANDBOX_READ, val, current);
 }
 
-int magic_set_sandbox_write(const void *val,
-			    struct pink_easy_process *current)
+int magic_set_sandbox_write(const void *val, syd_proc_t *current)
 {
 	return magic_set_sandbox(SANDBOX_WRITE, val, current);
 }
 
-int magic_set_sandbox_network(const void *val,
-			      struct pink_easy_process *current)
+int magic_set_sandbox_network(const void *val, syd_proc_t *current)
 {
 	return magic_set_sandbox(SANDBOX_NETWORK, val, current);
 }

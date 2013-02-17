@@ -1,11 +1,11 @@
 /*
  * sydbox/magic.c
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-defs.h"
+#include "sydbox.h"
 #include "magic.h"
 
 #include <errno.h>
@@ -13,7 +13,6 @@
 #include <sys/queue.h>
 
 #include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
 
 #include "macro.h"
 #include "util.h"
@@ -23,11 +22,11 @@ struct key {
 	const char *lname;
 	unsigned parent;
 	enum magic_type type;
-	int (*set) (const void *val, struct pink_easy_process *current);
-	int (*append) (const void *val, struct pink_easy_process *current);
-	int (*remove) (const void *val, struct pink_easy_process *current);
-	int (*query) (struct pink_easy_process *current);
-	int (*cmd) (const void *val, struct pink_easy_process *current);
+	int (*set) (const void *val, syd_proc_t *current);
+	int (*append) (const void *val, syd_proc_t *current);
+	int (*remove) (const void *val, syd_proc_t *current);
+	int (*query) (syd_proc_t *current);
+	int (*cmd) (const void *val, syd_proc_t *current);
 };
 
 static const struct key key_table[] = {
@@ -312,6 +311,14 @@ static const struct key key_table[] = {
 		.type   = MAGIC_TYPE_BOOLEAN,
 		.set    = magic_set_trace_use_seccomp,
 		.query  = magic_query_trace_use_seccomp,
+	},
+	[MAGIC_KEY_CORE_TRACE_USE_SEIZE] = {
+		.name   = "use_seize",
+		.lname  = "core.trace.use_seize",
+		.parent = MAGIC_KEY_CORE_TRACE,
+		.type   = MAGIC_TYPE_BOOLEAN,
+		.set    = magic_set_trace_use_seize,
+		.query  = magic_query_trace_use_seize,
 	},
 
 	[MAGIC_KEY_LOG_FILE] = {
@@ -619,10 +626,7 @@ static int magic_ok(struct key entry, enum magic_op op)
 	return MAGIC_RET_OK;
 }
 
-int magic_cast(struct pink_easy_process *current,
-	       enum magic_op op,
-	       enum magic_key key,
-	       const void *val)
+int magic_cast(syd_proc_t *current, enum magic_op op, enum magic_key key, const void *val)
 {
 	int r;
 	struct key entry;
@@ -651,8 +655,7 @@ int magic_cast(struct pink_easy_process *current,
 	}
 }
 
-static inline enum magic_key magic_next_key(const char *magic,
-					    enum magic_key key)
+static enum magic_key magic_next_key(const char *magic, enum magic_key key)
 {
 	int r;
 
@@ -666,8 +669,7 @@ static inline enum magic_key magic_next_key(const char *magic,
 	return MAGIC_KEY_INVALID;
 }
 
-int magic_cast_string(struct pink_easy_process *current, const char *magic,
-		      int prefix)
+int magic_cast_string(syd_proc_t *current, const char *magic, int prefix)
 {
 	bool bval;
 	int ival;

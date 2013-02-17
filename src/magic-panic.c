@@ -1,21 +1,19 @@
 /*
  * sydbox/magic-panic.c
  *
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-defs.h"
+#include "sydbox.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
 #include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
 
 #include "macro.h"
 
-int magic_set_abort_decision(const void *val,
-			     struct pink_easy_process *current)
+int magic_set_abort_decision(const void *val, syd_proc_t *current)
 {
 	int d;
 	const char *str = val;
@@ -28,8 +26,7 @@ int magic_set_abort_decision(const void *val,
 	return MAGIC_RET_OK;
 }
 
-int magic_set_panic_decision(const void *val,
-			     struct pink_easy_process *current)
+int magic_set_panic_decision(const void *val, syd_proc_t *current)
 {
 	int d;
 	const char *str = val;
@@ -42,15 +39,13 @@ int magic_set_panic_decision(const void *val,
 	return MAGIC_RET_OK;
 }
 
-int magic_set_panic_exit_code(const void *val,
-			      struct pink_easy_process *current)
+int magic_set_panic_exit_code(const void *val, syd_proc_t *current)
 {
 	sydbox->config.panic_exit_code = PTR_TO_INT(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_set_violation_decision(const void *val,
-				 struct pink_easy_process *current)
+int magic_set_violation_decision(const void *val, syd_proc_t *current)
 {
 	int d;
 	const char *str = val;
@@ -63,33 +58,30 @@ int magic_set_violation_decision(const void *val,
 	return MAGIC_RET_OK;
 }
 
-int magic_set_violation_exit_code(const void *val,
-				  struct pink_easy_process *current)
+int magic_set_violation_exit_code(const void *val, syd_proc_t *current)
 {
 	sydbox->config.violation_exit_code = PTR_TO_INT(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_set_violation_raise_fail(const void *val,
-				   struct pink_easy_process *current)
+int magic_set_violation_raise_fail(const void *val, syd_proc_t *current)
 {
 	sydbox->config.violation_raise_fail = PTR_TO_BOOL(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_query_violation_raise_fail(struct pink_easy_process *current)
+int magic_query_violation_raise_fail(syd_proc_t *current)
 {
 	return MAGIC_BOOL(sydbox->config.violation_raise_fail);
 }
 
-int magic_set_violation_raise_safe(const void *val,
-				   struct pink_easy_process *current)
+int magic_set_violation_raise_safe(const void *val, syd_proc_t *current)
 {
 	sydbox->config.violation_raise_safe = PTR_TO_BOOL(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_query_violation_raise_safe(struct pink_easy_process *current)
+int magic_query_violation_raise_safe(syd_proc_t *current)
 {
 	return MAGIC_BOOL(sydbox->config.violation_raise_safe);
 }

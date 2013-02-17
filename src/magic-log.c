@@ -1,21 +1,20 @@
 /*
  * sydbox/magic-log.c
  *
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-defs.h"
+#include "sydbox.h"
 
 #include <stdlib.h>
 #include <errno.h>
 #include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
 
 #include "log.h"
 #include "macro.h"
 
-int magic_set_log_file(const void *val, struct pink_easy_process *current)
+int magic_set_log_file(const void *val, syd_proc_t *current)
 {
 	int r;
 	const char *filename = val;
@@ -37,13 +36,13 @@ int magic_set_log_file(const void *val, struct pink_easy_process *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_set_log_level(const void *val, struct pink_easy_process *current)
+int magic_set_log_level(const void *val, syd_proc_t *current)
 {
 	log_debug_level(PTR_TO_INT(val));
 	return MAGIC_RET_OK;
 }
 
-int magic_set_log_console_fd(const void *val, struct pink_easy_process *current)
+int magic_set_log_console_fd(const void *val, syd_proc_t *current)
 {
 	int r;
 	int fd = PTR_TO_INT(val);
@@ -56,7 +55,7 @@ int magic_set_log_console_fd(const void *val, struct pink_easy_process *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_set_log_console_level(const void *val, struct pink_easy_process *current)
+int magic_set_log_console_level(const void *val, syd_proc_t *current)
 {
 	log_debug_console_level(PTR_TO_INT(val));
 	return MAGIC_RET_OK;

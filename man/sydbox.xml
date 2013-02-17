@@ -248,14 +248,7 @@
         where <parameter>${PREFIX}</parameter> is <filename class="directory">/dev/sydbox</filename>
         by default (may be altered at compile-time using <parameter>SYDBOX_MAGIC_PREFIX</parameter> definition).
         This prefix is only required for magic <function>stat()</function>, not for <option>-m</option> command line
-        switch. Section of an option is very similar to the configuration file e.g.:
-        <programlisting>
-          { "core" : { "sandbox" : { "write" : "off" } } }
-        </programlisting>
-        maps to:
-        <programlisting>
-          core/sandbox/write:off
-        </programlisting>
+        switch.
       </para>
 
       <para role="summary">
@@ -319,7 +312,6 @@
         Sydbox's configuration file format is simple. It is just a way to supply many magic commands in a convenient
         way. All empty lines and lines starting with the number sign '<constant>#</constant>' are ignored. All the other
         lines are treated as if they were supplied to Sydbox via the <option>-m</option> command line switch.
-        See <xref linkend="configuration-example"/> for an example configuration file.
       </para>
     </refsect2>
 
@@ -571,6 +563,19 @@
             <para>
               A boolean specifying whether seccomp user-mode filters should be used. This works only on Linux-3.5 or
               newer and sydbox must be compiled with the <option>--enable-seccomp</option> configure option.
+              Defaults to <varname>false</varname>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option id="core-trace-use_seize">core/trace/use_seize</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether sydbox should use the new ptrace requests <constant>PTRACE_SEIZE</constant>
+              and <constant>PTRACE_INTERRUPT</constant> to trace processes.
+              Defaults to <varname>false</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -1301,110 +1306,6 @@
         </programlisting>
       </para>
 
-    </refsect2>
-
-    <refsect2 id="configuration-example">
-      <title>Configuration File Example</title>
-
-      <para>Below is a commented example configuration file:</para>
-
-      <programlisting>
-/* All configuration is specified in a JSON object enclosed in curly braces. */
-{
-    "core" : {
-        "sandbox" : { "exec"    : "off", /* execve(2) sandboxing */
-                      "read"    : "off", /* read sandboxing */
-                      "write"   : "deny", /* write sandboxing */
-                      "network" : "deny" /* network sandboxing */
-        },
-        "whitelist" : { "per_process_directories"     : true, /* Allow per process directories like /proc/$pid */
-                        "successful_bind"             : true, /* Add successful bind() address to connect() whitelist */
-                        "unsupported_socket_families" : true /* Allow unsupported socket families like AF_NETLINK */
-        },
-        "abort" : { "decision"  : "contall" /* Kill/Resume all children on fatal errors? (one of contall,killall) */
-        },
-        "panic" : { "decision"  : "kill", /* What to do on panic? (one of cont,kill,contall,killall) */
-                    "exit_code" : -1 /* If decision is contall or killall, specifies the exit code. */
-        },
-        "violation" : { "decision"    : "deny", /* What to do on access violations? (one of deny,cont,kill,contall,killall) */
-                        "exit_code"   : -1, /* If decision is contall or killall, specifies the exit code. */
-                        "raise_fail" : false, /* Raise access violations for simple failures like path resolution errors? */
-                        "raise_safe" : false /* Raise access violations for "safe" violations like -EEXIST for mkdir() */
-        },
-        "trace" : { "follow_fork"   : true, /* Follow forks? */
-                    "exit_wait_all" : true, /* Wait all children to exit before exiting? */
-                    "magic_lock"    : "off", /* Initial state of the magic lock */
-                    "interrupt"     : "while_wait", /* Interrupt handling */
-                    "use_seccomp"   : true /* Use seccomp user filter  */
-        },
-        "match" : { "case_sensitive" : true, /* Case sensitive matching */
-                    "no_wildcard"    : "prefix" /* Append '/***' to the end of patterns with no '*' or '?' in them */
-        }
-    },
-
-    "log" : { "file"           : "", /* Specify a path or leave it empty for no file logging. */
-              "level"          : 0, /* log level, consult manual page */
-              "console_fd"     : 2, /* console file descriptor, default: stderr */
-              "console_level"  : 1 /* console log level, consult manual page */
-            },
-
-    "exec" : { "resume_if_match" : [ ],
-               "kill_if_match"   : [ ]
-             },
-
-    "filter" :
-        { "exec"    : [ ],
-          "read"    : [ ],
-          "write"   : [ ],
-          "network" : [ ]
-        },
-
-    "whitelist" :
-        { "exec" : [ ],
-          "read" : [ ],
-          "write" : [ "/dev/stdout",
-                      "/dev/stderr",
-                      "/dev/zero",
-                      "/dev/null",
-                      "/dev/full",
-                      "/dev/console",
-                      "/dev/random",
-                      "/dev/ptmx",
-                      "/dev/fd/***",
-                      "/dev/tty*",
-                      "/dev/pty*",
-                      "/dev/tts",
-                      "/dev/pts",
-                      "/proc/self/fd/***",
-                      "/dev/shm/***",
-                      "/selinux/context/***",
-                      "/proc/self/attr/***",
-                      "/proc/self/task/***",
-                      "/tmp/***",
-                      "/var/tmp/***",
-                      "/var/cache/***"
-                    ],
-          "network" :
-            { "bind" : [ "LOOPBACK@0",
-                         "LOOPBACK@1024-65535",
-                         "LOOPBACK6@0",
-                         "LOOPBACK6@1024-65535"
-                       ],
-              "connect" : [ "unix:/var/run/nscd/socket",
-                            "unix:/run/nscd/socket"
-                          ]
-            }
-        },
-    "blacklist" :
-        { "exec"    : [ ],
-          "read"    : [ ],
-          "write"   : [ ],
-          "network" : { "bind"    : [ ],
-                        "connect" : [ ]
-                      }
-        }
-}
-      </programlisting>
     </refsect2>
   </refsect1>
 

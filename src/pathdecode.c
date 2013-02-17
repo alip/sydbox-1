@@ -5,17 +5,12 @@
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-
-#include "sydbox-defs.h"
-
+#include "sydbox.h"
 #include "pathdecode.h"
-
 #include <errno.h>
 #include <fcntl.h>
-
+#include <string.h>
 #include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
-
 #include "log.h"
 #include "proc.h"
 
@@ -24,24 +19,21 @@
  * Returns:
  * -errno : Negated errno indicating error code
  *  0     : Successful run
- * >0     : PINK_EASY_CFLAG* flags
  */
-int path_decode(struct pink_easy_process *current, unsigned arg_index,
-		char **buf)
+int path_decode(syd_proc_t *current, unsigned arg_index, char **buf)
 {
 	int r;
 	long addr;
 	char path[SYDBOX_PATH_MAX];
-	pid_t tid = pink_easy_process_get_tid(current);
-	enum pink_abi abi = pink_easy_process_get_abi(current);
-	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	assert(current);
 	assert(buf);
 
-	if ((r = pink_read_argument(tid, abi, &data->regs, arg_index, &addr)) < 0)
+	if ((r = pink_read_argument(current->tid, current->abi, &current->regs,
+				    arg_index, &addr)) < 0)
 		goto fail;
-	if (pink_read_string(tid, abi, addr, path, SYDBOX_PATH_MAX) < 0) {
+	if (pink_read_string(current->tid, current->abi, addr, path,
+			     SYDBOX_PATH_MAX) < 0) {
 		r = -errno;
 		goto fail;
 	}
@@ -50,25 +42,13 @@ int path_decode(struct pink_easy_process *current, unsigned arg_index,
 	return 0;
 fail:
 	if (r == -EFAULT) {
-		log_trace("read_string(%lu, %d, %u) returned EFAULT",
-			  (unsigned long)tid, abi, arg_index);
 		*buf = NULL;
 		return -EFAULT;
-	}
-	if (r != -ESRCH) {
-		log_warning("read_string(%lu, %d, %u) failed (errno:%d %s)",
-			    (unsigned long)tid, abi, arg_index,
-			    -r, strerror(-r));
-		errno = -r;
+	} else if (r == -ESRCH) {
+		return -ESRCH;
+	} else {
 		return panic(current);
 	}
-	log_trace("read_string(%lu, %d, %u) failed (errno:%d %s)",
-		  (unsigned long)tid, abi, arg_index,
-		  -r, strerror(-r));
-	log_trace("drop process %s[%lu:%u]",
-		  data->comm,
-		  (unsigned long)tid, abi);
-	return PINK_EASY_CFLAG_DROP;
 }
 
 /*
@@ -77,37 +57,30 @@ fail:
  * Returns:
  * -errno : Negated errno indicating error code
  *  0     : Successful run
- * >0     : PINK_EASY_CFLAG* flags
  */
-int path_prefix(struct pink_easy_process *current, unsigned arg_index,
-		char **buf)
+int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf)
 {
 	int r;
 	long fd;
 	char *prefix = NULL;
-	pid_t tid = pink_easy_process_get_tid(current);
-	enum pink_abi abi = pink_easy_process_get_abi(current);
-	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	log_check("%s[%lu:%u] arg_index:%u", data->comm,
-		  (unsigned long)tid, abi, arg_index);
+	log_check("%s[%u:%u] arg_index:%u", current->comm, current->tid,
+		  current->abi, arg_index);
 
-	if ((r = pink_read_argument(tid, abi, &data->regs,
+	if ((r = pink_read_argument(current->tid, current->abi, &current->regs,
 				    arg_index, &fd)) < 0) {
-		if (r != -ESRCH) {
-			log_warning("read_argument(%lu, %u, %u) failed"
-				    " (errno:%d %s)",
-				    (unsigned long)tid, abi, arg_index,
-				    -r, strerror(-r));
-			return panic(current);
+		if (r == ESRCH) {
+			log_trace("read_argument(%u, %u, %u) failed (errno:%d %s)",
+				  current->tid, current->abi, arg_index,
+				  -r, strerror(-r));
+			log_trace("drop process %s[%u:%u]", current->comm,
+				  current->tid, current->abi);
+			return -ESRCH;
 		}
-		log_trace("read_argument(%lu, %u, %u) failed (errno:%d %s)",
-			  (unsigned long)tid, abi, arg_index,
-			  -r, strerror(-r));
-		log_trace("drop process %s[%lu:%u]",
-			  data->comm,
-			  (unsigned long)tid, abi);
-		return PINK_EASY_CFLAG_DROP;
+		log_warning("read_argument(%u, %u, %u) failed (errno:%d %s)",
+			    current->tid, current->abi, arg_index,
+			    -r, strerror(-r));
+		return panic(current);
 	}
 
 	r = 0;
@@ -118,11 +91,9 @@ int path_prefix(struct pink_easy_process *current, unsigned arg_index,
 		*buf = NULL;
 		r = -EBADF;
 	} else {
-		if ((r = proc_fd(tid, fd, &prefix)) < 0) {
-			log_warning("readlink /proc/%lu/fd/%ld failed"
-				    " (errno:%d %s)",
-				    (unsigned long)tid, fd,
-				    -r, strerror(-r));
+		if ((r = proc_fd(current->tid, fd, &prefix)) < 0) {
+			log_warning("readlink /proc/%u/fd/%ld failed (errno:%d %s)",
+				    current->tid, fd, -r, strerror(-r));
 			if (r == -ENOENT)
 				r = -EBADF; /* correct errno */
 		} else {

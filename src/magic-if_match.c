@@ -1,16 +1,15 @@
 /*
  * sydbox/magic-if_match.c
  *
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-defs.h"
+#include "sydbox.h"
 
 #include <stdlib.h>
 #include <sys/queue.h>
 #include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
 
 #include "slist.h"
 
@@ -40,29 +39,25 @@ static int magic_edit_if_match(const void *val, slist_t *if_match, bool append)
 	return MAGIC_RET_OK;
 }
 
-int magic_append_exec_kill_if_match(const void *val,
-				    struct pink_easy_process *current)
+int magic_append_exec_kill_if_match(const void *val, syd_proc_t *current)
 {
 	return magic_edit_if_match(val, &sydbox->config.exec_kill_if_match,
 				   true);
 }
 
-int magic_remove_exec_kill_if_match(const void *val,
-				    struct pink_easy_process *current)
+int magic_remove_exec_kill_if_match(const void *val, syd_proc_t *current)
 {
 	return magic_edit_if_match(val, &sydbox->config.exec_kill_if_match,
 				   false);
 }
 
-int magic_append_exec_resume_if_match(const void *val,
-				      struct pink_easy_process *current)
+int magic_append_exec_resume_if_match(const void *val, syd_proc_t *current)
 {
 	return magic_edit_if_match(val, &sydbox->config.exec_resume_if_match,
 				   true);
 }
 
-int magic_remove_exec_resume_if_match(const void *val,
-				      struct pink_easy_process *current)
+int magic_remove_exec_resume_if_match(const void *val, syd_proc_t *current)
 {
 	return magic_edit_if_match(val, &sydbox->config.exec_resume_if_match,
 				   false);

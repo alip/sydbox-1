@@ -664,9 +664,7 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = @abs_top_builddir@/pinktrace \
-                         @abs_top_builddir@/pinktrace/easy \
                          @abs_top_srcdir@/pinktrace \
-                         @abs_top_srcdir@/pinktrace/easy \
                          @abs_top_srcdir@/examples/c \
                          ./
 

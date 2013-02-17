@@ -85,7 +85,6 @@ SYDBOX_CFLAGS='-DSYDBOX_VERSION_MAJOR=sydbox_version_major'
 PINKTRACE_CFLAGS=
 PINKTRACE_PC_CFLAGS=
 PINKTRACE_PC_LIBS="-lpinktrace_${PINKTRACE_PC_SLOT}"
-PINKTRACE_EASY_PC_LIBS="-lpinktrace_easy_${PINKTRACE_PC_SLOT}"
 
 dnl remove the check for c++ and fortran compiler
 m4_defun([_LT_AC_LANG_CXX_CONFIG], [:])
@@ -255,21 +254,16 @@ AC_CHECK_HEADER([netinet/in.h], [], AC_MSG_ERROR([I need netinet/in.h]))
 AC_CHECK_HEADER([sys/un.h],     [], AC_MSG_ERROR([I need sys/un.h]))
 AC_CHECK_HEADERS([linux/ptrace.h sys/reg.h sys/uio.h], [], [])
 
-dnl check for pinktrace-easy headers
-AC_CHECK_HEADER([alloca.h],      [], AC_MSG_ERROR([I need alloca.h]))
+dnl check for sydbox headers
+AC_CHECK_HEADER([limits.h]       [], AC_MSG_ERROR([I need limits.h]))
 AC_CHECK_HEADER([signal.h],      [], AC_MSG_ERROR([I need signal.h]))
 AC_CHECK_HEADER([sys/queue.h],   [], AC_MSG_ERROR([I need sys/queue.h]))
 AC_CHECK_HEADER([sys/utsname.h], [], AC_MSG_ERROR([I need sys/utsname.h]))
-AC_FUNC_ALLOCA
+AC_CHECK_HEADER([sys/socket.h],  [], AC_MSG_ERROR([I need sys/socket.h]))
+AC_CHECK_HEADER([ctype.h],       [], AC_MSG_ERROR([I need ctype.h]))
+AC_CHECK_HEADER([arpa/inet.h],   [], AC_MSG_ERROR([I need arpa/inet.h]))
+AC_CHECK_HEADER([netdb.h],       [], AC_MSG_ERROR([I need netdb.h]))
 AC_CHECK_TYPE([sig_atomic_t],    [], AC_MSG_ERROR([I need sigatomic_t]), [#include <signal.h>])
-
-dnl check for sydbox headers
-AC_CHECK_HEADER([limits.h]      [], AC_MSG_ERROR([I need limits.h]))
-AC_CHECK_HEADER([sys/queue.h],  [], AC_MSG_ERROR([I need sys/queue.h]))
-AC_CHECK_HEADER([sys/socket.h], [], AC_MSG_ERROR([I need sys/socket.h]))
-AC_CHECK_HEADER([ctype.h],      [], AC_MSG_ERROR([I need ctype.h]))
-AC_CHECK_HEADER([arpa/inet.h],  [], AC_MSG_ERROR([I need arpa/inet.h]))
-AC_CHECK_HEADER([netdb.h],      [], AC_MSG_ERROR([I need netdb.h]))
 
 dnl check for functions
 AC_CHECK_FUNCS([asprintf],      [], [AC_MSG_ERROR([I need asprintf])])
@@ -496,7 +490,6 @@ AC_SUBST([PINKTRACE_PC_CFLAGS])
 AC_SUBST([PINKTRACE_PC_LIBS])
 AC_SUBST([PINKTRACE_PC_VERSION])
 AC_SUBST([PINKTRACE_PC_SLOT])
-AC_SUBST([PINKTRACE_EASY_PC_LIBS])
 
 dnl Make pkg-config work
 m4_pattern_forbid([^PKG_[A-Z_]+$], [missing some pkg-config macros])
@@ -539,7 +532,6 @@ AC_CONFIG_FILES([Makefile
 		 pinktrace/Makefile
 		 pinktrace/about.h
 		 pinktrace/system.h
-		 pinktrace/easy/Makefile
 		 pinktrace/linux/Makefile
 		 pinktrace/linux/i386/Makefile
 		 pinktrace/linux/x32/Makefile

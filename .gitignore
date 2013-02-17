@@ -113,6 +113,5 @@ tests/t[0-9][0-9][0-9]*
 /pinktrace/system.h
 
 /pkg-config/pinktrace.pc
-/pkg-config/pinktrace_easy.pc
 
 /pinktrace/pinktrace-check

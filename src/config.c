@@ -1,20 +1,17 @@
 /*
- * sydbox/sydbox-config.c
+ * sydbox/config.c
  *
  * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-defs.h"
-
-#include <assert.h>
+#include "sydbox.h"
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
 #include "file.h"
 #include "macro.h"
 #include "log.h"
@@ -29,8 +26,9 @@ void config_init(void)
 	/* set sane defaults for configuration */
 	sydbox->config.follow_fork = true;
 	sydbox->config.exit_wait_all = true;
-	sydbox->config.trace_interrupt = PINK_EASY_INTR_WHILE_WAIT;
+	sydbox->config.trace_interrupt = TRACE_INTR_WHILE_WAIT;
 	sydbox->config.use_seccomp = false;
+	sydbox->config.use_seize = false;
 	sydbox->config.whitelist_per_process_directories = true;
 	sydbox->config.whitelist_successful_bind = true;
 	sydbox->config.whitelist_unsupported_socket_families = true;

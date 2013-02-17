@@ -4,6 +4,7 @@ CLEANFILES= \
 	    *.gcno \
 	    *.gcov
 EXTRA_DIST=
+noinst_HEADERS=
 
 DEFS+= \
        -DDATADIR=\"$(datadir)\" \
@@ -16,30 +17,30 @@ AM_CFLAGS= \
 bin_PROGRAMS= sydbox sydfmt
 sydbox_CPPFLAGS= -DSYDBOX
 sydfmt_CPPFLAGS= -DSYDFMT
-noinst_HEADERS= \
-		file.h \
-		log.h \
-		macro.h \
-		magic.h \
-		path.h \
-		pathlookup.h \
-		proc.h \
-		seccomp.h \
-		slist.h \
-		strtable.h \
-		pathdecode.h \
-		pathmatch.h \
-		sockmatch.h \
-		util.h \
-		xfunc.h \
-		sys-check.h \
-		sydbox-conf.h \
-		sydbox-defs.h
+noinst_HEADERS+= \
+		 asyd.h \
+		 file.h \
+		 log.h \
+		 macro.h \
+		 path.h \
+		 pathlookup.h \
+		 proc.h \
+		 seccomp.h \
+		 slist.h \
+		 strtable.h \
+		 pathdecode.h \
+		 pathmatch.h \
+		 sockmatch.h \
+		 util.h \
+		 xfunc.h \
+		 sydconf.h \
+		 sydbox.h
 sydbox_SOURCES= \
 		 file.c \
 		 log.c \
 		 path.c \
 		 pathlookup.c \
+		 pink.c \
 		 proc.c \
 		 seccomp.c \
 		 pathdecode.c \
@@ -58,39 +59,14 @@ sydbox_SOURCES= \
 		 magic-if_match.c \
 		 magic-cmd.c \
 		 magic.c \
-		 sydbox-box.c \
-		 sydbox-callback.c \
-		 sydbox-config.c \
-		 sydbox-panic.c \
-		 sydbox-syscall.c \
-		 sydbox-systable.c \
-		 sys-access.c \
-		 sys-chdir.c \
-		 sys-execve.c \
-		 sys-stat.c \
-		 sys-dup.c \
-		 sys-fcntl.c \
-		 sys-chmod.c \
-		 sys-chown.c \
-		 sys-open.c \
-		 sys-creat.c \
-		 sys-close.c \
-		 sys-mkdir.c \
-		 sys-mknod.c \
-		 sys-rmdir.c \
-		 sys-truncate.c \
-		 sys-mount.c \
-		 sys-utime.c \
-		 sys-unlink.c \
-		 sys-setxattr.c \
-		 sys-removexattr.c \
-		 sys-link.c \
-		 sys-rename.c \
-		 sys-symlink.c \
-		 sys-socketcall.c \
-		 sys-bind.c \
-		 sys-connect.c \
-		 sys-getsockname.c \
+		 sandbox.c \
+		 panic.c \
+		 syscall-file.c \
+		 syscall-sock.c \
+		 syscall-special.c \
+		 syscall.c \
+		 systable.c \
+		 config.c \
 		 sydbox.c
 sydfmt_SOURCES= \
 		sydfmt.c
@@ -111,8 +87,7 @@ sydbox_SOURCES+= \
 		 canonicalize.c
 
 sydbox_LDADD= \
-	      $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la \
-	      $(top_builddir)/pinktrace/easy/libpinktrace_easy_@PINKTRACE_PC_SLOT@.la
+	      $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
 
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \

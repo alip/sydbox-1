@@ -42,37 +42,33 @@
 #define LOG_LEVEL_ASSERT	0x0200
 #define LOG_LEVEL_FATAL		0x0400
 
-extern int log_init(const char *filename);
-extern void log_close(void);
+int log_init(const char *filename);
+void log_close(void);
 
-extern void log_abort_func(void (*func)(int));
-extern int log_console_fd(int fd);
-extern void log_debug_level(int debug_level);
-extern void log_debug_console_level(int debug_level);
-extern void log_prefix(const char *p);
-extern void log_suffix(const char *s);
+void log_abort_func(void (*func)(int));
+int log_console_fd(int fd);
+bool log_has_level(int level);
+void log_debug_level(int debug_level);
+void log_debug_console_level(int debug_level);
+void log_prefix(const char *p);
+void log_suffix(const char *s);
+void log_context(void *current);
 
-extern void log_msg_va(unsigned level, const char *fmt, va_list ap)
+void log_msg_va(unsigned level, const char *fmt, va_list ap)
 	PINK_GCC_ATTR((format (printf, 2, 0)));
-extern void log_msg_va_f(unsigned level, const char *func,
-			 const char *fmt, va_list ap)
-	PINK_GCC_ATTR((format (printf, 2, 0)));
-
-extern void log_msg(unsigned level, const char *fmt, ...)
+void log_msg(unsigned level, const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 2, 3)));
-extern void log_msg_f(unsigned level, const char *func, const char *fmt, ...)
+void log_msg_errno(unsigned level, int err_no, const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 3, 4)));
 
-extern void die(const char *fmt, ...)
+void die(const char *fmt, ...)
 	PINK_GCC_ATTR((noreturn, format (printf, 1, 2)));
-extern void die_errno(const char *fmt, ...)
+void die_errno(const char *fmt, ...)
 	PINK_GCC_ATTR((noreturn, format (printf, 1, 2)));
 
-extern void assert_(const char *expr, const char *func,
-		    const char *file, size_t line)
+void assert_(const char *expr, const char *func, const char *file, size_t line)
 	PINK_GCC_ATTR((noreturn));
-extern void assert_not_reached_(const char *func, const char *file,
-				size_t line)
+void assert_not_reached_(const char *func, const char *file, size_t line)
 	PINK_GCC_ATTR((noreturn));
 
 #define assert_not_reached() assert_not_reached_(__func__, __FILE__, __LINE__)
@@ -90,27 +86,26 @@ extern void assert_not_reached_(const char *func, const char *file,
 #endif
 
 /* Short hand notations */
-#define log_fatal(...)		log_msg_f(LOG_LEVEL_FATAL, \
-				  __func__, __VA_ARGS__)
-#define log_warning(...)	log_msg_f(LOG_LEVEL_WARNING, \
-					  __func__, __VA_ARGS__)
-#define log_access_v(...)	log_msg(LOG_LEVEL_ACCESS_V, \
-					__VA_ARGS__) /* treat specially */
-#define log_info(...)		log_msg_f(LOG_LEVEL_INFO, \
-					  __func__, __VA_ARGS__)
-#define log_access(...)		log_msg_f(LOG_LEVEL_ACCESS, \
-					  __func__, __VA_ARGS__)
-#define log_magic(...)		log_msg_f(LOG_LEVEL_MAGIC, \
-					  __func__, __VA_ARGS__)
-#define log_match(...)		log_msg_f(LOG_LEVEL_MATCH, \
-					  __func__, __VA_ARGS__)
-#define log_check(...)		log_msg_f(LOG_LEVEL_CHECK, \
-					  __func__, __VA_ARGS__)
-#define log_trace(...)		log_msg_f(LOG_LEVEL_TRACE, \
-					  __func__, __VA_ARGS__)
-#define log_syscall(...)	log_msg_f(LOG_LEVEL_SYSCALL, \
-					  __func__, __VA_ARGS__)
-#define log_sys_all(...)	log_msg_f(LOG_LEVEL_SYS_ALL, \
-					  __func__, __VA_ARGS__)
+#define log_fatal(...)		log_msg(LOG_LEVEL_FATAL, __VA_ARGS__)
+#define log_warning(...)	log_msg(LOG_LEVEL_WARNING, __VA_ARGS__)
+#define log_access_v(...)	log_msg(LOG_LEVEL_ACCESS_V, __VA_ARGS__)
+#define log_info(...)		log_msg(LOG_LEVEL_INFO, __VA_ARGS__)
+#define log_access(...)		log_msg(LOG_LEVEL_ACCESS, __VA_ARGS__)
+#define log_magic(...)		log_msg(LOG_LEVEL_MAGIC, __VA_ARGS__)
+#define log_match(...)		log_msg(LOG_LEVEL_MATCH, __VA_ARGS__)
+#define log_check(...)		log_msg(LOG_LEVEL_CHECK, __VA_ARGS__)
+#define log_trace(...)		log_msg(LOG_LEVEL_TRACE, __VA_ARGS__)
+#define log_syscall(...)	log_msg(LOG_LEVEL_SYSCALL, __VA_ARGS__)
+#define log_sys_all(...)	log_msg(LOG_LEVEL_SYS_ALL, __VA_ARGS__)
+#define err_fatal(e,...)	log_msg_errno(LOG_LEVEL_FATAL, (e), __VA_ARGS__)
+#define err_warning(e,...)	log_msg_errno(LOG_LEVEL_WARNING, (e), __VA_ARGS__)
+#define err_info(e,...)		log_msg_errno(LOG_LEVEL_INFO, (e), __VA_ARGS__)
+#define err_access(e,...)	log_msg_errno(LOG_LEVEL_ACCESS, (e), __VA_ARGS__)
+#define err_magic(e,...)	log_msg_errno(LOG_LEVEL_MAGIC, (e), __VA_ARGS__)
+#define err_match(e,...)	log_msg_errno(LOG_LEVEL_MATCH, (e), __VA_ARGS__)
+#define err_check(e,...)	log_msg_errno(LOG_LEVEL_CHECK, (e), __VA_ARGS__)
+#define err_trace(e,...)	log_msg_errno(LOG_LEVEL_TRACE, (e), __VA_ARGS__)
+#define err_syscall(e,...)	log_msg_errno(LOG_LEVEL_SYSCALL, (e), __VA_ARGS__)
+#define err_sys_all(e,...)	log_msg_errno(LOG_LEVEL_SYS_ALL, (e), __VA_ARGS__)
 
 #endif

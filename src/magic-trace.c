@@ -1,34 +1,31 @@
 /*
  * sydbox/magic-trace.c
  *
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-defs.h"
+#include "sydbox.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
 #include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
 
 #include "macro.h"
 #include "log.h"
 
-int magic_set_trace_follow_fork(const void *val,
-				struct pink_easy_process *current)
+int magic_set_trace_follow_fork(const void *val, syd_proc_t *current)
 {
 	sydbox->config.follow_fork = PTR_TO_BOOL(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_query_trace_follow_fork(struct pink_easy_process *current)
+int magic_query_trace_follow_fork(syd_proc_t *current)
 {
 	return MAGIC_BOOL(sydbox->config.follow_fork);
 }
 
-int magic_set_trace_exit_wait_all(const void *val,
-				  struct pink_easy_process *current)
+int magic_set_trace_exit_wait_all(const void *val, syd_proc_t *current)
 {
 #ifdef WANT_SECCOMP
 	log_magic("seccomp support enabled, force exit_wait_all to true");
@@ -39,13 +36,12 @@ int magic_set_trace_exit_wait_all(const void *val,
 	return MAGIC_RET_OK;
 }
 
-int magic_query_trace_exit_wait_all(struct pink_easy_process *current)
+int magic_query_trace_exit_wait_all(syd_proc_t *current)
 {
 	return MAGIC_BOOL(sydbox->config.exit_wait_all);
 }
 
-int magic_set_trace_use_seccomp(const void *val,
-				struct pink_easy_process *current)
+int magic_set_trace_use_seccomp(const void *val, syd_proc_t *current)
 {
 #ifdef WANT_SECCOMP
 	sydbox->config.use_seccomp = PTR_TO_BOOL(val);
@@ -55,7 +51,7 @@ int magic_set_trace_use_seccomp(const void *val,
 	return MAGIC_RET_OK;
 }
 
-int magic_query_trace_use_seccomp(struct pink_easy_process *current)
+int magic_query_trace_use_seccomp(syd_proc_t *current)
 {
 #ifdef WANT_SECCOMP
 	return sydbox->config.use_seccomp;
@@ -64,8 +60,26 @@ int magic_query_trace_use_seccomp(struct pink_easy_process *current)
 #endif
 }
 
-int magic_set_trace_magic_lock(const void *val,
-			       struct pink_easy_process *current)
+int magic_set_trace_use_seize(const void *val, syd_proc_t *current)
+{
+#if PINK_HAVE_SEIZE && PINK_HAVE_INTERRUPT && PINK_HAVE_LISTEN
+	sydbox->config.use_seize = PTR_TO_BOOL(val);
+#else
+	log_magic("PTRACE_SEIZE not supported, ignoring magic");
+#endif
+	return MAGIC_RET_OK;
+}
+
+int magic_query_trace_use_seize(syd_proc_t *current)
+{
+#if PINK_HAVE_SEIZE && PINK_HAVE_INTERRUPT && PINK_HAVE_LISTEN
+	return sydbox->config.use_seize;
+#else
+	return MAGIC_RET_NOT_SUPPORTED;
+#endif
+}
+
+int magic_set_trace_magic_lock(const void *val, syd_proc_t *current)
 {
 	int l;
 	const char *str = val;
@@ -79,8 +93,7 @@ int magic_set_trace_magic_lock(const void *val,
 	return MAGIC_RET_OK;
 }
 
-int magic_set_trace_interrupt(const void *val,
-			      struct pink_easy_process *current)
+int magic_set_trace_interrupt(const void *val, syd_proc_t *current)
 {
 	int intr;
 	const char *str = val;
@@ -89,6 +102,6 @@ int magic_set_trace_interrupt(const void *val,
 	if (intr < 0)
 		return MAGIC_RET_INVALID_VALUE;
 
-	sydbox->config.trace_interrupt = (enum pink_easy_intr)intr;
+	sydbox->config.trace_interrupt = (enum trace_interrupt)intr;
 	return MAGIC_RET_OK;
 }

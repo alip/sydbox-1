@@ -1,18 +1,16 @@
 /*
  * sydbox/pathdecode.h
  *
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
 #ifndef PATHDECODE_H
 #define PATHDECODE_H 1
 
-#include <pinktrace/easy/pink.h>
+#include "sydbox.h"
 
-extern int path_decode(struct pink_easy_process *current, unsigned arg_index,
-		       char **buf);
-extern int path_prefix(struct pink_easy_process *current, unsigned arg_index,
-		       char **buf);
+int path_decode(syd_proc_t *current, unsigned arg_index, char **buf);
+int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf);
 
 #endif

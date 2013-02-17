@@ -1,17 +1,17 @@
 /*
  * sydbox/magic-socklist.c
  *
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-defs.h"
+#include "sydbox.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
 
 #include "macro.h"
 #include "log.h"
@@ -68,70 +68,60 @@ end:
 	return r;
 }
 
-int magic_append_whitelist_network_bind(const void *val,
-					struct pink_easy_process *current)
+int magic_append_whitelist_network_bind(const void *val, syd_proc_t *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_edit_socklist(val, &box->whitelist_network_bind, true);
 }
 
-int magic_remove_whitelist_network_bind(const void *val,
-					struct pink_easy_process *current)
+int magic_remove_whitelist_network_bind(const void *val, syd_proc_t *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_edit_socklist(val, &box->whitelist_network_bind, false);
 }
 
-int magic_append_whitelist_network_connect(const void *val,
-					   struct pink_easy_process *current)
+int magic_append_whitelist_network_connect(const void *val, syd_proc_t *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_edit_socklist(val, &box->whitelist_network_connect, true);
 }
 
-int magic_remove_whitelist_network_connect(const void *val,
-					   struct pink_easy_process *current)
+int magic_remove_whitelist_network_connect(const void *val, syd_proc_t *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_edit_socklist(val, &box->whitelist_network_connect, false);
 }
 
-int magic_append_blacklist_network_bind(const void *val,
-					struct pink_easy_process *current)
+int magic_append_blacklist_network_bind(const void *val, syd_proc_t *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_edit_socklist(val, &box->blacklist_network_bind, true);
 }
 
-int magic_remove_blacklist_network_bind(const void *val,
-					struct pink_easy_process *current)
+int magic_remove_blacklist_network_bind(const void *val, syd_proc_t *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_edit_socklist(val, &box->blacklist_network_bind, false);
 }
 
-int magic_append_blacklist_network_connect(const void *val,
-					   struct pink_easy_process *current)
+int magic_append_blacklist_network_connect(const void *val, syd_proc_t *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_edit_socklist(val, &box->blacklist_network_connect, true);
 }
 
-int magic_remove_blacklist_network_connect(const void *val,
-					   struct pink_easy_process *current)
+int magic_remove_blacklist_network_connect(const void *val, syd_proc_t *current)
 {
 	sandbox_t *box = box_current(current);
 	return magic_edit_socklist(val, &box->blacklist_network_connect, false);
 }
 
-int magic_append_filter_network(const void *val,
-				struct pink_easy_process *current)
+int magic_append_filter_network(const void *val, syd_proc_t *current)
 {
 	return magic_edit_socklist(val, &sydbox->config.filter_network, true);
 }
 
-int magic_remove_filter_network(const void *val,
-				struct pink_easy_process *current)
+int magic_remove_filter_network(const void *val, syd_proc_t *current)
 {
 	return magic_edit_socklist(val, &sydbox->config.filter_network, false);
 }

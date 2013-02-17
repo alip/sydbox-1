@@ -1,21 +1,18 @@
 /*
- * sydbox/sydbox-syscall.c
+ * sydbox/syscall.c
  *
  * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-defs.h"
-
+#include "sydbox.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <string.h>
-
 #include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
-
 #include "macro.h"
 #include "log.h"
 #include "proc.h"
@@ -351,65 +348,42 @@ int sysinit_seccomp(void)
 }
 #endif
 
-int sysenter(struct pink_easy_process *current)
+int sysenter(syd_proc_t *current)
 {
 	int r;
-	long no;
-	pid_t tid;
-	enum pink_abi abi;
-	proc_data_t *data;
+	long sysnum;
 	const sysentry_t *entry;
 
-	tid = pink_easy_process_get_tid(current);
-	abi = pink_easy_process_get_abi(current);
-	data = pink_easy_process_get_userdata(current);
+	if ((r = syd_read_syscall(current, &sysnum)) < 0)
+		return r;
 
-	if ((r = pink_read_syscall(tid, abi, &data->regs, &no)) < 0) {
-		if (r != -ESRCH) {
-			log_warning("read_syscall(%lu, %d) failed"
-				    " (errno:%d %s)",
-				    (unsigned long)tid, abi,
-				    -errno, strerror(-errno));
-			return panic(current);
-		}
-		log_trace("read_syscall(%lu, %d) failed (errno:%d %s)",
-			  (unsigned long)tid, abi,
-			  -errno, strerror(-errno));
-
-		return PINK_EASY_CFLAG_DROP;
-	}
-
-	data->sno = no;
-	entry = systable_lookup(no, abi);
+	entry = systable_lookup(sysnum, current->abi);
 	if (entry) {
-		log_syscall("process %s[%lu:%u] entered syscall=`%s'(%ld)",
-			    data->comm, (unsigned long)tid, abi,
-			    entry->name, no);
+		current->sysnum = sysnum;
+		current->sysname = entry->name;
+		log_syscall("entering system call");
 		if (entry->enter)
-			return entry->enter(current, entry->name);
+			return entry->enter(current);
 	} else {
-		log_sys_all("process %s[%lu:%u] entered syscall=%ld",
-			    data->comm, (unsigned long)tid, abi, no);
+		log_sys_all("entering system call %ld", sysnum);
 	}
 
 	return 0;
 }
 
-int sysexit(struct pink_easy_process *current)
+int sysexit(syd_proc_t *current)
 {
 	int r;
 	const sysentry_t *entry;
-	enum pink_abi abi = pink_easy_process_get_abi(current);
-	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->deny) {
+	if (sysdeny(current)) {
 		r = restore(current);
-		goto end;
+		goto out;
 	}
 
-	entry = systable_lookup(data->sno, abi);
-	r = (entry && entry->exit) ? entry->exit(current, entry->name) : 0;
-end:
-	clear_proc(data);
+	entry = systable_lookup(current->sysnum, current->abi);
+	r = (entry && entry->exit) ? entry->exit(current) : 0;
+out:
+	clear_proc(current);
 	return r;
 }

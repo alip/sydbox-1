@@ -7,21 +7,24 @@
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-conf.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #ifdef PACKAGE
-#undef PACKAGE
-#define PACKAGE "sydfmt"
+# undef PACKAGE
 #endif
+#define PACKAGE "sydfmt"
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+# define _GNU_SOURCE
 #endif
 
+#include "sydconf.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include <pinktrace/pink.h>
 
 static int puts_exec(char **argv);

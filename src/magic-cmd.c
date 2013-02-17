@@ -5,7 +5,7 @@
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
-#include "sydbox-defs.h"
+#include "sydbox.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -18,7 +18,6 @@
 #include <linux/binfmts.h>
 
 #include <pinktrace/pink.h>
-#include <pinktrace/easy/pink.h>
 
 #include "log.h"
 #include "proc.h"
@@ -52,23 +51,17 @@ static void free_argv(char **argv)
 	}
 }
 
-int magic_cmd_exec(const void *val, struct pink_easy_process *current)
+int magic_cmd_exec(const void *val, syd_proc_t *current)
 {
 	int r = MAGIC_RET_OK;
 	unsigned i, j, k;
 	const char *args = val;
 	char **argv = NULL, **envp = NULL;
-	pid_t tid;
-	int abi;
-	proc_data_t *data;
 
 	assert(val);
 
 	if (current == NULL)
 		return MAGIC_RET_INVALID_OPERATION;
-	tid = pink_easy_process_get_tid(current);
-	abi = pink_easy_process_get_abi(current);
-	data = pink_easy_process_get_userdata(current);
 
 	/* Step 1: args -> argv[] */
 	i = 0;
@@ -98,7 +91,7 @@ int magic_cmd_exec(const void *val, struct pink_easy_process *current)
 	}
 
 	/* Step 2: fill envp[] from /proc/$tid/environ */
-	r = proc_environ(tid, &envp);
+	r = proc_environ(current->tid, &envp);
 	if (r < 0)
 		goto out;
 
@@ -112,12 +105,11 @@ int magic_cmd_exec(const void *val, struct pink_easy_process *current)
 	childpid = fork();
 	if (childpid < 0) {
 		err_no = execve_errno(errno);
-		log_magic("fork failed (errno:%d %s)",
-			  errno, strerror(errno));
+		log_magic("fork failed (errno:%d %s)", errno, strerror(errno));
 		r = deny(current, err_no);
 		return r;
 	} else if (childpid == 0) {
-		if (chdir(data->cwd) < 0)
+		if (chdir(current->cwd) < 0)
 			_exit(errno);
 		if (pink_trace_me() < 0)
 			_exit(errno);
@@ -127,37 +119,33 @@ int magic_cmd_exec(const void *val, struct pink_easy_process *current)
 
 	if (waitpid_nointr(childpid, &status, 0) < 0) {
 		err_no = execve_errno(errno);
-		log_magic("exec(`%s'): waitpid(%lu) failed (errno:%d %s)",
-			  argv[0],
-			  (unsigned long)childpid,
-			  errno, strerror(errno));
+		log_magic("exec(`%s'): waitpid(%u) failed (errno:%d %s)",
+			  argv[0], childpid, errno, strerror(errno));
 		r = -err_no;
 		goto out;
 	}
 	if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
-		log_magic("exec(`%s') successful, detaching from pid:%lu",
-			  argv[0], (unsigned long)childpid);
+		log_magic("exec(`%s') successful, detaching from pid:%u",
+			  argv[0], childpid);
 		if (pink_trace_detach(childpid, 0) < 0)
-			log_magic("detach from pid:%lu failed (errno:%d %s)",
-				  (unsigned long)childpid,
-				  errno, strerror(errno));
+			log_magic("detach from pid:%u failed (errno:%d %s)",
+				  childpid, errno, strerror(errno));
 		r = 0;
 	} else if (WIFEXITED(status)) {
 		err_no = WEXITSTATUS(status);
-		log_magic("exec(`%s') failed (errno:%d %s)",
-			  argv[0], err_no, strerror(err_no));
+		log_magic("exec(`%s') failed (errno:%d %s)", argv[0],
+			  err_no, strerror(err_no));
 		r = -err_no;
 	} else if (WIFSIGNALED(status)) {
-		log_magic("exec(`%s') terminated (signal:%d)",
-			  argv[0], WTERMSIG(status));
-		log_magic("sending signal:%d to %s[%lu:%d]",
-			  WTERMSIG(status), data->comm,
-			  (unsigned long)tid, abi);
-		pink_easy_process_kill(current, WTERMSIG(status));
+		log_magic("exec(`%s') terminated (signal:%d)", argv[0],
+			  WTERMSIG(status));
+		log_magic("sending signal:%d to %s[%u:%d]", WTERMSIG(status),
+			  current->comm, current->tid, current->abi);
+		pink_trace_kill(current->tid, current->tgid, WTERMSIG(status));
 		r = MAGIC_RET_PROCESS_TERMINATED;
 	} else {
-		log_magic("exec(`%s') unknown status:%#x pid:%lu",
-			  argv[0], (unsigned)status, (unsigned long)childpid);
+		log_magic("exec(`%s') unknown status:0x%04x pid:%u", argv[0],
+			  status, childpid);
 		r = -ENOEXEC;
 	}
 

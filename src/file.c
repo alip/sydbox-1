@@ -3,7 +3,7 @@
  *
  * File related utilities
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is
  *   Copyright 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -14,7 +14,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
+# define _GNU_SOURCE 1
 #endif /* !_GNU_SOURCE */
 
 #include <assert.h>
@@ -30,8 +30,6 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <dirent.h>
-
 #include "file.h"
 
 #define NEWLINE "\n\r"
