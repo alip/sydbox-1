@@ -83,9 +83,10 @@ static void log_me(FILE *fp, unsigned level, const char *fmt, va_list ap)
 			fprintf(fp, " %s[%u.%d:%u]",
 				current_proc->comm ? current_proc->comm
 						   : sydbox->program_invocation_name,
-				current_proc->tid,
-				current_proc->tgid,
-				current_proc->abi);
+				GET_PID(current_proc),
+				GET_ABI(current_proc),
+				current_proc->tgid == -1 ? 0
+							 : current_proc->tgid);
 			if (current_proc->sysnum != 0) {
 				fprintf(fp, " sys:%ld|%s|",
 					current_proc->sysnum,

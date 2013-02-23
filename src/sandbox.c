@@ -340,11 +340,13 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 {
 	bool badfd;
 	int r, deny_errno, stat_errno;
+	pid_t pid;
 	char *prefix, *path, *abspath;
 
 	assert(current);
 	assert(info);
 
+	pid = GET_PID(current);
 	prefix = path = abspath = NULL;
 	deny_errno = info->deny_errno ? info->deny_errno : EPERM;
 
@@ -404,7 +406,7 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 
 	/* Step 3: resolve path */
 	if ((r = box_resolve_path(path, prefix ? prefix : current->cwd,
-				  current->tid, info->can_mode, &abspath)) < 0) {
+				  pid, info->can_mode, &abspath)) < 0) {
 		err_access(-r, "resolve_path(`%s', `%s')",
 			   prefix ? prefix : current->cwd, abspath);
 		r = deny(current, -r);
@@ -488,6 +490,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 {
 	int r;
 	char *abspath;
+	pid_t pid;
 	struct pink_sockaddr *psa;
 
 	assert(current);
@@ -505,6 +508,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 		  sys_access_mode_to_string(info->access_mode));
 
 	r = 0;
+	pid = GET_PID(current);
 	abspath = NULL;
 	psa = xmalloc(sizeof(struct pink_sockaddr));
 
@@ -539,7 +543,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 	if (psa->family == AF_UNIX && !path_abstract(psa->u.sa_un.sun_path)) {
 		/* Non-abstract UNIX socket, resolve the path. */
 		r = box_resolve_path(psa->u.sa_un.sun_path,
-				     current->cwd, current->tid,
+				     current->cwd, pid,
 				     info->can_mode, &abspath);
 		if (r < 0) {
 			err_access(-r, "resolve_path(`%s', `%s')",

@@ -23,32 +23,27 @@
 int path_decode(syd_proc_t *current, unsigned arg_index, char **buf)
 {
 	int r;
+	ssize_t count_read;
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 
 	assert(current);
 	assert(buf);
 
-	if ((r = pink_read_argument(current->tid, current->abi, &current->regs,
-				    arg_index, &addr)) < 0)
-		goto fail;
-	if (pink_read_string(current->tid, current->abi, addr, path,
-			     SYDBOX_PATH_MAX) < 0) {
-		r = -errno;
-		goto fail;
+	if ((r = syd_read_argument(current, arg_index, &addr)) < 0)
+		return r;
+
+	/* syd_read_string() handles panic() and partial reads */
+	count_read = syd_read_string(current, addr, path, SYDBOX_PATH_MAX);
+	if (count_read < 0) {
+		if (errno == EFAULT) {
+			*buf = NULL;
+			return 0;
+		}
+		return -errno;
 	}
-	path[SYDBOX_PATH_MAX-1] = '\0';
 	*buf = xstrdup(path);
 	return 0;
-fail:
-	if (r == -EFAULT) {
-		*buf = NULL;
-		return -EFAULT;
-	} else if (r == -ESRCH) {
-		return -ESRCH;
-	} else {
-		return panic(current);
-	}
 }
 
 /*
@@ -63,23 +58,18 @@ int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf)
 	int r;
 	long fd;
 	char *prefix = NULL;
+	pid_t pid = GET_PID(current);
 
-	log_check("%s[%u:%u] arg_index:%u", current->comm, current->tid,
-		  current->abi, arg_index);
-
-	if ((r = pink_read_argument(current->tid, current->abi, &current->regs,
-				    arg_index, &fd)) < 0) {
+	if ((r = pink_read_argument(current->pink, arg_index, &fd)) < 0) {
 		if (r == ESRCH) {
-			log_trace("read_argument(%u, %u, %u) failed (errno:%d %s)",
-				  current->tid, current->abi, arg_index,
-				  -r, strerror(-r));
-			log_trace("drop process %s[%u:%u]", current->comm,
-				  current->tid, current->abi);
+			log_trace("read_argument(pid:%u, index:%u) failed (errno:%d %s)",
+				  pid, arg_index, -r, strerror(-r));
+			log_trace("drop process %s[%u]", current->comm,
+				  pid);
 			return -ESRCH;
 		}
-		log_warning("read_argument(%u, %u, %u) failed (errno:%d %s)",
-			    current->tid, current->abi, arg_index,
-			    -r, strerror(-r));
+		log_warning("read_argument(pid:%u, index:%u) failed (errno:%d %s)",
+			    pid, arg_index, -r, strerror(-r));
 		return panic(current);
 	}
 
@@ -91,9 +81,9 @@ int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf)
 		*buf = NULL;
 		r = -EBADF;
 	} else {
-		if ((r = proc_fd(current->tid, fd, &prefix)) < 0) {
+		if ((r = proc_fd(pid, fd, &prefix)) < 0) {
 			log_warning("readlink /proc/%u/fd/%ld failed (errno:%d %s)",
-				    current->tid, fd, -r, strerror(-r));
+				    pid, fd, -r, strerror(-r));
 			if (r == -ENOENT)
 				r = -EBADF; /* correct errno */
 		} else {

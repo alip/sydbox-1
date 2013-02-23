@@ -132,15 +132,19 @@ static void kill_save_errno(pid_t pid, int sig)
 	errno = saved_errno;
 }
 
-static syd_proc_t *add_proc(pid_t tid, short flags)
+static syd_proc_t *add_proc(pid_t pid, short flags)
 {
+	int r;
 	syd_proc_t *newproc;
 
 	newproc = calloc(1, sizeof(syd_proc_t));
 	if (!newproc)
 		return NULL;
 
-	newproc->tid = tid;
+	if ((r = pink_process_alloc(pid, &newproc->pink)) < 0) {
+		errno = -r;
+		return NULL;
+	}
 	newproc->tgid = -1;
 	newproc->trace_step = SYD_STEP_NOT_SET;
 	newproc->flags = SYD_STARTUP | flags;
@@ -149,14 +153,14 @@ static syd_proc_t *add_proc(pid_t tid, short flags)
 	return newproc;
 }
 
-static syd_proc_t *add_proc_or_kill(pid_t tid, short flags)
+static syd_proc_t *add_proc_or_kill(pid_t pid, short flags)
 {
 	syd_proc_t *newproc;
 
-	newproc = add_proc(tid, flags);
+	newproc = add_proc(pid, flags);
 	if (!newproc) {
-		kill_save_errno(tid, SIGKILL);
-		die_errno("malloc() failed, killed %u", tid);
+		kill_save_errno(pid, SIGKILL);
+		die_errno("malloc() failed, killed %u", pid);
 	}
 
 	return newproc;
@@ -200,12 +204,12 @@ static void remove_proc(syd_proc_t *p)
 	free(p);
 }
 
-static syd_proc_t *lookup_proc(pid_t tid)
+static syd_proc_t *lookup_proc(pid_t pid)
 {
 	syd_proc_t *proc;
 
 	SYD_FOREACH_PROCESS(proc) {
-		if (proc->tid == tid)
+		if (pid == GET_PID(proc))
 			return proc;
 	}
 	return NULL;
@@ -256,8 +260,8 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 	const char *CG, *CB, *CN, *CI, *CE; /* good, bad, important, normal end */
 	struct proc_statinfo info;
 
-	pid_t tid = current->tid;
-	enum pink_abi abi = current->abi;
+	pid_t pid = GET_PID(current);
+	short abi = GET_ABI(current);
 	pid_t tgid = current->tgid;
 	struct snode *node;
 	struct sockmatch *match;
@@ -272,8 +276,8 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 		CG = CB = CI = CN = CE = "";
 	}
 
-	fprintf(stderr, "%s-- Information on Thread ID: %lu%s\n", CG, (unsigned long)tid, CE);
-	if ((r = proc_stat(tid, &info)) < 0) {
+	fprintf(stderr, "%s-- Information on Thread ID: %u%s\n", CG, pid, CE);
+	if ((r = proc_stat(pid, &info)) < 0) {
 		fprintf(stderr, "%sproc_stat failed (errno:%d %s)%s\n", CB, errno, strerror(errno), CE);
 	} else {
 		fprintf(stderr, "\t%sproc: pid=%d ppid=%d pgrp=%d%s\n",
@@ -370,8 +374,8 @@ static void init_early(void)
 	os_release = get_os_release();
 	sydbox = xmalloc(sizeof(sydbox_t));
 	sydbox->violation = false;
+	sydbox->wait_execve = false;
 	sydbox->exit_code = EXIT_SUCCESS;
-	sydbox->execve_status = WAIT_EXECVE;
 	config_init();
 	log_init(NULL);
 	log_abort_func(abort_all);
@@ -524,6 +528,7 @@ static void startup_child(char **argv)
 	}
 #endif
 	add_proc_or_kill(pid, SYD_SYDBOX_CHILD | post_attach_sigstop);
+	sydbox->wait_execve = true;
 }
 
 static int handle_interrupt(int fatal_sig)
@@ -538,7 +543,7 @@ static int handle_interrupt(int fatal_sig)
 static int ptrace_error(syd_proc_t *current, const char *req, int err_no)
 {
 	if (err_no != ESRCH) {
-		err_fatal(err_no, "ptrace(%s, %u) failed", req, current->tid);
+		err_fatal(err_no, "ptrace(%s, %u) failed", req, GET_PID(current));
 		syd_trace_kill(current, SIGKILL);
 	}
 	remove_proc(current);
@@ -548,20 +553,22 @@ static int ptrace_error(syd_proc_t *current, const char *req, int err_no)
 static int ptrace_step(syd_proc_t *current, int sig)
 {
 	int r;
+	pid_t pid;
 	enum syd_step step;
 	const char *msg;
 
+	pid = GET_PID(current);
 	step = current->trace_step == SYD_STEP_NOT_SET
 	       ? sydbox->trace_step
 	       : current->trace_step;
 
 	switch (step) {
 	case SYD_STEP_SYSCALL:
-		r = pink_trace_syscall(current->tid, sig);
+		r = pink_trace_syscall(pid, sig);
 		msg = "PTRACE_SYSCALL";
 		break;
 	case SYD_STEP_RESUME:
-		r = pink_trace_resume(current->tid, sig);
+		r = pink_trace_resume(pid, sig);
 		msg = "PTRACE_CONT";
 		break;
 	default:
@@ -577,7 +584,8 @@ static int event_init(syd_proc_t *current)
 	char *cwd, *comm;
 	struct snode *node, *newnode;
 	sandbox_t *inherit;
-	syd_proc_t *parent;
+	pid_t pid = GET_PID(current);
+	syd_proc_t *parent = NULL;
 
 	if (!syd_use_seize) {
 		if ((r = syd_trace_setup(current)) < 0)
@@ -593,10 +601,9 @@ static int event_init(syd_proc_t *current)
 		 */
 		struct proc_statinfo info;
 
-		if ((r = proc_stat(current->tid, &info)) < 0) {
+		if ((r = proc_stat(pid, &info)) < 0) {
 			/* We did our best, Watson, time to panic! */
-			log_warning("PANIC: failed to lookup parent of pid: %u",
-				    current->tid);
+			log_warning("PANIC: failed to lookup parent of pid: %u", pid);
 			return panic(current);
 		}
 
@@ -664,14 +671,14 @@ static int event_init(syd_proc_t *current)
 
 	if (sydbox->config.whitelist_per_process_directories) {
 		char *magic;
-		xasprintf(&magic, "/proc/%u/***", current->tid);
+		xasprintf(&magic, "/proc/%u/***", pid);
 		magic_append_whitelist_read(magic, current);
 		magic_append_whitelist_write(magic, current);
 		free(magic);
 	}
 
 out:
-	log_trace("initialized (parent:%u)", parent ? parent->tid : 0);
+	log_trace("initialised (parent:%u)", parent ? GET_PID(parent) : 0);
 	return 0;
 }
 
@@ -681,9 +688,8 @@ static int event_exec(syd_proc_t *current)
 	char *comm;
 	const char *match;
 
-	if (sydbox->execve_status == WAIT_EXECVE) {
-		log_info("entered execve() trap");
-		sydbox->execve_status = SEEN_EXECVE;
+	if (sydbox->wait_execve) {
+		log_info("[wait_execve]: execve() ptrace trap");
 		return 0;
 	}
 
@@ -750,65 +756,48 @@ out:
 
 static int event_syscall(syd_proc_t *current)
 {
-	int r;
+	int r = 0;
 
-	if (!sydbox->config.use_seccomp) {
-		switch (sydbox->execve_status) {
-		case WAIT_EXECVE:
-			log_info("waiting for execve(), sysenter:%s", strbool(entering(current)));
-			return 0;
-		case SEEN_EXECVE:
-			sydbox->execve_status = DONE_EXECVE;
-			log_info("execve() done, sandboxing started");
-			return 0;
-		case DONE_EXECVE:
-		default:
-			break;
+	if (sydbox->wait_execve) {
+		if (entering(current)) {
+			log_info("[wait_execve]: entering execve()");
+		} else {
+			log_info("[wait_execve]: exiting execve(), sandboxing started");
+			sydbox->wait_execve = false;
 		}
+		goto out;
 	}
 
 	if (current->flags & SYD_IGNORE_PROCESS)
-		return 0;
+		goto out;
 
-	if (entering(current)) {
-		r = sysenter(current);
-	} else {
-		r = sysexit(current);
-		if (sydbox->config.use_seccomp)
-			current->trace_step = SYD_STEP_RESUME;
-	}
-
+	r = entering(current) ? sysenter(current) : sysexit(current);
+out:
+	current->flags ^= SYD_INSYSCALL;
+	if (sydbox->config.use_seccomp && sysexit(current))
+		current->trace_step = SYD_STEP_RESUME;
 	return r;
 }
 
-#if PINK_HAVE_SECCOMP
+#ifdef WANT_SECCOMP
 static int event_seccomp(syd_proc_t *current)
 {
-	int r;
-	unsigned long ret_data;
-
-	if ((r = syd_trace_geteventmsg(current, &ret_data)) < 0)
-		return ptrace_error(current, "PTRACE_GETEVENTMSG", -r);
-
-	switch (sydbox->execve_status) {
-	case WAIT_EXECVE:
-		log_info("waiting for execve(), ret_data:%lu", ret_data);
-		return 0;
-	case SEEN_EXECVE:
-		sydbox->execve_status = DONE_EXECVE;
-		log_info("execve() done, sandboxing started");
-		return 0;
-	case DONE_EXECVE:
-	default:
-		break;
+	if (sydbox->wait_execve) {
+		log_info("[wait_execve]: execve() seccomp trap");
+		goto out;
 	}
 
+#if 0
+	if ((r = syd_trace_geteventmsg(current, &ret_data)) < 0)
+		return ptrace_error(current, "PTRACE_GETEVENTMSG", -r);
 	if (current->flags & SYD_IGNORE_PROCESS)
 		return 0;
+#endif
 
+out:
 	/* Stop at syscall entry */
-	current->step = SYD_STEP_SYSCALL;
-	current->flags &= ~SYD_INSYSCALL;
+	current->trace_step = SYD_STEP_SYSCALL;
+	current->flags |= SYD_INSYSCALL;
 
 	return 0;
 }
@@ -842,7 +831,7 @@ static int event_exit(syd_proc_t *current, int status)
 
 static int trace(void)
 {
-	pid_t tid;
+	pid_t pid;
 	bool stopped;
 	int r;
 	int status, sig;
@@ -868,28 +857,28 @@ static int trace(void)
 		if (interactive)
 			sigprocmask(SIG_SETMASK, &empty_set, NULL);
 #ifdef __WALL
-		tid = waitpid(-1, &status, waitpid_options);
-		if (tid < 0 && (waitpid_options & __WALL) && errno == EINVAL) {
+		pid = waitpid(-1, &status, waitpid_options);
+		if (pid < 0 && (waitpid_options & __WALL) && errno == EINVAL) {
 			/* this kernel does not support __WALL */
 			waitpid_options &= ~__WALL;
-			tid = waitpid(-1, &status, waitpid_options);
+			pid = waitpid(-1, &status, waitpid_options);
 		}
-		if (tid < 0 && !(waitpid_options & __WALL) && errno == ECHILD) {
+		if (pid < 0 && !(waitpid_options & __WALL) && errno == ECHILD) {
 			/* most likely a "cloned" process */
-			tid = waitpid(-1, &status, __WCLONE);
-			if (tid < 0) {
+			pid = waitpid(-1, &status, __WCLONE);
+			if (pid < 0) {
 				err_fatal(errno, "wait failed");
 				goto cleanup;
 			}
 		}
 #else
-		tid = waitpid(-1, &status, 0);
+		pid = waitpid(-1, &status, 0);
 #endif /* __WALL */
 		wait_errno = errno;
 		if (interactive)
 			sigprocmask(SIG_SETMASK, &blocked_set, NULL);
 
-		if (tid < 0) {
+		if (pid < 0) {
 			switch (wait_errno) {
 			case EINTR:
 				continue;
@@ -922,33 +911,31 @@ static int trace(void)
 				strcpy(buf, "WIFCONTINUED");
 #endif
 			log_trace("[wait(0x%04x) = %u] %s (ptrace:%u %s)",
-				  status, tid, buf, event, pink_event_name(event));
+				  status, pid, buf, event, pink_event_name(event));
 		}
 
-		current = lookup_proc(tid);
+		current = lookup_proc(pid);
 		log_context(current);
 
 		if (!current) {
 			if (sydbox->config.follow_fork) {
-				current = add_proc_or_kill(tid, post_attach_sigstop);
-				log_trace("Process %u attached", tid);
+				current = add_proc_or_kill(pid, post_attach_sigstop);
+				log_trace("Process %u attached", pid);
 			} else {
 				/* This can happen if a clone call used
 				 * CLONE_PTRACE itself. */
 #if 0
 				if (WIFSTOPPED(status))
-					pink_trace_detach(tid, 0);
+					pink_trace_detach(pid, 0);
 #endif
-				die("Unknown pid: %u", tid); /* XXX */
+				die("Unknown pid: %u", pid); /* XXX */
 			}
 		}
 
-#if PINK_HAVE_REGS_T
-		if (WIFSTOPPED(status) && (r = syd_trace_get_regs(current)) < 0) {
-			ptrace_error(current, "PTRACE_GETREGS", -r);
+		if (WIFSTOPPED(status) && (r = UPDATE_REGSET(current)) < 0) {
+			ptrace_error(current, "GET_REGSET", -r);
 			continue;
 		}
-#endif
 
 		/* Under Linux, execve changes pid to thread leader's pid,
 		 * and we see this changed pid on EVENT_EXEC and later,
@@ -968,20 +955,20 @@ static int trace(void)
 			syd_proc_t *execve_thread;
 			long old_tid = 0;
 
-			if ((r = pink_trace_geteventmsg(tid, (unsigned long *) &old_tid)) < 0)
+			if ((r = pink_trace_geteventmsg(pid, (unsigned long *) &old_tid)) < 0)
 				goto dont_switch_procs;
-			if (old_tid <= 0 || old_tid == tid)
+			if (old_tid <= 0 || old_tid == pid)
 				goto dont_switch_procs;
 			execve_thread = lookup_proc(old_tid);
 			/* It should be !NULL, but someone feels paranoid */
 			if (!execve_thread)
 				goto dont_switch_procs;
 			log_trace("leader %lu superseded by execve in tid %u",
-				  old_tid, current->tid);
+				  old_tid, pid);
 			/* Drop leader, switch to the thread, reusing leader's tid */
 			remove_proc(current);
 			current = execve_thread;
-			current->tid = tid;
+			SET_PID(current, pid);
 		}
 dont_switch_procs:
 		if (event == PINK_EVENT_EXEC) {
@@ -1033,7 +1020,7 @@ dont_switch_procs:
 				}
 			}
 #endif
-#if PINK_HAVE_SECCOMP
+#ifdef WANT_SECCOMP
 			if (event == PINK_EVENT_SECCOMP) {
 				r = event_seccomp(current);
 				if (r == -ESRCH)
@@ -1063,7 +1050,7 @@ dont_switch_procs:
 			 * TODO: shouldn't we check for errno == EINVAL too?
 			 * We can get ESRCH instead, you know...
 			 */
-			stopped = (pink_trace_get_siginfo(tid, &si) < 0);
+			stopped = (pink_trace_get_siginfo(pid, &si) < 0);
 #if PINK_HAVE_SEIZE
 handle_stopsig:
 #endif
@@ -1079,7 +1066,7 @@ handle_stopsig:
 				 * This makes stopping signals work properly on straced process
 				 * (that is, process really stops. It used to continue to run).
 				 */
-				if ((r = pink_trace_listen(current->tid) < 0))
+				if ((r = pink_trace_listen(pid) < 0))
 					ptrace_error(current, "PTRACE_LISTEN", -r);
 				continue;
 			}
@@ -1098,7 +1085,6 @@ handle_stopsig:
 		 * (Or it still can be that pesky post-execve SIGTRAP!)
 		 * Handle it.
 		 */
-		current->flags ^= SYD_INSYSCALL;
 		r = event_syscall(current);
 		if (r != 0) {
 			/* ptrace() failed in trace_syscall().

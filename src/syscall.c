@@ -357,7 +357,7 @@ int sysenter(syd_proc_t *current)
 	if ((r = syd_read_syscall(current, &sysnum)) < 0)
 		return r;
 
-	entry = systable_lookup(sysnum, current->abi);
+	entry = systable_lookup(sysnum, GET_ABI(current));
 	if (entry) {
 		current->sysnum = sysnum;
 		current->sysname = entry->name;
@@ -381,7 +381,7 @@ int sysexit(syd_proc_t *current)
 		goto out;
 	}
 
-	entry = systable_lookup(current->sysnum, current->abi);
+	entry = systable_lookup(current->sysnum, GET_ABI(current));
 	r = (entry && entry->exit) ? entry->exit(current) : 0;
 out:
 	clear_proc(current);

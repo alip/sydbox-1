@@ -45,9 +45,9 @@
 #define strbool(arg)	((arg) ? "yes" : "no")
 
 /* Process flags */
-#define SYD_IGNORE_ONE_SIGSTOP	00001
-#define SYD_FOLLOWFORK		00002
-#define SYD_STARTUP		00004
+#define SYD_STARTUP		00001
+#define SYD_IGNORE_ONE_SIGSTOP	00002
+#define SYD_FOLLOWFORK		00004
 #define SYD_INSYSCALL		00010
 #define SYD_DENYSYSCALL		00020
 #define SYD_IGNORE_PROCESS	00040
@@ -335,14 +335,11 @@ typedef struct {
 
 /* process information */
 typedef struct syd_proc {
-	/* Thread ID */
-	pid_t tid;
+	/* pink process */
+	struct pink_process *pink;
 
 	/* Thread group ID */
 	pid_t tgid;
-
-	/* System call ABI */
-	enum pink_abi abi;
 
 	/* SYD_* flags */
 	short flags;
@@ -355,9 +352,6 @@ typedef struct syd_proc {
 
 	/* Last system call name */
 	const char *sysname;
-
-	/* Process registers */
-	pink_regs_t regs;
 
 	/* Arguments of last system call */
 	long args[PINK_MAX_ARGS];
@@ -390,6 +384,10 @@ typedef struct syd_proc {
 	/* singly-linked list */
 	SLIST_ENTRY(syd_proc) up;
 } syd_proc_t;
+#define GET_PID(proc)		pink_process_get_pid((proc)->pink)
+#define SET_PID(proc, pid)	pink_process_set_pid((proc)->pink, (pid))
+#define GET_ABI(proc)		pink_process_get_abi((proc)->pink)
+#define UPDATE_REGSET(proc)	pink_process_update_regset((proc)->pink)
 
 typedef struct {
 	/* magic access to core.*  */
@@ -439,12 +437,8 @@ typedef struct {
 	int trace_options;
 	enum syd_step trace_step;
 
+	bool wait_execve;
 	int exit_code;
-	enum {
-		WAIT_EXECVE, /* waiting for execve() */
-		SEEN_EXECVE, /* seen execve() trap */
-		DONE_EXECVE, /* execve() returned success */
-	} execve_status;
 
 	/* This is true if an access violation has occured, false otherwise. */
 	bool violation;
@@ -517,13 +511,12 @@ extern sydbox_t *sydbox;
 /* Global functions */
 int syd_trace_detach(syd_proc_t *current, int sig);
 int syd_trace_kill(syd_proc_t *current, int sig);
-int syd_trace_get_regs(syd_proc_t *current);
 int syd_trace_setup(syd_proc_t *current);
 int syd_trace_geteventmsg(syd_proc_t *current, unsigned long *data);
 int syd_read_syscall(syd_proc_t *current, long *sysnum);
 int syd_read_retval(syd_proc_t *current, long *retval, int *error);
 int syd_read_argument(syd_proc_t *current, unsigned arg_index, long *argval);
-int syd_read_string(syd_proc_t *current, long addr, char *dest, size_t len);
+ssize_t syd_read_string(syd_proc_t *current, long addr, char *dest, size_t len);
 int syd_write_syscall(syd_proc_t *current, long sysnum);
 int syd_write_retval(syd_proc_t *current, long retval, int error);
 int syd_read_socket_argument(syd_proc_t *current, bool decode_socketcall,
@@ -583,10 +576,10 @@ static inline void free_sandbox(sandbox_t *box)
 
 void systable_init(void);
 void systable_free(void);
-void systable_add_full(long no, enum pink_abi abi, const char *name,
+void systable_add_full(long no, short abi, const char *name,
 		       sysfunc_t fenter, sysfunc_t fexit);
 void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit);
-const sysentry_t *systable_lookup(long no, enum pink_abi abi);
+const sysentry_t *systable_lookup(long no, short abi);
 
 size_t syscall_entries_max(void);
 void sysinit(void);
