@@ -367,7 +367,7 @@ AC_CHECK_DECL([PTRACE_LISTEN],
 	      [include_linux_ptrace_h])
 AC_CHECK_DECL([PTRACE_INTERRUPT],
 	      [AC_CHECK_DECL([PTRACE_SEIZE_DEVEL], [PINK_HAVE_INTERRUPT=0], [PINK_HAVE_INTERRUPT=1], [include_linux_ptrace_h])],
-	      [PINK_HAVE_SEIZE=0],
+	      [PINK_HAVE_INTERRUPT=0],
 	      [include_linux_ptrace_h])
 
 AC_SUBST([PINK_HAVE_SETUP])
