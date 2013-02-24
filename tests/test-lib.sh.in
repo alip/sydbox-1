@@ -38,10 +38,11 @@ SHELL_PATH="/bin/sh"
 PERL_PATH="perl"
 export DIFF PERL_PATH SHELL_PATH
 
+################################################################
+# It appears that people try to run tests without building...
 SYDBOX_BUILD_DIR="@TOP_BUILDDIR@"
 if test -z "$SYDBOX_TEST_INSTALLED"
 then
-	# It appears that people try to run tests without building...
 	"$SYDBOX_BUILD_DIR"/src/sydbox >/dev/null 2>&1
 	if test $? != 1
 	then
@@ -78,7 +79,7 @@ EDITOR=:
 # /usr/xpg4/bin/sh and /bin/ksh to bail out.  So keep the unsets
 # deriving from the command substitution clustered with the other
 # ones.
-unset VISUAL EMAIL LANGUAGE COLUMNS SYDBOX_CONFIG $($PERL_PATH -e '
+unset VISUAL EMAIL LANGUAGE COLUMNS SYDBOX_CONFIG $("$PERL_PATH" -e '
 	my @env = keys %ENV;
 	my $ok = join("|", qw(
 		TRACE
@@ -88,12 +89,33 @@ unset VISUAL EMAIL LANGUAGE COLUMNS SYDBOX_CONFIG $($PERL_PATH -e '
 		.*_TEST
 		PROVE
 		VALGRIND
-		PERF_AGGREGATING_LATER
+		UNZIP
 	));
 	my @vars = grep(/^SYDBOX_/ && !/^SYDBOX_($ok)/o, @env);
 	print join("\n", @vars);
 ')
 export EDITOR
+
+# Add libc MALLOC and MALLOC_PERTURB test
+# only if we are not executing the test with valgrind
+if expr " $SYDBOX_TEST_OPTS " : ".* --valgrind " >/dev/null ||
+   test -n "$TEST_NO_MALLOC_CHECK"
+then
+	setup_malloc_check () {
+		: nothing
+	}
+	teardown_malloc_check () {
+		: nothing
+	}
+else
+	setup_malloc_check () {
+		MALLOC_CHECK_=3	MALLOC_PERTURB_=165
+		export MALLOC_CHECK_ MALLOC_PERTURB_
+	}
+	teardown_malloc_check () {
+		unset MALLOC_CHECK_ MALLOC_PERTURB_
+	}
+fi
 
 # Protect ourselves from common misconfiguration to export
 # CDPATH into the environment
@@ -292,6 +314,20 @@ test_eval_ () {
 }
 
 test_run_ () {
+	if test -n "$test_sydbox_options"
+	then
+		save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
+		if test -n "$use_seize"
+		then
+			SYDBOX_TEST_OPTIONS="-m core/trace/use_seize:$use_seize $SYDBOX_TEST_OPTIONS"
+		fi
+		if test -n "$use_seccomp"
+		then
+			SYDBOX_TEST_OPTIONS="-m core/trace/use_seccomp:$use_seccomp $SYDBOX_TEST_OPTIONS"
+		fi
+		export SYDBOX_TEST_OPTIONS
+	fi
+
 	test_cleanup=:
 	expecting_failure=$2
 	test_eval_ "$1"
@@ -299,11 +335,19 @@ test_run_ () {
 
 	if test -z "$immediate" || test $eval_ret = 0 || test -n "$expecting_failure"
 	then
+		setup_malloc_check
 		test_eval_ "$test_cleanup"
+		teardown_malloc_check
 	fi
 	if test "$verbose" = "t" && test -n "$HARNESS_ACTIVE"
 	then
 		echo ""
+	fi
+
+	if test -n "$test_sydbox_options"
+	then
+		SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS"
+		export SYDBOX_TEST_OPTIONS
 	fi
 	return "$eval_ret"
 }

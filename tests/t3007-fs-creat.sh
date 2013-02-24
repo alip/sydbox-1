@@ -12,7 +12,7 @@ SYDBOX_TEST_OPTIONS="
     -mcore/violation/raise_safe:1
 "
 
-test_expect_success 'deny creat()' '
+test_expect_success_foreach_option 'deny creat()' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -20,7 +20,7 @@ test_expect_success 'deny creat()' '
     test_path_is_missing "$f"
 '
 
-test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'deny creat() for dangling symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
@@ -30,7 +30,7 @@ test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'whitelist creat()' '
+test_expect_success_foreach_option 'whitelist creat()' '
     f="no-$(unique_file)" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -39,7 +39,7 @@ test_expect_success 'whitelist creat()' '
     test_path_is_non_empty "$f"
 '
 
-test_expect_success 'blacklist creat()' '
+test_expect_success_foreach_option 'blacklist creat()' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -48,7 +48,7 @@ test_expect_success 'blacklist creat()' '
     test_path_is_missing "$f"
 '
 
-test_expect_success SYMLINKS 'blacklist creat() for dangling symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'blacklist creat() for dangling symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&

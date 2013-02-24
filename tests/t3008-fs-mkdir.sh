@@ -12,11 +12,11 @@ SYDBOX_TEST_OPTIONS="
     -mcore/violation/raise_safe:1
 "
 
-test_expect_success 'deny mkdir(NULL) with EFAULT' '
+test_expect_success_foreach_option 'deny mkdir(NULL) with EFAULT' '
     sydbox -- emily mkdir -e EFAULT
 '
 
-test_expect_success 'deny mkdir()' '
+test_expect_success_foreach_option 'deny mkdir()' '
     d="no-$(unique_dir)"
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -24,7 +24,7 @@ test_expect_success 'deny mkdir()' '
     test_path_is_missing "$d"
 '
 
-test_expect_success 'deny mkdir() for existant directory' '
+test_expect_success_foreach_option 'deny mkdir() for existant directory' '
     d="$(unique_dir)" &&
     mkdir "$d" &&
     test_must_violate sydbox \
@@ -32,7 +32,7 @@ test_expect_success 'deny mkdir() for existant directory' '
         -- emily mkdir -e EEXIST "$d"
 '
 
-test_expect_success 'whitelist mkdir()' '
+test_expect_success_foreach_option 'whitelist mkdir()' '
     d="no-$(unique_dir)" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -41,7 +41,7 @@ test_expect_success 'whitelist mkdir()' '
     test_path_is_dir "$d"
 '
 
-test_expect_success 'whitelist mkdir() for existant directory' '
+test_expect_success_foreach_option 'whitelist mkdir() for existant directory' '
     d="$(unique_dir)" &&
     mkdir "$d" &&
     sydbox \
@@ -50,7 +50,7 @@ test_expect_success 'whitelist mkdir() for existant directory' '
         -- emily mkdir -e EEXIST "$d"
 '
 
-test_expect_success 'blacklist mkdir()' '
+test_expect_success_foreach_option 'blacklist mkdir()' '
     d="no-$(unique_dir)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -59,7 +59,7 @@ test_expect_success 'blacklist mkdir()' '
     test_path_is_missing "$d"
 '
 
-test_expect_success 'deny mkdir() for existant directory' '
+test_expect_success_foreach_option 'deny mkdir() for existant directory' '
     d="$(unique_dir)" &&
     mkdir "$d" &&
     test_must_violate sydbox \

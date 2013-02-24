@@ -12,14 +12,14 @@ SYDBOX_TEST_OPTIONS="
     -mcore/violation/raise_safe:1
 "
 
-test_expect_success 'rmdir($empty-dir) returns ERRNO_0' '
+test_expect_success_foreach_option 'rmdir($empty-dir) returns ERRNO_0' '
     d="$(unique_dir)" &&
     mkdir "$d" &&
     sydbox -- emily rmdir -e ERRNO_0 "$d" &&
     test_path_is_missing "$d"
 '
 
-test_expect_success 'rmdir($noaccess/$empty-dir) returns EACCES' '
+test_expect_success_foreach_option 'rmdir($noaccess/$empty-dir) returns EACCES' '
     d0="no-access-$(unique_dir)" &&
     d1="$(unique_dir)" &&
     mkdir "$d0" &&
@@ -32,24 +32,24 @@ test_expect_success 'rmdir($noaccess/$empty-dir) returns EACCES' '
     test_path_is_dir "$d0"/"$d1"
 '
 
-test_expect_success 'rmdir(NULL) returns EFAULT' '
+test_expect_success_foreach_option 'rmdir(NULL) returns EFAULT' '
     sydbox -- emily rmdir -e EFAULT
 '
 
-test_expect_success 'rmdir($empty-dir/.) returns EINVAL' '
+test_expect_success_foreach_option 'rmdir($empty-dir/.) returns EINVAL' '
     d="$(unique_dir)" &&
     mkdir "$d" &&
     sydbox -- emily rmdir -e EINVAL "$d"/. &&
     test_path_is_dir "$d"
 '
 
-test_expect_success SYMLINKS 'rmdir($symlink-self/foo) returns ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'rmdir($symlink-self/foo) returns ELOOP' '
     l="self-$(unique_link)" &&
     ln -sf "$l" "$l" &&
     sydbox -- emily rmdir -e ELOOP "$l"/foo
 '
 
-test_expect_success SYMLINKS 'rmdir($symlink-circular/foo) returns ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'rmdir($symlink-circular/foo) returns ELOOP' '
     l0="bad-$(unique_link)" &&
     l1="bad-$(unique_link)" &&
     ln -sf "$l0" "$l1" &&
@@ -57,19 +57,19 @@ test_expect_success SYMLINKS 'rmdir($symlink-circular/foo) returns ELOOP' '
     sydbox -- emily rmdir -e ELOOP "$l0"/foo
 '
 
-test_expect_success 'rmdir($nodir) returns ENOENT' '
+test_expect_success_foreach_option 'rmdir($nodir) returns ENOENT' '
     d="no-$(unique_dir)" &&
     sydbox -- emily rmdir -e ENOENT "$d"
 '
 
-test_expect_success 'rmdir($notdir) returns ENOTDIR' '
+test_expect_success_foreach_option 'rmdir($notdir) returns ENOTDIR' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox -- emily rmdir -e ENOTDIR "$f" &&
     test_path_is_file "$f"
 '
 
-test_expect_success SYMLINKS 'rmdir($symlink-dangling) returns ENOTDIR' '
+test_expect_success_foreach_option SYMLINKS 'rmdir($symlink-dangling) returns ENOTDIR' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
@@ -77,7 +77,7 @@ test_expect_success SYMLINKS 'rmdir($symlink-dangling) returns ENOTDIR' '
     test_path_is_symlink "$l"
 '
 
-test_expect_success 'rmdir($not-empty-dir) returns ENOTEMPTY' '
+test_expect_success_foreach_option 'rmdir($not-empty-dir) returns ENOTEMPTY' '
     d="$(unique_dir)" &&
     mkdir "$d" &&
     touch "$d"/foo &&

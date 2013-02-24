@@ -12,7 +12,7 @@ SYDBOX_TEST_OPTIONS="
     -mcore/violation/raise_safe:1
 "
 
-test_expect_success 'fchmodat(AT_FDCWD, $file) returns ERRNO_0' '
+test_expect_success_foreach_option 'fchmodat(AT_FDCWD, $file) returns ERRNO_0' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
@@ -21,7 +21,7 @@ test_expect_success 'fchmodat(AT_FDCWD, $file) returns ERRNO_0' '
     test_path_is_not_writable "$f"
 '
 
-test_expect_success 'fchmodat($dir, $file) returns ERRNO_0' '
+test_expect_success_foreach_option 'fchmodat($dir, $file) returns ERRNO_0' '
     f="$(unique_file)" &&
     d="$(unique_dir)" &&
     mkdir "$d" &&
@@ -32,7 +32,7 @@ test_expect_success 'fchmodat($dir, $file) returns ERRNO_0' '
     test_path_is_not_writable "$d"/"$f"
 '
 
-test_expect_success SYMLINKS 'fchmodat(AT_FDCWD, $symlink) returns ERRNO_0' '
+test_expect_success_foreach_option SYMLINKS 'fchmodat(AT_FDCWD, $symlink) returns ERRNO_0' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -43,7 +43,7 @@ test_expect_success SYMLINKS 'fchmodat(AT_FDCWD, $symlink) returns ERRNO_0' '
     test_path_is_not_writable "$d"/"$f"
 '
 
-test_expect_success SYMLINKS 'fchmodat($dir, $symlink) returns ERRNO_0' '
+test_expect_success_foreach_option SYMLINKS 'fchmodat($dir, $symlink) returns ERRNO_0' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     d="$(unique_dir)" &&
@@ -56,48 +56,48 @@ test_expect_success SYMLINKS 'fchmodat($dir, $symlink) returns ERRNO_0' '
     test_path_is_not_writable "$d"/"$f"
 '
 
-test_expect_success 'fchmodat(AT_FDCWD, NULL) returns EFAULT' '
+test_expect_success_foreach_option 'fchmodat(AT_FDCWD, NULL) returns EFAULT' '
     sydbox -- emily fchmodat -d cwd -m 000 -e EFAULT
 '
 
-test_expect_success 'fchmodat($dir, NULL) returns EFAULT' '
+test_expect_success_foreach_option 'fchmodat($dir, NULL) returns EFAULT' '
     d="$(unique_dir)" &&
     mkdir "$d" &&
     sydbox -- emily fchmodat -d "$d" -m 000 -e EFAULT
 '
 
-test_expect_success 'fchmodat($badfd, $file) returns EBADF' '
+test_expect_success_foreach_option 'fchmodat($badfd, $file) returns EBADF' '
     f="no-$(unique_file)" &&
     sydbox -- emily fchmodat -d null -m 000 -e EBADF "$f"
 '
 
-test_expect_success 'fchmodat($badfd, "") returns ENOENT' '
+test_expect_success_foreach_option 'fchmodat($badfd, "") returns ENOENT' '
     sydbox -- emily fchmodat -d null -m 000 -e ENOENT ""
 '
 
-test_expect_success 'fchmodat(AT_FDCWD, "") returns ENOENT' '
+test_expect_success_foreach_option 'fchmodat(AT_FDCWD, "") returns ENOENT' '
     sydbox -- emily fchmodat -d cwd -m 000 -e ENOENT ""
 '
 
-test_expect_success 'fchmodat($dir, "") returns ENOENT' '
+test_expect_success_foreach_option 'fchmodat($dir, "") returns ENOENT' '
     d="$(unique_dir)" &&
     mkdir "$d" &&
     sydbox -- emily fchmodat -d "$d" -m 000 -e ENOENT ""
 '
 
-test_expect_success 'fchmodat(AT_FDCWD, $nofile) returns ENOENT' '
+test_expect_success_foreach_option 'fchmodat(AT_FDCWD, $nofile) returns ENOENT' '
     f="no-$(unique_file)" &&
     sydbox -- emily fchmodat -d cwd -m 000 -e ENOENT "$f"
 '
 
-test_expect_success 'fchmodat($dir, $nofile) returns ENOENT' '
+test_expect_success_foreach_option 'fchmodat($dir, $nofile) returns ENOENT' '
     f="no-$(unique_file)" &&
     d="$(unique_dir)" &&
     mkdir "$d" &&
     sydbox -- emily fchmodat -d "$d" -m 000 -e ENOENT "$f"
 '
 
-test_expect_success 'fchmodat(AT_FDCWD, $noaccess/$file) returns EACCES' '
+test_expect_success_foreach_option 'fchmodat(AT_FDCWD, $noaccess/$file) returns EACCES' '
     d="no-access-$(unique_dir)" &&
     f="$(unique_file)" &&
     mkdir "$d" &&
@@ -111,7 +111,7 @@ test_expect_success 'fchmodat(AT_FDCWD, $noaccess/$file) returns EACCES' '
 '
 
 # TODO: emily limitation, not easy to test...
-#test_expect_success 'fchmodat($noaccess, $file) returns EACCES' '
+#test_expect_success_foreach_option 'fchmodat($noaccess, $file) returns EACCES' '
 #    d="no-access-$(unique_dir)" &&
 #    f="$(unique_file)" &&
 #    mkdir "$d" &&
@@ -124,25 +124,25 @@ test_expect_success 'fchmodat(AT_FDCWD, $noaccess/$file) returns EACCES' '
 #    test_path_is_writable "$d"/"$f" &&
 #'
 
-test_expect_success 'fchmodat(AT_FDCWD, $nodir/$file) returns ENOTDIR' '
+test_expect_success_foreach_option 'fchmodat(AT_FDCWD, $nodir/$file) returns ENOTDIR' '
     d="non-$(unique_dir)" &&
     touch "$d" &&
     sydbox -- emily fchmodat -d cwd -m 000 -e ENOTDIR "$d"/foo
 '
 
-test_expect_success 'fchmodat($nodir, $file) returns ENOTDIR' '
+test_expect_success_foreach_option 'fchmodat($nodir, $file) returns ENOTDIR' '
     d="non-$(unique_dir)" &&
     touch "$d" &&
     sydbox -- emily fchmodat -d "$d" -m 000 -e ENOTDIR "$d"/foo
 '
 
-test_expect_success SYMLINKS 'fchmodat(AT_FDCWD, $symlink-self) returns ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'fchmodat(AT_FDCWD, $symlink-self) returns ELOOP' '
     l="self-$(unique_link)" &&
     ln -sf "$l" "$l" &&
     sydbox -- emily fchmodat -d cwd -m 000 -e ELOOP "$l"
 '
 
-test_expect_success SYMLINKS 'fchmodat($dir, $symlink-self) returns ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'fchmodat($dir, $symlink-self) returns ELOOP' '
     d="$(unique_dir)" &&
     l="self-$(unique_link)" &&
     mkdir "$d" &&
@@ -153,7 +153,7 @@ test_expect_success SYMLINKS 'fchmodat($dir, $symlink-self) returns ELOOP' '
     sydbox -- emily fchmodat -d "$d" -m 000 -e ELOOP "$l"
 '
 
-test_expect_success SYMLINKS 'fchmodat(AT_FDCWD, $symlink-circular) returns ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'fchmodat(AT_FDCWD, $symlink-circular) returns ELOOP' '
     l0="loop0-$(unique_link)" &&
     l1="loop1-$(unique_link)" &&
     ln -sf "$l0" "$l1" &&
@@ -161,7 +161,7 @@ test_expect_success SYMLINKS 'fchmodat(AT_FDCWD, $symlink-circular) returns ELOO
     sydbox -- emily fchmodat -d cwd -m 000 -e ELOOP "$l0"
 '
 
-test_expect_success SYMLINKS 'fchmodat($dir, $symlink-circular) returns ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'fchmodat($dir, $symlink-circular) returns ELOOP' '
     d="$(unique_dir)" &&
     l0="loop0-$(unique_link)" &&
     l1="loop1-$(unique_link)" &&
@@ -174,7 +174,7 @@ test_expect_success SYMLINKS 'fchmodat($dir, $symlink-circular) returns ELOOP' '
     sydbox -- emily fchmodat -d "$d" -m 000 -e ELOOP "$l0"
 '
 
-test_expect_success 'deny fchmodat(-1, $abspath) with EPERM' '
+test_expect_success_foreach_option 'deny fchmodat(-1, $abspath) with EPERM' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
@@ -185,7 +185,7 @@ test_expect_success 'deny fchmodat(-1, $abspath) with EPERM' '
     test_path_is_writable "$f"
 '
 
-test_expect_success 'deny fchmodat(AT_FDCWD, $file)' '
+test_expect_success_foreach_option 'deny fchmodat(AT_FDCWD, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
@@ -196,41 +196,14 @@ test_expect_success 'deny fchmodat(AT_FDCWD, $file)' '
     test_path_is_writable "$f"
 '
 
-test_expect_success 'deny fchmodat(AT_FDCWD, $nofile)' '
+test_expect_success_foreach_option 'deny fchmodat(AT_FDCWD, $nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily fchmodat -e ENOENT -d cwd -m 000 no"$f"
 '
 
-test_expect_success 'deny fchmodat(AT_FDCWD, $symlink-file)' '
-    touch "$f" &&
-    chmod 600 "$f" &&
-    ln -sf "$f" "$l" &&
-    test_must_violate sydbox \
-        -m core/sandbox/write:deny \
-        -- emily fchmodat -e EPERM -d cwd -m 000 "$l" &&
-    test_path_is_readable "$f" &&
-    test_path_is_writable "$f"
-'
-
-test_expect_success 'deny fchmodat($fd, $file)' '
-    touch "$f" &&
-    chmod 600 "$f" &&
-    test_must_violate sydbox \
-        -m core/sandbox/write:deny \
-        -- emily fchmodat -e EPERM -d "$HOME" -m 000 "$f" &&
-    test_path_is_readable "$f" &&
-    test_path_is_writable "$f"
-'
-
-test_expect_success 'deny fchmodat($fd, $nofile)' '
-    test_must_violate sydbox \
-        -m core/sandbox/write:deny \
-        -- emily fchmodat -e ENOENT -d cwd -m 000 no"$f"
-'
-
-test_expect_success SYMLINKS 'deny fchmodat($fd, $symlink-file)' '
+test_expect_success_foreach_option 'deny fchmodat(AT_FDCWD, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -243,7 +216,37 @@ test_expect_success SYMLINKS 'deny fchmodat($fd, $symlink-file)' '
     test_path_is_writable "$f"
 '
 
-test_expect_success 'blacklist fchmodat(-1, $abspath)' '
+test_expect_success_foreach_option 'deny fchmodat($fd, $file)' '
+    f="$(unique_file)" &&
+    touch "$f" &&
+    chmod 600 "$f" &&
+    test_must_violate sydbox \
+        -m core/sandbox/write:deny \
+        -- emily fchmodat -e EPERM -d "$HOME" -m 000 "$f" &&
+    test_path_is_readable "$f" &&
+    test_path_is_writable "$f"
+'
+
+test_expect_success_foreach_option 'deny fchmodat($fd, $nofile)' '
+    test_must_violate sydbox \
+        -m core/sandbox/write:deny \
+        -- emily fchmodat -e ENOENT -d cwd -m 000 no"$f"
+'
+
+test_expect_success_foreach_option SYMLINKS 'deny fchmodat($fd, $symlink-file)' '
+    f="$(unique_file)" &&
+    l="$(unique_link)" &&
+    touch "$f" &&
+    chmod 600 "$f" &&
+    ln -sf "$f" "$l" &&
+    test_must_violate sydbox \
+        -m core/sandbox/write:deny \
+        -- emily fchmodat -e EPERM -d cwd -m 000 "$l" &&
+    test_path_is_readable "$f" &&
+    test_path_is_writable "$f"
+'
+
+test_expect_success_foreach_option 'blacklist fchmodat(-1, $abspath)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
@@ -255,7 +258,7 @@ test_expect_success 'blacklist fchmodat(-1, $abspath)' '
     test_path_is_writable "$f"
 '
 
-test_expect_success 'blacklist fchmodat(AT_FDCWD, $file)' '
+test_expect_success_foreach_option 'blacklist fchmodat(AT_FDCWD, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
@@ -267,7 +270,7 @@ test_expect_success 'blacklist fchmodat(AT_FDCWD, $file)' '
     test_path_is_writable "$f"
 '
 
-test_expect_success 'blacklist fchmodat(AT_FDCWD, $nofile)' '
+test_expect_success_foreach_option 'blacklist fchmodat(AT_FDCWD, $nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -275,7 +278,7 @@ test_expect_success 'blacklist fchmodat(AT_FDCWD, $nofile)' '
         -- emily fchmodat -e ENOENT -d cwd -m 000 no"$f"
 '
 
-test_expect_success SYMLINKS 'blacklist fchmodat(AT_FDCWD, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'blacklist fchmodat(AT_FDCWD, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -289,7 +292,7 @@ test_expect_success SYMLINKS 'blacklist fchmodat(AT_FDCWD, $symlink-file)' '
     test_path_is_writable "$f"
 '
 
-test_expect_success 'blacklist fchmodat($fd, $file)' '
+test_expect_success_foreach_option 'blacklist fchmodat($fd, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
@@ -301,7 +304,7 @@ test_expect_success 'blacklist fchmodat($fd, $file)' '
     test_path_is_writable "$f"
 '
 
-test_expect_success 'blacklist fchmodat($fd, $nofile)' '
+test_expect_success_foreach_option 'blacklist fchmodat($fd, $nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -309,7 +312,7 @@ test_expect_success 'blacklist fchmodat($fd, $nofile)' '
         -- emily fchmodat -e ENOENT -d cwd -m 000 no"$f"
 '
 
-test_expect_success SYMLINKS 'blacklist fchmodat($fd, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'blacklist fchmodat($fd, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -323,7 +326,7 @@ test_expect_success SYMLINKS 'blacklist fchmodat($fd, $symlink-file)' '
     test_path_is_writable "$f"
 '
 
-test_expect_success 'whitelist fchmodat(-1, $abspath)' '
+test_expect_success_foreach_option 'whitelist fchmodat(-1, $abspath)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
@@ -335,7 +338,7 @@ test_expect_success 'whitelist fchmodat(-1, $abspath)' '
     test_path_is_not_writable "$f"
 '
 
-test_expect_success 'whitelist fchmodat(AT_FDCWD, $file)' '
+test_expect_success_foreach_option 'whitelist fchmodat(AT_FDCWD, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
@@ -347,7 +350,7 @@ test_expect_success 'whitelist fchmodat(AT_FDCWD, $file)' '
     test_path_is_not_writable "$f"
 '
 
-test_expect_success SYMLINKS 'whitelist fchmodat(AT_FDCWD, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'whitelist fchmodat(AT_FDCWD, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -361,7 +364,7 @@ test_expect_success SYMLINKS 'whitelist fchmodat(AT_FDCWD, $symlink-file)' '
     test_path_is_not_writable "$f"
 '
 
-test_expect_success 'whitelist fchmodat($fd, $file)' '
+test_expect_success_foreach_option 'whitelist fchmodat($fd, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     chmod 600 "$f" &&
@@ -373,7 +376,7 @@ test_expect_success 'whitelist fchmodat($fd, $file)' '
     test_path_is_not_writable "$f"
 '
 
-test_expect_success SYMLINKS 'whitelist fchmodat($fd, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'whitelist fchmodat($fd, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&

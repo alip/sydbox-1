@@ -12,11 +12,11 @@ SYDBOX_TEST_OPTIONS="
     -mcore/violation/raise_safe:1
 "
 
-test_expect_success 'deny chown(NULL) with EFAULT' '
+test_expect_success_foreach_option 'deny chown(NULL) with EFAULT' '
     sydbox -- emily chown -e EFAULT
 '
 
-test_expect_success 'deny chown($file)' '
+test_expect_success_foreach_option 'deny chown($file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -24,14 +24,14 @@ test_expect_success 'deny chown($file)' '
         -- emily chown -e EPERM "$f"
 '
 
-test_expect_success 'deny chown($nofile)' '
+test_expect_success_foreach_option 'deny chown($nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily chown -e ENOENT "$f"
 '
 
-test_expect_success SYMLINKS 'deny chown($symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'deny chown($symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -41,7 +41,7 @@ test_expect_success SYMLINKS 'deny chown($symlink-file)' '
         -- emily chown -e EPERM "$l"
 '
 
-test_expect_success SYMLINKS 'deny chown($symlink-dangling)' '
+test_expect_success_foreach_option SYMLINKS 'deny chown($symlink-dangling)' '
     f="no-$(unique_file)" &&
     l="bad-$(unique_link)" &&
     ln -sf "$f" "$l" &&
@@ -50,7 +50,7 @@ test_expect_success SYMLINKS 'deny chown($symlink-dangling)' '
         -- emily chown -e ENOENT "$l"
 '
 
-test_expect_success 'blacklist chown($file)' '
+test_expect_success_foreach_option 'blacklist chown($file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -59,7 +59,7 @@ test_expect_success 'blacklist chown($file)' '
         -- emily chown -e EPERM "$f"
 '
 
-test_expect_success 'blacklist chown($nofile)' '
+test_expect_success_foreach_option 'blacklist chown($nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -67,7 +67,7 @@ test_expect_success 'blacklist chown($nofile)' '
         -- emily chown -e ENOENT "$f"
 '
 
-test_expect_success SYMLINKS 'blacklist chown($symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'blacklist chown($symlink-file)' '
     f="unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -78,7 +78,7 @@ test_expect_success SYMLINKS 'blacklist chown($symlink-file)' '
         -- emily chown -e EPERM "$l"
 '
 
-test_expect_success SYMLINKS 'blacklist chown($symlink-dangling)' '
+test_expect_success_foreach_option SYMLINKS 'blacklist chown($symlink-dangling)' '
     f="no-$(unique_file)" &&
     l="bad-$(unique_link)" &&
     ln -sf "$f" "$l" &&
@@ -88,7 +88,7 @@ test_expect_success SYMLINKS 'blacklist chown($symlink-dangling)' '
         -- emily chown -e ENOENT "$l"
 '
 
-test_expect_success 'whitelist chown($file)' '
+test_expect_success_foreach_option 'whitelist chown($file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
@@ -97,7 +97,7 @@ test_expect_success 'whitelist chown($file)' '
         -- emily chown -e ERRNO_0 "$f"
 '
 
-test_expect_success SYMLINKS 'whitelist chown($symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'whitelist chown($symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&

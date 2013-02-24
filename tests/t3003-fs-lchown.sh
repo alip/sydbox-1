@@ -12,11 +12,11 @@ SYDBOX_TEST_OPTIONS="
     -mcore/violation/raise_safe:1
 "
 
-test_expect_success 'deny lchown(NULL) with EFAULT' '
+test_expect_success_foreach_option 'deny lchown(NULL) with EFAULT' '
     sydbox -- emily lchown -e EFAULT
 '
 
-test_expect_success SYMLINKS 'deny lchown($symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'deny lchown($symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -26,14 +26,14 @@ test_expect_success SYMLINKS 'deny lchown($symlink-file)' '
         -- emily lchown -e EPERM "$l"
 '
 
-test_expect_success SYMLINKS 'deny lchown($nofile)' '
+test_expect_success_foreach_option SYMLINKS 'deny lchown($nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily lchown -e ENOENT "$f"
 '
 
-test_expect_success SYMLINKS 'blacklist lchown($symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'blacklist lchown($symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -43,14 +43,14 @@ test_expect_success SYMLINKS 'blacklist lchown($symlink-file)' '
         -- emily lchown -e EPERM "$l"
 '
 
-test_expect_success SYMLINKS 'blacklist lchown($nofile)' '
+test_expect_success_foreach_option SYMLINKS 'blacklist lchown($nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily lchown -e ENOENT "$f"
 '
 
-test_expect_success SYMLINKS 'whitelist lchown($symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'whitelist lchown($symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&

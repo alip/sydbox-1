@@ -12,7 +12,7 @@ SYDBOX_TEST_OPTIONS="
     -mcore/violation/raise_safe:1
 "
 
-test_expect_success 'rename($oldpath, $newpath) returns ERRNO_0' '
+test_expect_success_foreach_option 'rename($oldpath, $newpath) returns ERRNO_0' '
     old="$(unique_file)" &&
     new="$(unique_file)" &&
     touch "$old" &&
@@ -21,11 +21,11 @@ test_expect_success 'rename($oldpath, $newpath) returns ERRNO_0' '
     test_path_is_file "$new"
 '
 
-test_expect_success 'rename(NULL, NULL) returns EFAULT' '
+test_expect_success_foreach_option 'rename(NULL, NULL) returns EFAULT' '
     sydbox -- emily rename -e EFAULT
 '
 
-test_expect_success 'rename($oldpath, $oldpath/$newpath) returns EINVAL' '
+test_expect_success_foreach_option 'rename($oldpath, $oldpath/$newpath) returns EINVAL' '
     old="$(unique_dir)" &&
     mkdir "$old" &&
     sydbox -- emily rename -e EINVAL "$old" "$old"/new &&
@@ -33,7 +33,7 @@ test_expect_success 'rename($oldpath, $oldpath/$newpath) returns EINVAL' '
     test_path_is_missing "$old"/new
 '
 
-test_expect_success 'rename($file, $dir) returns EISDIR' '
+test_expect_success_foreach_option 'rename($file, $dir) returns EISDIR' '
     f="$(unique_file)" &&
     d="$(unique_dir)" &&
     touch "$f" &&
@@ -43,7 +43,7 @@ test_expect_success 'rename($file, $dir) returns EISDIR' '
     test_path_is_dir "$d"
 '
 
-test_expect_success SYMLINKS 'rename($symlink, $dir) returns EISDIR' '
+test_expect_success_foreach_option SYMLINKS 'rename($symlink, $dir) returns EISDIR' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     d="$(unique_dir)" &&
@@ -55,7 +55,7 @@ test_expect_success SYMLINKS 'rename($symlink, $dir) returns EISDIR' '
     test_path_is_dir "$d"
 '
 
-test_expect_success SYMLINKS 'rename($symlink-self, $dir) returns EISDIR' '
+test_expect_success_foreach_option SYMLINKS 'rename($symlink-self, $dir) returns EISDIR' '
     d="$(unique_dir)" &&
     l="self-$(unique_link)" &&
     ln -sf "$l" "$l" &&
@@ -65,7 +65,7 @@ test_expect_success SYMLINKS 'rename($symlink-self, $dir) returns EISDIR' '
     test_path_is_dir "$d"
 '
 
-test_expect_success SYMLINKS 'rename($symlink-self/$file, $newfile) returns ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'rename($symlink-self/$file, $newfile) returns ELOOP' '
     f="$(unique_file)" &&
     l="self-$(unique_link)" &&
     ln -sf "$l" "$l" &&
@@ -73,7 +73,7 @@ test_expect_success SYMLINKS 'rename($symlink-self/$file, $newfile) returns ELOO
     test_path_is_missing "$f"
 '
 
-test_expect_success SYMLINKS 'rename($file, $symlink-self/$newfile returns ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'rename($file, $symlink-self/$newfile returns ELOOP' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -82,7 +82,7 @@ test_expect_success SYMLINKS 'rename($file, $symlink-self/$newfile returns ELOOP
     test_path_is_file "$f"
 '
 
-test_expect_success SYMLINKS 'rename($symlink-circular/$file, $newfile) returns ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'rename($symlink-circular/$file, $newfile) returns ELOOP' '
     f="$(unique_file)" &&
     l0="loop0-$(unique_link)" &&
     l1="loop1-$(unique_link)" &&
@@ -92,7 +92,7 @@ test_expect_success SYMLINKS 'rename($symlink-circular/$file, $newfile) returns 
     test_path_is_missing "$f"
 '
 
-test_expect_success SYMLINKS 'rename($file, $symlink-circular/$newfile) returns ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'rename($file, $symlink-circular/$newfile) returns ELOOP' '
     f="$(unique_file)" &&
     l0="loop0-$(unique_link)" &&
     l1="loop1-$(unique_link)" &&
@@ -103,7 +103,7 @@ test_expect_success SYMLINKS 'rename($file, $symlink-circular/$newfile) returns 
     test_path_is_file "$f"
 '
 
-test_expect_success SYMLINKS 'rename($symlink-self, $newsymlink) returns ERRNO_0' '
+test_expect_success_foreach_option SYMLINKS 'rename($symlink-self, $newsymlink) returns ERRNO_0' '
     old="self-$(unique_link)" &&
     new="self-$(unique_link)" &&
     ln -sf "$old" "$old" &&
@@ -112,7 +112,7 @@ test_expect_success SYMLINKS 'rename($symlink-self, $newsymlink) returns ERRNO_0
     test_path_is_symlink "$new"
 '
 
-test_expect_success SYMLINKS 'rename($file, $symlink-self) returns ERRNO_0' '
+test_expect_success_foreach_option SYMLINKS 'rename($file, $symlink-self) returns ERRNO_0' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -122,7 +122,7 @@ test_expect_success SYMLINKS 'rename($file, $symlink-self) returns ERRNO_0' '
     test_path_is_file "$l"
 '
 
-test_expect_success SYMLINKS 'rename($symlink-circular, $newsymlink) returns ERRNO_0' '
+test_expect_success_foreach_option SYMLINKS 'rename($symlink-circular, $newsymlink) returns ERRNO_0' '
     l0="loop0-$(unique_link)" &&
     l1="loop1-$(unique_link)" &&
     new="loop-new-$(unique_link)" &&
@@ -134,7 +134,7 @@ test_expect_success SYMLINKS 'rename($symlink-circular, $newsymlink) returns ERR
     test_path_is_symlink "$new"
 '
 
-test_expect_success SYMLINKS 'rename($file, $symlink-circular) returns ERRNO_0' '
+test_expect_success_foreach_option SYMLINKS 'rename($file, $symlink-circular) returns ERRNO_0' '
     f="$(unique_file)" &&
     l0="loop0-$(unique_link)" &&
     l1="loop1-$(unique_link)" &&
@@ -147,7 +147,7 @@ test_expect_success SYMLINKS 'rename($file, $symlink-circular) returns ERRNO_0' 
     test_path_is_symlink "$l1"
 '
 
-test_expect_success 'rename($nofile, $newfile) returns ENOENT' '
+test_expect_success_foreach_option 'rename($nofile, $newfile) returns ENOENT' '
     old="no-$(unique_file)" &&
     new="new-$(unique_file)" &&
     sydbox -- emily rename -e ENOENT "$old" "$new" &&
@@ -155,7 +155,7 @@ test_expect_success 'rename($nofile, $newfile) returns ENOENT' '
     test_path_is_missing "$new"
 '
 
-test_expect_success 'rename($file, $nodir/$newfile) returns ENOENT' '
+test_expect_success_foreach_option 'rename($file, $nodir/$newfile) returns ENOENT' '
     f="$(unique_file)" &&
     d="$(unique_dir)" &&
     touch "$f" &&
@@ -165,24 +165,24 @@ test_expect_success 'rename($file, $nodir/$newfile) returns ENOENT' '
     test_path_is_missing "$d"
 '
 
-test_expect_success 'rename("", $newfile) returns ENOENT' '
+test_expect_success_foreach_option 'rename("", $newfile) returns ENOENT' '
     f="$(unique_file)" &&
     sydbox -- emily rename -e ENOENT "" "$f" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success 'rename($file, "") returns ENOENT' '
+test_expect_success_foreach_option 'rename($file, "") returns ENOENT' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox -- emily rename -e ENOENT "$f" "" &&
     test_path_is_file "$f"
 '
 
-test_expect_success 'rename("", "") returns ENOENT' '
+test_expect_success_foreach_option 'rename("", "") returns ENOENT' '
     sydbox -- emily rename -e ENOENT "" ""
 '
 
-test_expect_success 'rename($olddir, $newfile) returns ENOTDIR' '
+test_expect_success_foreach_option 'rename($olddir, $newfile) returns ENOTDIR' '
     d="$(unique_dir)" &&
     f="$(unique_file)" &&
     mkdir "$d" &&
@@ -192,7 +192,7 @@ test_expect_success 'rename($olddir, $newfile) returns ENOTDIR' '
     test_path_is_file "$f"
 '
 
-test_expect_success 'rename($olddir, $new-nonempty-dir) returns ENOTEMPTY' '
+test_expect_success_foreach_option 'rename($olddir, $new-nonempty-dir) returns ENOTEMPTY' '
     d0="$(unique_dir)" &&
     d1="$(unique_dir)" &&
     mkdir "$d0" &&

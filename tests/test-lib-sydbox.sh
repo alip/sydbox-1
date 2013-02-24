@@ -72,7 +72,7 @@ test_path_is_non_empty() {
 
 test_must_violate() {
 	retval=0
-	old_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
+	save_SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS"
 	SYDBOX_TEST_OPTIONS="$SYDBOX_TEST_OPTIONS -mcore/violation/exit_code:0"
 	export SYDBOX_TEST_OPTIONS
 	"$@"
@@ -94,9 +94,54 @@ test_must_violate() {
 		echo >&2 "test_must_violate: abnormal exit with code:$exit_code $*"
 		retval=1
 	fi
-	SYDBOX_TEST_OPTIONS="$old_SYDBOX_TEST_OPTIONS"
+	SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS"
 	export SYDBOX_TEST_OPTIONS
-	return $retval
+	return "$retval"
+}
+
+#
+# Test with different tracing options
+#
+test_expect_success_foreach_option() {
+	test "$#" = 3 || test "$#" = 2 ||
+	error "bug in the test script: not 2 or 3 parameters to test-expect-success-foreach-option"
+
+	argc="$#" ; arg1="$1" ; arg2="$2" ; arg3="$3"
+	for choice in "0 0" "0 1" "1 0" "1 1"
+	do
+		IFS=' ' read -r use_seize use_seccomp <<EOF
+$choice
+EOF
+		suffix="[seize=$use_seize seccomp:$use_seccomp]"
+		if test "$argc" = 3
+		then
+			set -- "$arg1" "$arg2 $suffix" "$arg3"
+		else
+			set -- "$arg1 $suffix" "$arg2"
+		fi
+		test_sydbox_options=t test_expect_success "$@"
+	done
+}
+
+test_expect_failure_foreach_option() {
+	test "$#" = 3 || test "$#" = 2 ||
+	error "bug in the test script: not 2 or 3 parameters to test-expect-failure-foreach-option"
+
+	argc="$#" ; arg1="$1" ; arg2="$2" ; arg3="$3"
+	for choice in "0 0" "0 1" "1 0" "1 1"
+	do
+		IFS=' ' read -r use_seize use_seccomp <<EOF
+$choice
+EOF
+		suffix="[seize=$use_seize seccomp:$use_seccomp]"
+		if test "$argc" = 3
+		then
+			set -- "$arg1" "$arg2 $suffix" "$arg3"
+		else
+			set -- "$arg1 $suffix" "$arg2"
+		fi
+		test_sydbox_options=t test_expect_failure "$@"
+	done
 }
 
 #

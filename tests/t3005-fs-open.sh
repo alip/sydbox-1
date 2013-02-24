@@ -12,17 +12,17 @@ SYDBOX_TEST_OPTIONS="
     -mcore/violation/raise_safe:1
 "
 
-test_expect_success 'deny open(NULL) with EFAULT' '
+test_expect_success_foreach_option 'deny open(NULL) with EFAULT' '
     sydbox -- emily open -e EFAULT
 '
 
-test_expect_success 'deny open(file, O_RDONLY|O_DIRECTORY) with ENOTDIR' '
+test_expect_success_foreach_option 'deny open(file, O_RDONLY|O_DIRECTORY) with ENOTDIR' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox -- emily open -e ENOTDIR -m rdonly -D "$f"
 '
 
-test_expect_success SYMLINKS 'deny open(symlink-file, O_RDONLY|O_NOFOLLOW) with ELOOP' '
+test_expect_success_foreach_option SYMLINKS 'deny open(symlink-file, O_RDONLY|O_NOFOLLOW) with ELOOP' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f"
@@ -30,7 +30,7 @@ test_expect_success SYMLINKS 'deny open(symlink-file, O_RDONLY|O_NOFOLLOW) with 
     sydbox -- emily open -e ELOOP -m rdonly -F "$l"
 '
 
-test_expect_success 'whitelist O_RDONLY' '
+test_expect_success_foreach_option 'whitelist O_RDONLY' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
@@ -38,7 +38,7 @@ test_expect_success 'whitelist O_RDONLY' '
         -- emily open -e ERRNO_0 -m rdonly "$f"
 '
 
-test_expect_success SYMLINKS 'whitelist O_RDONLY for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'whitelist O_RDONLY for symbolic link' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -48,7 +48,7 @@ test_expect_success SYMLINKS 'whitelist O_RDONLY for symbolic link' '
         -- emily open -e ERRNO_0 -m rdonly "$l"
 '
 
-test_expect_success 'deny O_RDONLY|O_CREAT' '
+test_expect_success_foreach_option 'deny O_RDONLY|O_CREAT' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -56,7 +56,7 @@ test_expect_success 'deny O_RDONLY|O_CREAT' '
     test_path_is_missing "$f"
 '
 
-test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
@@ -66,7 +66,7 @@ test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'deny O_RDONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -74,7 +74,7 @@ test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -82,7 +82,7 @@ test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
         -- emily open -e EEXIST -m rdonly -cx "$f"
 '
 
-test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'deny O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
@@ -92,7 +92,7 @@ test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'deny O_WRONLY' '
+test_expect_success_foreach_option 'deny O_WRONLY' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -101,7 +101,7 @@ test_expect_success 'deny O_WRONLY' '
     test_path_is_empty "$f"
 '
 
-test_expect_success 'deny O_WRONLY for non-existant file' '
+test_expect_success_foreach_option 'deny O_WRONLY for non-existant file' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -109,7 +109,7 @@ test_expect_success 'deny O_WRONLY for non-existant file' '
     test_path_is_missing "$f"
 '
 
-test_expect_success SYMLINKS 'deny O_WRONLY for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'deny O_WRONLY for symbolic link' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -120,7 +120,7 @@ test_expect_success SYMLINKS 'deny O_WRONLY for symbolic link' '
     test_path_is_empty "$f"
 '
 
-test_expect_success 'deny O_WRONLY|O_CREAT' '
+test_expect_success_foreach_option 'deny O_WRONLY|O_CREAT' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -128,7 +128,7 @@ test_expect_success 'deny O_WRONLY|O_CREAT' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'deny O_WRONLY|O_CREAT for existing file' '
+test_expect_success_foreach_option 'deny O_WRONLY|O_CREAT for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -137,7 +137,7 @@ test_expect_success 'deny O_WRONLY|O_CREAT for existing file' '
     test_path_is_empty "$f"
 '
 
-test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -148,7 +148,7 @@ test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link' '
     test_path_is_empty "$f"
 '
 
-test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
@@ -158,7 +158,7 @@ test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' 
     test_path_is_missing "$f"
 '
 
-test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'deny O_WRONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -166,7 +166,7 @@ test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'deny O_WRONLY|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -175,7 +175,7 @@ test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL for existing file' '
     test_path_is_empty "$f"
 '
 
-test_expect_success 'whitelist O_WRONLY' '
+test_expect_success_foreach_option 'whitelist O_WRONLY' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
@@ -185,7 +185,7 @@ test_expect_success 'whitelist O_WRONLY' '
     test_path_is_non_empty "$f"
 '
 
-test_expect_success 'whitelist O_WRONLY|O_CREAT' '
+test_expect_success_foreach_option 'whitelist O_WRONLY|O_CREAT' '
     f="no-$(unique_file)" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -194,7 +194,7 @@ test_expect_success 'whitelist O_WRONLY|O_CREAT' '
     test_path_is_file "$f"
 '
 
-test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'whitelist O_WRONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -203,7 +203,7 @@ test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL' '
     test_path_is_file "$f"
 '
 
-test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'whitelist O_WRONLY|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
@@ -212,7 +212,7 @@ test_expect_success 'whitelist O_WRONLY|O_CREAT|O_EXCL for existing file' '
         -- emily open -e EEXIST -m wronly -cx "$f"
 '
 
-test_expect_success 'deny O_RDWR' '
+test_expect_success_foreach_option 'deny O_RDWR' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -221,7 +221,7 @@ test_expect_success 'deny O_RDWR' '
     test_path_is_empty "$f"
 '
 
-test_expect_success 'deny O_RDWR|O_CREAT' '
+test_expect_success_foreach_option 'deny O_RDWR|O_CREAT' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -229,7 +229,7 @@ test_expect_success 'deny O_RDWR|O_CREAT' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'deny O_RDWR|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -237,7 +237,7 @@ test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'deny O_RDWR|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -246,7 +246,7 @@ test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL for existing file' '
     test_path_is_empty "$f"
 '
 
-test_expect_success 'whitelist O_RDWR' '
+test_expect_success_foreach_option 'whitelist O_RDWR' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
@@ -256,7 +256,7 @@ test_expect_success 'whitelist O_RDWR' '
     test_path_is_non_empty "$f"
 '
 
-test_expect_success 'whitelist O_RDWR|O_CREAT' '
+test_expect_success_foreach_option 'whitelist O_RDWR|O_CREAT' '
     f="no-$(unique_file)" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -265,7 +265,7 @@ test_expect_success 'whitelist O_RDWR|O_CREAT' '
     test_path_is_file "$f"
 '
 
-test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'whitelist O_RDWR|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     sydbox \
         -ESYDBOX_TEST_SUCCESS=1 \
@@ -275,7 +275,7 @@ test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL' '
     test_path_is_file "$f"
 '
 
-test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'whitelist O_RDWR|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
@@ -284,7 +284,7 @@ test_expect_success 'whitelist O_RDWR|O_CREAT|O_EXCL for existing file' '
         -- emily open -e EEXIST -m rdwr -cx "$f"
 '
 
-test_expect_success 'blacklist O_RDONLY|O_CREAT' '
+test_expect_success_foreach_option 'blacklist O_RDONLY|O_CREAT' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -293,7 +293,7 @@ test_expect_success 'blacklist O_RDONLY|O_CREAT' '
     test_path_is_missing "$f"
 '
 
-test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'blacklist O_RDONLY|O_CREAT for symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
@@ -304,7 +304,7 @@ test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT for symbolic link' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'blacklist O_RDONLY|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'blacklist O_RDONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -313,7 +313,7 @@ test_expect_success 'blacklist O_RDONLY|O_CREAT|O_EXCL' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'blacklist O_RDONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'blacklist O_RDONLY|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -322,7 +322,7 @@ test_expect_success 'blacklist O_RDONLY|O_CREAT|O_EXCL for existing file' '
         -- emily open -e EEXIST -m rdonly -cx "$f"
 '
 
-test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'blacklist O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
@@ -333,7 +333,7 @@ test_expect_success SYMLINKS 'blacklist O_RDONLY|O_CREAT|O_EXCL for symbolic lin
     test_path_is_missing "$f"
 '
 
-test_expect_success 'blacklist O_WRONLY' '
+test_expect_success_foreach_option 'blacklist O_WRONLY' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -343,7 +343,7 @@ test_expect_success 'blacklist O_WRONLY' '
     test_path_is_empty "$f"
 '
 
-test_expect_success 'blacklist O_WRONLY for non-existant file' '
+test_expect_success_foreach_option 'blacklist O_WRONLY for non-existant file' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -352,7 +352,7 @@ test_expect_success 'blacklist O_WRONLY for non-existant file' '
     test_path_is_missing "$f"
 '
 
-test_expect_success SYMLINKS 'blacklist O_WRONLY for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'blacklist O_WRONLY for symbolic link' '
     f="$(unique_file)" &&
     touch "$f" &&
     ln -sf "$f" "$l" &&
@@ -363,7 +363,7 @@ test_expect_success SYMLINKS 'blacklist O_WRONLY for symbolic link' '
     test_path_is_empty "$f"
 '
 
-test_expect_success 'blacklist O_WRONLY|O_CREAT' '
+test_expect_success_foreach_option 'blacklist O_WRONLY|O_CREAT' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -372,7 +372,7 @@ test_expect_success 'blacklist O_WRONLY|O_CREAT' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'blacklist O_WRONLY|O_CREAT for existing file' '
+test_expect_success_foreach_option 'blacklist O_WRONLY|O_CREAT for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -382,7 +382,7 @@ test_expect_success 'blacklist O_WRONLY|O_CREAT for existing file' '
     test_path_is_empty "$f"
 '
 
-test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'blacklist O_WRONLY|O_CREAT for symbolic link' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -394,7 +394,7 @@ test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for symbolic link' '
     test_path_is_empty "$f"
 '
 
-test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for dangling symbolic link' '
+test_expect_success_foreach_option SYMLINKS 'blacklist O_WRONLY|O_CREAT for dangling symbolic link' '
     f="no-$(unique_file)" &&
     l="$(unique_link)" &&
     ln -sf "$f" "$l" &&
@@ -405,7 +405,7 @@ test_expect_success SYMLINKS 'blacklist O_WRONLY|O_CREAT for dangling symbolic l
     test_path_is_missing "$f"
 '
 
-test_expect_success 'blacklist O_WRONLY|O_CREAT|O_EXCL' '
+test_expect_success_foreach_option 'blacklist O_WRONLY|O_CREAT|O_EXCL' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -414,7 +414,7 @@ test_expect_success 'blacklist O_WRONLY|O_CREAT|O_EXCL' '
     test_path_is_missing "$f"
 '
 
-test_expect_success 'blacklist O_WRONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_success_foreach_option 'blacklist O_WRONLY|O_CREAT|O_EXCL for existing file' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \

@@ -12,11 +12,11 @@ SYDBOX_TEST_OPTIONS="
     -mcore/violation/raise_safe:1
 "
 
-test_expect_success 'deny mknod(NULL) with EFAULT' '
+test_expect_success_foreach_option 'deny mknod(NULL) with EFAULT' '
     sydbox -- emily mknod -e EFAULT
 '
 
-test_expect_success FIFOS 'deny mknod()' '
+test_expect_success_foreach_option FIFOS 'deny mknod()' '
     p="no-$(unique_fifo)" &&
     test_must_violate sydbox \
         -ESYDBOX_TEST_EPERM=1 \
@@ -25,7 +25,7 @@ test_expect_success FIFOS 'deny mknod()' '
     test_path_is_missing "$p"
 '
 
-test_expect_success FIFOS 'deny mknod() for existant fifo' '
+test_expect_success_foreach_option FIFOS 'deny mknod() for existant fifo' '
     p="$(unique_fifo)" &&
     mknod "$p" p &&
     test_must_violate sydbox \
@@ -33,7 +33,7 @@ test_expect_success FIFOS 'deny mknod() for existant fifo' '
         -- emily mknod -e EEXIST "$p"
 '
 
-test_expect_success FIFOS 'whitelist mknod()' '
+test_expect_success_foreach_option FIFOS 'whitelist mknod()' '
     p="no-$(unique_fifo)" &&
     sydbox \
         -m core/sandbox/write:deny \
@@ -42,7 +42,7 @@ test_expect_success FIFOS 'whitelist mknod()' '
     test_path_is_fifo "$p"
 '
 
-test_expect_success FIFOS 'whitelist mknod() for existant fifo' '
+test_expect_success_foreach_option FIFOS 'whitelist mknod() for existant fifo' '
     p="$(unique_fifo)" &&
     mknod "$p" p
     sydbox \
@@ -51,7 +51,7 @@ test_expect_success FIFOS 'whitelist mknod() for existant fifo' '
         -- emily mknod -e EEXIST "$p"
 '
 
-test_expect_success FIFOS 'blacklist mknod()' '
+test_expect_success_foreach_option FIFOS 'blacklist mknod()' '
     p="no-$(unique_fifo)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -60,7 +60,7 @@ test_expect_success FIFOS 'blacklist mknod()' '
     test_path_is_missing "$p"
 '
 
-test_expect_success FIFOS 'deny mknod() for existant fifo' '
+test_expect_success_foreach_option FIFOS 'deny mknod() for existant fifo' '
     p="$(unique_fifo)" &&
     mknod "$p" p &&
     test_must_violate sydbox \

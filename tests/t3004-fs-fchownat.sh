@@ -12,16 +12,16 @@ SYDBOX_TEST_OPTIONS="
     -mcore/violation/raise_safe:1
 "
 
-test_expect_success 'deny fchownat(AT_FDCWD, NULL) with EFAULT' '
+test_expect_success_foreach_option 'deny fchownat(AT_FDCWD, NULL) with EFAULT' '
     sydbox -- emily fchownat -e EFAULT -d cwd
 '
 
-test_expect_success 'deny fchownat(-1, $file) with EBADF' '
+test_expect_success_foreach_option 'deny fchownat(-1, $file) with EBADF' '
     f="no-$(unique_file)" &&
     sydbox -- emily fchownat -e EBADF -d null "$f"
 '
 
-test_expect_success 'deny fchownat(-1, $abspath) with EPERM' '
+test_expect_success_foreach_option 'deny fchownat(-1, $abspath) with EPERM' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -29,7 +29,7 @@ test_expect_success 'deny fchownat(-1, $abspath) with EPERM' '
         -- emily fchownat -e EPERM -d null "$HOME_RESOLVED"/"$f"
 '
 
-test_expect_success 'deny fchownat(AT_FDCWD, $file)' '
+test_expect_success_foreach_option 'deny fchownat(AT_FDCWD, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -37,14 +37,14 @@ test_expect_success 'deny fchownat(AT_FDCWD, $file)' '
         -- emily fchownat -e EPERM -d cwd "$f"
 '
 
-test_expect_success 'deny fchownat(AT_FDCWD, $nofile)' '
+test_expect_success_foreach_option 'deny fchownat(AT_FDCWD, $nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily fchownat -e ENOENT -d cwd "$f"
 '
 
-test_expect_success SYMLINKS 'deny fchownat(AT_FDCWD, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'deny fchownat(AT_FDCWD, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -54,7 +54,7 @@ test_expect_success SYMLINKS 'deny fchownat(AT_FDCWD, $symlink-file)' '
         -- emily fchownat -e EPERM -d cwd "$l"
 '
 
-test_expect_success 'deny fchownat($fd, $file)' '
+test_expect_success_foreach_option 'deny fchownat($fd, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -62,14 +62,14 @@ test_expect_success 'deny fchownat($fd, $file)' '
         -- emily fchownat -e EPERM -d "$HOME" "$f"
 '
 
-test_expect_success 'deny fchownat($fd, $nofile)' '
+test_expect_success_foreach_option 'deny fchownat($fd, $nofile)' '
     f="$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily fchownat -e ENOENT -d cwd "$f"
 '
 
-test_expect_success SYMLINKS 'deny fchownat($fd, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'deny fchownat($fd, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -79,7 +79,7 @@ test_expect_success SYMLINKS 'deny fchownat($fd, $symlink-file)' '
         -- emily fchownat -e EPERM -d cwd "$l"
 '
 
-test_expect_success 'blacklist fchownat(-1, $abspath)' '
+test_expect_success_foreach_option 'blacklist fchownat(-1, $abspath)' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -88,7 +88,7 @@ test_expect_success 'blacklist fchownat(-1, $abspath)' '
         -- emily fchownat -e EPERM -d null "$HOME_RESOLVED"/"$f"
 '
 
-test_expect_success 'blacklist fchownat(AT_FDCWD, $file)' '
+test_expect_success_foreach_option 'blacklist fchownat(AT_FDCWD, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -97,7 +97,7 @@ test_expect_success 'blacklist fchownat(AT_FDCWD, $file)' '
         -- emily fchownat -e EPERM -d cwd "$f"
 '
 
-test_expect_success 'blacklist fchownat(AT_FDCWD, $nofile)' '
+test_expect_success_foreach_option 'blacklist fchownat(AT_FDCWD, $nofile)' '
     f="$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -105,7 +105,7 @@ test_expect_success 'blacklist fchownat(AT_FDCWD, $nofile)' '
         -- emily fchownat -e ENOENT -d cwd "$f"
 '
 
-test_expect_success SYMLINKS 'blacklist fchownat(AT_FDCWD, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'blacklist fchownat(AT_FDCWD, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -116,7 +116,7 @@ test_expect_success SYMLINKS 'blacklist fchownat(AT_FDCWD, $symlink-file)' '
         -- emily fchownat -e EPERM -d cwd "$l"
 '
 
-test_expect_success 'blacklist fchownat($fd, $file)' '
+test_expect_success_foreach_option 'blacklist fchownat($fd, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     test_must_violate sydbox \
@@ -125,7 +125,7 @@ test_expect_success 'blacklist fchownat($fd, $file)' '
         -- emily fchownat -e EPERM -d "$HOME" "$f"
 '
 
-test_expect_success 'blacklist fchownat($fd, $nofile)' '
+test_expect_success_foreach_option 'blacklist fchownat($fd, $nofile)' '
     f="no-$(unique_file)" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -133,7 +133,7 @@ test_expect_success 'blacklist fchownat($fd, $nofile)' '
         -- emily fchownat -e ENOENT -d cwd "$f"
 '
 
-test_expect_success SYMLINKS 'blacklist fchownat($fd, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'blacklist fchownat($fd, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -144,7 +144,7 @@ test_expect_success SYMLINKS 'blacklist fchownat($fd, $symlink-file)' '
         -- emily fchownat -e EPERM -d cwd "$l"
 '
 
-test_expect_success 'whitelist fchownat(-1, $abspath)' '
+test_expect_success_foreach_option 'whitelist fchownat(-1, $abspath)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
@@ -153,7 +153,7 @@ test_expect_success 'whitelist fchownat(-1, $abspath)' '
         -- emily fchownat -e ERRNO_0 -d null "$HOME_RESOLVED"/"$f"
 '
 
-test_expect_success 'whitelist fchownat(AT_FDCWD, $file)' '
+test_expect_success_foreach_option 'whitelist fchownat(AT_FDCWD, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
@@ -162,7 +162,7 @@ test_expect_success 'whitelist fchownat(AT_FDCWD, $file)' '
         -- emily fchownat -e ERRNO_0 -d cwd "$f"
 '
 
-test_expect_success SYMLINKS 'whitelist fchownat(AT_FDCWD, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'whitelist fchownat(AT_FDCWD, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
@@ -173,7 +173,7 @@ test_expect_success SYMLINKS 'whitelist fchownat(AT_FDCWD, $symlink-file)' '
         -- emily fchownat -e ERRNO_0 -d cwd "$l"
 '
 
-test_expect_success 'whitelist fchownat($fd, $file)' '
+test_expect_success_foreach_option 'whitelist fchownat($fd, $file)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
@@ -182,7 +182,7 @@ test_expect_success 'whitelist fchownat($fd, $file)' '
         -- emily fchownat -e ERRNO_0 -d "$HOME" "$f"
 '
 
-test_expect_success SYMLINKS 'whitelist fchownat($fd, $symlink-file)' '
+test_expect_success_foreach_option SYMLINKS 'whitelist fchownat($fd, $symlink-file)' '
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
