@@ -171,6 +171,9 @@ static void ignore_proc(syd_proc_t *p)
 	if (!p)
 		return;
 
+	if (p->flags & SYD_IGNORE_PROCESS)
+		return;
+
 	if (p->abspath)
 		free(p->abspath);
 
