@@ -26,6 +26,8 @@ int syd_trace_detach(syd_proc_t *current, int sig)
 		err_trace(-r, "trace_detach(sig:%d) failed", sig);
 	else
 		err_warning(-r, "trace_detach(sig:%d) failed", sig);
+
+	ignore_proc(current);
 	return r;
 }
 
@@ -42,6 +44,8 @@ int syd_trace_kill(syd_proc_t *current, int sig)
 		err_trace(-r, "trace_kill(sig:%d) failed", sig);
 	else
 		err_warning(-r, "trace_kill(sig:%d) failed", sig);
+
+	ignore_proc(current);
 	return r;
 }
 

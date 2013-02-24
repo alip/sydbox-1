@@ -38,7 +38,7 @@ static int cdebug = (LOG_LEVEL_FATAL
 static const char *prefix = LOG_DEFAULT_PREFIX;
 static const char *suffix = LOG_DEFAULT_SUFFIX;
 
-static syd_proc_t *current_proc;
+static const syd_proc_t *current_proc;
 
 /* abort function. */
 static void (*abort_func)(int sig);

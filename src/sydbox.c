@@ -166,33 +166,51 @@ static syd_proc_t *add_proc_or_kill(pid_t pid, short flags)
 	return newproc;
 }
 
-static void ignore_proc(syd_proc_t *p)
+void clear_proc(syd_proc_t *p)
 {
 	if (!p)
 		return;
+	if (p->flags & SYD_IGNORE_PROCESS)
+		return;
 
+	p->sysnum = 0;
+	p->sysname = NULL;
+	for (unsigned i = 0; i < PINK_MAX_ARGS; i++)
+		p->args[i] = 0;
+	p->subcall = 0;
+	p->retval = 0;
+	p->flags &= ~SYD_DENYSYSCALL;
+
+	if (p->savebind)
+		free_sockinfo(p->savebind);
+	p->savebind = NULL;
+}
+
+void ignore_proc(syd_proc_t *p)
+{
+	if (!p)
+		return;
 	if (p->flags & SYD_IGNORE_PROCESS)
 		return;
 
 	if (p->abspath)
 		free(p->abspath);
-
 	if (p->cwd)
 		free(p->cwd);
-
 	if (p->comm)
 		free(p->comm);
-
 	if (p->savebind)
 		free_sockinfo(p->savebind);
 
-	/* Free the fd -> address mappings */
-	for (int i = 0; i < p->sockmap->size; i++) {
-		ht_int64_node_t *node = HT_NODE(p->sockmap, p->sockmap->nodes, i);
-		if (node->data)
-			free_sockinfo(node->data);
+	if (p->sockmap) {
+		/* Free the fd -> address mappings */
+		for (int i = 0; i < p->sockmap->size; i++) {
+			ht_int64_node_t *node = HT_NODE(p->sockmap, p->sockmap->nodes, i);
+			if (node->data)
+				free_sockinfo(node->data);
+		}
+		hashtable_destroy(p->sockmap);
 	}
-	hashtable_destroy(p->sockmap);
 
 	/* Free the sandbox */
 	free_sandbox(&p->config);
@@ -200,14 +218,16 @@ static void ignore_proc(syd_proc_t *p)
 	p->flags |= SYD_IGNORE_PROCESS;
 }
 
-static void remove_proc(syd_proc_t *p)
+void remove_proc(syd_proc_t *p)
 {
+	if (!p)
+		return;
 	ignore_proc(p);
 	SYD_REMOVE_PROCESS(p);
 	free(p);
 }
 
-static syd_proc_t *lookup_proc(pid_t pid)
+syd_proc_t *lookup_proc(pid_t pid)
 {
 	syd_proc_t *proc;
 
@@ -547,9 +567,9 @@ static int ptrace_error(syd_proc_t *current, const char *req, int err_no)
 {
 	if (err_no != ESRCH) {
 		err_fatal(err_no, "ptrace(%s, %u) failed", req, GET_PID(current));
-		syd_trace_kill(current, SIGKILL);
+		return panic(current);
 	}
-	remove_proc(current);
+	ignore_proc(current);
 	return -ESRCH;
 }
 
@@ -939,6 +959,7 @@ static int trace(void)
 		if (!current) {
 			if (sydbox->config.follow_fork) {
 				current = add_proc_or_kill(pid, post_attach_sigstop);
+				log_context(current);
 				log_trace("Process %u attached", pid);
 			} else {
 				/* This can happen if a clone call used
@@ -987,6 +1008,7 @@ static int trace(void)
 			/* Drop leader, switch to the thread, reusing leader's tid */
 			remove_proc(current);
 			current = execve_thread;
+			log_context(current);
 			SET_PID(current, pid);
 		}
 dont_switch_procs:
@@ -1005,9 +1027,7 @@ dont_switch_procs:
 
 		if (!WIFSTOPPED(status)) {
 			log_fatal("PANIC: not stopped (status:0x%04x)", status);
-			log_fatal("PANIC: killing process");
-			syd_trace_kill(current, SIGKILL);
-			remove_proc(current);
+			panic(current);
 			continue;
 		}
 
@@ -1015,7 +1035,7 @@ dont_switch_procs:
 			log_trace("SYD_STARTUP set, initializing");
 			current->flags &= ~SYD_STARTUP;
 			r = event_init(current);
-			if (r == -ESRCH)
+			if (r < 0)
 				continue;
 		}
 
@@ -1042,7 +1062,7 @@ dont_switch_procs:
 #ifdef WANT_SECCOMP
 			if (event == PINK_EVENT_SECCOMP) {
 				r = event_seccomp(current);
-				if (r == -ESRCH)
+				if (r < 0)
 					continue;
 			}
 #endif
@@ -1106,15 +1126,13 @@ handle_stopsig:
 		 */
 		r = event_syscall(current);
 		if (r != 0) {
-			/* ptrace() failed in trace_syscall().
+			/* ptrace() failed in event_syscall().
 			 * Likely a result of process disappearing mid-flight.
 			 * Observed case: exit_group() or SIGKILL terminating
 			 * all processes in thread group.
 			 * We assume that ptrace error was caused by process death.
-			 * We used to detach(tcp) here, but since we no longer
-			 * implement "detach before death" policy/hack,
-			 * we can let this process to report its death to us
-			 * normally, via WIFEXITED or WIFSIGNALED wait status.
+			 * The process is ignored and will report its death to us
+			 * normally, via WIFEXITED or WIFSIGNALED exit status.
 			 */
 			continue;
 		}

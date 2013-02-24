@@ -526,6 +526,11 @@ int syd_read_socket_address(syd_proc_t *current, bool decode_socketcall,
 			    unsigned arg_index, int *fd,
 			    struct pink_sockaddr *sockaddr);
 
+void clear_proc(syd_proc_t *p);
+void ignore_proc(syd_proc_t *p);
+void remove_proc(syd_proc_t *p);
+syd_proc_t *lookup_proc(pid_t pid);
+
 void cont_all(void);
 void abort_all(int fatal_sig);
 int deny(syd_proc_t *current, int err_no);
@@ -733,20 +738,5 @@ int sysx_fcntl(syd_proc_t *current);
 int sysx_socketcall(syd_proc_t *current);
 int sysx_bind(syd_proc_t *current);
 int sysx_getsockname(syd_proc_t *current);
-
-static inline void clear_proc(syd_proc_t *p)
-{
-	p->sysnum = 0;
-	p->sysname = NULL;
-	for (unsigned i = 0; i < PINK_MAX_ARGS; i++)
-		p->args[i] = 0;
-	p->subcall = 0;
-	p->retval = 0;
-	p->flags &= ~SYD_DENYSYSCALL;
-
-	if (p->savebind)
-		free_sockinfo(p->savebind);
-	p->savebind = NULL;
-}
 
 #endif
