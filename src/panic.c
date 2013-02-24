@@ -14,7 +14,6 @@
 #include <stdarg.h>
 #include <pinktrace/pink.h>
 #include "log.h"
-#include "strtable.h"
 #include "proc.h"
 
 static inline int errno2retval(int err_no)
@@ -110,7 +109,7 @@ int deny(syd_proc_t *current, int err_no)
 	current->retval = errno2retval(err_no);
 
 	log_access("DENY retval:%ld errno:%d|%s|", current->retval,
-		   err_no, errno_to_string(err_no));
+		   err_no, pink_name_errno(err_no, 0));
 
 	return syd_write_syscall(current, PINK_SYSCALL_INVALID);
 }

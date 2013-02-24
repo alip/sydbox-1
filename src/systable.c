@@ -56,7 +56,7 @@ void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit)
 	long no;
 
 	for (short abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
-		no = pink_syscall_lookup(name, abi);
+		no = pink_lookup_syscall(name, abi);
 		if (no != -1)
 			systable_add_full(no, abi, name, fenter, fexit);
 	}

@@ -40,7 +40,7 @@ int test_stat(int argc, char **argv)
 			test_stat_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_stat_usage(stderr, 2);
 			break;

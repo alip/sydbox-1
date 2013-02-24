@@ -8,7 +8,7 @@
 #ifndef PATHMATCH_H
 #define PATHMATCH_H 1
 
-#include "strtable.h"
+#include "util.h"
 
 #define WILD3_SUFFIX "/***"
 

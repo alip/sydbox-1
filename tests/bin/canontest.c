@@ -1,6 +1,6 @@
 /*
  * Check program for sydbox/canonicalize.c
- * Copyright 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 			usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				usage(stderr, 2);
 			break;

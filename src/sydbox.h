@@ -30,7 +30,6 @@
 #include "canonicalize.h"
 #include "hashtable.h"
 #include "slist.h"
-#include "strtable.h"
 #include "sockmatch.h"
 #include "util.h"
 #include "xfunc.h"

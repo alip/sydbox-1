@@ -303,7 +303,7 @@ static size_t make_seccomp_filter(int abi, uint32_t **syscalls)
 	list = xmalloc(sizeof(uint32_t) * ELEMENTSOF(syscall_entries));
 	for (i = 0, j = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (syscall_entries[i].name)
-			sysno = pink_syscall_lookup(syscall_entries[i].name,
+			sysno = pink_lookup_syscall(syscall_entries[i].name,
 						    abi);
 		else
 			sysno = syscall_entries[i].no;

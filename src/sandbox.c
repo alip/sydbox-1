@@ -26,7 +26,6 @@
 #include "pathmatch.h"
 #include "sockmatch.h"
 #include "proc.h"
-#include "strtable.h"
 #include "util.h"
 
 static void box_report_violation_path(syd_proc_t *current,
@@ -111,7 +110,7 @@ static void box_report_violation_sock(syd_proc_t *current,
 		break;
 #endif
 	default:
-		f = address_family_to_string(paddr->family);
+		f = pink_name_socket_family(paddr->family);
 		violation(current, "%s(-1, ?:%s)", name, f ? f : "AF_???");
 		break;
 	}
@@ -143,7 +142,7 @@ static int box_resolve_path_helper(const char *abspath, pid_t tid,
 	else
 		log_check("canonicalize(`%s') = NULL can_mode=%d errno:%d|%s| (%s)",
 			  p ? p : abspath, can_mode,
-			  -r, errno_to_string(-r), strerror(-r));
+			  -r, pink_name_errno(-r, 0), strerror(-r));
 
 	if (p)
 		free(p);
@@ -330,9 +329,7 @@ static int box_check_ftype(const char *path, sysinfo_t *info)
 	}
 
 	if (deny_errno != 0)
-		log_access("check_filetype(`%s') = %d|%s| (%s)",
-			   path, deny_errno, errno_to_string(deny_errno),
-			   strerror(deny_errno));
+		err_access(deny_errno, "check_filetype(`%s')", path);
 	return deny_errno;
 }
 
@@ -357,7 +354,7 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 		  info->can_mode, info->syd_mode);
 	log_check("safe=%s deny-errno=%d|%s| access_mode=%s",
 		  strbool(info->safe),
-		  deny_errno, errno_to_string(deny_errno),
+		  deny_errno, pink_name_errno(deny_errno, 0),
 		  sys_access_mode_to_string(info->access_mode));
 
 	/* Step 1: resolve file descriptor for `at' suffixed functions */
@@ -504,7 +501,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 		  strbool(info->decode_socketcall));
 	log_check("safe=%s deny-errno=%d|%s| access_mode=%s",
 		  strbool(info->safe),
-		  info->deny_errno, errno_to_string(info->deny_errno),
+		  info->deny_errno, pink_name_errno(info->deny_errno, 0),
 		  sys_access_mode_to_string(info->access_mode));
 
 	r = 0;
@@ -529,7 +526,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 		if (sydbox->config.whitelist_unsupported_socket_families) {
 			log_access("allowing unsupported socket family %d|%s|",
 				   psa->family,
-				   address_family_to_string(psa->family));
+				   pink_name_socket_family(psa->family));
 			goto out;
 		}
 		r = deny(current, EAFNOSUPPORT);

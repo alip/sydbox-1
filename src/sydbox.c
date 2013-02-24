@@ -893,25 +893,41 @@ static int trace(void)
 		event = pink_event_decide(status);
 		if (log_has_level(LOG_LEVEL_TRACE)) {
 			char buf[sizeof("WIFEXITED,exitcode=%u") + sizeof(int)*3 /*paranoia:*/ + 16];
+			char evbuf[sizeof(",PTRACE_EVENT_?? (%u)") + sizeof(int)*3 /*paranoia:*/ + 16];
 			strcpy(buf, "???");
 			if (WIFSIGNALED(status))
+
 #ifdef WCOREDUMP
-				sprintf(buf, "WIFSIGNALED,%ssig=%d",
+				sprintf(buf, "WIFSIGNALED,%ssig=%d|%s|",
 					WCOREDUMP(status) ? "core," : "",
-					WTERMSIG(status));
+					WTERMSIG(status),
+					pink_name_signal(WTERMSIG(status), 0));
 #else
-				sprintf(buf, "WIFSIGNALED,sig=%d", WTERMSIG(status));
+				sprintf(buf, "WIFSIGNALED,sig=%d|%s|",
+					WTERMSIG(status),
+					pink_name_signal(WTERMSIG(status), 0));
 #endif
 			if (WIFEXITED(status))
 				sprintf(buf, "WIFEXITED,exitcode=%u", WEXITSTATUS(status));
 			if (WIFSTOPPED(status))
-				sprintf(buf, "WIFSTOPPED,sig=%d", WSTOPSIG(status));
+				sprintf(buf, "WIFSTOPPED,sig=%d|%s|",
+					WSTOPSIG(status),
+					pink_name_signal(WSTOPSIG(status), 0));
 #ifdef WIFCONTINUED
 			if (WIFCONTINUED(status))
 				strcpy(buf, "WIFCONTINUED");
 #endif
-			log_trace("[wait(0x%04x) = %u] %s (ptrace:%u %s)",
-				  status, pid, buf, event, pink_event_name(event));
+			evbuf[0] = '\0';
+			if (event != 0) {
+				const char *e;
+				e = pink_name_event(event);
+				if (!e) {
+					sprintf(buf, "?? (%u)", event);
+					e = buf;
+				}
+				sprintf(evbuf, ",PTRACE_EVENT_%s", e);
+			}
+			log_trace("[wait(0x%04x) = %u] %s%s", status, pid, buf, evbuf);
 		}
 
 		current = lookup_proc(pid);

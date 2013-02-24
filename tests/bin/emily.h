@@ -19,6 +19,7 @@
 #undef _FORTIFY_SOURCE
 #endif
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,9 +34,11 @@
 #include <utime.h>
 #include <getopt.h>
 
-#include "strtable.h"
+#include <pinktrace/pink.h>
 #include "canonicalize.h"
 #include "file.h"
+#include "util.h"
+
 #include "tap.h"
 
 #define TEST_ERRNO_INVALID -1
@@ -46,8 +49,8 @@ static inline int expect_errno(int real_errno, int expected_errno)
 {
 	if (real_errno != expected_errno) {
 		fprintf(stderr, "errno:%d %s != expected:%d %s\n",
-				real_errno, errno_to_string(real_errno),
-				expected_errno, errno_to_string(expected_errno));
+				real_errno, pink_name_errno(real_errno, 0),
+				expected_errno, pink_name_errno(expected_errno, 0));
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

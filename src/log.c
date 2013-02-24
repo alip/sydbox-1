@@ -17,7 +17,6 @@
 #include <string.h>
 #include <time.h>
 #include "log.h"
-#include "strtable.h"
 #include "util.h"
 
 /* fatal can't be turned off! */
@@ -218,7 +217,7 @@ void log_msg_errno(unsigned level, int err_no, const char *fmt, ...)
 
 	log_prefix(NULL);
 	log_suffix(LOG_DEFAULT_SUFFIX);
-	log_msg(level, " (errno:%d|%s| %s)", err_no, errno_to_string(err_no),
+	log_msg(level, " (errno:%d|%s| %s)", err_no, pink_name_errno(err_no, 0),
 		strerror(errno));
 	log_prefix(LOG_DEFAULT_PREFIX);
 }
@@ -248,7 +247,7 @@ void die_errno(const char *fmt, ...)
 	log_prefix(NULL);
 	log_suffix(LOG_DEFAULT_SUFFIX);
 	log_msg(LOG_LEVEL_FATAL, " (errno:%d|%s| %s)", errno,
-		errno_to_string(errno), strerror(errno));
+		pink_name_errno(errno, 0), strerror(errno));
 	log_prefix(LOG_DEFAULT_PREFIX);
 
 	if (abort_func)

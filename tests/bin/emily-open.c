@@ -101,7 +101,7 @@ int test_open(int argc, char **argv)
 			test_flags |= O_NOFOLLOW;
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_open_usage(stderr, 2);
 			break;
@@ -198,7 +198,7 @@ int test_openat(int argc, char **argv)
 			}
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_openat_usage(stderr, 2);
 			break;

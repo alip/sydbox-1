@@ -75,7 +75,7 @@ int test_rename(int argc, char **argv)
 			test_rename_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_rename_usage(stderr, 2);
 			break;
@@ -129,7 +129,7 @@ int test_renameat(int argc, char **argv)
 			test_renameat_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_renameat_usage(stderr, 2);
 			break;

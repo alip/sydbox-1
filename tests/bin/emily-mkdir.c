@@ -56,7 +56,7 @@ int test_mkdir(int argc, char **argv)
 			test_mkdir_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_mkdir_usage(stderr, 2);
 			break;
@@ -110,7 +110,7 @@ int test_mkdirat(int argc, char **argv)
 			test_mkdirat_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_mkdirat_usage(stderr, 2);
 			break;

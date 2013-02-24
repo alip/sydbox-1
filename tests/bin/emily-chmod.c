@@ -58,7 +58,7 @@ int test_chmod(int argc, char **argv)
 			test_chmod_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_chmod_usage(stderr, 2);
 			break;
@@ -119,7 +119,7 @@ int test_fchmodat(int argc, char **argv)
 			test_fchmodat_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_fchmodat_usage(stderr, 2);
 			break;

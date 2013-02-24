@@ -27,7 +27,6 @@ noinst_HEADERS+= \
 		 proc.h \
 		 seccomp.h \
 		 slist.h \
-		 strtable.h \
 		 pathdecode.h \
 		 pathmatch.h \
 		 sockmatch.h \

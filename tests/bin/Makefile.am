@@ -49,7 +49,11 @@ canontest_SOURCES= \
 canontest_CFLAGS= \
 		  $(DEFS) \
 		  $(AM_CFLAGS) \
+		  -I$(top_builddir) \
+		  -I$(top_srcdir) \
 		  -I$(top_srcdir)/src
+canontest_LDADD= \
+		 $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
 
 emily_SOURCES= \
 	       emily.c \
@@ -67,7 +71,11 @@ emily_SOURCES= \
 emily_CFLAGS= \
 	      $(DEFS) \
 	      $(AM_CFLAGS) \
+	      -I$(top_builddir) \
+	      -I$(top_srcdir) \
 	      -I$(top_srcdir)/src
+emily_LDADD= \
+	     $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
 
 wildtest_SOURCES= \
 		  wildtest.c

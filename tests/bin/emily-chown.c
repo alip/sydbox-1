@@ -55,7 +55,7 @@ int test_chown(int argc, char **argv)
 			test_chown_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_chown_usage(stderr, 2);
 			break;
@@ -100,7 +100,7 @@ int test_lchown(int argc, char **argv)
 			test_lchown_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_lchown_usage(stderr, 2);
 			break;
@@ -165,7 +165,7 @@ int test_fchownat(int argc, char **argv)
 			}
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_fchownat_usage(stderr, 2);
 			break;

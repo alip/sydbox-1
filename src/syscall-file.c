@@ -17,7 +17,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pinktrace/pink.h>
-#include "strtable.h"
 #include "canonicalize.h"
 #include "log.h"
 

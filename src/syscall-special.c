@@ -19,7 +19,6 @@
 #include <pinktrace/pink.h>
 #include "pathdecode.h"
 #include "proc.h"
-#include "strtable.h"
 #include "canonicalize.h"
 #include "log.h"
 

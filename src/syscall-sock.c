@@ -18,7 +18,6 @@
 #include <arpa/inet.h>
 #include <sys/un.h>
 #include <pinktrace/pink.h>
-#include "strtable.h"
 #include "canonicalize.h"
 #include "log.h"
 

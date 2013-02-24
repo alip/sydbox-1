@@ -11,7 +11,6 @@
 #include <errno.h>
 #include <string.h>
 #include <pinktrace/pink.h>
-#include "strtable.h"
 #include "log.h"
 
 int syd_trace_detach(syd_proc_t *current, int sig)

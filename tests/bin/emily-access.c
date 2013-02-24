@@ -63,7 +63,7 @@ int test_access(int argc, char **argv)
 			test_access_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_access_usage(stderr, 2);
 			break;
@@ -139,7 +139,7 @@ int test_faccessat(int argc, char **argv)
 			test_faccessat_usage(stdout, 0);
 			break;
 		case 'e':
-			test_errno = errno_from_string(optarg);
+			test_errno = pink_lookup_errno(optarg, 0);
 			if (test_errno == -1)
 				test_faccessat_usage(stderr, 2);
 			break;
