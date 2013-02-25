@@ -51,6 +51,7 @@
 #define SYD_DENYSYSCALL		00020
 #define SYD_IGNORE_PROCESS	00040
 #define SYD_SYDBOX_CHILD	00100
+#define SYD_WAIT_FOR_PARENT	00200
 
 #define entering(p)	(!((p)->flags & SYD_INSYSCALL))
 #define exiting(p)	((p)->flags & SYD_INSYSCALL)
@@ -337,8 +338,8 @@ typedef struct syd_proc {
 	/* pink process */
 	struct pink_process *pink;
 
-	/* Thread group ID */
-	pid_t tgid;
+	/* Parent process ID */
+	pid_t ppid;
 
 	/* SYD_* flags */
 	short flags;

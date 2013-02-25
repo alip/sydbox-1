@@ -90,7 +90,7 @@ static void report(syd_proc_t *current, const char *fmt, va_list ap)
 
 	log_access_v("-- Access Violation! --");
 	log_access_v("proc: %s[%u] (parent:%u)",
-		     current->comm, pid, current->tgid);
+		     current->comm, pid, current->ppid);
 	log_access_v("cwd: `%s'", current->cwd);
 
 	if (proc_cmdline(pid, 128, &cmdline) == 0) {

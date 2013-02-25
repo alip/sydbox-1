@@ -37,7 +37,7 @@ int syd_trace_kill(syd_proc_t *current, int sig)
 
 	assert(current);
 
-	r = pink_trace_kill(GET_PID(current), current->tgid, sig);
+	r = pink_trace_kill(GET_PID(current), current->ppid, sig);
 	if (r == 0)
 		log_trace("KILL sig:%d", sig);
 	else if (r == -ESRCH)
@@ -72,11 +72,13 @@ int syd_trace_geteventmsg(syd_proc_t *current, unsigned long *data)
 	assert(current);
 
 	r = pink_trace_geteventmsg(GET_PID(current), data);
-	if (r == -ESRCH)
+	if (r == 0)
+		return 0;
+	else if (r == -ESRCH)
 		err_trace(-r, "trace_geteventmsg() failed");
 	else if (r < 0)
 		err_warning(-r, "trace_geteventmsg() failed");
-	return r;
+	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
 int syd_read_syscall(syd_proc_t *current, long *sysnum)

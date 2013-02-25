@@ -145,7 +145,7 @@ static syd_proc_t *add_proc(pid_t pid, short flags)
 		errno = -r;
 		return NULL;
 	}
-	newproc->tgid = -1;
+	newproc->ppid = 0;
 	newproc->trace_step = SYD_STEP_NOT_SET;
 	newproc->flags = SYD_STARTUP | flags;
 
@@ -285,7 +285,7 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 
 	pid_t pid = GET_PID(current);
 	short abi = GET_ABI(current);
-	pid_t tgid = current->tgid;
+	pid_t ppid = current->ppid;
 	struct snode *node;
 	struct sockmatch *match;
 
@@ -299,7 +299,7 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 		CG = CB = CI = CN = CE = "";
 	}
 
-	fprintf(stderr, "%s-- Information on Thread ID: %u%s\n", CG, pid, CE);
+	fprintf(stderr, "%s-- Information on Process ID: %u%s\n", CG, pid, CE);
 	if ((r = proc_stat(pid, &info)) < 0) {
 		fprintf(stderr, "%sproc_stat failed (errno:%d %s)%s\n", CB, errno, strerror(errno), CE);
 	} else {
@@ -321,7 +321,7 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 				CE);
 	}
 
-	fprintf(stderr, "\t%sThread Group ID: %u%s\n", CN, tgid > 0 ? tgid : 0, CE);
+	fprintf(stderr, "\t%sParent ID: %u%s\n", CN, ppid > 0 ? ppid : 0, CE);
 	fprintf(stderr, "\t%sComm: `%s'%s\n", CN, current->comm, CE);
 	fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, current->cwd, CE);
 	fprintf(stderr, "\t%sSyscall: {no:%lu abi:%d name:%s}%s\n", CN,
@@ -601,54 +601,28 @@ static int ptrace_step(syd_proc_t *current, int sig)
 	return (r < 0) ? ptrace_error(current, msg, -r) : r;
 }
 
-static int event_init(syd_proc_t *current)
+static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 {
-	int r;
-	char *cwd, *comm;
+	char *comm;
+	char *cwd;
 	struct snode *node, *newnode;
 	sandbox_t *inherit;
-	pid_t pid = GET_PID(current);
-	syd_proc_t *parent = NULL;
 
-	if (!syd_use_seize) {
-		if ((r = syd_trace_setup(current)) < 0)
-			return ptrace_error(current, "PTRACE_SEOPTIONS", -r);
-	}
-
-	if (!sydchild(current)) {
-		/*
-		 * Find parent of the process via /proc.
-		 * Using ptrace() for this is tricky and inherently racy.
-		 * e.g. SIGKILL may kill creator after it succeeds in creating
-		 * the child but before it returns.
-		 */
-		struct proc_statinfo info;
-
-		if ((r = proc_stat(pid, &info)) < 0) {
-			/* We did our best, Watson, time to panic! */
-			log_warning("PANIC: failed to lookup parent of pid: %u", pid);
-			return panic(current);
-		}
-
-		parent = lookup_proc(info.ppid);
-		if (!parent) {
-			/* WTF? */
-			log_warning("PANIC: unknown parent pid: %u", info.ppid);
-			return panic(current);
-		}
-
-		if (parent->flags & SYD_IGNORE_PROCESS) {
-			comm = cwd = NULL;
-			goto out;
-		}
-
-		comm = xstrdup(parent->comm);
-		cwd = xstrdup(parent->cwd);
-		inherit = &current->config;
-	} else {
+	if (sydchild(current)) {
 		comm = xstrdup(sydbox->program_invocation_name);
 		cwd = xgetcwd();
 		inherit = &sydbox->config.child;
+	} else {
+		if (parent->flags & SYD_IGNORE_PROCESS) {
+			/* parent is ignored, ignore the child too */
+			comm = cwd = NULL;
+			current->comm = current->cwd = NULL;
+			current->flags |= SYD_IGNORE_PROCESS;
+			goto out;
+		}
+		comm = xstrdup(parent->comm);
+		cwd = xstrdup(parent->cwd);
+		inherit = &parent->config;
 	}
 
 	/* Copy the configuration */
@@ -693,15 +667,63 @@ static int event_init(syd_proc_t *current)
 		die_errno("hashtable_create");
 
 	if (sydbox->config.whitelist_per_process_directories) {
-		char *magic;
-		xasprintf(&magic, "/proc/%u/***", pid);
+		char magic[sizeof("/proc/%u/***") + sizeof(int)*3 + /*paranoia:*/16];
+		sprintf(magic, "/proc/%u/***", GET_PID(current));
 		magic_append_whitelist_read(magic, current);
 		magic_append_whitelist_write(magic, current);
-		free(magic);
 	}
-
 out:
 	log_trace("initialised (parent:%u)", parent ? GET_PID(parent) : 0);
+}
+
+static int event_init(syd_proc_t *current)
+{
+	int r;
+	pid_t pid;
+	syd_proc_t *parent;
+	struct proc_statinfo info;
+
+	if (sydchild(current)) {
+		inherit_sandbox(current, NULL);
+	} else if (current->ppid > 1 && (parent = lookup_proc(current->ppid))) {
+		inherit_sandbox(current, parent);
+		current->flags &= ~SYD_WAIT_FOR_PARENT;
+		log_trace("parent pid set to %u, clear SYD_WAIT_FOR_PARENT",
+			  GET_PID(parent));
+	}
+
+	if (current->flags & SYD_STARTUP) {
+		if (!syd_use_seize) {
+			if ((r = syd_trace_setup(current)) < 0)
+				return ptrace_error(current, "PTRACE_SETOPTIONS", -r);
+		}
+		current->flags &= ~SYD_STARTUP;
+		return 0;
+	} else if (!(current->flags & SYD_WAIT_FOR_PARENT)) {
+		return 0;
+	}
+
+	/*
+	 * Process is born before we received PTRACE_EVENT_FORK, sigh...
+	 * We need a way to find the parent process ID.
+	 *
+	 * Using ptrace() for this is tricky and inherently racy.
+	 * e.g. SIGKILL may kill creator after it succeeds in creating
+	 * the child but before it returns.
+	 */
+	pid = GET_PID(current);
+	if ((r = proc_stat(pid, &info)) < 0) {
+		log_warning("PANIC: failed to lookup parent of pid: %u", pid);
+		return panic(current);
+	}
+	if (info.ppid <= 1 || !(parent = lookup_proc(info.ppid))) {
+		current->flags |= SYD_WAIT_FOR_PARENT;
+		log_trace("parent pid not available, keep SYD_WAIT_FOR_PARENT");
+		return 0;
+	}
+
+	current->ppid = info.ppid;
+	inherit_sandbox(current, parent);
 	return 0;
 }
 
@@ -775,6 +797,29 @@ out:
 	current->abspath = NULL;
 
 	return r;
+}
+
+static int event_fork(syd_proc_t *current)
+{
+	int r;
+	pid_t pid = GET_PID(current);
+	unsigned long cpid;
+	syd_proc_t *child;
+
+	if ((r = syd_trace_geteventmsg(current, &cpid)) < 0)
+		return r;
+	log_trace("[event_fork]: initialising %lu", cpid);
+	child = lookup_proc(cpid);
+	if (child == NULL)
+		child = add_proc_or_kill(cpid, post_attach_sigstop);
+	else
+		child->flags &= ~SYD_WAIT_FOR_PARENT;
+
+	child->ppid = pid;
+	log_context(child);
+	inherit_sandbox(child, current);
+	log_context(current);
+	return 0;
 }
 
 static int event_syscall(syd_proc_t *current)
@@ -958,7 +1003,7 @@ static int trace(void)
 
 		if (!current) {
 			if (sydbox->config.follow_fork) {
-				current = add_proc_or_kill(pid, post_attach_sigstop);
+				current = add_proc_or_kill(pid, SYD_WAIT_FOR_PARENT | post_attach_sigstop);
 				log_context(current);
 				log_trace("Process %u attached", pid);
 			} else {
@@ -1014,10 +1059,10 @@ static int trace(void)
 dont_switch_procs:
 		if (event == PINK_EVENT_EXEC) {
 			r = event_exec(current);
-			if (r == -ESRCH)
-				continue;
-			else if (r == -ECHILD)
+			if (r == -ECHILD) /* process ignored */
 				goto restart_tracee_with_sig_0;
+			else if (r < 0) /* process dead */
+				continue;
 		}
 
 		if (WIFSIGNALED(status) || WIFEXITED(status)) {
@@ -1032,10 +1077,12 @@ dont_switch_procs:
 		}
 
 		if (current->flags & SYD_STARTUP) {
-			log_trace("SYD_STARTUP set, initializing");
-			current->flags &= ~SYD_STARTUP;
-			r = event_init(current);
-			if (r < 0)
+			log_trace("SYD_STARTUP set, initialising");
+			if ((r = event_init(current)) < 0) /* process dead */
+				continue;
+		} else if (current->flags & SYD_WAIT_FOR_PARENT) {
+			log_trace("SYD_WAIT_FOR_PARENT set, initialising");
+			if ((r = event_init(current)) < 0) /* process dead */
 				continue;
 		}
 
@@ -1043,8 +1090,14 @@ dont_switch_procs:
 
 		if (event != 0) {
 			/* Ptrace event */
+			if (event == PINK_EVENT_FORK ||
+			    event == PINK_EVENT_VFORK ||
+			    event == PINK_EVENT_CLONE) {
+				if ((r = event_fork(current)) < 0)
+					continue; /* process dead */
+			}
 #if PINK_HAVE_SEIZE
-			if (event == PINK_EVENT_STOP) {
+			else if (event == PINK_EVENT_STOP) {
 				/*
 				 * PTRACE_INTERRUPT-stop or group-stop.
 				 * PTRACE_INTERRUPT-stop has sig == SIGTRAP here.
@@ -1060,10 +1113,9 @@ dont_switch_procs:
 			}
 #endif
 #ifdef WANT_SECCOMP
-			if (event == PINK_EVENT_SECCOMP) {
-				r = event_seccomp(current);
-				if (r < 0)
-					continue;
+			else if (event == PINK_EVENT_SECCOMP) {
+				if ((r = event_seccomp(current)) < 0)
+					continue; /* process dead */
 			}
 #endif
 			goto restart_tracee_with_sig_0;

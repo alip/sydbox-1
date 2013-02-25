@@ -142,7 +142,7 @@ int magic_cmd_exec(const void *val, syd_proc_t *current)
 			  WTERMSIG(status));
 		log_magic("sending signal:%d to %s[%u]", WTERMSIG(status),
 			  current->comm, pid);
-		pink_trace_kill(pid, current->tgid, WTERMSIG(status));
+		pink_trace_kill(pid, current->ppid, WTERMSIG(status));
 		r = MAGIC_RET_PROCESS_TERMINATED;
 	} else {
 		log_magic("exec(`%s') unknown status:0x%04x pid:%u", argv[0],
