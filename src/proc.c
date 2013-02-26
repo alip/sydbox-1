@@ -3,7 +3,7 @@
  *
  * /proc related utilities
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright (C) 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -15,17 +15,21 @@
 
 #include "proc.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <limits.h>
 #include <errno.h>
 #include <ctype.h>
-#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/user.h>
+
+#ifndef PAGE_SIZE
+# define PAGE_SIZE sysconf(_SC_PAGESIZE)
+#endif
 #include <linux/binfmts.h>
 
 #include "file.h"

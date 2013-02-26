@@ -48,15 +48,15 @@ EOF
 '
 
 test_expect_success_foreach_option 'return 128 + $SIGNUM if tracee is terminated' '
-    sigint=$(kill -l INT) &&
+    sigint=2 &&
     retval=$(expr 128 + $sigint) &&
-    test_expect_code "$retval" sydbox -- "$SHELL_PATH" -c "kill -INT \$$"
+    test_expect_code "$retval" sydbox -- "$SHELL_PATH" -c "kill -$sigint \$$"
 '
 
 test_expect_success_foreach_option 'magic /dev/sydbox API is 1' '
     sydbox -- "$SHELL_PATH" -c "test -e /dev/sydbox" &&
     sydbox -- "$SHELL_PATH" -c "test -e /dev/sydbox/1" &&
-    test_expect_code 1 sydbox -- "$SHELL_PATH" -c "test -e /dev/sydbox/0 || exit 1"
+    test_expect_code 1 sydbox -- "$SHELL_PATH" -c "test -e /dev/sydbox/0"
 '
 
 test_expect_success_foreach_option 'magic /dev/sydbox boolean checking works' '

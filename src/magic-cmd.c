@@ -15,6 +15,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/user.h>
+
+#ifndef PAGE_SIZE
+# define PAGE_SIZE sysconf(_SC_PAGESIZE)
+#endif
 #include <linux/binfmts.h>
 
 #include <pinktrace/pink.h>

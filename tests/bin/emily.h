@@ -1,6 +1,6 @@
 /* Syd: See Emily Play!
  * Check program for sydbox tests
- * Copyright 2009, 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright 2009, 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * parse_octal() is based in part upon busybox which is:
  *   Copyright (C) 2003  Manuel Novoa III  <mjn3@codepoet.org>
  * Distributed under the terms of the GNU General Public License v3 or later
@@ -9,6 +9,10 @@
 #ifndef EMILY_H
 #define EMILY_H 1
 
+#ifndef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 /*
  * gcc's _FORTIFY_SOURCE may trigger an abort due to invalid system call usages.
  * e.g. open(foo, O_RDONLY|O_CREAT) triggers:
@@ -16,7 +20,7 @@
  * However, we need to test whether sydbox handles such cases gracefully.
  */
 #ifdef _FORTIFY_SOURCE
-#undef _FORTIFY_SOURCE
+# undef _FORTIFY_SOURCE
 #endif
 
 #include <assert.h>
@@ -27,14 +31,20 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/mount.h>
 #include <errno.h>
 #include <fcntl.h>
+#if defined(__linux__) && defined(__arm__)
+# define flock XXX_flock
+# include <asm/fcntl.h> /* FIXME: wtf? O_DIRECTORY is undefind otherwise */
+# undef flock
+#endif
+#include <sys/mount.h>
+#include <sys/time.h>
 #include <utime.h>
 #include <getopt.h>
 
 #include <pinktrace/pink.h>
+
 #include "canonicalize.h"
 #include "file.h"
 #include "util.h"

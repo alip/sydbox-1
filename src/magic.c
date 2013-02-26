@@ -6,7 +6,6 @@
  */
 
 #include "sydbox.h"
-#include "magic.h"
 
 #include <errno.h>
 #include <string.h>
