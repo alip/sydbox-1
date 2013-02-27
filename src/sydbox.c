@@ -179,7 +179,7 @@ void clear_proc(syd_proc_t *p)
 		p->args[i] = 0;
 	p->subcall = 0;
 	p->retval = 0;
-	p->flags &= ~SYD_DENYSYSCALL;
+	p->flags &= ~SYD_DENY_SYSCALL;
 	p->flags &= ~SYD_STOP_AT_SYSEXIT;
 
 	if (p->savebind)
@@ -316,10 +316,6 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 		fprintf(stderr, "%sIGNORE_PROCESS", (r == 1) ? "|" : "");
 		r = 1;
 	}
-	if (current->flags & SYD_FOLLOWFORK) {
-		fprintf(stderr, "%sFOLLOWFORK", (r == 1) ? "|" : "");
-		r = 1;
-	}
 	if (current->flags & SYD_STARTUP) {
 		fprintf(stderr, "STARTUP");
 		r = 1;
@@ -328,12 +324,12 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 		fprintf(stderr, "%sIGNORE_ONE_SIGSTOP", (r == 1) ? "|" : "");
 		r = 1;
 	}
-	if (current->flags & SYD_INSYSCALL) {
-		fprintf(stderr, "%sINSYSCALL", (r == 1) ? "|" : "");
+	if (current->flags & SYD_IN_SYSCALL) {
+		fprintf(stderr, "%sIN_SYSCALL", (r == 1) ? "|" : "");
 		r = 1;
 	}
-	if (current->flags & SYD_DENYSYSCALL) {
-		fprintf(stderr, "%sDENYSYSCALL", (r == 1) ? "|" : "");
+	if (current->flags & SYD_DENY_SYSCALL) {
+		fprintf(stderr, "%sDENY_SYSCALL", (r == 1) ? "|" : "");
 		r = 1;
 	}
 	if (current->flags & SYD_STOP_AT_SYSEXIT) {
@@ -882,10 +878,10 @@ static int event_syscall(syd_proc_t *current)
 #endif
 		if (entering(current)) {
 			log_info("[wait_execve]: entering execve()");
-			current->flags |= SYD_INSYSCALL;
+			current->flags |= SYD_IN_SYSCALL;
 		} else {
 			log_info("[wait_execve]: exiting execve(), sandboxing started");
-			current->flags &= ~SYD_INSYSCALL;
+			current->flags &= ~SYD_IN_SYSCALL;
 			sydbox->wait_execve = false;
 		}
 		return 0;
@@ -899,7 +895,7 @@ static int event_syscall(syd_proc_t *current)
 		if (sydbox->config.use_seccomp &&
 		    (current->flags & SYD_STOP_AT_SYSEXIT)) {
 			log_trace("seccomp: skipping sysenter");
-			current->flags |= SYD_INSYSCALL;
+			current->flags |= SYD_IN_SYSCALL;
 			return 0;
 		}
 #endif
@@ -914,12 +910,12 @@ static int event_syscall(syd_proc_t *current)
 			return r;
 		}
 #endif
-		current->flags |= SYD_INSYSCALL;
+		current->flags |= SYD_IN_SYSCALL;
 	} else {
 		if ((r = UPDATE_REGSET(current)) < 0)
 			return ptrace_error(current, "PTRACE_GETREGSET", -r);
 		r = sysexit(current);
-		current->flags &= ~SYD_INSYSCALL;
+		current->flags &= ~SYD_IN_SYSCALL;
 	}
 	return r;
 }
@@ -947,7 +943,7 @@ static int event_seccomp(syd_proc_t *current)
 	r = sysenter(current);
 	if (current->flags & SYD_STOP_AT_SYSEXIT) {
 		/* step using PTRACE_SYSCALL until we hit sysexit. */
-		current->flags &= ~SYD_INSYSCALL;
+		current->flags &= ~SYD_IN_SYSCALL;
 		current->trace_step = SYD_STEP_SYSCALL;
 	}
 	return r;

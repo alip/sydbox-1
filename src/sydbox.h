@@ -46,17 +46,16 @@
 /* Process flags */
 #define SYD_STARTUP		00001
 #define SYD_IGNORE_ONE_SIGSTOP	00002
-#define SYD_FOLLOWFORK		00004
-#define SYD_INSYSCALL		00010
-#define SYD_DENYSYSCALL		00020
-#define SYD_STOP_AT_SYSEXIT	00040
-#define SYD_IGNORE_PROCESS	00100
-#define SYD_SYDBOX_CHILD	00200
-#define SYD_WAIT_FOR_PARENT	00400
+#define SYD_IN_SYSCALL		00004
+#define SYD_DENY_SYSCALL		00010
+#define SYD_STOP_AT_SYSEXIT	00020
+#define SYD_IGNORE_PROCESS	00040
+#define SYD_SYDBOX_CHILD	00100
+#define SYD_WAIT_FOR_PARENT	00200
 
-#define entering(p)	(!((p)->flags & SYD_INSYSCALL))
-#define exiting(p)	((p)->flags & SYD_INSYSCALL)
-#define sysdeny(p)	((p)->flags & SYD_DENYSYSCALL)
+#define entering(p)	(!((p)->flags & SYD_IN_SYSCALL))
+#define exiting(p)	((p)->flags & SYD_IN_SYSCALL)
+#define sysdeny(p)	((p)->flags & SYD_DENY_SYSCALL)
 #define sydchild(p)	((p)->flags & SYD_SYDBOX_CHILD)
 
 /* Type declarations */
