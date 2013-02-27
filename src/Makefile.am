@@ -6,6 +6,9 @@ CLEANFILES= \
 EXTRA_DIST=
 noinst_HEADERS=
 
+noinst_SCRIPTS=\
+	       kingbee.py
+
 DEFS+= \
        -DDATADIR=\"$(datadir)\" \
        -DGITVERSION=\"$(GITVERSION)\"
