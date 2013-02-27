@@ -735,8 +735,17 @@ static int event_exec(syd_proc_t *current)
 
 	if (sydbox->wait_execve) {
 		log_info("[wait_execve]: execve() ptrace trap");
+#ifndef WANT_SECCOMP
 		return 0;
+#else
+		if (sydbox->config.use_seccomp) {
+			log_info("[wait_execve]: sandboxing started");
+			sydbox->wait_execve = false;
+			return 0;
+		}
+#endif
 	}
+
 
 	if (current->flags & SYD_IGNORE_PROCESS)
 		return 0;
@@ -827,47 +836,69 @@ static int event_syscall(syd_proc_t *current)
 	int r = 0;
 
 	if (sydbox->wait_execve) {
+#ifndef WANT_SECCOMP
 		if (entering(current)) {
 			log_info("[wait_execve]: entering execve()");
+			current->flags |= SYD_INSYSCALL;
 		} else {
 			log_info("[wait_execve]: exiting execve(), sandboxing started");
+			current->flags &= ~SYD_INSYSCALL;
 			sydbox->wait_execve = false;
 		}
 		goto out;
+#else
+		/* nothing to do, seccomp trap handled this. */
+		;
+#endif
 	}
 
 	if (current->flags & SYD_IGNORE_PROCESS)
 		goto out;
 
-	r = entering(current) ? sysenter(current) : sysexit(current);
+	if (entering(current)) {
+#ifdef WANT_SECCOMP
+		if (!sydbox->config.use_seccomp || !sysdeny(current))
+			r = sysenter(current);
+#else
+		r = sysenter(current);
+#endif
+	} else {
+		r = sysexit(current);
+	}
 out:
-	current->flags ^= SYD_INSYSCALL;
-	if (sydbox->config.use_seccomp && sysexit(current))
+#ifdef WANT_SECCOMP
+	if (sydbox->config.use_seccomp && !entering(current))
 		current->trace_step = SYD_STEP_RESUME;
+#endif
+	current->flags ^= SYD_INSYSCALL;
 	return r;
 }
 
 #ifdef WANT_SECCOMP
 static int event_seccomp(syd_proc_t *current)
 {
+	int r;
+
 	if (sydbox->wait_execve) {
 		log_info("[wait_execve]: execve() seccomp trap");
-		goto out;
+		return 0;
 	}
+
+	if (current->flags & SYD_IGNORE_PROCESS)
+		return 0;
 
 #if 0
 	if ((r = syd_trace_geteventmsg(current, &ret_data)) < 0)
 		return ptrace_error(current, "PTRACE_GETEVENTMSG", -r);
-	if (current->flags & SYD_IGNORE_PROCESS)
-		return 0;
 #endif
 
-out:
-	/* Stop at syscall entry */
-	current->trace_step = SYD_STEP_SYSCALL;
-	current->flags &= ~SYD_INSYSCALL;
-
-	return 0;
+	r = sysenter(current);
+	if (sysdeny(current)) {
+		/* step using PTRACE_SYSCALL until we hit sysexit. */
+		current->flags &= ~SYD_INSYSCALL;
+		current->trace_step = SYD_STEP_SYSCALL;
+	}
+	return r;
 }
 #endif
 
