@@ -105,7 +105,7 @@ static void report(syd_proc_t *current, const char *fmt, va_list ap)
 
 int deny(syd_proc_t *current, int err_no)
 {
-	current->flags |= SYD_DENYSYSCALL;
+	current->flags |= SYD_DENYSYSCALL | SYD_STOP_AT_SYSEXIT;
 	current->retval = errno2retval(err_no);
 
 	log_access("DENY retval:%ld errno:%d|%s|", current->retval,

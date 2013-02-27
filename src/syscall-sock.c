@@ -75,6 +75,7 @@ int sys_bind(syd_proc_t *current)
 			current->savebind->addr = psa;
 			/* fall through */
 		default:
+			current->flags |= SYD_STOP_AT_SYSEXIT;
 			return 0;
 		}
 	}
@@ -202,8 +203,10 @@ int sys_getsockname(syd_proc_t *current)
 		return r;
 
 	ht_int64_node_t *node = hashtable_find(current->sockmap, fd + 1, 0);
-	if (node)
+	if (node) {
 		current->args[0] = fd;
+		current->flags |= SYD_STOP_AT_SYSEXIT;
+	}
 
 	return 0;
 }

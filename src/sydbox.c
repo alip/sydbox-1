@@ -180,6 +180,7 @@ void clear_proc(syd_proc_t *p)
 	p->subcall = 0;
 	p->retval = 0;
 	p->flags &= ~SYD_DENYSYSCALL;
+	p->flags &= ~SYD_STOP_AT_SYSEXIT;
 
 	if (p->savebind)
 		free_sockinfo(p->savebind);
@@ -735,15 +736,13 @@ static int event_exec(syd_proc_t *current)
 
 	if (sydbox->wait_execve) {
 		log_info("[wait_execve]: execve() ptrace trap");
-#ifndef WANT_SECCOMP
-		return 0;
-#else
+#ifdef WANT_SECCOMP
 		if (sydbox->config.use_seccomp) {
 			log_info("[wait_execve]: sandboxing started");
 			sydbox->wait_execve = false;
-			return 0;
 		}
 #endif
+		return 0;
 	}
 
 
@@ -836,7 +835,10 @@ static int event_syscall(syd_proc_t *current)
 	int r = 0;
 
 	if (sydbox->wait_execve) {
-#ifndef WANT_SECCOMP
+#ifdef WANT_SECCOMP
+		if (sydbox->config.use_seccomp)
+			return 0;
+#endif
 		if (entering(current)) {
 			log_info("[wait_execve]: entering execve()");
 			current->flags |= SYD_INSYSCALL;
@@ -845,34 +847,39 @@ static int event_syscall(syd_proc_t *current)
 			current->flags &= ~SYD_INSYSCALL;
 			sydbox->wait_execve = false;
 		}
-		goto out;
-#else
-		/* nothing to do, seccomp trap handled this. */
-		;
-#endif
+		return 0;
 	}
 
 	if (current->flags & SYD_IGNORE_PROCESS)
-		goto out;
+		return 0;
 
 	if (entering(current)) {
 #ifdef WANT_SECCOMP
-		if (!sydbox->config.use_seccomp || !sysdeny(current))
-#endif
-		{
-			if ((r = UPDATE_REGSET(current)) < 0)
-				return ptrace_error(current, "PTRACE_GETREGSET", -r);
-			r = sysenter(current);
+		if (sydbox->config.use_seccomp &&
+		    (current->flags & SYD_STOP_AT_SYSEXIT)) {
+			log_trace("seccomp: skipping sysenter");
+			current->flags |= SYD_INSYSCALL;
+			return 0;
 		}
-	} else {
-		r = sysexit(current);
-	}
-out:
-#ifdef WANT_SECCOMP
-	if (sydbox->config.use_seccomp && !entering(current))
-		current->trace_step = SYD_STEP_RESUME;
 #endif
-	current->flags ^= SYD_INSYSCALL;
+		if ((r = UPDATE_REGSET(current)) < 0)
+			return ptrace_error(current, "PTRACE_GETREGSET", -r);
+		r = sysenter(current);
+#ifdef WANT_SECCOMP
+		if (sydbox->config.use_seccomp &&
+		    !(current->flags & SYD_STOP_AT_SYSEXIT)) {
+			log_trace("seccomp: skipping sysexit, resuming");
+			current->trace_step = SYD_STEP_RESUME;
+			return r;
+		}
+#endif
+		current->flags |= SYD_INSYSCALL;
+	} else {
+		if ((r = UPDATE_REGSET(current)) < 0)
+			return ptrace_error(current, "PTRACE_GETREGSET", -r);
+		r = sysexit(current);
+		current->flags &= ~SYD_INSYSCALL;
+	}
 	return r;
 }
 
@@ -897,7 +904,7 @@ static int event_seccomp(syd_proc_t *current)
 	if ((r = UPDATE_REGSET(current)) < 0)
 		return ptrace_error(current, "PTRACE_GETREGSET", -r);
 	r = sysenter(current);
-	if (sysdeny(current)) {
+	if (current->flags & SYD_STOP_AT_SYSEXIT) {
 		/* step using PTRACE_SYSCALL until we hit sysexit. */
 		current->flags &= ~SYD_INSYSCALL;
 		current->trace_step = SYD_STEP_SYSCALL;

@@ -364,6 +364,8 @@ int sysenter(syd_proc_t *current)
 		log_syscall("entering system call");
 		if (entry->enter)
 			return entry->enter(current);
+		else if (entry->exit)
+			current->flags |= SYD_STOP_AT_SYSEXIT;
 	} else {
 		log_sys_all("entering system call %ld", sysnum);
 	}

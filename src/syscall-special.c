@@ -204,6 +204,7 @@ int sys_dup(syd_proc_t *current)
 		return r;
 
 	current->args[0] = fd;
+	current->flags |= SYD_STOP_AT_SYSEXIT;
 	return 0;
 }
 
@@ -271,6 +272,7 @@ int sys_fcntl(syd_proc_t *current)
 		return r;
 
 	current->args[0] = fd;
+	current->flags |= SYD_STOP_AT_SYSEXIT;
 	return 0;
 }
 
