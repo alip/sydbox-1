@@ -60,18 +60,8 @@ int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf)
 	char *prefix = NULL;
 	pid_t pid = GET_PID(current);
 
-	if ((r = pink_read_argument(current->pink, arg_index, &fd)) < 0) {
-		if (r == ESRCH) {
-			log_trace("read_argument(pid:%u, index:%u) failed (errno:%d %s)",
-				  pid, arg_index, -r, strerror(-r));
-			log_trace("drop process %s[%u]", current->comm,
-				  pid);
-			return -ESRCH;
-		}
-		log_warning("read_argument(pid:%u, index:%u) failed (errno:%d %s)",
-			    pid, arg_index, -r, strerror(-r));
-		return panic(current);
-	}
+	if ((r = syd_read_argument(current, arg_index, &fd)) < 0)
+		return r;
 
 	r = 0;
 	if (fd == AT_FDCWD) {

@@ -715,6 +715,7 @@ int sys_rename(syd_proc_t *current)
 	if (sandbox_write_off(current))
 		return 0;
 
+	mode = 0;
 	init_sysinfo(&info);
 	info.can_mode = CAN_NOLINKS;
 	info.ret_mode = &mode;

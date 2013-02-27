@@ -83,7 +83,7 @@ void config_parse_spec(const char *pathspec)
 
 	if (pathspec[0] == SYDBOX_PROFILE_CHAR) {
 		pathspec++;
-		len = sizeof(DATADIR) + sizeof(PACKAGE) + strlen(pathspec);
+		len = sizeof(DATADIR) + sizeof(PACKAGE) + strlen(pathspec) + 1;
 		filename = xcalloc(len, sizeof(char));
 
 		strcpy(filename, DATADIR "/" PACKAGE "/");

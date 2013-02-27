@@ -200,6 +200,8 @@ void ignore_proc(syd_proc_t *p)
 		free(p->cwd);
 	if (p->comm)
 		free(p->comm);
+	if (p->pink)
+		pink_process_free(p->pink);
 	if (p->savebind)
 		free_sockinfo(p->savebind);
 
@@ -437,6 +439,8 @@ static void init_early(void)
 	sydbox->violation = false;
 	sydbox->wait_execve = false;
 	sydbox->exit_code = EXIT_SUCCESS;
+	sydbox->nprocs = 0;
+	SLIST_INIT(&sydbox->proctab);
 	config_init();
 	log_init(NULL);
 	log_abort_func(abort_all);
@@ -967,7 +971,7 @@ static int event_exit(syd_proc_t *current, int status)
 		sydbox->exit_code = code;
 		if (!sydbox->config.exit_wait_all) {
 			log_trace("aborting loop (wait_all not set)");
-			SYD_REMOVE_PROCESS(current);
+			remove_proc(current);
 			cont_all();
 			exit(sydbox->exit_code);
 		}
