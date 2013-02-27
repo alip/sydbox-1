@@ -865,7 +865,7 @@ static int event_seccomp(syd_proc_t *current)
 out:
 	/* Stop at syscall entry */
 	current->trace_step = SYD_STEP_SYSCALL;
-	current->flags |= SYD_INSYSCALL;
+	current->flags &= ~SYD_INSYSCALL;
 
 	return 0;
 }
