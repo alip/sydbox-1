@@ -858,10 +858,12 @@ static int event_syscall(syd_proc_t *current)
 	if (entering(current)) {
 #ifdef WANT_SECCOMP
 		if (!sydbox->config.use_seccomp || !sysdeny(current))
-			r = sysenter(current);
-#else
-		r = sysenter(current);
 #endif
+		{
+			if ((r = UPDATE_REGSET(current)) < 0)
+				return ptrace_error(current, "PTRACE_GETREGSET", -r);
+			r = sysenter(current);
+		}
 	} else {
 		r = sysexit(current);
 	}
@@ -892,6 +894,8 @@ static int event_seccomp(syd_proc_t *current)
 		return ptrace_error(current, "PTRACE_GETEVENTMSG", -r);
 #endif
 
+	if ((r = UPDATE_REGSET(current)) < 0)
+		return ptrace_error(current, "PTRACE_GETREGSET", -r);
 	r = sysenter(current);
 	if (sysdeny(current)) {
 		/* step using PTRACE_SYSCALL until we hit sysexit. */
@@ -1046,11 +1050,6 @@ static int trace(void)
 #endif
 				die("Unknown pid: %u", pid); /* XXX */
 			}
-		}
-
-		if (WIFSTOPPED(status) && (r = UPDATE_REGSET(current)) < 0) {
-			ptrace_error(current, "GET_REGSET", -r);
-			continue;
 		}
 
 		/* Under Linux, execve changes pid to thread leader's pid,
