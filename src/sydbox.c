@@ -301,43 +301,83 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 	}
 
 	fprintf(stderr, "%s-- Information on Process ID: %u%s\n", CG, pid, CE);
-	if ((r = proc_stat(pid, &info)) < 0) {
-		fprintf(stderr, "%sproc_stat failed (errno:%d %s)%s\n", CB, errno, strerror(errno), CE);
-	} else {
-		fprintf(stderr, "\t%sproc: pid=%d ppid=%d pgrp=%d%s\n",
-				CI,
-				info.pid, info.ppid, info.pgrp,
-				CE);
-		fprintf(stderr, "\t%sproc: comm=`%s' state=`%c'%s\n",
-				CI,
-				info.comm, info.state,
-				CE);
-		fprintf(stderr, "\t%sproc: session=%d tty_nr=%d tpgid=%d%s\n",
-				CI,
-				info.session, info.tty_nr, info.tpgid,
-				CE);
-		fprintf(stderr, "\t%sproc: nice=%ld num_threads=%ld%s\n",
-				CI,
-				info.nice, info.num_threads,
-				CE);
-	}
-
 	fprintf(stderr, "\t%sParent ID: %u%s\n", CN, ppid > 0 ? ppid : 0, CE);
 	fprintf(stderr, "\t%sComm: `%s'%s\n", CN, current->comm, CE);
 	fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, current->cwd, CE);
 	fprintf(stderr, "\t%sSyscall: {no:%lu abi:%d name:%s}%s\n", CN,
 			current->sysnum, abi, current->sysname, CE);
+	fprintf(stderr, "\t%sFlags: ", CN);
+	r = 0;
+	if (current->flags & SYD_SYDBOX_CHILD) {
+		fprintf(stderr, "%sSYDBOX_CHILD", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	if (current->flags & SYD_IGNORE_PROCESS) {
+		fprintf(stderr, "%sIGNORE_PROCESS", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	if (current->flags & SYD_FOLLOWFORK) {
+		fprintf(stderr, "%sFOLLOWFORK", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	if (current->flags & SYD_STARTUP) {
+		fprintf(stderr, "STARTUP");
+		r = 1;
+	}
+	if (current->flags & SYD_IGNORE_ONE_SIGSTOP) {
+		fprintf(stderr, "%sIGNORE_ONE_SIGSTOP", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	if (current->flags & SYD_INSYSCALL) {
+		fprintf(stderr, "%sINSYSCALL", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	if (current->flags & SYD_DENYSYSCALL) {
+		fprintf(stderr, "%sDENYSYSCALL", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	if (current->flags & SYD_STOP_AT_SYSEXIT) {
+		fprintf(stderr, "%sSTOP_AT_SYSEXIT", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	if (current->flags & SYD_WAIT_FOR_PARENT) {
+		fprintf(stderr, "%sWAIT_FOR_PARENT", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	fprintf(stderr, "%s\n", CN);
+
+	if ((r = proc_stat(pid, &info)) < 0) {
+		fprintf(stderr, "%sproc_stat failed (errno:%d %s)%s\n",
+			CB, errno, strerror(errno), CE);
+	} else {
+		fprintf(stderr, "\t%sproc: pid=%d ppid=%d pgrp=%d%s\n",
+			CI,
+			info.pid, info.ppid, info.pgrp,
+			CE);
+		fprintf(stderr, "\t%sproc: comm=`%s' state=`%c'%s\n",
+			CI,
+			info.comm, info.state,
+			CE);
+		fprintf(stderr, "\t%sproc: session=%d tty_nr=%d tpgid=%d%s\n",
+			CI,
+			info.session, info.tty_nr, info.tpgid,
+			CE);
+		fprintf(stderr, "\t%sproc: nice=%ld num_threads=%ld%s\n",
+			CI,
+			info.nice, info.num_threads,
+			CE);
+	}
 
 	if (!verbose)
 		return true;
 
 	fprintf(stderr, "\t%sSandbox: {exec:%s read:%s write:%s sock:%s}%s\n",
-			CN,
-			sandbox_mode_to_string(current->config.sandbox_exec),
-			sandbox_mode_to_string(current->config.sandbox_read),
-			sandbox_mode_to_string(current->config.sandbox_write),
-			sandbox_mode_to_string(current->config.sandbox_network),
-			CE);
+		CN,
+		sandbox_mode_to_string(current->config.sandbox_exec),
+		sandbox_mode_to_string(current->config.sandbox_read),
+		sandbox_mode_to_string(current->config.sandbox_write),
+		sandbox_mode_to_string(current->config.sandbox_network),
+		CE);
 	fprintf(stderr, "\t%sMagic Lock: %s%s\n", CN, lock_state_to_string(current->config.magic_lock), CE);
 	fprintf(stderr, "\t%sExec Whitelist:%s\n", CI, CE);
 	SLIST_FOREACH(node, &current->config.whitelist_exec, up)
@@ -381,9 +421,10 @@ static void sig_usr(int signo)
 
 	complete_dump= !!(signo == SIGUSR2);
 
-	fprintf(stderr, "\nReceived SIGUSR%s, dumping %sprocess tree\n",
+	fprintf(stderr, "\nsydbox: Received SIGUSR%s, dumping %sprocess tree\n",
 		complete_dump ? "2" : "1",
 		complete_dump ? "complete " : "");
+	count = 0;
 	SYD_FOREACH_PROCESS(node) {
 		dump_one_process(node, complete_dump);
 		count++;
