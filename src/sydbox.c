@@ -189,10 +189,13 @@ void clear_proc(syd_proc_t *p)
 
 void ignore_proc(syd_proc_t *p)
 {
+	pid_t pid;
+
 	if (!p)
 		return;
 	if (p->flags & SYD_IGNORE_PROCESS)
 		return;
+	pid = GET_PID(p);
 
 	if (p->abspath)
 		free(p->abspath);
@@ -219,6 +222,8 @@ void ignore_proc(syd_proc_t *p)
 	free_sandbox(&p->config);
 
 	p->flags |= SYD_IGNORE_PROCESS;
+	log_context(NULL);
+	log_trace("ignored process %u", pid);
 }
 
 void remove_proc(syd_proc_t *p)
@@ -650,6 +655,11 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 	struct snode *node, *newnode;
 	sandbox_t *inherit;
 
+	if (current->flags & SYD_DONE_INHERIT) {
+		log_trace("already inherited sanbox, skipping");
+		return;
+	}
+
 	if (sydchild(current)) {
 		comm = xstrdup(sydbox->program_invocation_name);
 		cwd = xgetcwd();
@@ -715,6 +725,7 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 		magic_append_whitelist_write(magic, current);
 	}
 out:
+	current->flags |= SYD_DONE_INHERIT;
 	log_trace("initialised (parent:%u)", parent ? GET_PID(parent) : 0);
 }
 

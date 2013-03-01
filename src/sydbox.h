@@ -47,11 +47,12 @@
 #define SYD_STARTUP		00001
 #define SYD_IGNORE_ONE_SIGSTOP	00002
 #define SYD_IN_SYSCALL		00004
-#define SYD_DENY_SYSCALL		00010
+#define SYD_DENY_SYSCALL	00010
 #define SYD_STOP_AT_SYSEXIT	00020
 #define SYD_IGNORE_PROCESS	00040
 #define SYD_SYDBOX_CHILD	00100
 #define SYD_WAIT_FOR_PARENT	00200
+#define SYD_DONE_INHERIT	00400
 
 #define entering(p)	(!((p)->flags & SYD_IN_SYSCALL))
 #define exiting(p)	((p)->flags & SYD_IN_SYSCALL)
