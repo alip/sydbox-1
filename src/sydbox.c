@@ -656,7 +656,7 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 	sandbox_t *inherit;
 
 	if (current->flags & SYD_DONE_INHERIT) {
-		log_trace("already inherited sanbox, skipping");
+		log_trace("already inherited sandbox, skipping");
 		return;
 	}
 
