@@ -395,3 +395,37 @@ This blasted thing will haunt me forever
 
 And here we stand, gazing softly at the moon
 I hope now you’ll sing to a different tune
+
+From: moben
+Date: 2013-03-02
+
+23:42:44 < irker763> Exherbo: alip sydbox-1:master * 9fa16f744068 / src/sydbox.c src/sydbox.h: add guard around inherit_sandbox()
+23:42:57 < alip> moben: ^^ that last commit should fix your issue, plz2test :-)
+00:01:06 < moben> alip: fixes the bug and passes tests and pinktrace-check here, thanks :)  https://raw.github.com/gist/5068140
+
+Two roads diverged in a yellow wood,
+And sorry I could not travel both
+And be one traveler, long I stood
+And looked down one as far as I could
+To where it bent in the undergrowth;
+
+Then took the other, as just as fair,
+And having perhaps the better claim,
+Because it was grassy and wanted wear;
+Though as for that the passing there
+Had worn them really about the same,
+
+And both that morning equally lay
+In leaves no step had trodden black.
+Oh, I kept the first for another day!
+Yet knowing how way leads on to way,
+I doubted if I should ever come back.
+
+I shall be telling this with a sigh
+Somewhere ages and ages hence:
+Two roads diverged in a wood, and I—
+I took the one less traveled by,
+And that has made all the difference.
+
+--
+Robert Frost
