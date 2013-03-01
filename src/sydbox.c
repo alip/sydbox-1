@@ -817,8 +817,8 @@ static int event_exec(syd_proc_t *current)
 			    match, current->abspath);
 		log_warning("killing process");
 		syd_trace_kill(current, SIGKILL);
-		r = -ESRCH;
-		goto out;
+		ignore_proc(current);
+		return -ESRCH;
 	} else if (box_match_path(&sydbox->config.exec_resume_if_match,
 				  current->abspath, &match)) {
 		log_warning("resume_if_match pattern=`%s' matches execve path=`%s'",
@@ -836,8 +836,11 @@ static int event_exec(syd_proc_t *current)
 #endif
 		log_warning("detaching from process");
 		syd_trace_detach(current, 0);
-		r = -ESRCH;
-		goto out;
+		ignore_proc(current);
+		return -ESRCH;
+	} else {
+		log_match("execve path=`%s' does not match if_match patterns",
+			  current->abspath);
 	}
 
 	/* Update process name */
@@ -848,7 +851,6 @@ static int event_exec(syd_proc_t *current)
 		log_info("updating process name to `%s' due to execve()", comm);
 	}
 
-out:
 	if (current->comm)
 		free(current->comm);
 	current->comm = comm;
