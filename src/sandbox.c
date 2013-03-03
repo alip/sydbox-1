@@ -92,8 +92,8 @@ static void box_report_violation_sock(syd_proc_t *current,
 			  name,
 			  info->ret_fd ? *info->ret_fd : -1,
 			  abstract ? "unix-abstract" : "unix",
-			  abstract ? paddr->u.sa_un.sun_path
-				   : paddr->u.sa_un.sun_path + 1);
+			  abstract ? paddr->u.sa_un.sun_path + 1
+				   : paddr->u.sa_un.sun_path);
 		break;
 	case AF_INET:
 		inet_ntop(AF_INET, &paddr->u.sa_in.sin_addr, ip, sizeof(ip));
