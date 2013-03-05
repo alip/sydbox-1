@@ -318,19 +318,23 @@ int proc_stat(pid_t pid, struct proc_statinfo *info)
 
 /*
  * read 'Tgid:' line from /proc/$pid/status
+ * If it matches $pid, then
+ * read 'Ppid:' line from /proc/$pid/status
  * FIXME: Doesn't /proc/$pid/stat give that information?
  */
-int proc_tgid(pid_t pid, pid_t *tgid)
+int proc_parent(pid_t pid, pid_t *ppid)
 {
 	int r;
 	char *p;
 	FILE *f;
 	char t[LINE_MAX], *c;
+	bool seen_tgid;
+	pid_t retpid;
 
 	assert(pid >= 1);
-	assert(tgid);
+	assert(ppid);
 
-	if (asprintf(&p, "/proc/%lu/stat", (unsigned long)pid) < 0)
+	if (asprintf(&p, "/proc/%lu/status", (unsigned long)pid) < 0)
 		return -ENOMEM;
 
 	f = fopen(p, "r");
@@ -339,19 +343,40 @@ int proc_tgid(pid_t pid, pid_t *tgid)
 	if (!f)
 		return -errno;
 
-	r = -EINVAL;
+	seen_tgid = false;
 	while (fgets(t, sizeof(t), f) != NULL) {
-		if (strncmp(t, "Tgid:", sizeof("Tgid:") - 1) != 0)
+		const char *pre;
+		size_t len;
+
+		if (!seen_tgid)
+			pre = "Tgid:";
+		else
+			pre = "PPid:";
+		len = strlen(pre);
+		if (strncmp(t, pre, len) != 0)
 			continue;
-		c = t + sizeof("Tgid:");
+		c = t + len;
 		while (isspace(*c))
 			c++;
-		if ((r = parse_pid(c, tgid)) < 0)
+		truncate_nl(c);
+		if ((r = parse_pid(c, &retpid)) < 0)
 			goto out;
+		if (!seen_tgid) {
+			if (pid != retpid) {
+				*ppid = retpid;
+				goto out;
+			}
+			seen_tgid = true;
+		} else {
+			*ppid = retpid;
+			goto out;
+		}
 	}
 
 	if (ferror(f))
 		r = errno ? -errno : -EIO;
+	else
+		r = -EINVAL;
 out:
 	fclose(f);
 	return r;

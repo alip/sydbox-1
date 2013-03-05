@@ -33,6 +33,6 @@ int proc_cmdline(pid_t pid, size_t max_length, char **buf);
 int proc_comm(pid_t pid, char **name);
 int proc_environ(pid_t pid, char ***envp);
 int proc_stat(pid_t pid, struct proc_statinfo *info);
-int proc_tgid(pid_t pid, pid_t *tgid);
+int proc_parent(pid_t pid, pid_t *ppid); /* $ppid is tgid or ppid */
 
 #endif /* !PROC_H */

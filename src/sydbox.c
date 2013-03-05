@@ -763,7 +763,7 @@ static int event_init(syd_proc_t *current)
 	}
 
 	pid = GET_PID(current);
-	if ((r = proc_tgid(pid, &ppid)) < 0) {
+	if ((r = proc_parent(pid, &ppid)) < 0) {
 		err_warning(-r, "PANIC: failed to read /proc/%u/status", pid);
 		return panic(current);
 	}
@@ -777,6 +777,7 @@ static int event_init(syd_proc_t *current)
 		return panic(current);
 	}
 
+	log_trace("read parent pid %u from /proc/%u/status", ppid, pid);
 	current->ppid = ppid;
 	inherit_sandbox(current, parent);
 	return 0;
