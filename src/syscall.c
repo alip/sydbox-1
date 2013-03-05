@@ -367,7 +367,11 @@ int sysenter(syd_proc_t *current)
 		else if (entry->exit)
 			current->flags |= SYD_STOP_AT_SYSEXIT;
 	} else {
-		log_sys_all("entering system call %ld", sysnum);
+		if (log_has_level(LOG_LEVEL_SYS_ALL)) {
+			const char *sysname;
+			sysname = pink_name_syscall(sysnum, GET_ABI(current));
+			log_sys_all("entering system call %s", sysname);
+		}
 	}
 
 	return 0;
