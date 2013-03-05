@@ -151,7 +151,7 @@ ssize_t syd_read_string(syd_proc_t *current, long addr, char *dest, size_t len)
 		return r;
 	} else { /* partial read */
 		dest[r - 1] = '\0';
-		err_trace(save_errno, "read_string() partial read");
+		/* err_trace(save_errno, "read_string() partial read"); */
 		errno = 0;
 		return r;
 	}
