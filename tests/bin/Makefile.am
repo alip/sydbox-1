@@ -53,7 +53,8 @@ canontest_CFLAGS= \
 		  -I$(top_srcdir) \
 		  -I$(top_srcdir)/src
 canontest_LDADD= \
-		 $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
+		 $(abs_top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
+canontest_LDFLAGS= -no-install
 
 emily_SOURCES= \
 	       emily.c \
@@ -75,7 +76,8 @@ emily_CFLAGS= \
 	      -I$(top_srcdir) \
 	      -I$(top_srcdir)/src
 emily_LDADD= \
-	     $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
+	     $(abs_top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
+emily_LDFLAGS= -no-install
 
 wildtest_SOURCES= \
 		  wildtest.c
