@@ -1,48 +1,18 @@
 #!/usr/bin/env python
 # coding: utf-8
 # I am a king bee, I can buzz all night long!
-# sydbox benchmarking script
+# sydbox testing script
 
 from __future__ import print_function
 
 import os, sys
-import subprocess, timeit
+import re, subprocess, timeit
 import warnings
+
+SYDBOX_OPTIONS = list()
 
 # see make_expr()
 BEE_HIVE = (
-        ("fork and kill parent",
-"""
-def test():
-    ppid = os.getpid()
-    pid = os.fork()
-    if pid == 0:
-        os.kill(ppid, signal.SIGKILL)
-    else:
-        os.wait()
-""", False), # no threads
-        ("fork multiple times and kill parent",
-"""
-def test():
-    ppid = os.getpid()
-    pid = os.fork()
-    if pid == 0:
-        pid = os.fork()
-        if pid == 0:
-            pid = os.fork()
-            if pid == 0:
-                pid = os.fork()
-                if pid == 0:
-                    os.kill(ppid, signal.SIGKILL)
-                else:
-                    os.wait()
-            else:
-                os.wait()
-        else:
-            os.wait()
-    else:
-        os.wait()
-""", False), # no threads
         ("stat /dev/null",
 """
 def test():
@@ -56,6 +26,67 @@ def test():
         try: os.stat("/dev/sydbox/1")
         except: pass
 """),
+        ("fork and kill parent",
+"""
+def test():
+    ppid = os.getpid()
+    pid = os.fork()
+    if pid == 0:
+        os.kill(ppid, signal.SIGKILL)
+    else:
+        os.wait()
+""", False), # no threads
+        ("double fork and kill child",
+"""
+def test():
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+    for _ in range(@LOOP_COUNT@):
+        rd, wr = os.pipe()
+        child = os.fork()
+        if child == 0:
+            os.write(wr, "1")
+            grandchild = os.fork()
+            if grandchild == 0:
+                os.stat("/dev/null")
+            else:
+                os.wait()
+        else:
+            os.read(rd, 1)
+            os.kill(child, signal.SIGKILL)
+            try:
+                os.wait()
+            except OSError as exc:
+                if exc.errno == errno.ECHILD:
+                    pass
+                else:
+                    raise
+""", False), # no threads
+        ("SIGKILL rain",
+"""
+def test():
+    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+    loops = @LOOP_COUNT@
+    while loops >= 0:
+        pid = os.fork()
+        if pid == 0: # child
+            child = os.getpid()
+            loops = @LOOP_COUNT@ / 10
+            while loops >= 0:
+                pid = os.fork()
+                if pid == 0: # grandchild, kill child.
+                    os.kill(child, signal.SIGKILL)
+                    sys.exit(0)
+                if not (loops & 1):
+                    pass # intentionally empty
+                else:
+                    os.stat("/dev/null")
+                os.kill(pid, signal.SIGKILL) # kill grandchild
+                loops -= 1
+        else: # parent
+            try: os.wait()
+            except: pass
+            loops -= 1
+""", False), # no threads
 )
 
 def which(name):
@@ -104,13 +135,24 @@ def eval_ext(expr, syd=None, syd_opts=[],
 
     if syd is not None:
         args.append(syd)
+        if SYDBOX_OPTIONS:
+            syd_opts.extend(SYDBOX_OPTIONS)
+        else:
+            syd_opts.extend([
+                "-mcore/whitelist/per_process_directories:true",
+                "-mcore/whitelist/successful_bind:true",
+                "-mcore/whitelist/unsupported_socket_families:true",
+                "-mcore/trace/follow_fork:true",
+                "-mcore/trace/exit_wait_all:true",
+                "-mcore/trace/magic_lock:off",
+                "-mcore/trace/interrupt:while_wait",
+                "-mcore/sandbox/write:deny",
+                "-mcore/sandbox/network:deny",
+                "-mwhitelist/write+/dev/stdout",
+                "-mwhitelist/write+/dev/stderr",
+                #"-mwhitelist/write+/dev/zero",
+                "-mwhitelist/write+/dev/null",])
         args.extend(syd_opts)
-        syd_opts.extend([
-"-mcore/sandbox/write:deny",
-"-mwhitelist/write+/dev/stdout",
-"-mwhitelist/write+/dev/stderr",
-"-mwhitelist/write+/dev/zero",
-"-mwhitelist/write+/dev/null",])
         args.append("--")
 
     args.append("python")
@@ -132,7 +174,7 @@ def make_expr(expr, loop_count, thread_count):
     """ Prepare an expression for threading """
     e = \
 """
-import os, sys, signal, threading
+import errno, os, sys, signal, threading
 """ + expr
     e += \
 """
@@ -149,15 +191,13 @@ else:
     return e
 
 def run_test(name, expr, threaded=True):
-    expr_once = make_expr(expr, 1, 0)
+    loops = 100
     if threaded:
-        loops = 100
         threads = 10
-        expr_loop = make_expr(expr, loops, threads)
     else:
-        loops = 1
         threads = 0
-        expr_loop = expr_once
+    expr_once = make_expr(expr, 1, 0)
+    expr_loop = make_expr(expr, loops, threads)
     print(">>> Test: %s (%d loops in %d threads)" % (name, loops, threads))
 
     test_no = 1
@@ -188,7 +228,25 @@ def main(argv):
     find_sydbox()
     find_valgrind()
 
+    match = None
+    if argv:
+        seen_dashdash = False
+        for arg in argv:
+            if arg == '--':
+                seen_dashdash = True
+                continue
+            if match is None and not seen_dashdash:
+                p = re.compile(arg, re.UNICODE)
+                match = lambda name: p.search(str(name))
+                continue
+            SYDBOX_OPTIONS.append(arg)
+    if match is None:
+        match = lambda name: True
+
     for bee in BEE_HIVE:
+        if not match(bee[0]):
+            print("skip %r" % bee[0])
+            continue
         if len(bee) == 3:
             run_test(bee[0], bee[1], threaded=bee[2])
         else:
