@@ -35,6 +35,7 @@
 #include "file.h"
 #include "macro.h"
 #include "log.h"
+#include "util.h"
 
 /* Useful macros */
 #ifndef MAX
@@ -313,4 +314,45 @@ int proc_stat(pid_t pid, struct proc_statinfo *info)
 
 	fclose(f);
 	return 0;
+}
+
+/*
+ * read 'Tgid:' line from /proc/$pid/status
+ * FIXME: Doesn't /proc/$pid/stat give that information?
+ */
+int proc_tgid(pid_t pid, pid_t *tgid)
+{
+	int r;
+	char *p;
+	FILE *f;
+	char t[LINE_MAX], *c;
+
+	assert(pid >= 1);
+	assert(tgid);
+
+	if (asprintf(&p, "/proc/%lu/stat", (unsigned long)pid) < 0)
+		return -ENOMEM;
+
+	f = fopen(p, "r");
+	free(p);
+
+	if (!f)
+		return -errno;
+
+	r = -EINVAL;
+	while (fgets(t, sizeof(t), f) != NULL) {
+		if (strncmp(t, "Tgid:", sizeof("Tgid:") - 1) != 0)
+			continue;
+		c = t + sizeof("Tgid:");
+		while (isspace(*c))
+			c++;
+		if ((r = parse_pid(c, tgid)) < 0)
+			goto out;
+	}
+
+	if (ferror(f))
+		r = errno ? -errno : -EIO;
+out:
+	fclose(f);
+	return r;
 }

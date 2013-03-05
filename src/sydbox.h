@@ -51,13 +51,13 @@
 #define SYD_STOP_AT_SYSEXIT	00020
 #define SYD_IGNORE_PROCESS	00040
 #define SYD_SYDBOX_CHILD	00100
-#define SYD_WAIT_FOR_PARENT	00200
-#define SYD_DONE_INHERIT	00400
+#define SYD_INHERIT_DONE	00200
 
 #define entering(p)	(!((p)->flags & SYD_IN_SYSCALL))
 #define exiting(p)	((p)->flags & SYD_IN_SYSCALL)
 #define sysdeny(p)	((p)->flags & SYD_DENY_SYSCALL)
 #define sydchild(p)	((p)->flags & SYD_SYDBOX_CHILD)
+#define hasparent(p)	((p)->ppid >= 1)
 
 /* Type declarations */
 enum sandbox_mode {

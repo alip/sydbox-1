@@ -331,6 +331,10 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 		fprintf(stderr, "%sIGNORE_ONE_SIGSTOP", (r == 1) ? "|" : "");
 		r = 1;
 	}
+	if (current->flags & SYD_INHERIT_DONE) {
+		fprintf(stderr, "%sINHERIT_DONE", (r == 1) ? "|" : "");
+		r = 1;
+	}
 	if (current->flags & SYD_IN_SYSCALL) {
 		fprintf(stderr, "%sIN_SYSCALL", (r == 1) ? "|" : "");
 		r = 1;
@@ -341,10 +345,6 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 	}
 	if (current->flags & SYD_STOP_AT_SYSEXIT) {
 		fprintf(stderr, "%sSTOP_AT_SYSEXIT", (r == 1) ? "|" : "");
-		r = 1;
-	}
-	if (current->flags & SYD_WAIT_FOR_PARENT) {
-		fprintf(stderr, "%sWAIT_FOR_PARENT", (r == 1) ? "|" : "");
 		r = 1;
 	}
 	fprintf(stderr, "%s\n", CN);
@@ -655,8 +655,8 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 	struct snode *node, *newnode;
 	sandbox_t *inherit;
 
-	if (current->flags & SYD_DONE_INHERIT) {
-		log_trace("already inherited sandbox, skipping");
+	if (current->flags & SYD_INHERIT_DONE) {
+		log_trace("inherited sandbox already, skipping");
 		return;
 	}
 
@@ -725,57 +725,59 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 		magic_append_whitelist_write(magic, current);
 	}
 out:
-	current->flags |= SYD_DONE_INHERIT;
+	current->flags |= SYD_INHERIT_DONE;
 	log_trace("initialised (parent:%u)", parent ? GET_PID(parent) : 0);
+}
+
+static int event_startup(syd_proc_t *current)
+{
+	int r;
+
+	if (!syd_use_seize) {
+		if ((r = syd_trace_setup(current)) < 0)
+			return ptrace_error(current, "PTRACE_SETOPTIONS", -r);
+	}
+	current->flags &= ~SYD_STARTUP;
+	return 0;
 }
 
 static int event_init(syd_proc_t *current)
 {
 	int r;
 	pid_t pid;
+	pid_t ppid;
 	syd_proc_t *parent;
-	struct proc_statinfo info;
 
 	if (sydchild(current)) {
 		inherit_sandbox(current, NULL);
-	} else if (current->ppid > 1 && (parent = lookup_proc(current->ppid))) {
+		return 0;
+	} else if (hasparent(current)) {
+		parent = lookup_proc(current->ppid);
+		if (!parent)
+			die("Unknown parent pid: %u", current->ppid);
 		inherit_sandbox(current, parent);
-		current->flags &= ~SYD_WAIT_FOR_PARENT;
-		log_trace("parent pid set to %u, clear SYD_WAIT_FOR_PARENT",
-			  GET_PID(parent));
-	}
-
-	if (current->flags & SYD_STARTUP) {
-		if (!syd_use_seize) {
-			if ((r = syd_trace_setup(current)) < 0)
-				return ptrace_error(current, "PTRACE_SETOPTIONS", -r);
-		}
-		current->flags &= ~SYD_STARTUP;
 		return 0;
-	} else if (!(current->flags & SYD_WAIT_FOR_PARENT)) {
+	} else if (current->flags & SYD_STARTUP) {
+		log_trace("[event_init]: waiting for parent");
 		return 0;
 	}
 
-	/*
-	 * Process is born before we received PTRACE_EVENT_FORK, sigh...
-	 * We need a way to find the parent process ID.
-	 *
-	 * Using ptrace() for this is tricky and inherently racy.
-	 * e.g. SIGKILL may kill creator after it succeeds in creating
-	 * the child but before it returns.
-	 */
 	pid = GET_PID(current);
-	if ((r = proc_stat(pid, &info)) < 0) {
-		log_warning("PANIC: failed to lookup parent of pid: %u", pid);
+	if ((r = proc_tgid(pid, &ppid)) < 0) {
+		err_warning(-r, "PANIC: failed to read /proc/%u/status", pid);
 		return panic(current);
 	}
-	if (info.ppid <= 1 || !(parent = lookup_proc(info.ppid))) {
-		current->flags |= SYD_WAIT_FOR_PARENT;
-		log_trace("parent pid not available, keep SYD_WAIT_FOR_PARENT");
+	if (ppid <= 1) {
+		log_warning("parent died before we could inherit sandbox");
+		log_warning("inheriting default sandbox");
+		inherit_sandbox(current, NULL);
 		return 0;
+	} else if (!(parent = lookup_proc(ppid))) {
+		log_warning("PANIC: unknown parent:%u of pid: %u", ppid, pid);
+		return panic(current);
 	}
 
-	current->ppid = info.ppid;
+	current->ppid = ppid;
 	inherit_sandbox(current, parent);
 	return 0;
 }
@@ -870,17 +872,19 @@ static int event_fork(syd_proc_t *current)
 
 	if ((r = syd_trace_geteventmsg(current, &cpid)) < 0)
 		return r;
-	log_trace("[event_fork]: initialising %lu", cpid);
-	child = lookup_proc(cpid);
-	if (child == NULL)
-		child = add_proc_or_kill(cpid, post_attach_sigstop);
-	else
-		child->flags &= ~SYD_WAIT_FOR_PARENT;
 
+	child = lookup_proc(cpid);
+	if (!child)
+		child = add_proc_or_kill(cpid, post_attach_sigstop);
+	else if (child->flags & SYD_INHERIT_DONE)
+		return 0;
+
+	log_trace("[event_fork]: initialising %lu", cpid);
 	child->ppid = pid;
 	log_context(child);
 	inherit_sandbox(child, current);
 	log_context(current);
+
 	return 0;
 }
 
@@ -1089,7 +1093,7 @@ static int trace(void)
 					sprintf(buf, "?? (%u)", event);
 					e = buf;
 				}
-				sprintf(evbuf, ",PTRACE_EVENT_%s", e);
+				sprintf(evbuf, "PTRACE_EVENT_%s", e);
 			}
 			log_trace("[wait(0x%04x) = %u] %s%s", status, pid, buf, evbuf);
 		}
@@ -1099,7 +1103,7 @@ static int trace(void)
 
 		if (!current) {
 			if (sydbox->config.follow_fork) {
-				current = add_proc_or_kill(pid, SYD_WAIT_FOR_PARENT | post_attach_sigstop);
+				current = add_proc_or_kill(pid, post_attach_sigstop);
 				log_context(current);
 				log_trace("Process %u attached", pid);
 			} else {
@@ -1167,14 +1171,14 @@ dont_switch_procs:
 			continue;
 		}
 
+		if (!(current->flags & SYD_INHERIT_DONE)) {
+			if ((r = event_init(current)) < 0)
+				continue; /* process dead */
+		}
 		if (current->flags & SYD_STARTUP) {
 			log_trace("SYD_STARTUP set, initialising");
-			if ((r = event_init(current)) < 0) /* process dead */
-				continue;
-		} else if (current->flags & SYD_WAIT_FOR_PARENT) {
-			log_trace("SYD_WAIT_FOR_PARENT set, initialising");
-			if ((r = event_init(current)) < 0) /* process dead */
-				continue;
+			if ((r = event_startup(current)) < 0)
+				continue; /* process dead */
 		}
 
 		sig = WSTOPSIG(status);
