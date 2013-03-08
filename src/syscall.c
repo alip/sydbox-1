@@ -321,7 +321,7 @@ int sysinit_seccomp(void)
 	uint32_t *syscalls;
 
 #if defined(__i386__)
-	count = make_seccomp_filter(PINK_ABI_I386, &syscalls);
+	count = make_seccomp_filter(PINK_ABI_DEFAULT, &syscalls);
 	r = seccomp_apply(AUDIT_ARCH_I386, syscalls, count);
 
 	free(syscalls);
