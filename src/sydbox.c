@@ -590,7 +590,7 @@ static void startup_child(char **argv)
 			die_errno("Unexpected wait status %x", status);
 		}
 		if ((r = pink_trace_seize(pid, sydbox->trace_options)) < 0 ||
-		    (r = pink_trace_interrupt(pid) < 0)) {
+		    (r = pink_trace_interrupt(pid)) < 0) {
 			kill_save_errno(pid, SIGKILL);
 			die_errno("Can't attach to %u", pid);
 		}
@@ -733,10 +733,8 @@ static int event_startup(syd_proc_t *current)
 {
 	int r;
 
-	if (!syd_use_seize) {
-		if ((r = syd_trace_setup(current)) < 0)
-			return ptrace_error(current, "PTRACE_SETOPTIONS", -r);
-	}
+	if ((r = syd_trace_setup(current)) < 0)
+		return ptrace_error(current, "PTRACE_SETOPTIONS", -r);
 	current->flags &= ~SYD_STARTUP;
 	return 0;
 }
@@ -1383,9 +1381,9 @@ int main(int argc, char **argv)
 	ptrace_options = PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC;
 	ptrace_default_step = SYD_STEP_SYSCALL;
 	if (sydbox->config.follow_fork)
-		ptrace_options |= (PINK_TRACE_OPTION_FORK
-				| PINK_TRACE_OPTION_VFORK
-				| PINK_TRACE_OPTION_CLONE);
+		ptrace_options |= (PINK_TRACE_OPTION_FORK |
+				   PINK_TRACE_OPTION_VFORK |
+				   PINK_TRACE_OPTION_CLONE);
 	if (sydbox->config.use_seccomp) {
 #ifdef WANT_SECCOMP
 		ptrace_options |= PINK_TRACE_OPTION_SECCOMP;
