@@ -35,7 +35,7 @@ def test():
         os.kill(ppid, signal.SIGKILL)
     else:
         os.wait()
-""", False), # no threads
+"""),
         ("double fork and kill child",
 """
 def test():
@@ -174,7 +174,7 @@ def make_expr(expr, loop_count, thread_count):
     """ Prepare an expression for threading """
     e = \
 """
-import errno, os, sys, signal, threading
+import errno, os, sys, signal, multiprocessing
 """ + expr
     e += \
 """
@@ -182,7 +182,7 @@ if @THREAD_COUNT@ == 0:
     test()
 else:
     for i in range(@THREAD_COUNT@):
-        t = threading.Thread(target=test)
+        t = multiprocessing.Process(target=test)
         t.start()
 """
 
