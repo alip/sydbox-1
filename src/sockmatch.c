@@ -3,7 +3,7 @@
  *
  * match socket information
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v3 or later
  */
 
@@ -371,8 +371,7 @@ fail:
 	return r;
 }
 
-int sockmatch(const struct sockmatch *haystack,
-	       const struct pink_sockaddr *needle)
+int sockmatch(const struct sockmatch *haystack, const struct pink_sockaddr *needle)
 {
 	int n, mask;
 	unsigned pmin, pmax, port;

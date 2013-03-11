@@ -3,7 +3,7 @@
  *
  * match socket information
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Distributed under the terms of the GNU General Public License v2
  */
 
@@ -63,17 +63,16 @@ struct sockmatch {
 	} addr;
 };
 
-extern struct sockinfo *sockinfo_xdup(struct sockinfo *src);
-extern struct sockmatch *sockmatch_xdup(const struct sockmatch *src);
+struct sockinfo *sockinfo_xdup(struct sockinfo *src);
+struct sockmatch *sockmatch_xdup(const struct sockmatch *src);
 
 /* Expand network aliases and unix wildmatch patterns */
-extern int sockmatch_expand(const char *src, char ***buf);
+int sockmatch_expand(const char *src, char ***buf);
 
-extern struct sockmatch *sockmatch_new(const struct sockinfo *src);
-extern int sockmatch_parse(const char *src, struct sockmatch **buf);
+struct sockmatch *sockmatch_new(const struct sockinfo *src);
+int sockmatch_parse(const char *src, struct sockmatch **buf);
 
-extern int sockmatch(const struct sockmatch *haystack,
-		     const struct pink_sockaddr *needle);
+int sockmatch(const struct sockmatch *haystack, const struct pink_sockaddr *needle);
 
 #define path_abstract(path) ((path)[0] == '\0' && (path)[1] != '\0')
 
