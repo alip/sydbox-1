@@ -61,7 +61,6 @@ int magic_cmd_exec(const void *val, syd_proc_t *current)
 	unsigned i, j, k;
 	const char *args = val;
 	char **argv = NULL, **envp = NULL;
-	pid_t pid = GET_PID(current);
 
 	assert(val);
 
@@ -96,7 +95,7 @@ int magic_cmd_exec(const void *val, syd_proc_t *current)
 	}
 
 	/* Step 2: fill envp[] from /proc/$tid/environ */
-	r = proc_environ(pid, &envp);
+	r = proc_environ(current->pid, &envp);
 	if (r < 0)
 		goto out;
 
@@ -145,8 +144,8 @@ int magic_cmd_exec(const void *val, syd_proc_t *current)
 		log_magic("exec(`%s') terminated (signal:%d)", argv[0],
 			  WTERMSIG(status));
 		log_magic("sending signal:%d to %s[%u]", WTERMSIG(status),
-			  current->comm, pid);
-		pink_trace_kill(pid, current->ppid, WTERMSIG(status));
+			  current->comm, current->pid);
+		pink_trace_kill(current->pid, current->ppid, WTERMSIG(status));
 		r = MAGIC_RET_PROCESS_TERMINATED;
 	} else {
 		log_magic("exec(`%s') unknown status:0x%04x pid:%u", argv[0],

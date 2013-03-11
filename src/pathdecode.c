@@ -58,7 +58,7 @@ int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf)
 	int r;
 	long fd;
 	char *prefix = NULL;
-	pid_t pid = GET_PID(current);
+	pid_t pid = current->pid;
 
 	if ((r = syd_read_argument(current, arg_index, &fd)) < 0)
 		return r;

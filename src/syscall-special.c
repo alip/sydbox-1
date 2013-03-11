@@ -27,7 +27,6 @@ int sysx_chdir(syd_proc_t *current)
 {
 	int r;
 	long retval;
-	pid_t pid = GET_PID(current);
 	char *cwd;
 
 	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
@@ -38,7 +37,7 @@ int sysx_chdir(syd_proc_t *current)
 		return 0;
 	}
 
-	if ((r = proc_cwd(pid, &cwd)) < 0) {
+	if ((r = proc_cwd(current->pid, &cwd)) < 0) {
 		err_warning(-r, "proc_cwd failed");
 		return panic(current);
 	}
@@ -53,14 +52,13 @@ int sysx_chdir(syd_proc_t *current)
 
 int sys_fork(syd_proc_t *current)
 {
-	sydbox->pidwait = GET_PID(current);
+	sydbox->pidwait = current->pid;
 	return 0;
 }
 
 int sys_execve(syd_proc_t *current)
 {
 	int r;
-	pid_t pid = GET_PID(current);
 	char *path = NULL, *abspath = NULL;
 
 	r = path_decode(current, 0, &path);
@@ -69,7 +67,7 @@ int sys_execve(syd_proc_t *current)
 	else if (r < 0)
 		return deny(current, errno);
 
-	r = box_resolve_path(path, current->cwd, pid, CAN_EXISTING, &abspath);
+	r = box_resolve_path(path, current->cwd, current->pid, CAN_EXISTING, &abspath);
 	if (r < 0) {
 		err_access(-r, "resolve_path(`%s')", path);
 		r = deny(current, -r);
@@ -177,8 +175,8 @@ int sys_stat(syd_proc_t *current)
 		buf.st_mtime = -842745600;
 		buf.st_ctime = 558748800;
 
-		if (pink_read_argument(current->pink, 1, &addr) == 0)
-			pink_write_vm_data(current->pink, addr,
+		if (pink_read_argument(current->pid, current->regset, 1, &addr) == 0)
+			pink_write_vm_data(current->pid, current->regset, addr,
 					   (const char *)&buf,
 					   sizeof(struct stat));
 		log_magic("accepted magic=`%s'", path);

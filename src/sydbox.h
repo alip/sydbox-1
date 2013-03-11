@@ -336,8 +336,14 @@ typedef struct {
 
 /* process information */
 typedef struct syd_proc {
-	/* pink process */
-	struct pink_process *pink;
+	/* Process ID */
+	pid_t pid;
+
+	/* Process registry set */
+	struct pink_regset *regset;
+
+	/* System call ABI */
+	short abi;
 
 	/* Parent process ID */
 	pid_t ppid;
@@ -385,10 +391,6 @@ typedef struct syd_proc {
 	/* singly-linked list */
 	SLIST_ENTRY(syd_proc) up;
 } syd_proc_t;
-#define GET_PID(proc)		pink_process_get_pid((proc)->pink)
-#define SET_PID(proc, pid)	pink_process_set_pid((proc)->pink, (pid))
-#define GET_ABI(proc)		pink_process_get_abi((proc)->pink)
-#define UPDATE_REGSET(proc)	pink_process_update_regset((proc)->pink)
 
 typedef struct {
 	/* magic access to core.*  */
@@ -516,6 +518,7 @@ int syd_trace_detach(syd_proc_t *current, int sig);
 int syd_trace_kill(syd_proc_t *current, int sig);
 int syd_trace_setup(syd_proc_t *current);
 int syd_trace_geteventmsg(syd_proc_t *current, unsigned long *data);
+int syd_regset_fill(syd_proc_t *current);
 int syd_read_syscall(syd_proc_t *current, long *sysnum);
 int syd_read_retval(syd_proc_t *current, long *retval, int *error);
 int syd_read_argument(syd_proc_t *current, unsigned arg_index, long *argval);

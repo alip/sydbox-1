@@ -343,7 +343,7 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 	assert(current);
 	assert(info);
 
-	pid = GET_PID(current);
+	pid = current->pid;
 	prefix = path = abspath = NULL;
 	deny_errno = info->deny_errno ? info->deny_errno : EPERM;
 
@@ -505,7 +505,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 		  sys_access_mode_to_string(info->access_mode));
 
 	r = 0;
-	pid = GET_PID(current);
+	pid = current->pid;
 	abspath = NULL;
 	psa = xmalloc(sizeof(struct pink_sockaddr));
 

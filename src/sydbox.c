@@ -119,7 +119,8 @@ static syd_proc_t *add_proc(pid_t pid, short flags)
 	if (!newproc)
 		return NULL;
 
-	if ((r = pink_process_alloc(pid, &newproc->pink)) < 0) {
+	newproc->pid = pid;
+	if ((r = pink_regset_alloc(&newproc->regset)) < 0) {
 		errno = -r;
 		return NULL;
 	}
@@ -173,7 +174,7 @@ void ignore_proc(syd_proc_t *p)
 		return;
 	if (p->flags & SYD_IGNORE)
 		return;
-	pid = GET_PID(p);
+	pid = p->pid;
 
 	if (p->abspath)
 		free(p->abspath);
@@ -181,8 +182,8 @@ void ignore_proc(syd_proc_t *p)
 		free(p->cwd);
 	if (p->comm)
 		free(p->comm);
-	if (p->pink)
-		pink_process_free(p->pink);
+	if (p->regset)
+		pink_regset_free(p->regset);
 	if (p->savebind)
 		free_sockinfo(p->savebind);
 	if (p->sockmap)
@@ -202,7 +203,7 @@ void remove_proc(syd_proc_t *p)
 
 	if (!p)
 		return;
-	pid = GET_PID(p);
+	pid = p->pid;
 
 	ignore_proc(p);
 	SYD_REMOVE_PROCESS(p);
@@ -217,7 +218,7 @@ syd_proc_t *lookup_proc(pid_t pid)
 	syd_proc_t *proc;
 
 	SYD_FOREACH_PROCESS(proc) {
-		if (pid == GET_PID(proc))
+		if (pid == proc->pid)
 			return proc;
 	}
 	return NULL;
@@ -268,8 +269,8 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 	const char *CG, *CB, *CN, *CI, *CE; /* good, bad, important, normal end */
 	struct proc_statinfo info;
 
-	pid_t pid = GET_PID(current);
-	short abi = GET_ABI(current);
+	pid_t pid = current->pid;
+	short abi = current->abi;
 	pid_t ppid = current->ppid;
 	struct snode *node;
 	struct sockmatch *match;
@@ -591,7 +592,7 @@ static int handle_interrupt(int fatal_sig)
 static int ptrace_error(syd_proc_t *current, const char *req, int err_no)
 {
 	if (err_no != ESRCH) {
-		err_fatal(err_no, "ptrace(%s, %u) failed", req, GET_PID(current));
+		err_fatal(err_no, "ptrace(%s, %u) failed", req, current->pid);
 		return panic(current);
 	}
 	ignore_proc(current);
@@ -601,22 +602,20 @@ static int ptrace_error(syd_proc_t *current, const char *req, int err_no)
 static int ptrace_step(syd_proc_t *current, int sig)
 {
 	int r;
-	pid_t pid;
 	enum syd_step step;
 	const char *msg;
 
-	pid = GET_PID(current);
 	step = current->trace_step == SYD_STEP_NOT_SET
 	       ? sydbox->trace_step
 	       : current->trace_step;
 
 	switch (step) {
 	case SYD_STEP_SYSCALL:
-		r = pink_trace_syscall(pid, sig);
+		r = pink_trace_syscall(current->pid, sig);
 		msg = "PTRACE_SYSCALL";
 		break;
 	case SYD_STEP_RESUME:
-		r = pink_trace_resume(pid, sig);
+		r = pink_trace_resume(current->pid, sig);
 		msg = "PTRACE_CONT";
 		break;
 	default:
@@ -689,7 +688,7 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 
 	if (sydbox->config.whitelist_per_process_directories) {
 		char magic[sizeof("/proc/%u/***") + sizeof(int)*3 + /*paranoia:*/16];
-		sprintf(magic, "/proc/%u/***", GET_PID(current));
+		sprintf(magic, "/proc/%u/***", current->pid);
 		magic_append_whitelist_read(magic, current);
 		magic_append_whitelist_write(magic, current);
 	}
@@ -703,7 +702,7 @@ static int init_sandbox(syd_proc_t *current)
 	if (current->flags & SYD_READY)
 		return 0;
 
-	pid = GET_PID(current);
+	pid = current->pid;
 
 	if (sydchild(current)) {
 		inherit_sandbox(current, NULL);
@@ -746,7 +745,7 @@ static int event_fork(syd_proc_t *current)
 	if ((r = syd_trace_geteventmsg(current, (unsigned long *)&cpid)) < 0)
 		return r; /* process dead */
 
-	pid = GET_PID(current);
+	pid = current->pid;
 	child = lookup_proc(cpid);
 	if (child) {
 		log_warning("[%s] child %u of %u is in process list", __func__,
@@ -877,8 +876,8 @@ static int event_syscall(syd_proc_t *current)
 			return 0;
 		}
 #endif
-		if ((r = UPDATE_REGSET(current)) < 0)
-			return ptrace_error(current, "PTRACE_GETREGSET", -r);
+		if ((r = syd_regset_fill(current)) < 0)
+			return r; /* process dead */
 		r = sysenter(current);
 #ifdef WANT_SECCOMP
 		if (sydbox->config.use_seccomp &&
@@ -890,8 +889,8 @@ static int event_syscall(syd_proc_t *current)
 #endif
 		current->flags |= SYD_IN_SYSCALL;
 	} else {
-		if ((r = UPDATE_REGSET(current)) < 0)
-			return ptrace_error(current, "PTRACE_GETREGSET", -r);
+		if ((r = syd_regset_fill(current)) < 0)
+			return r; /* process dead */
 		r = sysexit(current);
 		current->flags &= ~SYD_IN_SYSCALL;
 	}
@@ -911,8 +910,8 @@ static int event_seccomp(syd_proc_t *current)
 	if (current->flags & SYD_IGNORE)
 		return 0;
 
-	if ((r = UPDATE_REGSET(current)) < 0)
-		return ptrace_error(current, "PTRACE_GETREGSET", -r);
+	if ((r = syd_regset_fill(current)) < 0)
+		return r; /* process dead */
 	r = sysenter(current);
 	if (current->flags & SYD_STOP_AT_SYSEXIT) {
 		/* step using PTRACE_SYSCALL until we hit sysexit. */
@@ -1104,7 +1103,7 @@ static int trace(void)
 			remove_proc(current);
 			current = execve_thread;
 			log_context(current);
-			SET_PID(current, pid);
+			current->pid = pid;
 		}
 dont_switch_procs:
 		if (event == PINK_EVENT_EXEC) {

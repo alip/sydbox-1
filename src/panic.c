@@ -84,16 +84,15 @@ PINK_GCC_ATTR((format (printf, 2, 0)))
 static void report(syd_proc_t *current, const char *fmt, va_list ap)
 {
 	char *cmdline;
-	pid_t pid = GET_PID(current);
 
 	log_context(NULL);
 
 	log_access_v("-- Access Violation! --");
 	log_access_v("proc: %s[%u] (parent:%u)",
-		     current->comm, pid, current->ppid);
+		     current->comm, current->pid, current->ppid);
 	log_access_v("cwd: `%s'", current->cwd);
 
-	if (proc_cmdline(pid, 128, &cmdline) == 0) {
+	if (proc_cmdline(current->pid, 128, &cmdline) == 0) {
 		log_access_v("cmdline: `%s'", cmdline);
 		free(cmdline);
 	}

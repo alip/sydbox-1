@@ -19,7 +19,7 @@ int syd_trace_detach(syd_proc_t *current, int sig)
 
 	assert(current);
 
-	r = pink_trace_detach(GET_PID(current), sig);
+	r = pink_trace_detach(current->pid, sig);
 	if (r == 0)
 		log_trace("DETACH sig:%d", sig);
 	else if (r == -ESRCH)
@@ -37,7 +37,7 @@ int syd_trace_kill(syd_proc_t *current, int sig)
 
 	assert(current);
 
-	r = pink_trace_kill(GET_PID(current), current->ppid, sig);
+	r = pink_trace_kill(current->pid, current->ppid, sig);
 	if (r == 0)
 		log_trace("KILL sig:%d", sig);
 	else if (r == -ESRCH)
@@ -57,7 +57,7 @@ int syd_trace_setup(syd_proc_t *current)
 	assert(current);
 
 	log_trace("setting trace options 0x%x", opts);
-	r = pink_trace_setup(GET_PID(current), opts);
+	r = pink_trace_setup(current->pid, opts);
 	if (r == -ESRCH)
 		err_trace(-r, "trace_setup() failed");
 	else if (r < 0)
@@ -71,13 +71,31 @@ int syd_trace_geteventmsg(syd_proc_t *current, unsigned long *data)
 
 	assert(current);
 
-	r = pink_trace_geteventmsg(GET_PID(current), data);
+	r = pink_trace_geteventmsg(current->pid, data);
 	if (r == 0)
 		return 0;
 	else if (r == -ESRCH)
 		err_trace(-r, "trace_geteventmsg() failed");
 	else if (r < 0)
 		err_warning(-r, "trace_geteventmsg() failed");
+	return (r == -ESRCH) ? -ESRCH : panic(current);
+}
+
+int syd_regset_fill(syd_proc_t *current)
+{
+	int r;
+
+	assert(current);
+
+	r = pink_regset_fill(current->pid, current->regset);
+	if (r == 0) {
+		pink_read_abi(current->pid, current->regset, &current->abi);
+		return 0;
+	} else if (r == -ESRCH) {
+		err_trace(-r, "regset_fill() failed");
+	} else if (r < 0) {
+		err_warning(-r, "regset_fill() failed");
+	}
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
@@ -88,7 +106,7 @@ int syd_read_syscall(syd_proc_t *current, long *sysnum)
 	assert(current);
 	assert(sysnum);
 
-	r = pink_read_syscall(current->pink, sysnum);
+	r = pink_read_syscall(current->pid, current->regset, sysnum);
 	if (r == 0)
 		return 0;
 	else if (r == -ESRCH)
@@ -104,7 +122,7 @@ int syd_read_retval(syd_proc_t *current, long *retval, int *error)
 
 	assert(current);
 
-	r = pink_read_retval(current->pink, retval, error);
+	r = pink_read_retval(current->pid, current->regset, retval, error);
 	if (r == 0)
 		return 0;
 	else if (r == -ESRCH)
@@ -121,7 +139,7 @@ int syd_read_argument(syd_proc_t *current, unsigned arg_index, long *argval)
 	assert(current);
 	assert(argval);
 
-	r = pink_read_argument(current->pink, arg_index, argval);
+	r = pink_read_argument(current->pid, current->regset, arg_index, argval);
 	if (r == 0)
 		return 0;
 	else if (r == -ESRCH)
@@ -138,7 +156,8 @@ ssize_t syd_read_string(syd_proc_t *current, long addr, char *dest, size_t len)
 
 	assert(current);
 
-	r = pink_read_string(current->pink, addr, dest, len);
+	errno = 0;
+	r = pink_read_string(current->pid, current->regset, addr, dest, len);
 	save_errno = errno;
 	if (r < 0) {
 		if (save_errno == EFAULT)
@@ -165,7 +184,7 @@ int syd_read_socket_argument(syd_proc_t *current, bool decode_socketcall,
 	assert(current);
 	assert(argval);
 
-	r = pink_read_socket_argument(current->pink, decode_socketcall,
+	r = pink_read_socket_argument(current->pid, current->regset, decode_socketcall,
 				      arg_index, argval);
 	if (r == 0)
 		return 0;
@@ -183,7 +202,7 @@ int syd_read_socket_subcall(syd_proc_t *current, bool decode_socketcall,
 
 	assert(current);
 
-	r = pink_read_socket_subcall(current->pink, decode_socketcall, subcall);
+	r = pink_read_socket_subcall(current->pid, current->regset, decode_socketcall, subcall);
 	if (r == 0)
 		return 0;
 	else if (r == -ESRCH)
@@ -202,7 +221,7 @@ int syd_read_socket_address(syd_proc_t *current, bool decode_socketcall,
 	assert(current);
 	assert(sockaddr);
 
-	r = pink_read_socket_address(current->pink, decode_socketcall,
+	r = pink_read_socket_address(current->pid, current->regset, decode_socketcall,
 				     arg_index, fd, sockaddr);
 	if (r == 0)
 		return 0;
@@ -219,7 +238,7 @@ int syd_write_syscall(syd_proc_t *current, long sysnum)
 
 	assert(current);
 
-	r = pink_write_syscall(current->pink, sysnum);
+	r = pink_write_syscall(current->pid, current->regset, sysnum);
 	if (r == 0)
 		return 0;
 	else if (r == -ESRCH)
@@ -235,7 +254,7 @@ int syd_write_retval(syd_proc_t *current, long retval, int error)
 
 	assert(current);
 
-	r = pink_write_retval(current->pink, retval, error);
+	r = pink_write_retval(current->pid, current->regset, retval, error);
 	if (r == 0)
 		return 0;
 	else if (r == -ESRCH)

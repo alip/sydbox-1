@@ -370,7 +370,7 @@ int sysenter(syd_proc_t *current)
 	if ((r = syd_read_syscall(current, &sysnum)) < 0)
 		return r;
 
-	entry = systable_lookup(sysnum, GET_ABI(current));
+	entry = systable_lookup(sysnum, current->abi);
 	if (entry) {
 		current->sysnum = sysnum;
 		current->sysname = entry->name;
@@ -382,7 +382,7 @@ int sysenter(syd_proc_t *current)
 	} else {
 		if (log_has_level(LOG_LEVEL_SYS_ALL)) {
 			const char *sysname;
-			sysname = pink_name_syscall(sysnum, GET_ABI(current));
+			sysname = pink_name_syscall(sysnum, current->abi);
 			log_sys_all("entering system call %s", sysname);
 		}
 	}
@@ -400,7 +400,7 @@ int sysexit(syd_proc_t *current)
 		goto out;
 	}
 
-	entry = systable_lookup(current->sysnum, GET_ABI(current));
+	entry = systable_lookup(current->sysnum, current->abi);
 	r = (entry && entry->exit) ? entry->exit(current) : 0;
 out:
 	clear_proc(current);
