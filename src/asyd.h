@@ -117,4 +117,11 @@
 			"[0m" \
 			"\n"
 
+/* the piper */
+#define THE_PIPER \
+	"Helper and healer, I cheer\n" \
+	"Small waifs in the woodland wet\n" \
+	"Strays I find in it, wounds I bind in it\n" \
+	"Bidding them all forget!\n"
+
 #endif

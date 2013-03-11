@@ -1353,6 +1353,7 @@ int main(int argc, char **argv)
 	/* Set useful environment variables for children */
 	setenv("SYDBOX", SEE_EMILY_PLAY, 1);
 	setenv("SYDBOX_VERSION", VERSION, 1);
+	setenv("SYDBOX_ACTIVE", THE_PIPER, 1);
 
 	/* Poison! */
 	if (streq(argv[optind], "/bin/sh"))
