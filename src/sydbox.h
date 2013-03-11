@@ -388,8 +388,8 @@ typedef struct syd_proc {
 	/* Per-process configuration */
 	sandbox_t config;
 
-	/* singly-linked list */
-	SLIST_ENTRY(syd_proc) up;
+	/* hash table entry */
+	UT_hash_handle hh;
 } syd_proc_t;
 
 typedef struct {
@@ -434,8 +434,7 @@ typedef struct {
 } config_t;
 
 typedef struct {
-	unsigned nprocs;
-	SLIST_HEAD(, syd_proc) proctab;
+	syd_proc_t *proctab;
 
 	int trace_options;
 	enum syd_step trace_step;
@@ -505,13 +504,10 @@ typedef struct {
 
 /* Global variables */
 extern sydbox_t *sydbox;
-#define SYD_FOREACH_PROCESS(proc)	SLIST_FOREACH((proc), &sydbox->proctab, up)
-#define SYD_REMOVE_PROCESS(proc)	SLIST_REMOVE(&sydbox->proctab, (proc), syd_proc, up)
-#define SYD_INSERT_HEAD(proc) \
-	do { \
-		SLIST_INSERT_HEAD(&sydbox->proctab, (proc), up); \
-		sydbox->nprocs++; \
-	} while (0)
+#define SYD_PROCESS_COUNT()		HASH_COUNT(sydbox->proctab)
+#define SYD_PROCESS_ITER(proc, tmp)	HASH_ITER(hh, sydbox->proctab, (proc), (tmp))
+#define SYD_PROCESS_ADD(proc)		HASH_ADD_INT(sydbox->proctab, pid, (proc))
+#define SYD_PROCESS_REMOVE(proc)	HASH_DEL(sydbox->proctab, (proc))
 
 /* Global functions */
 int syd_trace_detach(syd_proc_t *current, int sig);
@@ -536,7 +532,12 @@ int syd_read_socket_address(syd_proc_t *current, bool decode_socketcall,
 void clear_proc(syd_proc_t *p);
 void ignore_proc(syd_proc_t *p);
 void remove_proc(syd_proc_t *p);
-syd_proc_t *lookup_proc(pid_t pid);
+static inline syd_proc_t *lookup_proc(pid_t pid)
+{
+	syd_proc_t *p;
+	HASH_FIND_INT(sydbox->proctab, &pid, p);
+	return p;
+}
 
 void cont_all(void);
 void abort_all(int fatal_sig);

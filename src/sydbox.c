@@ -128,7 +128,7 @@ static syd_proc_t *add_proc(pid_t pid, short flags)
 	newproc->trace_step = SYD_STEP_NOT_SET;
 	newproc->flags = SYD_STARTUP | flags;
 
-	SYD_INSERT_HEAD(newproc);
+	SYD_PROCESS_ADD(newproc);
 	return newproc;
 }
 
@@ -206,22 +206,11 @@ void remove_proc(syd_proc_t *p)
 	pid = p->pid;
 
 	ignore_proc(p);
-	SYD_REMOVE_PROCESS(p);
+	SYD_PROCESS_REMOVE(p);
 	free(p);
 
 	log_context(NULL);
 	log_trace("process %u removed", pid);
-}
-
-syd_proc_t *lookup_proc(pid_t pid)
-{
-	syd_proc_t *proc;
-
-	SYD_FOREACH_PROCESS(proc) {
-		if (pid == proc->pid)
-			return proc;
-	}
-	return NULL;
 }
 
 static void interrupt(int sig)
@@ -395,7 +384,7 @@ static void sig_usr(int signo)
 {
 	bool complete_dump;
 	unsigned count;
-	syd_proc_t *node;
+	syd_proc_t *node, *tmp;
 
 	if (!sydbox)
 		return;
@@ -406,7 +395,7 @@ static void sig_usr(int signo)
 		complete_dump ? "2" : "1",
 		complete_dump ? "complete " : "");
 	count = 0;
-	SYD_FOREACH_PROCESS(node) {
+	SYD_PROCESS_ITER(node, tmp) {
 		dump_one_process(node, complete_dump);
 		count++;
 	}
@@ -419,12 +408,11 @@ static void init_early(void)
 
 	os_release = get_os_release();
 	sydbox = xmalloc(sizeof(sydbox_t));
+	sydbox->proctab = NULL;
 	sydbox->violation = false;
 	sydbox->pidwait = 0;
 	sydbox->wait_execve = false;
 	sydbox->exit_code = EXIT_SUCCESS;
-	sydbox->nprocs = 0;
-	SLIST_INIT(&sydbox->proctab);
 	config_init();
 	log_init(NULL);
 	log_abort_func(abort_all);
@@ -964,7 +952,7 @@ static int trace(void)
 	syscall_trap_sig = sydbox->trace_options & PINK_TRACE_OPTION_SYSGOOD
 			   ? SIGTRAP | 0x80
 			   : SIGTRAP;
-	while(sydbox->nprocs > 0) {
+	while(SYD_PROCESS_COUNT() > 0) {
 		log_context(NULL);
 
 		if (interrupted) {

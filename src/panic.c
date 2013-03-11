@@ -43,37 +43,37 @@ static inline int errno2retval(int err_no)
 
 void cont_all(void)
 {
-	syd_proc_t *node;
+	syd_proc_t *node, *tmp;
 
-	SYD_FOREACH_PROCESS(node) {
+	SYD_PROCESS_ITER(node, tmp) {
 		syd_trace_detach(node, 0);
 	}
 }
 
 void kill_all(void)
 {
-	syd_proc_t *node;
+	syd_proc_t *node, *tmp;
 
-	SYD_FOREACH_PROCESS(node) {
+	SYD_PROCESS_ITER(node, tmp) {
 		syd_trace_kill(node, SIGKILL);
 	}
 }
 
 void abort_all(int fatal_sig)
 {
-	syd_proc_t *node;
+	syd_proc_t *node, *tmp;
 
 	if (!sydbox)
 		return;
 
 	switch (sydbox->config.abort_decision) {
 	case ABORT_CONTALL:
-		SYD_FOREACH_PROCESS(node) {
+		SYD_PROCESS_ITER(node, tmp) {
 			syd_trace_detach(node, 0);
 		}
 		break;
 	case ABORT_KILLALL:
-		SYD_FOREACH_PROCESS(node) {
+		SYD_PROCESS_ITER(node, tmp) {
 			syd_trace_kill(node, SIGKILL);
 		}
 		break;
