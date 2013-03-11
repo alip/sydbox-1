@@ -21,6 +21,7 @@
 #include "proc.h"
 #include "canonicalize.h"
 #include "log.h"
+#include "sockmap.h"
 
 int sysx_chdir(syd_proc_t *current)
 {
@@ -202,6 +203,8 @@ int sys_dup(syd_proc_t *current)
 	int r;
 	long fd;
 
+	current->args[0] = -1;
+
 	if (sandbox_network_off(current) ||
 	    !sydbox->config.whitelist_successful_bind)
 		return 0;
@@ -218,11 +221,11 @@ int sysx_dup(syd_proc_t *current)
 {
 	int r;
 	long retval;
-	ht_int64_node_t *old_node, *new_node;
+	const struct sockinfo *oldinfo;
 
 	if (sandbox_network_off(current) ||
 	    !sydbox->config.whitelist_successful_bind ||
-	    !current->args[0])
+	    current->args[0] < 0)
 		return 0;
 
 	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
@@ -233,16 +236,12 @@ int sysx_dup(syd_proc_t *current)
 		return 0;
 	}
 
-	if (!(old_node = hashtable_find(current->sockmap, current->args[0] + 1, 0))) {
-		log_check("duplicated unknown fd:%ld to fd:%ld", current->args[0],
-			  retval);
+	if (!(oldinfo = sockmap_find(current->sockmap, current->args[0]))) {
+		log_check("duplicated unknown fd:%ld to fd:%ld", current->args[0], retval);
 		return 0;
 	}
 
-	if (!(new_node = hashtable_find(current->sockmap, retval + 1, 1)))
-		die_errno("hashtable_find");
-
-	new_node->data = sockinfo_xdup(old_node->data);
+	sockmap_add(current->sockmap, retval, sockinfo_xdup(oldinfo));
 	log_check("duplicated fd:%ld to fd:%ld", current->args[0], retval);
 	return 0;
 }
@@ -251,6 +250,8 @@ int sys_fcntl(syd_proc_t *current)
 {
 	int r;
 	long fd, cmd;
+
+	current->args[0] = -1;
 
 	if (sandbox_network_off(current) ||
 	    !sydbox->config.whitelist_successful_bind)
@@ -286,31 +287,27 @@ int sysx_fcntl(syd_proc_t *current)
 {
 	int r;
 	long retval;
-	ht_int64_node_t *old_node, *new_node;
+	const struct sockinfo *oldinfo;
 
 	if (sandbox_network_off(current) ||
 	    !sydbox->config.whitelist_successful_bind ||
-	    !current->args[0])
+	    current->args[0] < 0)
 		return 0;
 
 	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
 		return r;
 
-	if (retval == -1) {
+	if (retval < 0) {
 		log_trace("ignore failed system call");
 		return 0;
 	}
 
-	if (!(old_node = hashtable_find(current->sockmap, current->args[0] + 1, 0))) {
-		log_check("duplicated unknown fd:%ld to fd:%ld",
-			  current->args[0], retval);
+	if (!(oldinfo = sockmap_find(current->sockmap, current->args[0]))) {
+		log_check("duplicated unknown fd:%ld to fd:%ld", current->args[0], retval);
 		return 0;
 	}
 
-	if (!(new_node = hashtable_find(current->sockmap, retval + 1, 1)))
-		die_errno("hashtable_find");
-
-	new_node->data = sockinfo_xdup(old_node->data);
+	sockmap_add(current->sockmap, retval, sockinfo_xdup(oldinfo));
 	log_check("duplicated fd:%ld to fd:%ld", current->args[0], retval);
 	return 0;
 }

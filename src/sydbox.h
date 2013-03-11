@@ -28,9 +28,9 @@
 #include <limits.h>
 #include <pinktrace/pink.h>
 #include "canonicalize.h"
-#include "hashtable.h"
 #include "slist.h"
 #include "sockmatch.h"
+#include "sockmap.h"
 #include "util.h"
 #include "xfunc.h"
 #include "sydconf.h"
@@ -377,7 +377,7 @@ typedef struct syd_proc {
 	struct sockinfo *savebind;
 
 	/* fd -> sock_info_t mappings  */
-	hashtable_t *sockmap;
+	struct sockmap *sockmap;
 
 	/* Per-process configuration */
 	sandbox_t config;

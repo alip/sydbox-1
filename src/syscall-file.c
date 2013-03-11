@@ -19,6 +19,7 @@
 #include <pinktrace/pink.h>
 #include "canonicalize.h"
 #include "log.h"
+#include "sockmap.h"
 
 struct open_info {
 	bool may_read;
@@ -362,13 +363,15 @@ int sys_close(syd_proc_t *current)
 	int r;
 	long fd;
 
+	current->args[0] = -1;
+
 	if (sandbox_network_off(current) ||
 	    !sydbox->config.whitelist_successful_bind)
 		return 0;
 
 	if ((r = syd_read_argument(current, 0, &fd)) < 0)
 		return r;
-	if (hashtable_find(current->sockmap, fd + 1, 0))
+	if (sockmap_find(current->sockmap, fd))
 		current->args[0] = fd;
 	return 0;
 }
@@ -377,11 +380,10 @@ int sysx_close(syd_proc_t *current)
 {
 	int r;
 	long retval;
-	ht_int64_node_t *node;
 
 	if (sandbox_network_off(current) ||
 	    !sydbox->config.whitelist_successful_bind ||
-	    !current->args[0])
+	    current->args[0] < 0)
 		return 0;
 
 	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
@@ -392,12 +394,7 @@ int sysx_close(syd_proc_t *current)
 		return 0;
 	}
 
-	node = hashtable_find(current->sockmap, current->args[0] + 1, 0);
-	assert(node);
-
-	node->key = 0;
-	free_sockinfo(node->data);
-	node->data = NULL;
+	sockmap_remove(current->sockmap, current->args[0]);
 	log_trace("closed fd: %ld", current->args[0]);
 	return 0;
 }

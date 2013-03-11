@@ -9,45 +9,44 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <pinktrace/pink.h>
-#include "hashtable.h"
 #include "log.h"
+#include "sydhash.h"
 
-static hashtable_t *systable[PINK_ABIS_SUPPORTED];
+struct systable {
+	long no;
+	sysentry_t entry;
+	UT_hash_handle hh;
+};
+
+static struct systable *systable[PINK_ABIS_SUPPORTED];
 
 void systable_add_full(long no, short abi, const char *name,
 		       sysfunc_t fenter, sysfunc_t fexit)
 {
-	sysentry_t *entry;
+	struct systable *s;
 
-	entry = xmalloc(sizeof(sysentry_t));
-	entry->name = name;
-	entry->enter = fenter;
-	entry->exit = fexit;
+	s = xmalloc(sizeof(struct systable));
+	s->no = no;
+	s->entry.name = name;
+	s->entry.enter = fenter;
+	s->entry.exit = fexit;
 
-	ht_int32_node_t *node = hashtable_find(systable[abi], no, 1);
-	node->data = entry;
+	HASH_ADD_INT(systable[abi], no, s);
 }
 
 void systable_init(void)
 {
-	for (short abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
-		systable[abi] = hashtable_create(syscall_entries_max(), 0);
-		if (systable[abi] == NULL)
-			die_errno("hashtable_create");
-	}
+	;
 }
 
 void systable_free(void)
 {
 	for (short abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
-		for (int i = 0; i < systable[abi]->size; i++) {
-			ht_int32_node_t *node = HT_NODE(systable[abi],
-							systable[abi]->nodes,
-							i);
-			if (node->data)
-				free(node->data);
+		struct systable *s, *tmp;
+		HASH_ITER(hh, systable[abi], s, tmp) {
+			free(s);
 		}
-		hashtable_destroy(systable[abi]);
+		HASH_CLEAR(hh, systable[abi]);
 	}
 }
 
@@ -64,6 +63,8 @@ void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit)
 
 const sysentry_t *systable_lookup(long no, short abi)
 {
-	ht_int32_node_t *node = hashtable_find(systable[abi], no, 0);
-	return node ? node->data : NULL;
+	struct systable *s;
+
+	HASH_FIND_INT(systable[abi], &no, s);
+	return s ? &(s->entry) : NULL;
 }

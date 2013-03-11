@@ -33,8 +33,10 @@ noinst_HEADERS+= \
 		 pathdecode.h \
 		 pathmatch.h \
 		 sockmatch.h \
+		 sockmap.h \
 		 util.h \
 		 xfunc.h \
+		 sydhash.h \
 		 sydconf.h \
 		 sydbox.h
 sydbox_SOURCES= \
@@ -73,13 +75,14 @@ sydbox_SOURCES= \
 sydfmt_SOURCES= \
 		sydfmt.c
 
+# http://troydhanson.github.com/uthash/
+noinst_HEADERS+= \
+		 uthash.h
+
 # Imported from rsync!
 noinst_HEADERS+= \
-		 byteorder.h \
-		 hashtable.h \
 		 wildmatch.h
 sydbox_SOURCES+= \
-		 hashtable.c \
 		 wildmatch.c
 
 # Imported from gnulib!

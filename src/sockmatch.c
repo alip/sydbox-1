@@ -23,7 +23,7 @@
 #include "util.h"
 #include "xfunc.h"
 
-struct sockinfo *sockinfo_xdup(struct sockinfo *src)
+struct sockinfo *sockinfo_xdup(const struct sockinfo *src)
 {
 	struct sockinfo *dest;
 

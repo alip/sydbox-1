@@ -63,7 +63,7 @@ struct sockmatch {
 	} addr;
 };
 
-struct sockinfo *sockinfo_xdup(struct sockinfo *src);
+struct sockinfo *sockinfo_xdup(const struct sockinfo *src);
 struct sockmatch *sockmatch_xdup(const struct sockmatch *src);
 
 /* Expand network aliases and unix wildmatch patterns */

@@ -20,6 +20,7 @@
 #include <pinktrace/pink.h>
 #include "canonicalize.h"
 #include "log.h"
+#include "sockmap.h"
 
 int sys_bind(syd_proc_t *current)
 {
@@ -95,7 +96,6 @@ int sysx_bind(syd_proc_t *current)
 	int r;
 	long retval;
 	struct snode *snode;
-	ht_int64_node_t *node;
 	struct sockmatch *match;
 
 	if (sandbox_network_off(current) ||
@@ -130,10 +130,7 @@ int sysx_bind(syd_proc_t *current)
 	SLIST_INSERT_HEAD(&sydbox->config.whitelist_network_connect_auto, snode, up);
 	return 0;
 zero:
-	node = hashtable_find(current->sockmap, current->args[0] + 1, 1);
-	if (!node)
-		die_errno("hashtable_find");
-	node->data = current->savebind;
+	sockmap_add(current->sockmap, retval, current->savebind);
 	current->savebind = NULL;
 	return 0;
 }
@@ -194,6 +191,8 @@ int sys_getsockname(syd_proc_t *current)
 	bool decode_socketcall;
 	unsigned long fd;
 
+	current->args[0] = -1;
+
 	if (sandbox_network_off(current) ||
 	    !sydbox->config.whitelist_successful_bind)
 		return 0;
@@ -202,8 +201,7 @@ int sys_getsockname(syd_proc_t *current)
 	if ((r = syd_read_socket_argument(current, decode_socketcall, 0, &fd)) < 0)
 		return r;
 
-	ht_int64_node_t *node = hashtable_find(current->sockmap, fd + 1, 0);
-	if (node) {
+	if (sockmap_find(current->sockmap, fd)) {
 		current->args[0] = fd;
 		current->flags |= SYD_STOP_AT_SYSEXIT;
 	}
@@ -219,10 +217,12 @@ int sysx_getsockname(syd_proc_t *current)
 	long retval;
 	struct pink_sockaddr psa;
 	struct snode *snode;
+	const struct sockinfo *info;
+	struct sockmatch *match;
 
 	if (sandbox_network_off(current) ||
 	    !sydbox->config.whitelist_successful_bind ||
-	    !current->args[0])
+	    current->args[0] < 0)
 		return 0;
 
 	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
@@ -237,15 +237,10 @@ int sysx_getsockname(syd_proc_t *current)
 	if ((r = syd_read_socket_address(current, decode_socketcall, 1, NULL, &psa)) < 0)
 		return r;
 
-	ht_int64_node_t *node = hashtable_find(current->sockmap,
-					       current->args[0] + 1, 0);
-	assert(node);
-	struct sockinfo *info = node->data;
-	struct sockmatch *match = sockmatch_new(info);
-
-	free_sockinfo(info);
-	node->key = 0;
-	node->data = NULL;
+	info = sockmap_find(current->sockmap, current->args[0]);
+	assert(info);
+	match = sockmatch_new(info);
+	sockmap_remove(current->sockmap, current->args[0]);
 
 	switch (match->family) {
 	case AF_INET:

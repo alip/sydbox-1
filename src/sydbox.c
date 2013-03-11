@@ -207,16 +207,8 @@ void ignore_proc(syd_proc_t *p)
 		pink_process_free(p->pink);
 	if (p->savebind)
 		free_sockinfo(p->savebind);
-
-	if (p->sockmap) {
-		/* Free the fd -> address mappings */
-		for (int i = 0; i < p->sockmap->size; i++) {
-			ht_int64_node_t *node = HT_NODE(p->sockmap, p->sockmap->nodes, i);
-			if (node->data)
-				free_sockinfo(node->data);
-		}
-		hashtable_destroy(p->sockmap);
-	}
+	if (p->sockmap)
+		sockmap_destroy(p->sockmap);
 
 	/* Free the sandbox */
 	free_sandbox(&p->config);
@@ -688,6 +680,7 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 	current->config.sandbox_write = inherit->sandbox_write;
 	current->config.sandbox_network = inherit->sandbox_network;
 	current->config.magic_lock = inherit->magic_lock;
+	current->sockmap = NULL;
 
 	/* Copy the lists  */
 	SLIST_COPY_ALL(node, &inherit->whitelist_exec, up,
@@ -715,11 +708,6 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 	SLIST_COPY_ALL(node, &inherit->blacklist_network_connect, up,
 		       &current->config.blacklist_network_connect, newnode,
 		       sockmatch_xdup);
-
-	/* Create the fd -> address hash table */
-	current->sockmap = hashtable_create(NR_OPEN, 1);
-	if (current->sockmap == NULL)
-		die_errno("hashtable_create");
 
 	if (sydbox->config.whitelist_per_process_directories) {
 		char magic[sizeof("/proc/%u/***") + sizeof(int)*3 + /*paranoia:*/16];
