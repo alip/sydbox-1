@@ -15,9 +15,8 @@ EXTRA_DIST= \
 	    autogen.sh
 
 dist_doc_DATA= \
-	       README.mkd \
-	       LICENSE.BSD3 \
-	       LICENSE.GPL3
+	       COPYRIGHT \
+	       README.mkd
 
 DISTCHECK_CONFIGURE_FLAGS= \
 			   --enable-doxygen \

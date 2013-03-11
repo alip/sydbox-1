@@ -4,7 +4,7 @@
  * match socket information
  *
  * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v2
+ * Released under the terms of the 3-clause BSD license
  */
 
 #ifndef SOCKMATCH_H

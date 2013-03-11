@@ -3,10 +3,10 @@
  *
  * Simple debug logging for sydbox.
  *
- * Copyright 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Based in part upon privoxy which is:
  *   Copyright (c) 2001-2010 the Privoxy team. http://www.privoxy.org/
- * Distributed under the terms of the GNU General Public License v3 or later
+ * Distributed under the terms of the GNU General Public License v2
  */
 
 #ifndef LOG_H

@@ -4,7 +4,7 @@
  * Generic singly-linked list based on sys/queue.h
  *
  * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
- * Distributed under the terms of the GNU General Public License v3 or later
+ * Released under the terms of the 3-clause BSD license
  */
 
 #ifndef SLIST_H
