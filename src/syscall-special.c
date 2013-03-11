@@ -4,6 +4,11 @@
  * Special system call handlers
  *
  * Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Based in part upon strace which is:
+ *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
+ *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
+ *   Copyright (c) 1993, 1994, 1995, 1996 Rick Sladkey <jrs@world.std.com>
+ *   Copyright (c) 1996-1999 Wichert Akkerman <wichert@cistron.nl>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -12,9 +17,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <stdlib.h>
 #include <pinktrace/pink.h>
 #include "pathdecode.h"
@@ -22,6 +25,23 @@
 #include "canonicalize.h"
 #include "log.h"
 #include "sockmap.h"
+
+#include <fcntl.h>
+#include <sys/stat.h>
+#if PINK_ARCH_X86_64
+# define __i386__
+# define stat kernel_stat
+# define stat64 kernel_stat64
+# define __old_kernel_stat stat32
+/* These might be macros. */
+# undef st_atime
+# undef st_mtime
+# undef st_ctime
+# include <asm/stat.h>
+# undef __i386__
+#elif PINK_ABIS_SUPPORTED > 1
+# warning do not know the size of stat buffer for non-default ABIs
+#endif
 
 int sysx_chdir(syd_proc_t *current)
 {
@@ -119,7 +139,6 @@ int sys_stat(syd_proc_t *current)
 	int r;
 	long addr;
 	char path[SYDBOX_PATH_MAX];
-	struct stat buf;
 
 	if (current->config.magic_lock == LOCK_SET) {
 		/* No magic allowed! */
@@ -163,22 +182,51 @@ int sys_stat(syd_proc_t *current)
 			r = deny(current, errno);
 		}
 	} else if (r != MAGIC_RET_NOOP) {
-		/* Encode stat buffer */
-		memset(&buf, 0, sizeof(struct stat));
-		buf.st_mode = S_IFCHR |
-			      (S_IRUSR | S_IWUSR) |
-			      (S_IRGRP | S_IWGRP) |
-			      (S_IROTH | S_IWOTH);
-		buf.st_rdev = 259; /* /dev/null */
-		/* Fill with random(!) numbers */
-		buf.st_atime = 505958400;
-		buf.st_mtime = -842745600;
-		buf.st_ctime = 558748800;
+		/* Write stat buffer */
+		const char *bufaddr = NULL;
+		size_t bufsize;
+		struct stat buf;
+#define FAKE_MODE (S_IFCHR|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+#define FAKE_RDEV 259 /* /dev/null */
+#define FAKE_ATIME 505958400
+#define FAKE_MTIME -842745600
+#define FAKE_CTIME 558748800
+#if PINK_ARCH_X86_64
+		struct stat32 buf32;
+
+		if (current->abi == PINK_ABI_I386) {
+			memset(&buf32, 0, sizeof(struct stat32));
+			buf32.st_mode = FAKE_MODE;
+			buf32.st_rdev = FAKE_RDEV;
+			buf32.st_atime = FAKE_ATIME;
+			buf32.st_mtime = FAKE_MTIME;
+			buf32.st_ctime = FAKE_CTIME;
+			bufaddr = (char *)&buf32;
+			bufsize = sizeof(struct stat32);
+		}
+#else
+		if (current->abi != PINK_ABI_DEFAULT) {
+			log_warning("don't know the size of stat buffer for ABI %d", current->abi);
+			log_warning("skipped stat() buffer write");
+			goto skip_write;
+		}
+#endif
+		if (!bufaddr) {
+			memset(&buf, 0, sizeof(struct stat));
+			buf.st_mode = FAKE_MODE;
+			buf.st_rdev = FAKE_RDEV;
+			buf.st_atime = FAKE_ATIME;
+			buf.st_mtime = FAKE_MTIME;
+			buf.st_ctime = FAKE_CTIME;
+			bufaddr = (char *)&buf;
+			bufsize = sizeof(struct stat);
+		}
 
 		if (pink_read_argument(current->pid, current->regset, 1, &addr) == 0)
-			pink_write_vm_data(current->pid, current->regset, addr,
-					   (const char *)&buf,
-					   sizeof(struct stat));
+			pink_write_vm_data(current->pid, current->regset, addr, bufaddr, bufsize);
+#if !PINK_ARCH_X86_64
+skip_write:
+#endif
 		log_magic("accepted magic=`%s'", path);
 		if (r < 0)
 			errno = -r;
