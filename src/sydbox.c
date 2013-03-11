@@ -170,7 +170,7 @@ void clear_proc(syd_proc_t *p)
 {
 	if (!p)
 		return;
-	if (p->flags & SYD_IGNORE_PROCESS)
+	if (p->flags & SYD_IGNORE)
 		return;
 
 	p->sysnum = 0;
@@ -193,7 +193,7 @@ void ignore_proc(syd_proc_t *p)
 
 	if (!p)
 		return;
-	if (p->flags & SYD_IGNORE_PROCESS)
+	if (p->flags & SYD_IGNORE)
 		return;
 	pid = GET_PID(p);
 
@@ -221,18 +221,25 @@ void ignore_proc(syd_proc_t *p)
 	/* Free the sandbox */
 	free_sandbox(&p->config);
 
-	p->flags |= SYD_IGNORE_PROCESS;
+	p->flags |= SYD_IGNORE;
 	log_context(NULL);
-	log_trace("ignored process %u", pid);
+	log_trace("process %u ignored", pid);
 }
 
 void remove_proc(syd_proc_t *p)
 {
+	pid_t pid;
+
 	if (!p)
 		return;
+	pid = GET_PID(p);
+
 	ignore_proc(p);
 	SYD_REMOVE_PROCESS(p);
 	free(p);
+
+	log_context(NULL);
+	log_trace("process %u removed", pid);
 }
 
 syd_proc_t *lookup_proc(pid_t pid)
@@ -319,10 +326,6 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 		fprintf(stderr, "%sSYDBOX_CHILD", (r == 1) ? "|" : "");
 		r = 1;
 	}
-	if (current->flags & SYD_IGNORE_PROCESS) {
-		fprintf(stderr, "%sIGNORE_PROCESS", (r == 1) ? "|" : "");
-		r = 1;
-	}
 	if (current->flags & SYD_STARTUP) {
 		fprintf(stderr, "STARTUP");
 		r = 1;
@@ -331,8 +334,12 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 		fprintf(stderr, "%sIGNORE_ONE_SIGSTOP", (r == 1) ? "|" : "");
 		r = 1;
 	}
-	if (current->flags & SYD_INHERIT_DONE) {
-		fprintf(stderr, "%sINHERIT_DONE", (r == 1) ? "|" : "");
+	if (current->flags & SYD_IGNORE) {
+		fprintf(stderr, "%sIGNORE", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	if (current->flags & SYD_READY) {
+		fprintf(stderr, "%sREADY", (r == 1) ? "|" : "");
 		r = 1;
 	}
 	if (current->flags & SYD_IN_SYSCALL) {
@@ -442,6 +449,7 @@ static void init_early(void)
 	os_release = get_os_release();
 	sydbox = xmalloc(sizeof(sydbox_t));
 	sydbox->violation = false;
+	sydbox->pidwait = 0;
 	sydbox->wait_execve = false;
 	sydbox->exit_code = EXIT_SUCCESS;
 	sydbox->nprocs = 0;
@@ -655,22 +663,17 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 	struct snode *node, *newnode;
 	sandbox_t *inherit;
 
-	if (current->flags & SYD_INHERIT_DONE) {
-		log_trace("inherited sandbox already, skipping");
-		return;
-	}
-
-	if (sydchild(current)) {
+	if (!parent) {
 		comm = xstrdup(sydbox->program_invocation_name);
 		cwd = xgetcwd();
 		inherit = &sydbox->config.child;
 	} else {
-		if (parent->flags & SYD_IGNORE_PROCESS) {
+		if (parent->flags & SYD_IGNORE) {
 			/* parent is ignored, ignore the child too */
 			comm = cwd = NULL;
 			current->comm = current->cwd = NULL;
-			current->flags |= SYD_IGNORE_PROCESS;
-			goto out;
+			current->flags |= SYD_IGNORE;
+			return;
 		}
 		comm = xstrdup(parent->comm);
 		cwd = xstrdup(parent->cwd);
@@ -724,9 +727,36 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 		magic_append_whitelist_read(magic, current);
 		magic_append_whitelist_write(magic, current);
 	}
+}
+
+static int init_sandbox(syd_proc_t *current)
+{
+	pid_t pid;
+	syd_proc_t *parent;
+
+	if (current->flags & SYD_READY)
+		return 0;
+
+	pid = GET_PID(current);
+
+	if (sydchild(current)) {
+		inherit_sandbox(current, NULL);
+		goto out;
+	} else if (hasparent(current)) {
+		parent = lookup_proc(current->ppid);
+		if (!parent)
+			die("Unknown parent pid: %u", current->ppid);
+		inherit_sandbox(current, parent);
+		goto out;
+	}
+
+	log_warning("parent is gone before we could inherit sandbox");
+	log_warning("inheriting global (unmodified) sandbox");
+	inherit_sandbox(current, NULL);
 out:
-	current->flags |= SYD_INHERIT_DONE;
-	log_trace("initialised (parent:%u)", parent ? GET_PID(parent) : 0);
+	current->flags |= SYD_READY;
+	log_trace("process %u is ready for access control", pid);
+	return 0;
 }
 
 static int event_startup(syd_proc_t *current)
@@ -735,49 +765,37 @@ static int event_startup(syd_proc_t *current)
 
 	if ((r = syd_trace_setup(current)) < 0)
 		return ptrace_error(current, "PTRACE_SETOPTIONS", -r);
+	if ((r = init_sandbox(current)) < 0)
+		return r; /* process dead */
 	current->flags &= ~SYD_STARTUP;
 	return 0;
 }
 
-static int event_init(syd_proc_t *current)
+static int event_fork(syd_proc_t *current)
 {
 	int r;
-	pid_t pid;
-	pid_t ppid;
-	syd_proc_t *parent;
+	pid_t pid, cpid;
+	syd_proc_t *child;
 
-	if (sydchild(current)) {
-		inherit_sandbox(current, NULL);
-		return 0;
-	} else if (hasparent(current)) {
-		parent = lookup_proc(current->ppid);
-		if (!parent)
-			die("Unknown parent pid: %u", current->ppid);
-		inherit_sandbox(current, parent);
-		return 0;
-	} else if (current->flags & SYD_STARTUP) {
-		log_trace("[event_init]: waiting for parent");
-		return 0;
-	}
+	if ((r = syd_trace_geteventmsg(current, (unsigned long *)&cpid)) < 0)
+		return r; /* process dead */
 
 	pid = GET_PID(current);
-	if ((r = proc_parent(pid, &ppid)) < 0) {
-		err_warning(-r, "PANIC: failed to read /proc/%u/status", pid);
-		return panic(current);
-	}
-	if (ppid <= 1) {
-		log_warning("parent died before we could inherit sandbox");
-		log_warning("inheriting default sandbox");
-		inherit_sandbox(current, NULL);
+	child = lookup_proc(cpid);
+	if (child) {
+		log_warning("[%s] child %u of %u is in process list", __func__,
+			    cpid, pid);
 		return 0;
-	} else if (!(parent = lookup_proc(ppid))) {
-		log_warning("PANIC: unknown parent:%u of pid: %u", ppid, pid);
-		return panic(current);
 	}
 
-	log_trace("read parent pid %u from /proc/%u/status", ppid, pid);
-	current->ppid = ppid;
-	inherit_sandbox(current, parent);
+	child = add_proc_or_kill(cpid, post_attach_sigstop);
+	child->ppid = pid;
+
+	log_context(child);
+	inherit_sandbox(child, current);
+	child->flags |= SYD_READY;
+	log_context(current);
+
 	return 0;
 }
 
@@ -798,8 +816,7 @@ static int event_exec(syd_proc_t *current)
 		return 0;
 	}
 
-
-	if (current->flags & SYD_IGNORE_PROCESS)
+	if (current->flags & SYD_IGNORE)
 		return 0;
 
 	if (current->config.magic_lock == LOCK_PENDING) {
@@ -862,31 +879,6 @@ static int event_exec(syd_proc_t *current)
 	return r;
 }
 
-static int event_fork(syd_proc_t *current)
-{
-	int r;
-	pid_t pid = GET_PID(current);
-	unsigned long cpid;
-	syd_proc_t *child;
-
-	if ((r = syd_trace_geteventmsg(current, &cpid)) < 0)
-		return r;
-
-	child = lookup_proc(cpid);
-	if (!child)
-		child = add_proc_or_kill(cpid, post_attach_sigstop);
-	else if (child->flags & SYD_INHERIT_DONE)
-		return 0;
-
-	log_trace("[event_fork]: initialising %lu", cpid);
-	child->ppid = pid;
-	log_context(child);
-	inherit_sandbox(child, current);
-	log_context(current);
-
-	return 0;
-}
-
 static int event_syscall(syd_proc_t *current)
 {
 	int r = 0;
@@ -907,7 +899,7 @@ static int event_syscall(syd_proc_t *current)
 		return 0;
 	}
 
-	if (current->flags & SYD_IGNORE_PROCESS)
+	if (current->flags & SYD_IGNORE)
 		return 0;
 
 	if (entering(current)) {
@@ -950,13 +942,8 @@ static int event_seccomp(syd_proc_t *current)
 		return 0;
 	}
 
-	if (current->flags & SYD_IGNORE_PROCESS)
+	if (current->flags & SYD_IGNORE)
 		return 0;
-
-#if 0
-	if ((r = syd_trace_geteventmsg(current, &ret_data)) < 0)
-		return ptrace_error(current, "PTRACE_GETEVENTMSG", -r);
-#endif
 
 	if ((r = UPDATE_REGSET(current)) < 0)
 		return ptrace_error(current, "PTRACE_GETREGSET", -r);
@@ -998,11 +985,10 @@ static int event_exit(syd_proc_t *current, int status)
 
 static int trace(void)
 {
-	pid_t pid;
+	int pid, wait_pid, wait_errno;
 	bool stopped;
 	int r;
 	int status, sig;
-	int wait_errno;
 	unsigned event;
 	syd_proc_t *current;
 #ifdef __WALL
@@ -1021,25 +1007,26 @@ static int trace(void)
 			return handle_interrupt(sig);
 		}
 
+		wait_pid = sydbox->pidwait > 0 ? sydbox->pidwait : -1;
 		if (interactive)
 			sigprocmask(SIG_SETMASK, &empty_set, NULL);
 #ifdef __WALL
-		pid = waitpid(-1, &status, waitpid_options);
+		pid = waitpid(wait_pid, &status, waitpid_options);
 		if (pid < 0 && (waitpid_options & __WALL) && errno == EINVAL) {
 			/* this kernel does not support __WALL */
 			waitpid_options &= ~__WALL;
-			pid = waitpid(-1, &status, waitpid_options);
+			pid = waitpid(wait_pid, &status, waitpid_options);
 		}
 		if (pid < 0 && !(waitpid_options & __WALL) && errno == ECHILD) {
 			/* most likely a "cloned" process */
-			pid = waitpid(-1, &status, __WCLONE);
+			pid = waitpid(wait_pid, &status, __WCLONE);
 			if (pid < 0) {
 				err_fatal(errno, "wait failed");
 				goto cleanup;
 			}
 		}
 #else
-		pid = waitpid(-1, &status, 0);
+		pid = waitpid(wait_pid, &status, 0);
 #endif /* __WALL */
 		wait_errno = errno;
 		if (interactive)
@@ -1055,6 +1042,8 @@ static int trace(void)
 				err_fatal(wait_errno, "wait failed");
 				goto cleanup;
 			}
+		} else {
+			sydbox->pidwait = 0;
 		}
 
 		event = pink_event_decide(status);
@@ -1094,7 +1083,8 @@ static int trace(void)
 				}
 				sprintf(evbuf, "PTRACE_EVENT_%s", e);
 			}
-			log_trace("[wait(0x%04x) = %u] %s%s", status, pid, buf, evbuf);
+			log_trace("[wait(%d, 0x%04x) = %u] %s%s", wait_pid, status,
+				  pid, buf, evbuf);
 		}
 
 		current = lookup_proc(pid);
@@ -1170,10 +1160,6 @@ dont_switch_procs:
 			continue;
 		}
 
-		if (!(current->flags & SYD_INHERIT_DONE)) {
-			if ((r = event_init(current)) < 0)
-				continue; /* process dead */
-		}
 		if (current->flags & SYD_STARTUP) {
 			log_trace("SYD_STARTUP set, initialising");
 			if ((r = event_startup(current)) < 0)

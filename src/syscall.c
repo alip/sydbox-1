@@ -212,6 +212,19 @@ static const sysentry_t syscall_entries[] = {
 	},
 
 	{
+		.name = "fork",
+		.enter = sys_fork,
+	},
+	{
+		.name = "vfork",
+		.enter = sys_fork,
+	},
+	{
+		.name = "clone",
+		.enter = sys_fork,
+	},
+
+	{
 		.name = "execve",
 		.enter = sys_execve,
 	},

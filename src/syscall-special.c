@@ -50,6 +50,12 @@ int sysx_chdir(syd_proc_t *current)
 	return 0;
 }
 
+int sys_fork(syd_proc_t *current)
+{
+	sydbox->pidwait = GET_PID(current);
+	return 0;
+}
+
 int sys_execve(syd_proc_t *current)
 {
 	int r;

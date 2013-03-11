@@ -44,14 +44,14 @@
 #define strbool(arg)	((arg) ? "yes" : "no")
 
 /* Process flags */
-#define SYD_STARTUP		00001
-#define SYD_IGNORE_ONE_SIGSTOP	00002
-#define SYD_IN_SYSCALL		00004
-#define SYD_DENY_SYSCALL	00010
-#define SYD_STOP_AT_SYSEXIT	00020
-#define SYD_IGNORE_PROCESS	00040
-#define SYD_SYDBOX_CHILD	00100
-#define SYD_INHERIT_DONE	00200
+#define SYD_STARTUP		00001 /* process attached, needs to be set up */
+#define SYD_IGNORE_ONE_SIGSTOP	00002 /* initial sigstop is to be ignored */
+#define SYD_IGNORE		00004 /* process is ignored (no sandboxing) */
+#define SYD_READY		00010 /* process' sandbox is initialised */
+#define SYD_IN_SYSCALL		00020 /* process is in system call */
+#define SYD_DENY_SYSCALL	00040 /* system call is to be denied */
+#define SYD_STOP_AT_SYSEXIT	00100 /* seccomp: stop at system call exit */
+#define SYD_SYDBOX_CHILD	00200 /* process is the child exec()'ed by sydbox */
 
 #define entering(p)	(!((p)->flags & SYD_IN_SYSCALL))
 #define exiting(p)	((p)->flags & SYD_IN_SYSCALL)
@@ -438,6 +438,8 @@ typedef struct {
 	int trace_options;
 	enum syd_step trace_step;
 
+	pid_t pidwait;
+
 	bool wait_execve;
 	int exit_code;
 
@@ -725,6 +727,7 @@ int sys_dup(syd_proc_t *current);
 int sys_dup3(syd_proc_t *current);
 int sys_fcntl(syd_proc_t *current);
 
+int sys_fork(syd_proc_t *current);
 int sys_execve(syd_proc_t *current);
 int sys_stat(syd_proc_t *current);
 
