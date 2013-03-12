@@ -45,19 +45,37 @@
 #define MIN(a,b)	(((a) < (b)) ? (a) : (b))
 #endif
 
+static char *proc_deleted(const char *path)
+{
+	char *r;
+	struct stat s;
+
+	/* If the current working directory of a process is removed after the
+	 * process is started, /proc/$pid/cwd is a dangling symbolic link and
+	 * points to "/path/to/current/working/directory (deleted)".
+	 */
+	r = strstr(path, " (deleted)");
+	if (!r)
+		return NULL;
+	if (r[sizeof(" (deleted)") - 1] != '\0')
+		return NULL;
+	if (stat(path, &s) == 0 || errno != ENOENT)
+		return NULL;
+	return r;
+}
+
 /*
  * resolve /proc/$pid/cwd
  */
 int proc_cwd(pid_t pid, char **buf)
 {
 	int r;
-	char *cwd, *linkcwd;
-	struct stat s;
+	char *c, *cwd, *linkcwd;
 
 	assert(pid >= 1);
 	assert(buf);
 
-	if (asprintf(&linkcwd, "/proc/%lu/cwd", (unsigned long)pid) < 0)
+	if (asprintf(&linkcwd, "/proc/%u/cwd", pid) < 0)
 		return -ENOMEM;
 
 	r = readlink_alloc(linkcwd, &cwd);
@@ -65,15 +83,8 @@ int proc_cwd(pid_t pid, char **buf)
 	if (r)
 		return r;
 
-	/* If the current working directory of a process is removed after the
-	 * process started, /proc/$pid/cwd is a dangling symbolic link and
-	 * points to "/path/to/current/working/directory (deleted)".
-	 */
-	if (stat(cwd, &s) && errno == ENOENT) {
-		char *c;
-		if ((c = strrchr(cwd, ' ')))
-			cwd[c - cwd] = '\0';
-	}
+	if ((c = proc_deleted(cwd)))
+		cwd[c - cwd] = '\0';
 
 	*buf = cwd;
 	return 0;
