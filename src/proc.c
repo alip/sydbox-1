@@ -102,7 +102,7 @@ int proc_fd(pid_t pid, int dfd, char **buf)
 	assert(dfd >= 0);
 	assert(buf);
 
-	if (asprintf(&linkdir, "/proc/%lu/fd/%d", (unsigned long)pid, dfd) < 0)
+	if (asprintf(&linkdir, "/proc/%u/fd/%d", pid, dfd) < 0)
 		return -ENOMEM;
 
 	r = readlink_alloc(linkdir, &fd);
@@ -128,7 +128,7 @@ int proc_cmdline(pid_t pid, size_t max_length, char **buf)
 	assert(max_length > 0);
 	assert(buf);
 
-	if (asprintf(&p, "/proc/%lu/cmdline", (unsigned long)pid) < 0)
+	if (asprintf(&p, "/proc/%u/cmdline", pid) < 0)
 		return -ENOMEM;
 
 	f = fopen(p, "r");
@@ -190,7 +190,7 @@ int proc_comm(pid_t pid, char **name)
 	assert(pid >= 1);
 	assert(name);
 
-	if (asprintf(&p, "/proc/%lu/comm", (unsigned long)pid) < 0)
+	if (asprintf(&p, "/proc/%u/comm", pid) < 0)
 		return -ENOMEM;
 
 	r = read_one_line_file(p, name);
@@ -216,7 +216,7 @@ int proc_environ(pid_t pid, char ***envp)
 	assert(pid >= 1);
 	assert(envp);
 
-	if (asprintf(&p, "/proc/%lu/environ", (unsigned long)pid) < 0)
+	if (asprintf(&p, "/proc/%u/environ", pid) < 0)
 		return -ENOMEM;
 
 	f = fopen(p, "r");
@@ -285,7 +285,7 @@ int proc_stat(pid_t pid, struct proc_statinfo *info)
 	assert(pid >= 1);
 	assert(info);
 
-	if (asprintf(&p, "/proc/%lu/stat", (unsigned long)pid) < 0)
+	if (asprintf(&p, "/proc/%u/stat", pid) < 0)
 		return -ENOMEM;
 
 	f = fopen(p, "r");
