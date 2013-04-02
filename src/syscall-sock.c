@@ -135,9 +135,13 @@ zero:
 	return 0;
 }
 
-int sys_connect(syd_proc_t *current)
+static int sys_connect_or_sendto(syd_proc_t *current, unsigned arg_index)
 {
 	sysinfo_t info;
+#define sub_connect(p, i)	((i) == 1 && \
+				 (p)->subcall == PINK_SOCKET_SUBCALL_CONNECT)
+#define sub_sendto(p, i)	((i) == 4 && \
+				 (p)->subcall == PINK_SOCKET_SUBCALL_SENDTO)
 
 	if (sandbox_network_off(current))
 		return 0;
@@ -152,37 +156,24 @@ int sys_connect(syd_proc_t *current)
 	info.access_list_global = &sydbox->config.whitelist_network_connect_auto;
 	info.access_filter = &sydbox->config.filter_network;
 	info.can_mode = CAN_ALL_BUT_LAST;
-	info.arg_index = 1;
+	info.arg_index = arg_index;
 	info.deny_errno = ECONNREFUSED;
-	if (current->subcall == PINK_SOCKET_SUBCALL_CONNECT)
+	if (sub_connect(current, arg_index) || sub_sendto(current, arg_index))
 		info.decode_socketcall = true;
+#undef sub_connect
+#undef sub_sendto
 
 	return box_check_socket(current, &info);
 }
 
+int sys_connect(syd_proc_t *current)
+{
+	return sys_connect_or_sendto(current, 1);
+}
+
 int sys_sendto(syd_proc_t *current)
 {
-	sysinfo_t info;
-
-	if (sandbox_network_off(current))
-		return 0;
-
-	init_sysinfo(&info);
-	info.access_mode = sandbox_network_deny(current)
-			   ? ACCESS_WHITELIST
-			   : ACCESS_BLACKLIST;
-	info.access_list = sandbox_network_deny(current)
-			   ? &current->config.whitelist_network_connect
-			   : &current->config.blacklist_network_connect;
-	info.access_list_global = &sydbox->config.whitelist_network_connect_auto;
-	info.access_filter = &sydbox->config.filter_network;
-	info.can_mode = CAN_ALL_BUT_LAST;
-	info.arg_index = 4;
-	info.deny_errno = ECONNREFUSED;
-	if (current->subcall == PINK_SOCKET_SUBCALL_SENDTO)
-		info.decode_socketcall = true;
-
-	return box_check_socket(current, &info);
+	return sys_connect_or_sendto(current, 4);
 }
 
 int sys_getsockname(syd_proc_t *current)
