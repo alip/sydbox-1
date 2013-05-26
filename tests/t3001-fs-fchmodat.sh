@@ -121,7 +121,7 @@ test_expect_success_foreach_option 'fchmodat(AT_FDCWD, $noaccess/$file) returns 
 #    sydbox -- emily fchmodat -d "$d" -m 000 -e EACCES "$f" &&
 #    chmod 700 "$d" &&
 #    test_path_is_readable "$d"/"$f" &&
-#    test_path_is_writable "$d"/"$f" &&
+#    test_path_is_writable "$d"/"$f"
 #'
 
 test_expect_success_foreach_option 'fchmodat(AT_FDCWD, $nodir/$file) returns ENOTDIR' '
