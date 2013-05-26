@@ -3,6 +3,8 @@
 # Copyright 2010, 2012, 2013 Ali Polatel <alip@exherbo.org>
 # Released under the terms of the 3-clause BSD license
 
+# TODO: AT_SYMLINK_NOFOLLOW checks are missing!
+
 test_description='sandbox fchownat(2)'
 . ./test-lib.sh
 
