@@ -55,24 +55,25 @@ int path_decode(syd_proc_t *current, unsigned arg_index, char **buf)
  */
 int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf)
 {
-	int r;
-	long fd;
+	int r, fd;
+	long fd_l;
 	char *prefix = NULL;
 	pid_t pid = current->pid;
 
-	if ((r = syd_read_argument(current, arg_index, &fd)) < 0)
+	if ((r = syd_read_argument(current, arg_index, &fd_l)) < 0)
 		return r;
+	fd = (int)fd_l;
 
 	r = 0;
 	if (fd == AT_FDCWD) {
 		*buf = NULL;
 	} else if (fd < 0) {
-		log_check("invalid fd=%ld, skip /proc read", fd);
+		log_check("invalid fd=%d, skip /proc read", fd);
 		*buf = NULL;
 		r = -EBADF;
 	} else {
 		if ((r = proc_fd(pid, fd, &prefix)) < 0) {
-			log_warning("readlink /proc/%u/fd/%ld failed (errno:%d %s)",
+			log_warning("readlink /proc/%u/fd/%d failed (errno:%d %s)",
 				    pid, fd, -r, strerror(-r));
 			if (r == -ENOENT)
 				r = -EBADF; /* correct errno */
@@ -82,7 +83,7 @@ int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf)
 	}
 
 	if (r == 0)
-		log_check("fd=%ld maps to prefix=`%s'", fd,
+		log_check("fd=%d maps to prefix=`%s'", fd,
 			  fd == AT_FDCWD ? "AT_FDCWD" : prefix);
 
 	return r;
