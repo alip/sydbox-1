@@ -23,12 +23,20 @@
 # undef _FORTIFY_SOURCE
 #endif
 
+/*
+ * We need this macro for a few functions like syscall()
+ */
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE
+#endif
+
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -133,5 +141,6 @@ extern int test_mknodat(int argc, char **argv);
 extern int test_rename(int argc, char **argv);
 extern int test_renameat(int argc, char **argv);
 extern int test_rmdir(int argc, char **argv);
+extern int test_utimensat(int argc, char **argv);
 
 #endif /* !EMILY_H */

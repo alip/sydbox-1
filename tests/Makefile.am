@@ -52,16 +52,17 @@ TESTS= \
 	t3014-fs-umount.sh \
 	t3015-fs-umount2.sh \
 	t3016-fs-utime.sh \
-	t3017-fs-utimes.sh \
-	t3018-fs-unlink.sh \
-	t3019-fs-unlinkat.sh \
-	t3020-fs-link.sh \
-	t3021-fs-linkat.sh \
-	t3022-fs-rename.sh \
-	t3023-fs-renameat.sh \
-	t3024-fs-symlink.sh \
-	t3025-fs-symlinkat.sh \
-	t3026-fs-mount.sh
+	t3017-fs-utimensat.sh \
+	t3018-fs-utimes.sh \
+	t3019-fs-unlink.sh \
+	t3020-fs-unlinkat.sh \
+	t3021-fs-link.sh \
+	t3022-fs-linkat.sh \
+	t3023-fs-rename.sh \
+	t3024-fs-renameat.sh \
+	t3025-fs-symlink.sh \
+	t3026-fs-symlinkat.sh \
+	t3027-fs-mount.sh
 EXTRA_DIST+= \
 	     README \
 	     $(TESTS) \

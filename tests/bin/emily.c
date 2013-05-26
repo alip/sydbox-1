@@ -28,6 +28,7 @@ struct test {
 	{"rename",	test_rename},
 	{"renameat",	test_renameat},
 	{"rmdir",	test_rmdir},
+	{"utimensat",	test_utimensat},
 	{NULL,		NULL},
 };
 

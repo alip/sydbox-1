@@ -6,6 +6,18 @@
 #
 # Additions to test-lib-functions.sh
 #
+statmtime() {
+	case "$(uname -s)" in
+	Linux)
+		stat -c '%Y' "$@"
+		;;
+	*)
+		echo >&2 'error: i do not know how to check mtime on this system.'
+		exit 1
+		;;
+	esac
+}
+
 test_path_is_fifo () {
 	if ! [ -p "$1" ]
 	then
@@ -67,6 +79,24 @@ test_path_is_non_empty() {
 	then
 		echo "File $1 is empty. $*"
 		false
+	fi
+}
+
+test_path_has_mtime() {
+	local expected_mtime="$1" real_mtime=
+	shift
+
+	if ! [ -e "$1" ]
+	then
+		echo "File $1 does not exist. $*"
+		false
+	else
+		real_mtime=$(statmtime "$1")
+		if ! [ "$expected_mtime" = "$real_mtime" ]
+		then
+			echo "File $1 has unexpected mtime:$real_mtime (expected:$expected_mtime) $*"
+			false
+		fi
 	fi
 }
 

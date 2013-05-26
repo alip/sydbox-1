@@ -68,6 +68,7 @@ emily_SOURCES= \
 	       emily-mknod.c \
 	       emily-rename.c \
 	       emily-rmdir.c \
+	       emily-utimensat.c \
 	       $(top_srcdir)/src/util.c
 emily_CFLAGS= \
 	      $(DEFS) \
