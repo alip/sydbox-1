@@ -18,7 +18,7 @@
 #include <arpa/inet.h>
 #include <sys/un.h>
 #include <pinktrace/pink.h>
-#include "canonicalize.h"
+#include "bsd-compat.h"
 #include "log.h"
 #include "sockmap.h"
 
@@ -35,7 +35,7 @@ int sys_bind(syd_proc_t *current)
 
 	init_sysinfo(&info);
 	info.arg_index = 1;
-	info.can_mode = CAN_ALL_BUT_LAST;
+	info.rmode = RPATH_NOLAST;
 	info.deny_errno = EADDRNOTAVAIL;
 	if (current->subcall == PINK_SOCKET_SUBCALL_BIND)
 		info.decode_socketcall = true;
@@ -155,7 +155,7 @@ static int sys_connect_or_sendto(syd_proc_t *current, unsigned arg_index)
 			   : &current->config.blacklist_network_connect;
 	info.access_list_global = &sydbox->config.whitelist_network_connect_auto;
 	info.access_filter = &sydbox->config.filter_network;
-	info.can_mode = CAN_ALL_BUT_LAST;
+	info.rmode = RPATH_NOLAST;
 	info.arg_index = arg_index;
 	info.deny_errno = ECONNREFUSED;
 	if (sub_connect(current, arg_index) || sub_sendto(current, arg_index))

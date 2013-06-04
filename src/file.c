@@ -76,7 +76,7 @@ int basename_alloc(const char *path, char **buf)
  * - allocates the string itself.
  * - appends a zero-byte at the end.
  */
-int readlink_alloc(const char *path, char **buf)
+ssize_t readlink_alloc(const char *path, char **buf)
 {
 	size_t l = 100;
 
@@ -98,7 +98,7 @@ int readlink_alloc(const char *path, char **buf)
 		if ((size_t)n < l - 1) {
 			c[n] = 0;
 			*buf = c;
-			return 0;
+			return n;
 		}
 
 		free(c);
@@ -159,4 +159,19 @@ int empty_dir(const char *dname)
 	}
 	closedir(d);
 	return r;
+}
+
+/* reset access and modification time */
+int utime_reset(const char *path, const struct stat *st)
+{
+	if (!st)
+		return 0;
+
+	struct timespec ts[2] = {
+		{ .tv_sec = st->st_atim.tv_sec, .tv_nsec = st->st_atim.tv_nsec },
+		{ .tv_sec = st->st_mtim.tv_sec, .tv_nsec = st->st_mtim.tv_nsec }
+	};
+	utimensat(AT_FDCWD, path, ts, AT_SYMLINK_NOFOLLOW);
+	/* ignore error here (due to possible `noatime' mount option) */
+	return 0;
 }

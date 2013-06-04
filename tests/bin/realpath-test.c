@@ -1,5 +1,5 @@
 /*
- * Check program for sydbox/canonicalize.c
+ * Check program for sydbox/realpath.c
  * Copyright 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
@@ -16,12 +16,12 @@ static struct option long_options[] = {
 static void usage(FILE *outfile, int exitcode)
 {
 	fprintf(outfile, "\
-Usage: canontest [-hcr] -e errno -m <mode> <path>\
+Usage: realpath-test [-hcr] -e errno -m <mode> <path>\
 \n\
 Options:\n\
 -h, --help                  -- Show help\n\
 -e <errno, --errno=<errno>  -- Expected errno\n\
--m <mode>, --mode=<mode>    -- One of `existing', `all_but_last', `missing' and `nolinks'\n\
+-m <mode>, --mode=<mode>    -- One of `exist', `nolast' and `nofollow'\n\
 -c, --compare               -- Compare result with realpath(3)\n\
 -r, --realpath              -- Output result of realpath(3)\n\
 ");
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	bool test_realpath = false;
 	int test_cmp = 0;
 	int test_errno = 0;
-	int test_mode = -1;
+	short test_mode = -1;
 	const char *test_file;
 	char *path1, *path2;
 	int save_errno1, save_errno2;
@@ -53,14 +53,12 @@ int main(int argc, char **argv)
 		case 'm':
 			if (test_mode == -1)
 				test_mode = 0;
-			if (!strcmp(optarg, "existing"))
-				test_mode |= CAN_EXISTING;
-			else if (!strcmp(optarg, "all_but_last"))
-				test_mode |= CAN_ALL_BUT_LAST;
-			else if (!strcmp(optarg, "missing"))
-				test_mode |= CAN_MISSING;
-			else if (!strcmp(optarg, "nolinks"))
-				test_mode |= CAN_NOLINKS;
+			if (!strcmp(optarg, "exist"))
+				test_mode = RPATH_EXIST;
+			else if (!strcmp(optarg, "nolast"))
+				test_mode = RPATH_NOLAST;
+			else if (!strcmp(optarg, "nofollow"))
+				test_mode |= RPATH_NOFOLLOW;
 			else
 				usage(stderr, 2);
 			break;
@@ -88,7 +86,7 @@ int main(int argc, char **argv)
 
 	if (test_errno != 0) {
 		/* Expecting failure */
-		r = canonicalize_filename_mode(test_file, (can_mode_t)test_mode, &path1);
+		r = realpath_mode(test_file, test_mode, &path1);
 		if (r < 0)
 			return expect_errno(-r, test_errno);
 		return expect_errno(0, test_errno);
@@ -112,7 +110,7 @@ int main(int argc, char **argv)
 		save_errno1 = errno;
 
 		path2 = NULL;
-		r = canonicalize_filename_mode(test_file, (can_mode_t)test_mode, &path2);
+		r = realpath_mode(test_file, test_mode, &path2);
 		save_errno2 = -r;
 
 		if (expect_errno(save_errno2, save_errno1) == EXIT_FAILURE)
@@ -124,17 +122,17 @@ int main(int argc, char **argv)
 		    || (strcmp(path1, path2) != 0)) {
 			fprintf(stderr, "realpath(`%s', %#x) -> `%s'\n",
 				test_file, test_mode, path1);
-			fprintf(stderr, "canon_f_m(`%s', %#x) -> `%s'\n",
+			fprintf(stderr, "realpath_mode(`%s', %#x) -> `%s'\n",
 				test_file, test_mode, path2);
 			return EXIT_FAILURE;
 		}
 		return EXIT_SUCCESS;
 	}
 
-	r = canonicalize_filename_mode(test_file, (can_mode_t)test_mode, &path1);
+	r = realpath_mode(test_file, test_mode, &path1);
 	if (r < 0) {
-		fprintf(stderr, "canon_f_m(`%s', %#x) -> NULL (errno:%d %s)\n",
-			test_file, (can_mode_t)test_mode,
+		fprintf(stderr, "realpath_mode(`%s', %#x) -> NULL (errno:%d %s)\n",
+			test_file, test_mode,
 			-r, strerror(-r));
 		return EXIT_FAILURE;
 	}

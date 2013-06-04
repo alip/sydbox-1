@@ -53,7 +53,7 @@
 
 #include <pinktrace/pink.h>
 
-#include "canonicalize.h"
+#include "bsd-compat.h"
 #include "file.h"
 #include "util.h"
 

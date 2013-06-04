@@ -34,7 +34,7 @@ TESTS= \
 	t0000-basic.sh \
 	t0001-sydbox.sh \
 	t2000-path-wildmatch.sh \
-	t2001-path-canonicalize.sh \
+	t2001-path-realpath.sh \
 	t3000-fs-chmod.sh \
 	t3001-fs-fchmodat.sh \
 	t3002-fs-chown.sh \

@@ -85,11 +85,13 @@ noinst_HEADERS+= \
 sydbox_SOURCES+= \
 		 wildmatch.c
 
-# Imported from gnulib!
+# (partly modified and) imported from FreeBSD's lib/libc/stdlib
 noinst_HEADERS+= \
-		 canonicalize.h
+		 bsd-compat.h
 sydbox_SOURCES+= \
-		 canonicalize.c
+		 realpath.c \
+		 strlcat.c \
+		 strlcpy.c
 
 sydbox_LDADD= \
 	      $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la

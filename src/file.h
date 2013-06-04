@@ -13,14 +13,18 @@
 #define FILE_H 1
 
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 bool empty_line(const char *s);
 char *truncate_nl(char *s);
 
 int basename_alloc(const char *path, char **buf);
-int readlink_alloc(const char *path, char **buf);
-int read_one_line_file(const char *fn, char **line);
+ssize_t readlink_alloc(const char *path, char **buf);
 
 int empty_dir(const char *dname);
+int utime_reset(const char *path, const struct stat *st);
+
+int read_one_line_file(const char *fn, char **line);
 
 #endif /* !FILE_H */

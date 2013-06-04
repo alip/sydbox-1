@@ -17,14 +17,14 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pinktrace/pink.h>
-#include "canonicalize.h"
+#include "bsd-compat.h"
 #include "log.h"
 #include "sockmap.h"
 
 struct open_info {
 	bool may_read;
 	bool may_write;
-	can_mode_t can_mode;
+	short rmode;
 	enum syd_stat syd_mode;
 };
 
@@ -124,7 +124,7 @@ int sys_faccessat(syd_proc_t *current)
 	info.safe = true;
 	info.deny_errno = EACCES;
 	if (flags & AT_SYMLINK_NOFOLLOW)
-		info.can_mode |= CAN_NOLINKS;
+		info.rmode |= RPATH_NOFOLLOW;
 
 	return check_access(current, &info, mode);
 }
@@ -135,10 +135,10 @@ static void init_open_info(syd_proc_t *current, int flags, struct open_info *inf
 	assert(current);
 	assert(info);
 
-	info->can_mode = flags & O_CREAT ? CAN_ALL_BUT_LAST : CAN_EXISTING;
+	info->rmode = flags & O_CREAT ? RPATH_NOLAST : RPATH_EXIST;
 	info->syd_mode = 0;
 	if (flags & O_EXCL) {
-		if (info->can_mode == CAN_EXISTING) {
+		if (info->rmode == RPATH_EXIST) {
 			/* Quoting open(2):
 			 * In general, the behavior of O_EXCL is undefined if
 			 * it is used without O_CREAT.  There is one exception:
@@ -156,7 +156,7 @@ static void init_open_info(syd_proc_t *current, int flags, struct open_info *inf
 			 * - When both O_CREAT and O_EXCL are specified,
 			 *   symbolic links are not followed.
 			 */
-			info->can_mode |= CAN_NOLINKS;
+			info->rmode |= RPATH_NOFOLLOW;
 			info->syd_mode |= SYD_STAT_NOEXIST;
 		}
 	}
@@ -192,9 +192,9 @@ static void init_open_info(syd_proc_t *current, int flags, struct open_info *inf
 		info->may_read = info->may_write = false;
 	}
 
-	log_trace("check_flags(0x%x) = read:%s write:%s can_mode:0x%x syd_mode:0x%x",
+	log_trace("check_flags(0x%x) = read:%s write:%s rmode:0x%x syd_mode:0x%x",
 		  flags, strbool(info->may_read), strbool(info->may_write),
-		  info->can_mode, info->syd_mode);
+		  info->rmode, info->syd_mode);
 }
 
 static int check_open(syd_proc_t *current, sysinfo_t *info, bool may_write)
@@ -234,7 +234,7 @@ int sys_open(syd_proc_t *current)
 
 	init_open_info(current, flags, &open_info);
 	init_sysinfo(&info);
-	info.can_mode = open_info.can_mode;
+	info.rmode = open_info.rmode;
 	info.syd_mode = open_info.syd_mode;
 
 	return check_open(current, &info, open_info.may_write);
@@ -258,7 +258,7 @@ int sys_openat(syd_proc_t *current)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	info.can_mode = open_info.can_mode;
+	info.rmode = open_info.rmode;
 	info.syd_mode = open_info.syd_mode;
 
 	return check_open(current, &info, open_info.may_write);
@@ -293,7 +293,7 @@ int sys_fchmodat(syd_proc_t *current)
 	info.at_func = true;
 	info.arg_index = 1;
 	if (flags & AT_SYMLINK_NOFOLLOW)
-		info.can_mode |= CAN_NOLINKS;
+		info.rmode |= RPATH_NOFOLLOW;
 
 	return box_check_path(current, &info);
 }
@@ -318,7 +318,7 @@ int sys_lchown(syd_proc_t *current)
 		return 0;
 
 	init_sysinfo(&info);
-	info.can_mode |= CAN_NOLINKS;
+	info.rmode |= RPATH_NOFOLLOW;
 
 	return box_check_path(current, &info);
 }
@@ -340,7 +340,7 @@ int sys_fchownat(syd_proc_t *current)
 	info.at_func = true;
 	info.arg_index = 1;
 	if (flags & AT_SYMLINK_NOFOLLOW)
-		info.can_mode |= CAN_NOLINKS;
+		info.rmode |= RPATH_NOFOLLOW;
 
 	return box_check_path(current, &info);
 }
@@ -353,7 +353,7 @@ int sys_creat(syd_proc_t *current)
 		return 0;
 
 	init_sysinfo(&info);
-	info.can_mode = CAN_ALL_BUT_LAST;
+	info.rmode = RPATH_NOLAST;
 
 	return box_check_path(current, &info);
 }
@@ -407,7 +407,7 @@ int sys_mkdir(syd_proc_t *current)
 		return 0;
 
 	init_sysinfo(&info);
-	info.can_mode = CAN_ALL_BUT_LAST;
+	info.rmode = RPATH_NOLAST;
 	info.syd_mode = SYD_STAT_NOEXIST;
 
 	return box_check_path(current, &info);
@@ -423,7 +423,7 @@ int sys_mkdirat(syd_proc_t *current)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	info.can_mode = CAN_ALL_BUT_LAST;
+	info.rmode = RPATH_NOLAST;
 	info.syd_mode = SYD_STAT_NOEXIST;
 
 	return box_check_path(current, &info);
@@ -437,7 +437,7 @@ int sys_mknod(syd_proc_t *current)
 		return 0;
 
 	init_sysinfo(&info);
-	info.can_mode = CAN_ALL_BUT_LAST;
+	info.rmode = RPATH_NOLAST;
 	info.syd_mode = SYD_STAT_NOEXIST;
 
 	return box_check_path(current, &info);
@@ -453,7 +453,7 @@ int sys_mknodat(syd_proc_t *current)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	info.can_mode = CAN_ALL_BUT_LAST;
+	info.rmode = RPATH_NOLAST;
 	info.syd_mode = SYD_STAT_NOEXIST;
 
 	return box_check_path(current, &info);
@@ -467,7 +467,7 @@ int sys_rmdir(syd_proc_t *current)
 		return 0;
 
 	init_sysinfo(&info);
-	info.can_mode |= CAN_NOLINKS;
+	info.rmode |= RPATH_NOFOLLOW;
 	info.syd_mode |= SYD_STAT_EMPTYDIR;
 
 	return box_check_path(current, &info);
@@ -527,7 +527,7 @@ int sys_umount2(syd_proc_t *current)
 	if ((r = syd_read_argument(current, 1, &flags)) < 0)
 		return r;
 	if (flags & UMOUNT_NOFOLLOW)
-		info.can_mode |= CAN_NOLINKS;
+		info.rmode |= RPATH_NOFOLLOW;
 #endif
 
 	return box_check_path(current, &info);
@@ -575,7 +575,7 @@ int sys_utimensat(syd_proc_t *current)
 	info.null_ok = true;
 	info.arg_index = 1;
 	if (flags & AT_SYMLINK_NOFOLLOW)
-		info.can_mode |= CAN_NOLINKS;
+		info.rmode |= RPATH_NOFOLLOW;
 
 	return box_check_path(current, &info);
 }
@@ -603,7 +603,7 @@ int sys_unlink(syd_proc_t *current)
 		return 0;
 
 	init_sysinfo(&info);
-	info.can_mode |= CAN_NOLINKS;
+	info.rmode |= RPATH_NOFOLLOW;
 	info.syd_mode |= SYD_STAT_NOTDIR;
 
 	return box_check_path(current, &info);
@@ -629,10 +629,10 @@ int sys_unlinkat(syd_proc_t *current)
 	 * behaves like rmdir(2), otherwise it behaves like unlink(2).
 	 */
 	if (flags & AT_REMOVEDIR) { /* rmdir */
-		info.can_mode |= CAN_NOLINKS;
+		info.rmode |= RPATH_NOFOLLOW;
 		info.syd_mode |= SYD_STAT_EMPTYDIR;
 	} else { /* unlink */
-		info.can_mode |= CAN_NOLINKS;
+		info.rmode |= RPATH_NOFOLLOW;
 		info.syd_mode |= SYD_STAT_NOTDIR;
 	}
 
@@ -659,12 +659,12 @@ int sys_link(syd_proc_t *current)
 	 * implementation-dependent whether or not oldpath is dereferenced if
 	 * it is a symbolic link.
 	 */
-	info.can_mode |= CAN_NOLINKS;
+	info.rmode |= RPATH_NOFOLLOW;
 
 	r = box_check_path(current, &info);
 	if (!r && !sysdeny(current)) {
 		info.arg_index = 1;
-		info.can_mode = CAN_ALL_BUT_LAST;
+		info.rmode = RPATH_NOLAST;
 		info.syd_mode = SYD_STAT_NOEXIST;
 		return box_check_path(current, &info);
 	}
@@ -689,13 +689,13 @@ int sys_linkat(syd_proc_t *current)
 	info.at_func = true;
 	info.arg_index = 1;
 	if (!(flags & AT_SYMLINK_FOLLOW))
-		info.can_mode |= CAN_NOLINKS;
+		info.rmode |= RPATH_NOFOLLOW;
 
 	r = box_check_path(current, &info);
 	if (!r && !sysdeny(current)) {
 		info.arg_index = 3;
-		info.can_mode &= ~CAN_MODE_MASK;
-		info.can_mode |= CAN_ALL_BUT_LAST;
+		info.rmode &= ~RPATH_MASK;
+		info.rmode |= RPATH_NOLAST;
 		info.syd_mode = SYD_STAT_NOEXIST;
 		return box_check_path(current, &info);
 	}
@@ -714,14 +714,14 @@ int sys_rename(syd_proc_t *current)
 
 	mode = 0;
 	init_sysinfo(&info);
-	info.can_mode = CAN_NOLINKS;
+	info.rmode = RPATH_NOFOLLOW;
 	info.ret_mode = &mode;
 
 	r = box_check_path(current, &info);
 	if (!r && !sysdeny(current)) {
 		info.arg_index = 1;
-		info.can_mode &= ~CAN_MODE_MASK;
-		info.can_mode |= CAN_ALL_BUT_LAST;
+		info.rmode &= ~RPATH_MASK;
+		info.rmode |= RPATH_NOLAST;
 		if (S_ISDIR(mode)) {
 			/* oldpath specifies a directory.
 			 * In this case, newpath must either not exist,
@@ -748,14 +748,14 @@ int sys_renameat(syd_proc_t *current)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 1;
-	info.can_mode = CAN_NOLINKS;
+	info.rmode = RPATH_NOFOLLOW;
 	info.ret_mode = &mode;
 
 	r = box_check_path(current, &info);
 	if (!r && !sysdeny(current)) {
 		info.arg_index = 3;
-		info.can_mode &= ~CAN_MODE_MASK;
-		info.can_mode |= CAN_ALL_BUT_LAST;
+		info.rmode &= ~RPATH_MASK;
+		info.rmode |= RPATH_NOLAST;
 		if (S_ISDIR(mode)) {
 			/* oldpath specifies a directory.
 			 * In this case, newpath must either not exist,
@@ -779,7 +779,7 @@ int sys_symlink(syd_proc_t *current)
 
 	init_sysinfo(&info);
 	info.arg_index = 1;
-	info.can_mode = CAN_ALL_BUT_LAST | CAN_NOLINKS;
+	info.rmode = RPATH_NOLAST | RPATH_NOFOLLOW;
 	info.syd_mode = SYD_STAT_NOEXIST;
 
 	return box_check_path(current, &info);
@@ -795,7 +795,7 @@ int sys_symlinkat(syd_proc_t *current)
 	init_sysinfo(&info);
 	info.at_func = true;
 	info.arg_index = 2;
-	info.can_mode = CAN_ALL_BUT_LAST | CAN_NOLINKS;
+	info.rmode = RPATH_NOLAST | RPATH_NOFOLLOW;
 	info.syd_mode = SYD_STAT_NOEXIST;
 
 	return box_check_path(current, &info);
@@ -821,7 +821,7 @@ int sys_lsetxattr(syd_proc_t *current)
 		return 0;
 
 	init_sysinfo(&info);
-	info.can_mode |= CAN_NOLINKS;
+	info.rmode |= RPATH_NOFOLLOW;
 
 	return box_check_path(current, &info);
 }
@@ -846,7 +846,7 @@ int sys_lremovexattr(syd_proc_t *current)
 		return 0;
 
 	init_sysinfo(&info);
-	info.can_mode |= CAN_NOLINKS;
+	info.rmode |= RPATH_NOFOLLOW;
 
 	return box_check_path(current, &info);
 }

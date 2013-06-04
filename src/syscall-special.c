@@ -22,7 +22,7 @@
 #include <pinktrace/pink.h>
 #include "pathdecode.h"
 #include "proc.h"
-#include "canonicalize.h"
+#include "bsd-compat.h"
 #include "log.h"
 #include "sockmap.h"
 
@@ -87,7 +87,7 @@ int sys_execve(syd_proc_t *current)
 	else if (r < 0)
 		return deny(current, errno);
 
-	r = box_resolve_path(path, current->cwd, current->pid, CAN_EXISTING, &abspath);
+	r = box_resolve_path(path, current->cwd, current->pid, RPATH_EXIST, &abspath);
 	if (r < 0) {
 		err_access(-r, "resolve_path(`%s')", path);
 		r = deny(current, -r);

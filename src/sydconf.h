@@ -8,6 +8,8 @@
 #ifndef SYDCONF_H
 #define SYDCONF_H
 
+#include <limits.h>
+
 /* Configuration */
 #ifndef SYDBOX_PATH_MAX
 # if defined(PATH_MAX)
@@ -16,6 +18,16 @@
 #  define SYDBOX_PATH_MAX (MAXPATHLEN+1)
 # else
 #  define SYDBOX_PATH_MAX (256+1)
+# endif
+#endif
+
+#ifndef SYDBOX_MAXSYMLINKS
+# if defined(SYMLOOP_MAX)
+#  define SYDBOX_MAXSYMLINKS SYMLOOP_MAX
+# elif defined(MAXSYMLINKS)
+#  define SYDBOX_MAXSYMLINKS MAXSYMLINKS
+# else
+#  define SYDBOX_MAXSYMLINKS 32
 # endif
 #endif
 

@@ -474,8 +474,8 @@ typedef struct {
 
 	/* NULL argument does not cause -EFAULT (only valid for `at_func') */
 	bool null_ok;
-	/* Canonicalize mode */
-	can_mode_t can_mode;
+	/* Mode for realpath_mode() */
+	unsigned rmode;
 	/* Stat mode */
 	enum syd_stat syd_mode;
 
@@ -555,7 +555,7 @@ void config_parse_spec(const char *filename) PINK_GCC_ATTR((nonnull(1)));
 void callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid,
-		     can_mode_t can_mode, char **res);
+		     unsigned rmode, char **res);
 int box_match_path(const slist_t *patterns, const char *path, const char **match);
 int box_check_path(syd_proc_t *current, sysinfo_t *info);
 int box_check_socket(syd_proc_t *current, sysinfo_t *info);

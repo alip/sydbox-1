@@ -41,20 +41,22 @@ noinst_HEADERS+= \
 		 tap.h \
 		 emily.h
 
-canontest_SOURCES= \
-		   canontest.c \
-		   $(top_srcdir)/src/canonicalize.c \
-		   $(top_srcdir)/src/file.c \
-		   $(top_srcdir)/src/util.c
-canontest_CFLAGS= \
-		  $(DEFS) \
-		  $(AM_CFLAGS) \
-		  -I$(top_builddir) \
-		  -I$(top_srcdir) \
-		  -I$(top_srcdir)/src
-canontest_LDADD= \
-		 $(abs_top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
-canontest_LDFLAGS= -no-install
+realpath_test_SOURCES= \
+		       realpath-test.c \
+		       $(top_srcdir)/src/realpath.c \
+		       $(top_srcdir)/src/strlcat.c \
+		       $(top_srcdir)/src/strlcpy.c \
+		       $(top_srcdir)/src/file.c \
+		       $(top_srcdir)/src/util.c
+realpath_test_CFLAGS= \
+		      $(DEFS) \
+		      $(AM_CFLAGS) \
+		      -I$(top_builddir) \
+		      -I$(top_srcdir) \
+		      -I$(top_srcdir)/src
+realpath_test_LDADD= \
+		     $(abs_top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
+realpath_test_LDFLAGS= -no-install
 
 emily_SOURCES= \
 	       emily.c \
@@ -90,7 +92,7 @@ wildtest_CFLAGS= \
 
 check_PROGRAMS= \
 		emily \
-		canontest \
+		realpath-test \
 		wildtest
 
 check_SCRIPTS= \

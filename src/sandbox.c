@@ -18,7 +18,7 @@
 #include <arpa/inet.h>
 #include <pinktrace/pink.h>
 #include "macro.h"
-#include "canonicalize.h"
+#include "bsd-compat.h"
 #include "file.h"
 #include "log.h"
 #include "path.h"
@@ -117,7 +117,7 @@ static void box_report_violation_sock(syd_proc_t *current,
 }
 
 static int box_resolve_path_helper(const char *abspath, pid_t tid,
-				   can_mode_t can_mode, char **res)
+				   unsigned rmode, char **res)
 {
 	int r;
 	char *p;
@@ -125,7 +125,7 @@ static int box_resolve_path_helper(const char *abspath, pid_t tid,
 	p = NULL;
 	/* Special case for /proc/self.
 	 * This symbolic link resolves to /proc/$tid, if we let
-	 * canonicalize_filename_mode() resolve this, we'll get a different result.
+	 * realpath_mode() resolve this, we'll get a different result.
 	 */
 	if (startswith(abspath, "/proc/self")) {
 		const char *tail = abspath + STRLEN_LITERAL("/proc/self");
@@ -136,12 +136,12 @@ static int box_resolve_path_helper(const char *abspath, pid_t tid,
 		log_check("proc_self(%u) = `/proc/%u'", tid, tid);
 	}
 
-	r = canonicalize_filename_mode(p ? p : abspath, can_mode, res);
+	r = realpath_mode(p ? p : abspath, rmode, res);
 	if (r == 0)
-		log_check("canonicalize(`%s') = `%s'", p ? p : abspath, *res);
+		log_check("realpath(`%s') = `%s'", p ? p : abspath, *res);
 	else
-		log_check("canonicalize(`%s') = NULL can_mode=%d errno:%d|%s| (%s)",
-			  p ? p : abspath, can_mode,
+		log_check("realpath(`%s') = NULL rmode=%d errno:%d|%s| (%s)",
+			  p ? p : abspath, rmode,
 			  -r, pink_name_errno(-r, 0), strerror(-r));
 
 	if (p)
@@ -151,7 +151,7 @@ static int box_resolve_path_helper(const char *abspath, pid_t tid,
 }
 
 int box_resolve_path(const char *path, const char *prefix, pid_t tid,
-		     can_mode_t can_mode, char **res)
+		     unsigned rmode, char **res)
 {
 	int r;
 	char *abspath;
@@ -167,7 +167,7 @@ int box_resolve_path(const char *path, const char *prefix, pid_t tid,
 	if (!abspath)
 		return -errno;
 
-	r = box_resolve_path_helper(abspath, tid, can_mode, res);
+	r = box_resolve_path_helper(abspath, tid, rmode, res);
 	free(abspath);
 	return r;
 }
@@ -275,7 +275,7 @@ static int box_check_ftype(const char *path, sysinfo_t *info)
 {
 	bool call_lstat;
 	int deny_errno, stat_ret;
-	int can_flags = info->can_mode & ~CAN_MODE_MASK;
+	short rflags = info->rmode & ~RPATH_MASK;
 	struct stat buf;
 
 	assert(info);
@@ -283,7 +283,7 @@ static int box_check_ftype(const char *path, sysinfo_t *info)
 	if (!info->syd_mode && !info->ret_mode)
 		return 0;
 
-	call_lstat = !!(can_flags & CAN_NOLINKS);
+	call_lstat = !!(rflags & RPATH_NOFOLLOW);
 	stat_ret = call_lstat ? lstat(path, &buf) : stat(path, &buf);
 
 	if (stat_ret < 0)
@@ -348,10 +348,10 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 	deny_errno = info->deny_errno ? info->deny_errno : EPERM;
 
 	log_check("arg_index=%u cwd:`%s'", info->arg_index, current->cwd);
-	log_check("at_func=%s null_ok=%s can_mode=%d syd_mode=0x%x",
+	log_check("at_func=%s null_ok=%s rmode=%u syd_mode=0x%x",
 		  info->at_func ? "yes" : "no",
 		  info->null_ok ? "yes" : "no",
-		  info->can_mode, info->syd_mode);
+		  info->rmode, info->syd_mode);
 	log_check("safe=%s deny-errno=%d|%s| access_mode=%s",
 		  strbool(info->safe),
 		  deny_errno, pink_name_errno(deny_errno, 0),
@@ -404,7 +404,7 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 
 	/* Step 3: resolve path */
 	if ((r = box_resolve_path(path, prefix ? prefix : current->cwd,
-				  pid, info->can_mode, &abspath)) < 0) {
+				  pid, info->rmode, &abspath)) < 0) {
 		err_access(-r, "resolve_path(`%s', `%s')",
 			   prefix ? prefix : current->cwd, abspath);
 		r = deny(current, -r);
@@ -542,7 +542,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 		/* Non-abstract UNIX socket, resolve the path. */
 		r = box_resolve_path(psa->u.sa_un.sun_path,
 				     current->cwd, pid,
-				     info->can_mode, &abspath);
+				     info->rmode, &abspath);
 		if (r < 0) {
 			err_access(-r, "resolve_path(`%s', `%s')",
 				   current->cwd, abspath);
