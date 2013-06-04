@@ -111,7 +111,7 @@ test_expect_success_foreach_option 'utimensat(AT_FDCWD, $noaccess/$file, 0s, 0) 
     f="$(unique_file)" &&
     mkdir "$d" &&
     touch "$d"/"$f" &&
-    m=$(statmtime "$d"/"$f") &&
+    m=$(stat_mtime "$d"/"$f") &&
     test_when_finished "chmod 700 $d" && chmod 000 "$d" &&
     sydbox -- emily utimensat -d cwd -t 0 -e EACCES "$d"/"$f" &&
     chmod 700 "$d" &&
@@ -124,7 +124,7 @@ test_expect_success_foreach_option 'utimensat(AT_FDCWD, $noaccess/$file, 0s, 0) 
 #    f="$(unique_file)" &&
 #    mkdir "$d" &&
 #    touch "$d"/"$f" &&
-#    m=$(statmtime "$d"/"$f" &&
+#    m=$(stat_mtime "$d"/"$f" &&
 #    chmod 000 "$d" &&
 #    sydbox -- emily utimensat -d "$d" -t 0 -e EACCES "$f" &&
 #    chmod 700 "$d" &&
@@ -184,7 +184,7 @@ test_expect_success_foreach_option SYMLINKS 'utimensat($dir, $symlink-circular, 
 test_expect_success_foreach_option 'deny utimensat(-1, $abspath, 0s, 0) with EPERM' '
     f="$(unique_file)" &&
     touch "$f" &&
-    m=$(statmtime "$f") &&
+    m=$(stat_mtime "$f") &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily utimensat -e EPERM -d null -t 0 "$HOME_RESOLVED"/"$f" &&
@@ -194,7 +194,7 @@ test_expect_success_foreach_option 'deny utimensat(-1, $abspath, 0s, 0) with EPE
 test_expect_success_foreach_option 'deny utimensat(AT_FDCWD, $file, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
-    m=$(statmtime "$f") &&
+    m=$(stat_mtime "$f") &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily utimensat -e EPERM -d cwd -t 0 "$f" &&
@@ -212,7 +212,7 @@ test_expect_success_foreach_option 'deny utimensat(AT_FDCWD, $symlink-file, 0s, 
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
-    m=$(statmtime "$f") &&
+    m=$(stat_mtime "$f") &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -223,7 +223,7 @@ test_expect_success_foreach_option 'deny utimensat(AT_FDCWD, $symlink-file, 0s, 
 test_expect_success_foreach_option 'deny utimensat($fd, $file, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
-    m=$(statmtime "$f") &&
+    m=$(stat_mtime "$f") &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
         -- emily utimensat -e EPERM -d "$HOME" -t 0 "$f" &&
@@ -240,7 +240,7 @@ test_expect_success_foreach_option SYMLINKS 'deny utimensat($fd, $symlink-file, 
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
-    m=$(statmtime "$f") &&
+    m=$(stat_mtime "$f") &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:deny \
@@ -251,7 +251,7 @@ test_expect_success_foreach_option SYMLINKS 'deny utimensat($fd, $symlink-file, 
 test_expect_success_foreach_option 'blacklist utimensat(-1, $abspath, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
-    m=$(statmtime "$f") &&
+    m=$(stat_mtime "$f") &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -262,7 +262,7 @@ test_expect_success_foreach_option 'blacklist utimensat(-1, $abspath, 0s, 0)' '
 test_expect_success_foreach_option 'blacklist utimensat(AT_FDCWD, $file, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
-    m=$(statmtime "$f") &&
+    m=$(stat_mtime "$f") &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -282,7 +282,7 @@ test_expect_success_foreach_option SYMLINKS 'blacklist utimensat(AT_FDCWD, $syml
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
-    m=$(statmtime "$f") &&
+    m=$(stat_mtime "$f") &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
@@ -294,7 +294,7 @@ test_expect_success_foreach_option SYMLINKS 'blacklist utimensat(AT_FDCWD, $syml
 test_expect_success_foreach_option 'blacklist utimensat($fd, $file, 0s, 0)' '
     f="$(unique_file)" &&
     touch "$f" &&
-    m=$(statmtime "$f") &&
+    m=$(stat_mtime "$f") &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \
         -m "blacklist/write+$HOME_RESOLVED/**" \
@@ -314,7 +314,7 @@ test_expect_success_foreach_option SYMLINKS 'blacklist utimensat($fd, $symlink-f
     f="$(unique_file)" &&
     l="$(unique_link)" &&
     touch "$f" &&
-    m=$(statmtime "$f") &&
+    m=$(stat_mtime "$f") &&
     ln -sf "$f" "$l" &&
     test_must_violate sydbox \
         -m core/sandbox/write:allow \

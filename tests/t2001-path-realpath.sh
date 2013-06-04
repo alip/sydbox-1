@@ -5,23 +5,6 @@
 test_description='test pathname canonicalization'
 . ./test-lib.sh
 
-statinode() {
-	case "$(uname -s)" in
-	Linux)
-		stat -c '%i' "$@"
-		;;
-	Darwin)
-		stat -f '%i' "$@"
-		;;
-	FreeBSD)
-		stat -f '%i' "$@"
-		;;
-	*)
-		ls -di "$@" | cut -d ' ' -f 1
-		;;
-	esac
-}
-
 test_expect_success SYMLINKS setup-symlinks '
     ln -sf self self &&
     ln -sf loop0 loop1 &&
@@ -172,8 +155,8 @@ test_expect_success SYMLINKS 'realpath: possible loop bug' '
 test_expect_success 'realpath: leading // is honoured correctly' '
     l0="$(unique_link)"
     ln -sf //.//../.. $l0 &&
-    statinode / > inode0 &&
-    statinode // > inode1 &&
+    stat_inode / > inode0 &&
+    stat_inode // > inode1 &&
     realpath-test -m exist -r //. > result1 &&
     realpath-test -m exist //. > result2 &&
     realpath-test -m exist -r "$TRASH_DIRECTORY_R/$l0" > result3 &&

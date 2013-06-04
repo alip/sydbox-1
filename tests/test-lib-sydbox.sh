@@ -6,7 +6,7 @@
 #
 # Additions to test-lib-functions.sh
 #
-statmtime() {
+stat_mtime() {
 	case "$(uname -s)" in
 	Linux)
 		stat -c '%Y' "$@"
@@ -14,6 +14,23 @@ statmtime() {
 	*)
 		echo >&2 'error: i do not know how to check mtime on this system.'
 		exit 1
+		;;
+	esac
+}
+
+stat_inode() {
+	case "$(uname -s)" in
+	Linux)
+		stat -c '%i' "$@"
+		;;
+	Darwin)
+		stat -f '%i' "$@"
+		;;
+	FreeBSD)
+		stat -f '%i' "$@"
+		;;
+	*)
+		ls -di "$@" | cut -d ' ' -f 1
 		;;
 	esac
 }
