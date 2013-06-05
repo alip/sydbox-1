@@ -473,7 +473,7 @@ AC_SUBST([PINK_HAVE_NETLINK])
 AM_CONDITIONAL(PINK_HAVE_NETLINK, test x"$PINK_HAVE_NETLINK" = x"1")
 
 dnl extra CFLAGS
-SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wno-unused-parameter"
+SYDBOX_WANTED_CFLAGS="-pedantic -W -Wall -Wextra -Wshadow -Wno-unused-parameter"
 for flag in $SYDBOX_WANTED_CFLAGS ; do
 	AX_CHECK_COMPILER_FLAGS([$flag], [SYDBOX_CFLAGS="$SYDBOX_CFLAGS $flag"],)
 done

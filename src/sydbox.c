@@ -507,7 +507,6 @@ static void startup_child(char **argv)
 	if (pid < 0)
 		die_errno("can't fork");
 	else if (pid == 0) {
-		int r;
 #ifdef WANT_SECCOMP
 		if (sydbox->config.use_seccomp) {
 			if ((r = seccomp_init()) < 0) {
