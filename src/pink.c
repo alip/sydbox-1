@@ -166,14 +166,12 @@ ssize_t syd_read_string(syd_proc_t *current, long addr, char *dest, size_t len)
 			save_errno = panic(current);
 		errno = save_errno;
 		return -1;
-	} else if ((size_t)r == len) {
-		return r;
-	} else { /* partial read */
-		dest[r - 1] = '\0';
-		/* err_trace(save_errno, "read_string() partial read"); */
+	} else if ((size_t)r <= len) {
+		/* partial read? */
 		errno = 0;
-		return r;
+		dest[r] = '\0';
 	}
+	return r;
 }
 
 int syd_read_socket_argument(syd_proc_t *current, bool decode_socketcall,
