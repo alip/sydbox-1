@@ -108,7 +108,7 @@ test_path_has_mtime() {
 		echo "File $1 does not exist. $*"
 		false
 	else
-		real_mtime=$(statmtime "$1")
+		real_mtime=$(stat_mtime "$1")
 		if ! [ "$expected_mtime" = "$real_mtime" ]
 		then
 			echo "File $1 has unexpected mtime:$real_mtime (expected:$expected_mtime) $*"
