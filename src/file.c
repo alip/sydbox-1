@@ -30,7 +30,9 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #include "file.h"
+#include "bsd-compat.h"
 
 #define NEWLINE "\n\r"
 
@@ -49,6 +51,21 @@ char *truncate_nl(char *s)
 	return s;
 }
 
+int basename_copy(const char *path, char *dest, size_t len)
+{
+	char *c, *bname;
+
+	c = strdup(path);
+	if (!c)
+		return -ENOMEM;
+
+	bname = basename(c);
+	strlcpy(dest, bname, len);
+	free(c);
+
+	return 0;
+}
+
 int basename_alloc(const char *path, char **buf)
 {
 	char *c, *bname, *retbuf;
@@ -60,16 +77,24 @@ int basename_alloc(const char *path, char **buf)
 		return -ENOMEM;
 
 	bname = basename(c);
-
 	retbuf = strdup(bname);
-	if (!retbuf) {
-		free(c);
-		return -ENOMEM;
-	}
-
 	free(c);
+
+	if (!retbuf)
+		return -ENOMEM;
 	*buf = retbuf;
 	return 0;
+}
+
+ssize_t readlink_copy(const char *path, char *dest, size_t len)
+{
+	ssize_t n;
+
+	n = readlink(path, dest, len - 1);
+	if (n < 0)
+		return -errno;
+	dest[n] = 0;
+	return n;
 }
 
 /* readlink() wrapper which:
