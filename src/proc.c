@@ -80,7 +80,7 @@ int proc_cwd(pid_t pid, char **buf)
 
 	r = readlink_alloc(linkcwd, &cwd);
 	free(linkcwd);
-	if (r)
+	if (r < 0)
 		return r;
 
 	if ((c = proc_deleted(cwd)))
@@ -107,7 +107,7 @@ int proc_fd(pid_t pid, int dfd, char **buf)
 
 	r = readlink_alloc(linkdir, &fd);
 	free(linkdir);
-	if (r == 0)
+	if (r >= 0)
 		*buf = fd;
 	return r;
 }
