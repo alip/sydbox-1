@@ -55,6 +55,10 @@ static int stat_mode(const char *path, const struct stat_mode *mode,
 					if (mode->nofollow)
 						sb.st_mode = 0;
 					goto out;
+				} else if (save_errno == ENOENT ||
+					   save_errno == ELOOP) {
+					sb.st_mode = 0;
+					goto out;
 				}
 			} else { /* if (mode->rmode == RPATH_EXIST) */
 				if (mode->nofollow)
@@ -217,23 +221,16 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 					free(resolved);
 					return slen; /* negated errno */
 				}
-			} else {
-				if ((r = basename_copy(resolved, symlink, SYDBOX_PATH_MAX)) < 0) {
-					free(resolved);
-					return -r;
-				} else {
-					slen = strlen(symlink);
+				if (symlink[0] == '/') {
+					resolved[1] = 0;
+					resolved_len = 1;
+				} else if (resolved_len > 1) {
+					/* Strip the last path component. */
+					resolved[resolved_len - 1] = '\0';
+					q = strrchr(resolved, '/') + 1;
+					*q = '\0';
+					resolved_len = q - resolved;
 				}
-			}
-			if (symlink[0] == '/') {
-				resolved[1] = 0;
-				resolved_len = 1;
-			} else if (resolved_len > 1) {
-				/* Strip the last path component. */
-				resolved[resolved_len - 1] = '\0';
-				q = strrchr(resolved, '/') + 1;
-				*q = '\0';
-				resolved_len = q - resolved;
 			}
 
 			/*

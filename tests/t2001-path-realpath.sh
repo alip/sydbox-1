@@ -177,6 +177,16 @@ test_expect_success 'realpath: leading // is honoured correctly' '
     fi
 '
 
+test_expect_success SYMLINKS 'realpath: non existing file under directory symlink' '
+    d0=d0-"$(unique_dir)" &&
+    d1=d1-"$(unique_dir)" &&
+    f=no-"$(unique_file)" &&
+    l="$(unique_link)" &&
+    mkdir "$d0" && mkdir "$d1" &&
+    ln -sf "../$d0" "$d1/$l" &&
+    realpath-test -m nolast -m nofollow -e ERRNO_0 "$TRASH_DIRECTORY_R/$d1/$l/$f"
+'
+
 #test_expect_success SYMLINKS 'deny stat($self-symlink) with ELOOP' '
 #    sydbox -- emily stat -e ELOOP self
 #'
