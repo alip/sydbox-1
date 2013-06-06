@@ -19,6 +19,55 @@
 #include "bsd-compat.h"
 #include "file.h"
 
+struct stat_mode {
+	unsigned rmode;
+	unsigned nofollow;
+	bool last_node;
+};
+
+static int stat_mode(const char *path, const struct stat_mode *mode,
+		     struct stat *buf)
+{
+	int r, save_errno;
+	struct stat sb, sb_r;
+
+	r = lstat(path, &sb);
+	if (r < 0) {
+		if (mode->rmode == RPATH_NOLAST && mode->last_node) {
+			sb.st_mode = 0;
+			goto out;
+		}
+		return -errno;
+	}
+	if (S_ISLNK(sb.st_mode)) {
+		if (mode->nofollow && mode->last_node) {
+			sb.st_mode = 0;
+			goto out;
+		}
+
+		r = stat(path, &sb_r);
+		save_errno = errno;
+		utime_reset(path, &sb);
+
+		if (r < 0) {
+			if (mode->rmode == RPATH_NOLAST) {
+				if (mode->last_node) {
+					if (mode->nofollow)
+						sb.st_mode = 0;
+					goto out;
+				}
+			} else { /* if (mode->rmode == RPATH_EXIST) */
+				if (mode->nofollow)
+					goto out;
+			}
+			return -save_errno;
+		}
+	}
+out:
+	*buf = sb;
+	return 0;
+}
+
 /*
  * Find the real name of path, by removing all ".", ".." and symlink
  * components.  Returns (resolved) on success, or (NULL) on failure,
@@ -29,6 +78,7 @@
 int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 {
 	struct stat sb;
+	struct stat_mode sm;
 	char *p, *q, *s;
 	size_t left_len, resolved_len;
 	unsigned symlinks;
@@ -36,7 +86,6 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 	char left[SYDBOX_PATH_MAX], next_token[SYDBOX_PATH_MAX];
 	char symlink[SYDBOX_PATH_MAX];
 
-	int save_errno;
 	short flags;
 	bool nofollow;
 	char *resolved;
@@ -106,10 +155,16 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 			 * the prefix for any (rare) "//" or "/\0"
 			 * occurrence to not implement lookahead.
 			 */
-			if (lstat(resolved, &sb) != 0) {
-				r = -errno;
+			sm.rmode = mode;
+			sm.nofollow = nofollow;
+			sm.last_node = true;
+			if ((r = stat_mode(resolved, &sm, &sb)) < 0) {
 				free(resolved);
 				return r;
+			}
+			if (sb.st_mode == 0 && mode == RPATH_NOLAST) {
+				r = 0;
+				break;
 			}
 			if (!S_ISDIR(sb.st_mode)) {
 				free(resolved);
@@ -141,28 +196,15 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 			free(resolved);
 			return -ENAMETOOLONG;
 		}
-		r = lstat(resolved, &sb);
-		if (r < 0) {
-			save_errno = errno;
-			if (mode == RPATH_EXIST) {
-				if (!nofollow ||
-				    (p != NULL || (left != NULL &&
-						   left[strspn(left, "/")]))) {
-					free(resolved);
-					return -save_errno;
-				}
-			} else /* if (mode == RPATH_NOLAST) */ {
-				if (save_errno == ENOENT &&
-				    (p == NULL || left == NULL ||
-				     left[strspn(left, "/")] == '\0')) {
-					r = 0;
-					break;
-				}
-				free(resolved);
-				return -save_errno;
-			}
-			continue;
-		}
+
+		sm.rmode = mode;
+		sm.nofollow = nofollow;
+		if (p == NULL || left == NULL || left[strspn(left, "/")] == '\0')
+			sm.last_node = true;
+		else
+			sm.last_node = false;
+		if ((r = stat_mode(resolved, &sm, &sb)) < 0)
+			return r;
 		if (S_ISLNK(sb.st_mode)) {
 			if (symlinks++ > SYDBOX_MAXSYMLINKS) {
 				free(resolved);
