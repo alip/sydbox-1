@@ -890,10 +890,10 @@
     <title>Logging</title>
 
     <para>
-      Sydbox has a simple logging system. There are two log targets, <option>core/log/file</option> and
-      <option>core/log/console_fd</option>. Messages matching level <option>core/log/level</option> are logged to
-      <option>core/log/file</option>. Messages matching level <option>core/log/console_level</option> are logged to
-      <option>core/log/console_fd</option>. Below is a list of log levels and corresponding integers representing these
+      Sydbox has a simple logging system. There are two log targets, <option>log/file</option> and
+      <option>log/console_fd</option>. Messages matching level <option>log/level</option> are logged to
+      <option>log/file</option>. Messages matching level <option>log/console_level</option> are logged to
+      <option>log/console_fd</option>. Below is a list of log levels and corresponding integers representing these
       levels:
     </para>
 
