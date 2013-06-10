@@ -85,6 +85,12 @@ noinst_HEADERS+= \
 sydbox_SOURCES+= \
 		 wildmatch.c
 
+# Imported from zsh!
+noinst_HEADERS+= \
+		 toolong.h
+sydbox_SOURCES+= \
+		 toolong.c
+
 # (partly modified and) imported from FreeBSD's lib/libc/stdlib
 noinst_HEADERS+= \
 		 bsd-compat.h

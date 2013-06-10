@@ -581,6 +581,18 @@
         </varlistentry>
 
         <varlistentry>
+          <term><option id="core-trace-use_toolong_hack">core/trace/use_toolong_hack</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>
+              A boolean specifying whether sydbox should use a hack to determine working directories under a path longer
+              than <constant>PATH_MAX</constant>.
+              Defaults to <varname>false</varname>.
+            </para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
           <term><option id="core-match-case-sensitive">core/match/case_sensitive</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>

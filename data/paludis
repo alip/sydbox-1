@@ -23,6 +23,7 @@ core/trace/magic_lock:off
 core/trace/interrupt:while_wait
 core/trace/use_seccomp:true
 core/trace/use_seize:true
+core/trace/use_toolong_hack:true
 
 core/match/case_sensitive:true
 core/match/no_wildcard:prefix

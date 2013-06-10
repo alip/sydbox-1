@@ -57,7 +57,7 @@ int sysx_chdir(syd_proc_t *current)
 		return 0;
 	}
 
-	if ((r = proc_cwd(current->pid, &cwd)) < 0) {
+	if ((r = proc_cwd(current->pid, sydbox->config.use_toolong_hack, &cwd)) < 0) {
 		err_warning(-r, "proc_cwd failed");
 		return panic(current);
 	}

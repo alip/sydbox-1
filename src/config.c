@@ -29,6 +29,7 @@ void config_init(void)
 	sydbox->config.trace_interrupt = TRACE_INTR_WHILE_WAIT;
 	sydbox->config.use_seccomp = false;
 	sydbox->config.use_seize = false;
+	sydbox->config.use_toolong_hack = false;
 	sydbox->config.whitelist_per_process_directories = true;
 	sydbox->config.whitelist_successful_bind = true;
 	sydbox->config.whitelist_unsupported_socket_families = true;

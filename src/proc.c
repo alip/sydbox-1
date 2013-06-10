@@ -36,6 +36,7 @@
 #include "macro.h"
 #include "log.h"
 #include "util.h"
+#include "toolong.h"
 
 /* Useful macros */
 #ifndef MAX
@@ -67,7 +68,7 @@ static char *proc_deleted(const char *path)
 /*
  * resolve /proc/$pid/cwd
  */
-int proc_cwd(pid_t pid, char **buf)
+int proc_cwd(pid_t pid, bool use_toolong_hack, char **buf)
 {
 	int r;
 	char *c, *cwd, *linkcwd;
@@ -79,15 +80,27 @@ int proc_cwd(pid_t pid, char **buf)
 		return -ENOMEM;
 
 	r = readlink_alloc(linkcwd, &cwd);
-	free(linkcwd);
-	if (r < 0)
-		return r;
+	if (use_toolong_hack && r == -ENAMETOOLONG) {
+		if ((r = chdir(linkcwd)) < 0) {
+			r = -errno;
+			goto out;
+		}
+		if ((cwd = getcwd_long()) == NULL) {
+			r = -ENOMEM;
+			goto out;
+		}
+	} else if (r < 0) {
+		goto out;
+	}
 
 	if ((c = proc_deleted(cwd)))
 		cwd[c - cwd] = '\0';
 
 	*buf = cwd;
-	return 0;
+	/* r = 0; already so */
+out:
+	free(linkcwd);
+	return r;
 }
 
 /*

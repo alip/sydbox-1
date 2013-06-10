@@ -79,6 +79,17 @@ int magic_query_trace_use_seize(syd_proc_t *current)
 #endif
 }
 
+int magic_set_trace_use_toolong_hack(const void *val, syd_proc_t *current)
+{
+	sydbox->config.use_toolong_hack = PTR_TO_BOOL(val);
+	return MAGIC_RET_OK;
+}
+
+int magic_query_trace_use_toolong_hack(syd_proc_t *current)
+{
+	return sydbox->config.use_toolong_hack;
+}
+
 int magic_set_trace_magic_lock(const void *val, syd_proc_t *current)
 {
 	int l;

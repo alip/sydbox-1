@@ -272,6 +272,7 @@ AC_CHECK_FUNCS([ntohs],         [], [AC_MSG_ERROR([I need ntohs])])
 AC_CHECK_FUNCS([getservbyname], [], [AC_MSG_ERROR([I need getservbyname])])
 AC_CHECK_FUNCS([execvpe],       [], [AC_MSG_ERROR([I need execvpe])])
 AC_CHECK_FUNCS([pipe2])
+AC_CHECK_FUNCS([fchdir])
 
 dnl check for declarations
 AC_CHECK_DECL([MAX_ARG_STRLEN],  [], [AC_MSG_ERROR([I need MAX_ARG_STRLEN])],  [#include <linux/binfmts.h>])

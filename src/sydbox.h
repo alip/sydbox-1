@@ -225,6 +225,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE_INTERRUPT,
 	MAGIC_KEY_CORE_TRACE_USE_SECCOMP,
 	MAGIC_KEY_CORE_TRACE_USE_SEIZE,
+	MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK,
 
 	MAGIC_KEY_LOG,
 	MAGIC_KEY_LOG_FILE,
@@ -419,6 +420,7 @@ typedef struct {
 	enum trace_interrupt trace_interrupt;
 	bool use_seccomp;
 	bool use_seize;
+	bool use_toolong_hack;
 
 	char *log_file;
 
@@ -623,6 +625,8 @@ int magic_set_trace_use_seccomp(const void *val, syd_proc_t *current);
 int magic_query_trace_use_seccomp(syd_proc_t *current);
 int magic_set_trace_use_seize(const void *val, syd_proc_t *current);
 int magic_query_trace_use_seize(syd_proc_t *current);
+int magic_set_trace_use_toolong_hack(const void *val, syd_proc_t *current);
+int magic_query_trace_use_toolong_hack(syd_proc_t *current);
 int magic_set_whitelist_ppd(const void *val, syd_proc_t *current);
 int magic_query_whitelist_ppd(syd_proc_t *current);
 int magic_set_whitelist_sb(const void *val, syd_proc_t *current);

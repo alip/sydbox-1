@@ -319,6 +319,14 @@ static const struct key key_table[] = {
 		.set    = magic_set_trace_use_seize,
 		.query  = magic_query_trace_use_seize,
 	},
+	[MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK] = {
+		.name   = "use_toolong_hack",
+		.lname  = "core.trace.use_toolong_hack",
+		.parent = MAGIC_KEY_CORE_TRACE,
+		.type   = MAGIC_TYPE_BOOLEAN,
+		.set    = magic_set_trace_use_toolong_hack,
+		.query  = magic_query_trace_use_toolong_hack,
+	},
 
 	[MAGIC_KEY_LOG_FILE] = {
 		.name   = "file",
