@@ -3,8 +3,8 @@
         "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
 
 <!--
-   Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
-   Distributed under the terms of the GNU General Public License v3 or later
+   Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
+   Distributed under the terms of the 3-clause BSD license.
 -->
 
 <refentry id="sydfmt" lang="en">
@@ -90,7 +90,7 @@
   <refsect1 id="copyright">
     <title>COPYRIGHT</title>
 
-    <para>Copyright &#169; 2012 Ali Polatel <email>alip@exherbo.org</email></para>
+    <para>Copyright &#169; 2012, 2013 Ali Polatel <email>alip@exherbo.org</email></para>
   </refsect1>
 </refentry>
 <!-- vim: set ts=2 sts=2 sw=2 et tw=120 nowrap spell spelllang=en : -->

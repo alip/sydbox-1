@@ -4,7 +4,7 @@
 
 <!--
    Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
-   Distributed under the terms of the GNU General Public License v3 or later
+   Distributed under the terms of the 3-clause BSD license.
 -->
 
 <refentry id="sydbox" lang="en">
@@ -328,9 +328,10 @@
           <term><option id="core-sandbox-exec">core/sandbox/exec</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <varname>false</varname></para>
+            <para>query: <varname>yes</varname></para>
             <para>
               A string specifying how <function>execve</function><manvolnum>2</manvolnum> system call should be sandboxed.
-              Defaults to <varname>off</varname>. This value may be queried.
               See <xref linkend="execve-sandboxing"/> for more information.
             </para>
           </listitem>
@@ -340,9 +341,10 @@
           <term><option id="core-sandbox-read">core/sandbox/read</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <varname>false</varname></para>
+            <para>query: <varname>yes</varname></para>
             <para>
               A string specifying how read sandboxing should be done.
-              Defaults to <varname>off</varname>. This value may be queried.
               See <xref linkend="read-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -351,9 +353,10 @@
           <term><option id="core-sandbox-write">core/sandbox/write</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <varname>false</varname></para>
+            <para>query: <varname>yes</varname></para>
             <para>
               A string specifying how write sandboxing should be done.
-              Defaults to <varname>off</varname>. This value may be queried.
               See <xref linkend="write-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -362,9 +365,10 @@
           <term><option id="core-sandbox-network">core/sandbox/network</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <varname>false</varname></para>
+            <para>query: <varname>yes</varname></para>
             <para>
               A string specifying how network sandboxing should be done.
-              Defaults to <varname>off</varname>. This value may be queried.
               See <xref linkend="network-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -373,11 +377,11 @@
           <term><option id="core-whitelist-ppd">core/whitelist/per_process_directories</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>true</varname></para>
             <para>
               A boolean specifying whether per-process directories like
               <filename class="directory">/proc/<envar>$pid</envar></filename>
               should automatically be whitelisted.
-              Defaults to <varname>true</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -386,12 +390,13 @@
           <term><option id="core-whitelist-sb">core/whitelist/successful_bind</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>true</varname></para>
             <para>
               A boolean specifying whether the socket address arguments of successful
               <function>bind</function><manvolnum>2</manvolnum> calls should be whitelisted
               for <function>connect</function><manvolnum>2</manvolnum> and
               <function>sendto</function><manvolnum>2</manvolnum> system calls.
-              Defaults to <varname>true</varname>.</para>
+            </para>
             <note>
               <para>
                 These socket addresses are whitelisted globally and not per-process for
@@ -407,9 +412,9 @@
           <term><option id="core-whitelist-usf">core/whitelist/unsupported_socket_families</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>true</varname></para>
             <para>
               A boolean specifying whether unknown socket families should be allowed access when network sandboxing is on.
-              Defaults to <varname>true</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -418,6 +423,7 @@
           <term><option id="core-abort-decision">core/abort/decision</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <varname>contall</varname></para>
             <para>
               A string specifying the decision to take when tracing is aborted (i.e via <varname>SIGINT</varname>
               signal). Possible values are <varname>contall</varname> and <varname>killall</varname>.
@@ -430,6 +436,7 @@
           <term><option id="core-panic-decision">core/panic/decision</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <varname>kill</varname></para>
             <para>
               A string specifying the decision to take when a panic condition like an unknown error occurs.
               Possible values are <varname>cont</varname>, <varname>kill</varname>, <varname>contall</varname> and
@@ -444,6 +451,7 @@
           <term><option id="core-panic-exit_code">core/panic/exit_code</option></term>
           <listitem>
             <para>type: <type>integer</type></para>
+            <para>default: <varname>-1</varname></para>
             <para>
               This setting specifies the exit code if <option>core/panic/decision</option>
               is one of <varname>contall</varname> or <varname>killall</varname>.
@@ -455,6 +463,7 @@
           <term><option id="core-violation-decision">core/violation/decision</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <varname>deny</varname></para>
             <para>
               A string specifying the decision to take when an access violation occurs. Possible values are
               <varname>cont</varname>, <varname>kill</varname>, <varname>contall</varname>,
@@ -467,6 +476,7 @@
           <term><option id="core-violation-exit_code">core/violation/exit_code</option></term>
           <listitem>
             <para>type: <type>integer</type></para>
+            <para>default: <varname>-1</varname></para>
             <para>
               An integer specifying the exit code in case <option>core/violation/decision</option> is one of
               <varname>contall</varname> or <varname>killall</varname>.
@@ -481,11 +491,11 @@
           <term><option id="core-violation-raise_fail">core/violation/raise_fail</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>false</varname></para>
             <para>
               A boolean specifying whether certain failures like errors during path resolution should be treated as
               access violations. Note this is just a switch for reporting, the access to the system call is denied
               nevertheless.
-              Defaults to <varname>false</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -494,6 +504,7 @@
           <term><option id="core-violation-raise_safe">core/violation/raise_safe</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>false</varname></para>
             <para>
               A boolean specifying whether certain violations which are considered safe should be reported. For
               example, <function>mkdir</function><manvolnum>2</manvolnum> is a system call which fails when it can not
@@ -513,9 +524,9 @@
           <term><option id="core-trace-follow_fork">core/trace/follow_fork</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>true</varname></para>
             <para>
               A boolean specifying whether Sydbox should follow forks, vforks and clones.
-              Defaults to <varname>true</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -524,6 +535,7 @@
           <term><option id="core-trace-exit_wait_all">core/trace/exit_wait_all</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>true</varname></para>
             <para>
               A boolean specifying whether all traced processes should be waited to exit before Sydbox exits.
               If this is <varname>false</varname>, Sydbox resumes all the traced processes and exits when the eldest
@@ -536,6 +548,7 @@
           <term><option id="core-trace-magic_lock">core/trace/magic_lock</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <varname>off</varname></para>
             <para>
               A string specifying the state of the magic lock. Possible values are <varname>on</varname>,
               <varname>off</varname> and <varname>exec</varname>. If magic lock is <varname>on</varname> no magic
@@ -549,6 +562,7 @@
           <term><option id="core-trace-interrupt">core/trace/interrupt</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <varname>while_wait</varname></para>
             <para>
               A string specifying how to handle interrupts. Possible values are
               <varname>anywhere</varname> (don't block/ignore any signals),
@@ -564,10 +578,10 @@
           <term><option id="core-trace-use_seccomp">core/trace/use_seccomp</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>false</varname></para>
             <para>
               A boolean specifying whether seccomp user-mode filters should be used. This works only on Linux-3.5 or
               newer and sydbox must be compiled with the <option>--enable-seccomp</option> configure option.
-              Defaults to <varname>false</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -576,10 +590,10 @@
           <term><option id="core-trace-use_seize">core/trace/use_seize</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>false</varname></para>
             <para>
               A boolean specifying whether sydbox should use the new ptrace requests <constant>PTRACE_SEIZE</constant>
               and <constant>PTRACE_INTERRUPT</constant> to trace processes.
-              Defaults to <varname>false</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -588,10 +602,10 @@
           <term><option id="core-trace-use_toolong_hack">core/trace/use_toolong_hack</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>false</varname></para>
             <para>
               A boolean specifying whether sydbox should use a hack to determine working directories under a path longer
               than <constant>PATH_MAX</constant>.
-              Defaults to <varname>false</varname>.
             </para>
           </listitem>
         </varlistentry>
@@ -600,9 +614,9 @@
           <term><option id="core-match-case-sensitive">core/match/case_sensitive</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>
+            <para>default: <varname>true</varname></para>
             <para>
               A boolean specifying the case sensitivity of pattern matching.
-              Defaults to <varname>true</varname>, case sensitive matching.
             </para>
             <para>See <xref linkend="pattern-matching"/> for more information.</para>
           </listitem>
@@ -612,6 +626,7 @@
           <term><option id="core-match-no-wildcard">core/match/no_wildcard</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <varname>literal</varname></para>
             <para>
               A string specifying how to match patterns with no
               '<literal>*</literal>' or '<literal>?</literal>' characters in them.
@@ -629,9 +644,10 @@
           <term><option id="log-file">log/file</option></term>
           <listitem>
             <para>type: <type>string</type></para>
+            <para>default: <literal>(empty string)</literal></para>
             <para>
               A string specifying the path to the log file.
-              Defaults to <literal>""</literal> (empty string), no logging to file.
+              Empty string means no logging to file.
             </para>
             <para>See <xref linkend="logging"/> for more information.</para>
           </listitem>
@@ -641,6 +657,7 @@
           <term><option id="log-level">log/level</option></term>
           <listitem>
             <para> type: <type>integer</type></para>
+            <para>default: <varname>0</varname></para>
             <para>
               An integer specifying the log level.
               Defaults to 0, only fatal errors.
@@ -653,6 +670,7 @@
           <term><option id="log-console_fd">log/console_fd</option></term>
           <listitem>
             <para>type: <type>integer</type></para>
+            <para>default: <varname>2</varname> (stderr)</para>
             <para>
               An integer specifying the console log file descriptor.
               Defaults to 2, standard error.
@@ -665,6 +683,7 @@
           <term><option id="log-console-level">log/console_level</option></term>
           <listitem>
             <para> type: <type>integer</type></para>
+            <para>default: <varname>1</varname></para>
             <para>
               An integer specifying the log level.
               Defaults to 1, only fatal errors and access violations.
@@ -677,6 +696,7 @@
           <term><option id="exec-resume_if_match">exec/resume_if_match</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               This setting specifies a list of path patterns. If one of these patterns matches the resolved path of an
               <function>execve</function><manvolnum>2</manvolnum> system call, the process in question is resumed. See
@@ -710,6 +730,7 @@
           <term><option id="exec-kill_if_match">exec/kill_if_match</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               This setting specifies a list of path patterns. If one of these patterns matches the resolved path of an
               <function>execve</function><manvolnum>2</manvolnum> system call, the process in question is killed. See
@@ -732,6 +753,7 @@
           <term><option id="filter-exec">filter/exec</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of path patterns to filter for <function>execve</function><manvolnum>2</manvolnum>
               sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.
@@ -743,6 +765,7 @@
           <term><option id="filter-read">filter/read</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of path patterns to filter for read sandboxing. See
               <xref linkend="read-sandboxing"/> and <xref linkend="pattern-matching"/>.
@@ -754,6 +777,7 @@
           <term><option id="filter-write">filter/write</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of path patterns to filter for write sandboxing. See
               <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.
@@ -765,6 +789,7 @@
           <term><option id="filter-network">filter/network</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of network addresses to filter for network sandboxing. See
               <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.
@@ -776,6 +801,7 @@
           <term><option id="whitelist-exec">whitelist/exec</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of path patterns to whitelist for <function>execve</function><manvolnum>2</manvolnum>
               sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.
@@ -787,6 +813,7 @@
           <term><option id="whitelist-read">whitelist/read</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of path patterns to whitelist for read sandboxing. See <xref linkend="read-sandboxing"/>
               and <xref linkend="pattern-matching"/>.
@@ -798,6 +825,7 @@
           <term><option id="whitelist-write">whitelist/write</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of path patterns to whitelist for write sandboxing. See
               <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.
@@ -809,6 +837,7 @@
           <term><option id="whitelist-network-bind">whitelist/network/bind</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of network addresses to whitelist for <function>bind</function><manvolnum>2</manvolnum>
               network sandboxing. See <xref linkend="network-sandboxing"/> and
@@ -821,6 +850,7 @@
           <term><option id="whitelist-network-connect">whitelist/network/connect</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of network addresses to whitelist for
               <function>connect</function><manvolnum>2</manvolnum> and
@@ -834,6 +864,7 @@
           <term><option id="blacklist-exec">blacklist/exec</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of path patterns to blacklist for <function>execve</function><manvolnum>2</manvolnum>
               sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.
@@ -845,6 +876,7 @@
           <term><option id="blacklist-read">blacklist/read</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of path patterns to blacklist for read sandboxing.
               See <xref linkend="read-sandboxing"/> and <xref linkend="pattern-matching"/>.
@@ -856,6 +888,7 @@
           <term><option id="blacklist-write">blacklist/write</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of path patterns to blacklist for write sandboxing. See
               <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.
@@ -867,6 +900,7 @@
           <term><option id="blacklist-network-bind">blacklist/network/bind</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of network addresses to blacklist for <function>bind</function><manvolnum>2</manvolnum>
               network sandboxing. See <xref linkend="network-sandboxing"/> and
@@ -879,6 +913,7 @@
           <term><option id="blacklist-network-connect">blacklist/network/connect</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
+            <para>default: <literal>[empty array]</literal></para>
             <para>
               Specifies a list of network addresses to blacklist for
               <function>connect</function><manvolnum>2</manvolnum> and
@@ -892,6 +927,7 @@
           <term><option id="cmd-exec">cmd/exec</option></term>
           <listitem>
             <para>type: <type>command</type></para>
+            <para>default: <literal>none</literal></para>
             <para>
               Makes sydbox execute an external command without sandboxing. The program name and arguments must be
               separated with the <constant>US</constant> (unit separator, octal: 037) character.
@@ -1378,7 +1414,7 @@
   <refsect1 id="copyright">
     <title>COPYRIGHT</title>
 
-    <para>Copyright &#169; 2010, 2011, 2012 Ali Polatel <email>alip@exherbo.org</email></para>
+    <para>Copyright &#169; 2010, 2011, 2012, 2013 Ali Polatel <email>alip@exherbo.org</email></para>
   </refsect1>
 </refentry>
 <!-- vim: set ts=2 sts=2 sw=2 et tw=120 nowrap spell spelllang=en : -->
