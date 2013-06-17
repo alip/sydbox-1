@@ -254,6 +254,14 @@ static const sysentry_t syscall_entries[] = {
 	},
 
 	{
+		.name = "listxattr",
+		.enter = sys_listxattr,
+	},
+	{
+		.name = "llistxattr",
+		.enter = sys_llistxattr,
+	},
+	{
 		.name = "setxattr",
 		.enter = sys_setxattr,
 	},

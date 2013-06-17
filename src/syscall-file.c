@@ -28,6 +28,18 @@ struct open_info {
 	enum syd_stat syd_mode;
 };
 
+static void init_sysinfo_read(syd_proc_t *current, sysinfo_t *info)
+{
+	init_sysinfo(info);
+	info->access_mode = sandbox_read_deny(current)
+			    ? ACCESS_WHITELIST
+			    : ACCESS_BLACKLIST;
+	info->access_list = sandbox_read_deny(current)
+			    ? &current->config.whitelist_read
+			    : &current->config.blacklist_read;
+	info->access_filter = &sydbox->config.filter_read;
+}
+
 static bool check_access_mode(syd_proc_t *current, int mode)
 {
 	bool r;
@@ -56,24 +68,12 @@ static int check_access(syd_proc_t *current, sysinfo_t *info, int mode)
 		r = box_check_path(current, info);
 
 	if (!r && !sysdeny(current) && !sandbox_read_off(current) && mode & R_OK) {
-		info->access_mode = sandbox_read_deny(current)
-				    ? ACCESS_WHITELIST
-				    : ACCESS_BLACKLIST;
-		info->access_list = sandbox_read_deny(current)
-				    ? &current->config.whitelist_read
-				    : &current->config.blacklist_read;
-		info->access_filter = &sydbox->config.filter_read;
+		init_sysinfo_read(current, info);
 		r = box_check_path(current, info);
 	}
 
 	if (!r && !sysdeny(current) && !sandbox_exec_off(current) && mode & X_OK) {
-		info->access_mode = sandbox_exec_deny(current)
-				    ? ACCESS_WHITELIST
-				    : ACCESS_BLACKLIST;
-		info->access_list = sandbox_exec_deny(current)
-				    ? &current->config.whitelist_exec
-				    : &current->config.blacklist_exec;
-		info->access_filter = &sydbox->config.filter_exec;
+		init_sysinfo_read(current, info);
 		r = box_check_path(current, info);
 	}
 
@@ -205,13 +205,7 @@ static int check_open(syd_proc_t *current, sysinfo_t *info, bool may_write)
 		r = box_check_path(current, info);
 
 	if (!r && !sysdeny(current) && !sandbox_read_off(current)) {
-		info->access_mode = sandbox_read_deny(current)
-				    ? ACCESS_WHITELIST
-				    : ACCESS_BLACKLIST;
-		info->access_list = sandbox_read_deny(current)
-				    ? &current->config.whitelist_read
-				    : &current->config.blacklist_read;
-		info->access_filter = &sydbox->config.filter_read;
+		init_sysinfo_read(current, info);
 		r = box_check_path(current, info);
 	}
 
@@ -799,6 +793,33 @@ int sys_symlinkat(syd_proc_t *current)
 	info.syd_mode = SYD_STAT_NOEXIST;
 
 	return box_check_path(current, &info);
+}
+
+static int check_listxattr(syd_proc_t *current, bool nofollow)
+{
+	sysinfo_t info;
+
+	if (sandbox_read_off(current))
+		return 0;
+
+	init_sysinfo(&info);
+	info.deny_errno = ENOTSUP;
+	info.safe = true;
+	if (nofollow)
+		info.rmode |= RPATH_NOFOLLOW;
+	init_sysinfo_read(current, &info);
+
+	return box_check_path(current, &info);
+}
+
+int sys_listxattr(syd_proc_t *current)
+{
+	return check_listxattr(current, false);
+}
+
+int sys_llistxattr(syd_proc_t *current)
+{
+	return check_listxattr(current, true);
 }
 
 int sys_setxattr(syd_proc_t *current)

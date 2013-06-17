@@ -226,10 +226,11 @@
               This is a special type which is used to make sydbox execute certain functions.
               It is meant to be used as a basic interprocess communication to workaround some tracing limitations.
             </para>
-
             <note>
-              Magic commands of this type can only be used with the magic
-              <function>stat</function><manvolnum>2</manvolnum> system call.
+              <para>
+                Magic commands of this type can only be used with the magic
+                <function>stat</function><manvolnum>2</manvolnum> system call.
+              </para>
             </note>
           </listitem>
         </varlistentry>
@@ -498,9 +499,12 @@
               example, <function>mkdir</function><manvolnum>2</manvolnum> is a system call which fails when it can not
               create an existant directory. In this special case, sydbox denies the system call with
               <varname>EEXIST</varname> for consistency and does not raise an access violation in case
-              <option>core/violation/raise_safe</option> is set to <varname>false</varname>. Another example is the
+              <option>core/violation/raise_safe</option> is set to <varname>false</varname>. Other examples are, the
               <function>access</function><manvolnum>2</manvolnum> system call which is silently denied with
-              <varname>EACCES</varname> if this option is set to false.
+              <varname>EACCES</varname> and
+              <function>listxattr</function><manvolnum>2</manvolnum>, and
+              <function>llistxattr</function><manvolnum>2</manvolnum> system calls which are silently denied with
+              <varname>ENOTSUP</varname> if this option is set to false.
             </para>
           </listitem>
         </varlistentry>
@@ -677,15 +681,19 @@
               This setting specifies a list of path patterns. If one of these patterns matches the resolved path of an
               <function>execve</function><manvolnum>2</manvolnum> system call, the process in question is resumed. See
               <xref linkend="pattern-matching"/> for more information on wildmatch patterns.
-              <note>
+            </para>
+            <note>
+              <para>
                 The initial <function>execve</function><manvolnum>2</manvolnum> is <emphasis>not</emphasis> checked.
                 Thus, if sydbox is called like:
                 <programlisting>
                   $> sydbox -m exec/resume_if_match+/bin/sh -- /bin/sh
                 </programlisting>
                 she will <emphasis>not</emphasis> execute the <command>/bin/sh</command> command.
-              </note>
-              <note>
+              </para>
+            </note>
+            <note>
+              <para>
                 This functionality does <emphasis>not</emphasis> work with seccomp because once enabled, seccomp mode
                 can not be disabled. If sydbox detaches from the process all observed system calls of the process will
                 fail with <constant>ENOSYS</constant>. Due to this fact upon receiving this command when seccomp is
@@ -693,8 +701,8 @@
                 structures of the process. The process is <emphasis>ignored</emphasis>. However, this workaround may not
                 be enough for some cases, for example, when the process in question is a daemon and must resume its
                 execution after sydbox exits. For such cases use <command>cmd/exec</command>.
-              </note>
-            </para>
+              </para>
+            </note>
           </listitem>
         </varlistentry>
 
@@ -706,15 +714,17 @@
               This setting specifies a list of path patterns. If one of these patterns matches the resolved path of an
               <function>execve</function><manvolnum>2</manvolnum> system call, the process in question is killed. See
               <xref linkend="pattern-matching"/> for more information on wildmatch patterns.
-              <note>
+            </para>
+            <note>
+              <para>
                 The initial <function>execve</function><manvolnum>2</manvolnum> is <emphasis>not</emphasis> checked.
                 Thus, if sydbox is called like:
                 <programlisting>
                   $> sydbox -m exec/kill_if_match+/bin/sh -- /bin/sh
                 </programlisting>
                 she will execute the <command>/bin/sh</command> command.
-              </note>
-            </para>
+              </para>
+            </note>
           </listitem>
         </varlistentry>
 
@@ -889,8 +899,10 @@
               to do this. Consult its manual page for more information.
             </para>
             <note>
-              This command can only be used with the magic <function>stat</function><manvolnum>2</manvolnum>
-              system call.
+              <para>
+                This command can only be used with the magic <function>stat</function><manvolnum>2</manvolnum>
+                system call.
+              </para>
             </note>
           </listitem>
         </varlistentry>
@@ -1087,8 +1099,10 @@
       <para>List of observed system calls are:
       <function>access</function><manvolnum>2</manvolnum>,
       <function>faccessat</function><manvolnum>2</manvolnum>,
-      <function>open</function><manvolnum>2</manvolnum> and
+      <function>open</function><manvolnum>2</manvolnum>,
       <function>openat</function><manvolnum>2</manvolnum>,
+      <function>listxattr</function><manvolnum>2</manvolnum>, and
+      <function>llistxattr</function><manvolnum>2</manvolnum>.
       </para>
     </refsect2>
 
@@ -1267,43 +1281,43 @@
         Deny all reads and writes, allow read access to <filename>/dev/zero</filename> and write
         access to <filename>/dev/full</filename>. The executable dd is not static in this case thus
         allow access to /lib64 where it will load its shared libraries from as well:
-        <note>
+      </para>
+      <note>
+        <para>
           On the system of the author the <command>dd</command> binary links only to libraries under
           /lib64, use <command>ldd</command> to check the linked libraries on your system.
-        </note>
-        <note>
-          Note the quoting to escape shell expansion.
-        </note>
-        <programlisting>
-          $&gt; sydbox -E LC_ALL=POSIX \
-                       -m core/sandbox/read:deny \
-                       -m core/sandbox/write:deny \
-                       -m 'whitelist/read+/lib64/***' \
-                       -m whitelist/read+/dev/zero \
-                       -m whitelist/read+/dev/full \
-                       -- dd if=/dev/zero of=/dev/full count=1
-          dd: writing to '/dev/full': No space left on device
-          1+0 records in
-          0+0 records out
-          0 bytes (0 B) copied, 0.000447024 s, 0.0 kB/s
-          $&gt;
-        </programlisting>
-      </para>
+        </para>
+      </note>
+      <note>
+        <simpara>Note the quoting to escape shell expansion.</simpara>
+      </note>
+      <programlisting>
+        $&gt; sydbox -E LC_ALL=POSIX \
+                     -m core/sandbox/read:deny \
+                     -m core/sandbox/write:deny \
+                     -m 'whitelist/read+/lib64/***' \
+                     -m whitelist/read+/dev/zero \
+                     -m whitelist/read+/dev/full \
+                     -- dd if=/dev/zero of=/dev/full count=1
+        dd: writing to '/dev/full': No space left on device
+        1+0 records in
+        0+0 records out
+        0 bytes (0 B) copied, 0.000447024 s, 0.0 kB/s
+        $&gt;
+      </programlisting>
 
-      <para>
-        Kill common bittorrent applications:
-        <note>
-          The initial <function>execve</function> is <emphasis>not</emphasis> checked.
-        </note>
-        <programlisting>
-          $&gt; sydbox -E LC_ALL=POSIX \
-                       -m exec/kill_if_match+/usr/bin/ktorrent \
-                       -m exec/kill_if_match+/usr/bin/rtorrent \
-                       -- /bin/sh -c ktorrent
-          sydbox@3141592653: callback_exec: kill_if_match pattern=`/usr/bin/ktorrent' matches execve path=`/usr/bin/ktorrent'
-          sydbox@3141592653: callback_exec: killing process:3097 [abi:0 cwd:`/home/alip']
-        </programlisting>
-      </para>
+      <simpara>Kill common bittorrent applications:</simpara>
+      <note>
+        <para>The initial <function>execve</function> is <emphasis>not</emphasis> checked.</para>
+      </note>
+      <programlisting>
+        $&gt; sydbox -E LC_ALL=POSIX \
+                     -m exec/kill_if_match+/usr/bin/ktorrent \
+                     -m exec/kill_if_match+/usr/bin/rtorrent \
+                     -- /bin/sh -c ktorrent
+        sydbox@3141592653: callback_exec: kill_if_match pattern=`/usr/bin/ktorrent' matches execve path=`/usr/bin/ktorrent'
+        sydbox@3141592653: callback_exec: killing process:3097 [abi:0 cwd:`/home/alip']
+      </programlisting>
 
       <para>
         Execute a process without sandboxing so it will continue execution after sandboxing:

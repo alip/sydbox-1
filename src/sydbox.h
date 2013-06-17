@@ -726,6 +726,8 @@ int sys_rename(syd_proc_t *current);
 int sys_renameat(syd_proc_t *current);
 int sys_symlink(syd_proc_t *current);
 int sys_symlinkat(syd_proc_t *current);
+int sys_listxattr(syd_proc_t *current);
+int sys_llistxattr(syd_proc_t *current);
 int sys_setxattr(syd_proc_t *current);
 int sys_lsetxattr(syd_proc_t *current);
 int sys_removexattr(syd_proc_t *current);
