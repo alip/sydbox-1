@@ -554,3 +554,7 @@ test_lazy_prereq SYMLINKS '
 # When the tests are run as root, permission tests will report that
 # things are writable when they shouldn't be.
 test -w / || test_set_prereq SANITY
+
+# Support for certain ptrace() options
+test x"@PTRACE_SEIZE@" = x"0" || test_set_prereq PTRACE_SEIZE
+test x"@PTRACE_SECCOMP@" = x"0" || test_set_prereq PTRACE_SECCOMP

@@ -27,7 +27,7 @@ int magic_query_trace_follow_fork(syd_proc_t *current)
 
 int magic_set_trace_exit_wait_all(const void *val, syd_proc_t *current)
 {
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 	log_magic("seccomp support enabled, force exit_wait_all to true");
 	sydbox->config.exit_wait_all = true;
 #else
@@ -43,7 +43,7 @@ int magic_query_trace_exit_wait_all(syd_proc_t *current)
 
 int magic_set_trace_use_seccomp(const void *val, syd_proc_t *current)
 {
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 	sydbox->config.use_seccomp = PTR_TO_BOOL(val);
 #else
 	log_magic("seccomp support not enabled, ignoring magic");
@@ -53,7 +53,7 @@ int magic_set_trace_use_seccomp(const void *val, syd_proc_t *current)
 
 int magic_query_trace_use_seccomp(syd_proc_t *current)
 {
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 	return sydbox->config.use_seccomp;
 #else
 	return MAGIC_RET_NOT_SUPPORTED;

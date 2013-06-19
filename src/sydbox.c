@@ -33,7 +33,7 @@
 #include "proc.h"
 #include "log.h"
 #include "util.h"
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 #include "seccomp.h"
 #endif
 
@@ -70,7 +70,7 @@ static void about(void)
 	puts(")");
 
 	printf("Options:");
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 	printf(" seccomp:yes");
 #else
 	printf(" seccomp:no");
@@ -507,7 +507,7 @@ static void startup_child(char **argv)
 	if (pid < 0)
 		die_errno("can't fork");
 	else if (pid == 0) {
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp) {
 			if ((r = seccomp_init()) < 0) {
 				fprintf(stderr,
@@ -759,7 +759,7 @@ static int event_exec(syd_proc_t *current)
 
 	if (sydbox->wait_execve) {
 		log_info("[wait_execve]: execve() ptrace trap");
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp) {
 			log_info("[wait_execve]: sandboxing started");
 			sydbox->wait_execve = false;
@@ -793,7 +793,7 @@ static int event_exec(syd_proc_t *current)
 				  current->abspath, &match)) {
 		log_warning("resume_if_match pattern=`%s' matches execve path=`%s'",
 			    match, current->abspath);
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp) {
 			/*
 			 * Careful! Detaching here would cause the untraced
@@ -836,7 +836,7 @@ static int event_syscall(syd_proc_t *current)
 	int r = 0;
 
 	if (sydbox->wait_execve) {
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp)
 			return 0;
 #endif
@@ -855,7 +855,7 @@ static int event_syscall(syd_proc_t *current)
 		return 0;
 
 	if (entering(current)) {
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp &&
 		    (current->flags & SYD_STOP_AT_SYSEXIT)) {
 			log_trace("seccomp: skipping sysenter");
@@ -866,7 +866,7 @@ static int event_syscall(syd_proc_t *current)
 		if ((r = syd_regset_fill(current)) < 0)
 			return r; /* process dead */
 		r = sysenter(current);
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp &&
 		    !(current->flags & SYD_STOP_AT_SYSEXIT)) {
 			log_trace("seccomp: skipping sysexit, resuming");
@@ -884,7 +884,7 @@ static int event_syscall(syd_proc_t *current)
 	return r;
 }
 
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 static int event_seccomp(syd_proc_t *current)
 {
 	int r;
@@ -1144,7 +1144,7 @@ dont_switch_procs:
 				}
 			}
 #endif
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 			else if (event == PINK_EVENT_SECCOMP) {
 				if ((r = event_seccomp(current)) < 0)
 					continue; /* process dead */
@@ -1323,7 +1323,7 @@ int main(int argc, char **argv)
 				   PINK_TRACE_OPTION_VFORK |
 				   PINK_TRACE_OPTION_CLONE);
 	if (sydbox->config.use_seccomp) {
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 		ptrace_options |= PINK_TRACE_OPTION_SECCOMP;
 		ptrace_default_step = SYD_STEP_RESUME;
 #else

@@ -13,7 +13,11 @@ noinst_SCRIPTS=
 
 test-lib.sh: test-lib.sh.in
 	$(AM_V_GEN)
-	$(AM_V_at)$(SED) -e "s:@TOP_BUILDDIR@:$(abs_top_builddir):g" $< > $@
+	$(AM_V_at)$(SED) \
+		-e "s:@TOP_BUILDDIR@:$(abs_top_builddir):g" \
+		-e "s:@PTRACE_SEIZE@:$(PTRACE_SUPPORTS_SEIZE):g" \
+		-e "s:@PTRACE_SECCOMP@:$(SYDBOX_HAVE_SECCOMP):g" \
+		$< > $@
 CLEANFILES+= test-lib.sh
 
 noinst_DATA+= wildtest.txt

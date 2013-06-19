@@ -159,10 +159,29 @@ test_expect_success_foreach_option() {
 		IFS=' ' read -r use_seize use_seccomp <<EOF
 $choice
 EOF
+		prereq=""
+		if test "$argc" = 3
+		then
+			prereq="$arg1"
+		fi
+		if test "$use_seize" = 1
+		then
+			test -z "$prereq" || prereq="${prereq},"
+			prereq="${prereq}PTRACE_SEIZE"
+		fi
+		if test "$use_seccomp" = 1
+		then
+			test -z "$prereq" || prereq="${prereq},"
+			prereq="${prereq}PTRACE_SECCOMP"
+		fi
+
 		suffix="[seize=$use_seize seccomp:$use_seccomp]"
 		if test "$argc" = 3
 		then
-			set -- "$arg1" "$arg2 $suffix" "$arg3"
+			set -- "$prereq" "$arg2 $suffix" "$arg3"
+		elif test -n "$prereq"
+		then
+			set -- "$prereq" "$arg1 $suffix" "$arg2"
 		else
 			set -- "$arg1 $suffix" "$arg2"
 		fi

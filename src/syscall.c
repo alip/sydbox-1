@@ -16,7 +16,7 @@
 #include "macro.h"
 #include "log.h"
 #include "proc.h"
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 #include "seccomp.h"
 #endif
 
@@ -314,7 +314,7 @@ void sysinit(void)
 	}
 }
 
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 static size_t make_seccomp_filter(int abi, uint32_t **syscalls)
 {
 	unsigned i, j;

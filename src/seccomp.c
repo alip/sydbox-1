@@ -16,7 +16,7 @@
 #include "seccomp.h"
 #include <errno.h>
 
-#ifdef WANT_SECCOMP
+#if SYDBOX_HAVE_SECCOMP
 #include "macro.h"
 
 #include <stdio.h>

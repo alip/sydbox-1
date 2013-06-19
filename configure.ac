@@ -373,6 +373,17 @@ AC_CHECK_DECL([PTRACE_INTERRUPT],
 	      [PINK_HAVE_INTERRUPT=0],
 	      [include_linux_ptrace_h])
 
+case x"${PINK_HAVE_SEIZE}${PINK_HAVE_INTERRUPT}${PINK_HAVE_LISTEN}" in
+x111)
+	PTRACE_SUPPORTS_SEIZE=1
+	;;
+*)
+	PTRACE_SUPPORTS_SEIZE=0
+	;;
+esac
+AC_SUBST([PTRACE_SUPPORTS_SEIZE])
+AC_DEFINE([PTRACE_SUPPORTS_SEIZE], [$PTRACE_SUPPORTS_SEIZE], [ptrace() seize support])
+
 AC_SUBST([PINK_HAVE_GETREGSET])
 AC_SUBST([PINK_HAVE_SETREGSET])
 AC_SUBST([PINK_HAVE_SETUP])
@@ -414,13 +425,15 @@ if test x"$WANT_SECCOMP" = x"yes" ; then
 		      [#include <linux/seccomp.h>])
 	AC_CHECK_DECL([SECCOMP_RET_TRACE],   [], [AC_MSG_ERROR([I need SECCOMP_RET_TRACE for seccomp support!])],
 		      [#include <linux/seccomp.h>])
+	SYDBOX_HAVE_SECCOMP=1
+else
+	SYDBOX_HAVE_SECCOMP=0
 fi
 AC_MSG_CHECKING([for seccomp support])
 AC_MSG_RESULT([$WANT_SECCOMP])
-if test x"$WANT_SECCOMP" = x"yes" ; then
-	AC_DEFINE([WANT_SECCOMP], [1], [Enable experimental seccomp support])
-fi
 AM_CONDITIONAL([WANT_SECCOMP], test x"$WANT_SECCOMP" = x"yes")
+AC_DEFINE([SYDBOX_HAVE_SECCOMP], [$SYDBOX_HAVE_SECCOMP], [Enable seccomp support])
+AC_SUBST([SYDBOX_HAVE_SECCOMP])
 
 dnl check for IPV6 support
 AC_ARG_ENABLE([ipv6],
