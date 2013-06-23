@@ -1,7 +1,9 @@
 /*
  * sydbox/pathmatch.c
  *
- * Copyright (c) 2012 Ali Polatel <alip@exherbo.org>
+ * Extends wildmatch for sydbox specific use cases.
+ *
+ * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -47,14 +49,13 @@ int pathmatch_expand(const char *pattern, char ***buf)
 	int i, bufsiz;
 	char *s, *p, *cp;
 	char **list;
+	bool literal = false;
 
 	assert(buf);
 
 	p = xstrdup(pattern);
-	if (match_no_wild == NO_WILDCARD_PREFIX
-	    && !strchr(p, '*') && !strchr(p, '?')) {
-		cp = xmalloc(sizeof(char) *
-			     (strlen(p) + sizeof(WILD3_SUFFIX)));
+	if (match_no_wild == NO_WILDCARD_PREFIX && !strpbrk(p, "*?")) {
+		cp = xmalloc(sizeof(char) * (strlen(p) + sizeof(WILD3_SUFFIX)));
 
 		strcpy(cp, p);
 		strcat(cp, WILD3_SUFFIX);
@@ -62,12 +63,13 @@ int pathmatch_expand(const char *pattern, char ***buf)
 		log_match("append `%s' to pattern=`%s' (no_wildcard is prefix)",
 			  WILD3_SUFFIX, p);
 		free(p);
-		p = cp;
 
+		p = cp;
+		literal = true;
 	}
 	p = path_kill_slashes(p);
 
-	if (endswith(p, WILD3_SUFFIX)) {
+	if (literal || endswith(p, WILD3_SUFFIX)) {
 		list = xmalloc(sizeof(char *) * 2);
 		s = xstrdup(p);
 		i = strrchr(s, '/') - s;
