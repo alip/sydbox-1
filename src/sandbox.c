@@ -172,7 +172,7 @@ int box_resolve_path(const char *path, const char *prefix, pid_t tid,
 	return r;
 }
 
-int box_match_path(const slist_t *patterns, const char *path,
+bool box_match_path(const slist_t *patterns, const char *path,
 		   const char **match)
 {
 	struct snode *node;
@@ -181,19 +181,19 @@ int box_match_path(const slist_t *patterns, const char *path,
 		if (pathmatch(node->data, path)) {
 			if (match)
 				*match = node->data;
-			return 1;
+			return true;
 		}
 	}
 
-	return 0;
+	return false;
 }
 
-static int box_match_path_(const slist_t *patterns, const void *path)
+static bool box_match_path_(const slist_t *patterns, const void *path)
 {
 	return box_match_path(patterns, path, NULL);
 }
 
-static int box_match_path_saun(const slist_t *patterns, const char *sun_path,
+static bool box_match_path_saun(const slist_t *patterns, const char *sun_path,
 			       const char **match)
 {
 	struct snode *node;
@@ -205,20 +205,20 @@ static int box_match_path_saun(const slist_t *patterns, const char *sun_path,
 			if (pathmatch(m->addr.sa_un.path, sun_path)) {
 				if (match)
 					*match = node->data;
-				return 1;
+				return true;
 			}
 		}
 	}
 
-	return 0;
+	return false;
 }
 
-static int box_match_path_saun_(const slist_t *patterns, const void *sun_path)
+static bool box_match_path_saun_(const slist_t *patterns, const void *sun_path)
 {
 	return box_match_path_saun(patterns, sun_path, NULL);
 }
 
-static int box_match_socket(const slist_t *patterns,
+static bool box_match_socket(const slist_t *patterns,
 			    const struct pink_sockaddr *psa,
 			    struct sockmatch **match)
 {
@@ -228,21 +228,21 @@ static int box_match_socket(const slist_t *patterns,
 		if (sockmatch(node->data, psa)) {
 			if (match)
 				*match = node->data;
-			return 1;
+			return true;
 		}
 	}
 
-	return 0;
+	return false;
 }
 
-static int box_match_socket_(const slist_t *patterns, const void *psa)
+static bool box_match_socket_(const slist_t *patterns, const void *psa)
 {
 	return box_match_socket(patterns, psa, NULL);
 }
 
-static int box_check_access(enum sys_access_mode mode,
-			    int (*match_func)(const slist_t *patterns,
-					      const void *needle),
+static bool box_check_access(enum sys_access_mode mode,
+			    bool (*match_func)(const slist_t *patterns,
+					       const void *needle),
 			    slist_t **pattern_list,
 			    size_t pattern_list_len,
 			    void *needle)
@@ -256,16 +256,16 @@ static int box_check_access(enum sys_access_mode mode,
 		for (i = 0; i < pattern_list_len; i++) {
 			if (pattern_list[i] &&
 			    match_func(pattern_list[i], needle))
-				return 1;
+				return true; /* access granted */
 		}
-		return 0;
+		return false; /* access denied */
 	case ACCESS_BLACKLIST:
 		for (i = 0; i < pattern_list_len; i++) {
 			if (pattern_list[i] &&
 			    match_func(pattern_list[i], needle))
-				return 0;
+				return false; /* access denied */
 		}
-		return 1;
+		return true; /* access granted */
 	default:
 		assert_not_reached();
 	}

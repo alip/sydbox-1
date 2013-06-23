@@ -8,6 +8,7 @@
 #ifndef PATHMATCH_H
 #define PATHMATCH_H 1
 
+#include <stdbool.h>
 #include "util.h"
 
 #define WILD3_SUFFIX "/***"
@@ -22,13 +23,13 @@ static const char *const no_wildcard_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(no_wildcard, int)
 
-extern void pathmatch_set_case(bool case_sensitive);
-extern bool pathmatch_get_case(void);
+void pathmatch_set_case(bool case_sensitive);
+bool pathmatch_get_case(void);
 
-extern void pathmatch_set_no_wildcard(enum no_wildcard no_wild);
-extern enum no_wildcard patchmatch_get_no_wildcard(void);
+void pathmatch_set_no_wildcard(enum no_wildcard no_wild);
+enum no_wildcard pathmatch_get_no_wildcard(void);
 
-extern int pathmatch_expand(const char *pattern, char ***buf);
-extern int pathmatch(const char *pattern, const char *text);
+int pathmatch_expand(const char *pattern, char ***buf);
+bool pathmatch(const char *pattern, const char *text);
 
 #endif

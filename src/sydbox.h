@@ -562,7 +562,7 @@ void callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 		     unsigned rmode, char **res);
-int box_match_path(const slist_t *patterns, const char *path, const char **match);
+bool box_match_path(const slist_t *patterns, const char *path, const char **match);
 int box_check_path(syd_proc_t *current, sysinfo_t *info);
 int box_check_socket(syd_proc_t *current, sysinfo_t *info);
 

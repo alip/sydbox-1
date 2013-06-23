@@ -39,7 +39,7 @@ void pathmatch_set_no_wildcard(enum no_wildcard no_wild)
 	match_no_wild = no_wild;
 }
 
-enum no_wildcard patchmatch_get_no_wildcard(void)
+enum no_wildcard pathmatch_get_no_wildcard(void)
 {
 	return match_no_wild;
 }
@@ -90,7 +90,7 @@ int pathmatch_expand(const char *pattern, char ***buf)
 	return bufsiz;
 }
 
-int pathmatch(const char *pattern, const char *text)
+bool pathmatch(const char *pattern, const char *text)
 {
 	int r;
 
