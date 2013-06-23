@@ -1,7 +1,7 @@
 /*
  * sydbox/sockmatch.c
  *
- * match socket information
+ * Match socket information
  *
  * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
@@ -246,7 +246,7 @@ static int sockmatch_parse_ip(int family, const char *src,
 
 	/* Find out port */
 	range = strrchr(ip, '@');
-	if (range[0] == '\0' || range[1] == '\0') {
+	if (range == NULL || range[0] == '\0' || range[1] == '\0') {
 		r = -EINVAL;
 		goto out;
 	}
