@@ -543,6 +543,19 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 	case AF_INET6:
 #endif
 		break;
+	case -1: /* NULL! */
+		/*
+		 * This can happen e.g. when sendto() is called with a socket in
+		 * connected state:
+		 *	sendto(sockfd, buf, len, flags, NULL, 0);
+		 * This is also equal to calling:
+		 *	send(sockfd, buf, len, flags);
+		 * and we do not sandbox sockets in connected state.
+		 *
+		 * TODO: ENOTCONN
+		 */
+		r = 0;
+		goto out;
 	default:
 		if (sydbox->config.whitelist_unsupported_socket_families) {
 			log_access("allowing unsupported socket family %d|%s|",
