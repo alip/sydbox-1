@@ -28,9 +28,8 @@ struct open_info {
 	enum syd_stat syd_mode;
 };
 
-static void init_sysinfo_read(syd_proc_t *current, sysinfo_t *info)
+static inline void sysinfo_read_access(syd_proc_t *current, sysinfo_t *info)
 {
-	init_sysinfo(info);
 	info->access_mode = sandbox_read_deny(current)
 			    ? ACCESS_WHITELIST
 			    : ACCESS_BLACKLIST;
@@ -38,6 +37,17 @@ static void init_sysinfo_read(syd_proc_t *current, sysinfo_t *info)
 			    ? &current->config.whitelist_read
 			    : &current->config.blacklist_read;
 	info->access_filter = &sydbox->config.filter_read;
+}
+
+static inline void sysinfo_exec_access(syd_proc_t *current, sysinfo_t *info)
+{
+	info->access_mode = sandbox_exec_deny(current)
+			    ? ACCESS_WHITELIST
+			    : ACCESS_BLACKLIST;
+	info->access_list = sandbox_exec_deny(current)
+			    ? &current->config.whitelist_exec
+			    : &current->config.blacklist_exec;
+	info->access_filter = &sydbox->config.filter_exec;
 }
 
 static bool check_access_mode(syd_proc_t *current, int mode)
@@ -61,24 +71,42 @@ static bool check_access_mode(syd_proc_t *current, int mode)
 
 static int check_access(syd_proc_t *current, sysinfo_t *info, int mode)
 {
-	int r;
+	int r = 0;
+	char *abspath = NULL;
+	struct stat statbuf;
 
-	r = 0;
-	if (!sandbox_write_off(current) && mode & W_OK)
+	if (!sandbox_write_off(current) && mode & W_OK) {
+		info->ret_abspath = &abspath;
+		info->ret_statbuf = &statbuf;
 		r = box_check_path(current, info);
-
-	if (!r && !sysdeny(current) && !sandbox_read_off(current) && mode & R_OK) {
-		init_sysinfo_read(current, info);
-		r = box_check_path(current, info);
+		if (r || sysdeny(current))
+			goto out;
 	}
 
-	if (!r && !sysdeny(current) && !sandbox_exec_off(current) && mode & X_OK) {
-		init_sysinfo_read(current, info);
+	if (!sandbox_read_off(current) && mode & R_OK) {
+		info->cache_abspath = abspath;
+		info->cache_statbuf = info->ret_statbuf; /* cached or NULL */
+		sysinfo_read_access(current, info);
 		r = box_check_path(current, info);
+		if (r || sysdeny(current))
+			goto out;
 	}
 
+	if (!sandbox_exec_off(current) && mode & X_OK) {
+		info->cache_abspath = abspath;
+		info->cache_statbuf = info->ret_statbuf; /* cached or NULL */
+		sysinfo_exec_access(current, info);
+		r = box_check_path(current, info);
+		if (r || sysdeny(current))
+			goto out;
+	}
+
+out:
+	if (abspath)
+		free(abspath);
 	return r;
 }
+
 
 int sys_access(syd_proc_t *current)
 {
@@ -200,15 +228,25 @@ static void init_open_info(syd_proc_t *current, int flags, struct open_info *inf
 static int check_open(syd_proc_t *current, sysinfo_t *info, bool may_write)
 {
 	int r = 0;
+	char *abspath = NULL;
+	struct stat statbuf;
 
-	if (may_write && !sandbox_write_off(current))
+	if (may_write && !sandbox_write_off(current)) {
+		info->ret_abspath = &abspath;
+		info->ret_statbuf = &statbuf;
 		r = box_check_path(current, info);
-
-	if (!r && !sysdeny(current) && !sandbox_read_off(current)) {
-		init_sysinfo_read(current, info);
-		r = box_check_path(current, info);
+		if (r || sysdeny(current) || sandbox_read_off(current))
+			goto out;
 	}
 
+	info->cache_abspath = abspath;
+	info->cache_statbuf = info->ret_statbuf; /* cached or NULL */
+	sysinfo_read_access(current, info);
+
+	r = box_check_path(current, info);
+out:
+	if (abspath)
+		free(abspath);
 	return r;
 }
 
@@ -700,30 +738,29 @@ int sys_linkat(syd_proc_t *current)
 int sys_rename(syd_proc_t *current)
 {
 	int r;
-	mode_t mode;
+	struct stat statbuf;
 	sysinfo_t info;
 
 	if (sandbox_write_off(current))
 		return 0;
 
-	mode = 0;
 	init_sysinfo(&info);
 	info.rmode = RPATH_NOFOLLOW;
-	info.ret_mode = &mode;
+	info.ret_statbuf = &statbuf;
 
 	r = box_check_path(current, &info);
 	if (!r && !sysdeny(current)) {
 		info.arg_index = 1;
 		info.rmode &= ~RPATH_MASK;
 		info.rmode |= RPATH_NOLAST;
-		if (S_ISDIR(mode)) {
+		if (S_ISDIR(statbuf.st_mode)) {
 			/* oldpath specifies a directory.
 			 * In this case, newpath must either not exist,
 			 * or it must specify an empty directory.
 			 */
 			info.syd_mode |= SYD_STAT_EMPTYDIR;
 		}
-		info.ret_mode = NULL;
+		info.ret_statbuf = NULL;
 		return box_check_path(current, &info);
 	}
 
@@ -733,7 +770,7 @@ int sys_rename(syd_proc_t *current)
 int sys_renameat(syd_proc_t *current)
 {
 	int r;
-	mode_t mode;
+	struct stat statbuf;
 	sysinfo_t info;
 
 	if (sandbox_write_off(current))
@@ -743,21 +780,21 @@ int sys_renameat(syd_proc_t *current)
 	info.at_func = true;
 	info.arg_index = 1;
 	info.rmode = RPATH_NOFOLLOW;
-	info.ret_mode = &mode;
+	info.ret_statbuf = &statbuf;
 
 	r = box_check_path(current, &info);
 	if (!r && !sysdeny(current)) {
 		info.arg_index = 3;
 		info.rmode &= ~RPATH_MASK;
 		info.rmode |= RPATH_NOLAST;
-		if (S_ISDIR(mode)) {
+		if (S_ISDIR(statbuf.st_mode)) {
 			/* oldpath specifies a directory.
 			 * In this case, newpath must either not exist,
 			 * or it must specify an empty directory.
 			 */
 			info.syd_mode |= SYD_STAT_EMPTYDIR;
 		}
-		info.ret_mode = NULL;
+		info.ret_statbuf = NULL;
 		return box_check_path(current, &info);
 	}
 
@@ -807,7 +844,7 @@ static int check_listxattr(syd_proc_t *current, bool nofollow)
 	info.safe = true;
 	if (nofollow)
 		info.rmode |= RPATH_NOFOLLOW;
-	init_sysinfo_read(current, &info);
+	sysinfo_read_access(current, &info);
 
 	return box_check_path(current, &info);
 }

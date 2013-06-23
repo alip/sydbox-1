@@ -498,10 +498,14 @@ typedef struct {
 	slist_t *access_filter;
 
 	/* Pointer to the data to be returned */
-	mode_t *ret_mode;
 	int *ret_fd;
 	char **ret_abspath;
+	struct stat *ret_statbuf;
 	struct pink_sockaddr **ret_addr;
+
+	/* Cached data (to be reused by another sandboxing (read,write etc.) */
+	const char *cache_abspath;
+	const struct stat *cache_statbuf;
 } sysinfo_t;
 
 /* Global variables */

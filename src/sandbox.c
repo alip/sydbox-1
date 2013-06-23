@@ -280,17 +280,23 @@ static int box_check_ftype(const char *path, sysinfo_t *info)
 
 	assert(info);
 
-	if (!info->syd_mode && !info->ret_mode)
+	if (!info->syd_mode && !info->ret_statbuf)
 		return 0;
 
-	call_lstat = !!(rflags & RPATH_NOFOLLOW);
-	stat_ret = call_lstat ? lstat(path, &buf) : stat(path, &buf);
+	if (info->cache_statbuf) {
+		log_check("using cached status information");
+		memcpy(&buf, info->cache_statbuf, 0);
+		stat_ret = 0;
+	} else {
+		call_lstat = !!(rflags & RPATH_NOFOLLOW);
+		stat_ret = call_lstat ? lstat(path, &buf) : stat(path, &buf);
+	}
 
 	if (stat_ret < 0)
 		return 0; /* stat() failed, TODO: are we fine returning 0? */
 
-	if (info->ret_mode)
-		*info->ret_mode = buf.st_mode;
+	if (info->ret_statbuf)
+		*info->ret_statbuf = buf;
 
 	if (!info->syd_mode)
 		return 0;
@@ -357,6 +363,14 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 		  deny_errno, pink_name_errno(deny_errno, 0),
 		  sys_access_mode_to_string(info->access_mode));
 
+	/* Step 0: check for cached abspath from a previous check */
+	if (info->cache_abspath) {
+		log_check("using cached resolved path `%s'", info->cache_abspath);
+		prefix = path = NULL;
+		abspath = (char *)info->cache_abspath;
+		goto check_access;
+	}
+
 	/* Step 1: resolve file descriptor for `at' suffixed functions */
 	badfd = false;
 	if (info->at_func) {
@@ -406,7 +420,7 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 	if ((r = box_resolve_path(path, prefix ? prefix : current->cwd,
 				  pid, info->rmode, &abspath)) < 0) {
 		err_access(-r, "resolve_path(`%s', `%s')",
-			   prefix ? prefix : current->cwd, abspath);
+			   prefix ? prefix : current->cwd, path);
 		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s()", current->sysname);
@@ -417,6 +431,7 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 	enum sys_access_mode access_mode;
 	slist_t *access_lists[2], *access_filter;
 
+check_access:
 	if (info->access_mode != ACCESS_0)
 		access_mode = info->access_mode;
 	else if (sandbox_write_deny(current))
@@ -447,7 +462,12 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 		goto out;
 	}
 
-	/* Step 5: stat() if required */
+	/*
+	 * Step 5: stat() if required (unless already cached)
+	 * Note to security geeks: we ignore TOCTOU issues at various points,
+	 * mostly because this is a debugging tool and there isn't a simple
+	 * practical solution with ptrace(). This caching case is no exception.
+	 */
 	if ((stat_errno = box_check_ftype(abspath, info)) != 0) {
 		deny_errno = stat_errno;
 		if (!sydbox->config.violation_raise_safe) {
@@ -478,7 +498,7 @@ out:
 		free(prefix);
 	if (path)
 		free(path);
-	if (abspath)
+	if (abspath && !info->cache_abspath)
 		free(abspath);
 
 	return r;
@@ -545,7 +565,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 				     info->rmode, &abspath);
 		if (r < 0) {
 			err_access(-r, "resolve_path(`%s', `%s')",
-				   current->cwd, abspath);
+				   current->cwd, psa->u.sa_un.sun_path);
 			r = deny(current, -r);
 			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", current->sysname);
