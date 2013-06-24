@@ -200,6 +200,9 @@ enum magic_key {
 	MAGIC_KEY_CORE_SANDBOX_WRITE,
 	MAGIC_KEY_CORE_SANDBOX_NETWORK,
 
+	MAGIC_KEY_CORE_RESTRICT,
+	MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE,
+
 	MAGIC_KEY_CORE_WHITELIST,
 	MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES,
 	MAGIC_KEY_CORE_WHITELIST_SUCCESSFUL_BIND,
@@ -401,6 +404,8 @@ typedef struct {
 	sandbox_t child;
 
 	/* Non-inherited, "global" configuration data */
+	bool restrict_shared_memory_writable;
+
 	bool whitelist_per_process_directories;
 	bool whitelist_successful_bind;
 	bool whitelist_unsupported_socket_families;
@@ -457,6 +462,7 @@ typedef struct {
 } sydbox_t;
 
 typedef int (*sysfunc_t) (syd_proc_t *current);
+typedef int (*sysfilter_t) (int arch, uint32_t sysnum);
 
 typedef struct {
 	const char *name;
@@ -465,6 +471,14 @@ typedef struct {
 		  */
 	sysfunc_t enter;
 	sysfunc_t exit;
+
+	/* Apply a simple seccomp filter (bpf-only, no ptrace) */
+	sysfilter_t filter;
+	/*
+	 * Are ".enter" and ".exit" members ptrace fallbacks when seccomp
+	 * support is not available or do they have to be called anyway?
+	 */
+	bool ptrace_fallback;
 } sysentry_t;
 
 typedef struct {
@@ -632,6 +646,8 @@ int magic_set_trace_use_seize(const void *val, syd_proc_t *current);
 int magic_query_trace_use_seize(syd_proc_t *current);
 int magic_set_trace_use_toolong_hack(const void *val, syd_proc_t *current);
 int magic_query_trace_use_toolong_hack(syd_proc_t *current);
+int magic_set_restrict_shm_wr(const void *val, syd_proc_t *current);
+int magic_query_restrict_shm_wr(syd_proc_t *current);
 int magic_set_whitelist_ppd(const void *val, syd_proc_t *current);
 int magic_query_whitelist_ppd(syd_proc_t *current);
 int magic_set_whitelist_sb(const void *val, syd_proc_t *current);
@@ -696,6 +712,9 @@ static inline void init_sysinfo(sysinfo_t *info)
 {
 	memset(info, 0, sizeof(sysinfo_t));
 }
+
+int filter_mmap(int arch, uint32_t sysnum);
+int sys_fallback_mmap(syd_proc_t *current);
 
 int sys_access(syd_proc_t *current);
 int sys_faccessat(syd_proc_t *current);

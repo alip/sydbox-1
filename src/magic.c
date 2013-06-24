@@ -60,6 +60,12 @@ static const struct key key_table[] = {
 		.parent = MAGIC_KEY_CORE,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
+	[MAGIC_KEY_CORE_RESTRICT] = {
+		.name   = "restrict",
+		.lname  = "core.restrict",
+		.parent = MAGIC_KEY_CORE,
+		.type   = MAGIC_TYPE_OBJECT,
+	},
 	[MAGIC_KEY_CORE_WHITELIST] = {
 		.name   = "whitelist",
 		.lname  = "core.whitelist",
@@ -192,6 +198,15 @@ static const struct key key_table[] = {
 		.type   = MAGIC_TYPE_STRING,
 		.set    = magic_set_sandbox_network,
 		.query  = magic_query_sandbox_network,
+	},
+
+	[MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE] = {
+		.name   = "shared_memory_writable",
+		.lname  = "core.restrict.shared_memory_writable",
+		.parent = MAGIC_KEY_CORE_RESTRICT,
+		.type   = MAGIC_TYPE_BOOLEAN,
+		.set    = magic_set_restrict_shm_wr,
+		.query  = magic_query_restrict_shm_wr,
 	},
 
 	[MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES] = {

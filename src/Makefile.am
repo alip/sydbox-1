@@ -57,6 +57,7 @@ sydbox_SOURCES= \
 		 magic-socklist.c \
 		 magic-strlist.c \
 		 magic-trace.c \
+		 magic-restrict.c \
 		 magic-whitelist.c \
 		 magic-log.c \
 		 magic-match.c \
@@ -68,6 +69,7 @@ sydbox_SOURCES= \
 		 syscall-file.c \
 		 syscall-sock.c \
 		 syscall-special.c \
+		 syscall-filter.c \
 		 syscall.c \
 		 systable.c \
 		 config.c \

@@ -374,6 +374,27 @@
         </varlistentry>
 
         <varlistentry>
+          <term><option id="core-restrict-shm-wr">core/restrict/shared_memory_writable</option></term>
+          <listitem>
+            <para>type: <type>boolean</type></para>
+            <para>default: <varname>false</varname></para>
+            <para>
+              A boolean specifying whether writable shared memory mapping (
+              <function>mmap2</function><manvolnum>2</manvolnum> with
+              <constant>PROT_WRITE</constant> &amp; <constant>MAP_SHARED</constant> combination )
+              should be forbidden.
+            </para>
+
+              <warning>
+                <para>
+                  This setting is meant as a protection against <constant>TOCTOU</constant> attacks. However, it should
+                  be noted that such attack vectors are relatively diverse under a ptrace() monitoring environment.
+                </para>
+              </warning>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
           <term><option id="core-whitelist-ppd">core/whitelist/per_process_directories</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>

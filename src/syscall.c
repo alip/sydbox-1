@@ -20,8 +20,31 @@
 #include "seccomp.h"
 #endif
 
-/* Order matters! Put more frequent system calls above. */
+/*
+ * 1. Order matters! Put more hot system calls above.
+ * 2. ".filter" is for simple seccomp-only rules. If a system call entry has a
+ *    ".filter" member, ".enter" and ".exit" members are *only* used as a
+ *    ptrace() based fallback if sydbox->config.use_seccomp is false.
+ */
 static const sysentry_t syscall_entries[] = {
+	{
+		.name = "mmap2",
+		.filter = filter_mmap,
+		.enter = sys_fallback_mmap,
+		.ptrace_fallback = true,
+	},
+	{
+		.name = "mmap",
+		.filter = filter_mmap,
+		.enter = sys_fallback_mmap,
+		.ptrace_fallback = true,
+	},
+	{
+		.name = "old_mmap",
+		.filter = filter_mmap,
+		.enter = sys_fallback_mmap,
+	},
+
 	{
 		.name = "stat",
 		.enter = sys_stat,
@@ -300,6 +323,11 @@ size_t syscall_entries_max(void)
 void sysinit(void)
 {
 	for (unsigned i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+		if (sydbox->config.use_seccomp &&
+		    syscall_entries[i].filter &&
+		    syscall_entries[i].ptrace_fallback)
+			continue;
+
 		if (syscall_entries[i].name) {
 			systable_add(syscall_entries[i].name,
 				     syscall_entries[i].enter,
@@ -315,21 +343,41 @@ void sysinit(void)
 }
 
 #if SYDBOX_HAVE_SECCOMP
+static int apply_simple_filter(const sysentry_t *entry, int arch, int abi)
+{
+	int r = 0;
+	long sysnum;
+
+	assert(entry->filter);
+
+	if (entry->name)
+		sysnum = pink_lookup_syscall(entry->name, abi);
+	else
+		sysnum = entry->no;
+
+	if (sysnum == -1)
+		return 0;
+
+	if ((r = entry->filter(arch, sysnum)) < 0)
+		return r;
+	return 0;
+}
+
 static size_t make_seccomp_filter(int abi, uint32_t **syscalls)
 {
-	unsigned i, j;
-	long sysno;
+	size_t i, j;
+	long sysnum;
 	uint32_t *list;
 
 	list = xmalloc(sizeof(uint32_t) * ELEMENTSOF(syscall_entries));
 	for (i = 0, j = 0; i < ELEMENTSOF(syscall_entries); i++) {
 		if (syscall_entries[i].name)
-			sysno = pink_lookup_syscall(syscall_entries[i].name,
+			sysnum = pink_lookup_syscall(syscall_entries[i].name,
 						    abi);
 		else
-			sysno = syscall_entries[i].no;
-		if (sysno != -1)
-			list[j++] = (uint32_t)sysno;
+			sysnum = syscall_entries[i].no;
+		if (sysnum != -1)
+			list[j++] = (uint32_t)sysnum;
 	}
 
 	*syscalls = list;
@@ -339,14 +387,36 @@ static size_t make_seccomp_filter(int abi, uint32_t **syscalls)
 int sysinit_seccomp(void)
 {
 	int r, count;
+	size_t i;
 	uint32_t *syscalls;
 
 #if defined(__i386__)
+	for (i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+		if (!syscall_entries[i].filter)
+			continue;
+		if ((r = apply_simple_filter(&syscall_entries[i],
+					     AUDIT_ARCH_I386,
+					     PINK_ABI_DEFAULT)) < 0)
+			return r;
+	}
 	count = make_seccomp_filter(PINK_ABI_DEFAULT, &syscalls);
 	r = seccomp_apply(AUDIT_ARCH_I386, syscalls, count);
 
 	free(syscalls);
 #elif defined(__x86_64__)
+	for (i = 0; i < ELEMENTSOF(syscall_entries); i++) {
+		if (!syscall_entries[i].filter)
+			continue;
+		if ((r = apply_simple_filter(&syscall_entries[i],
+					     AUDIT_ARCH_X86_64,
+					     PINK_ABI_X86_64)) < 0)
+			return r;
+		if ((r = apply_simple_filter(&syscall_entries[i],
+					     AUDIT_ARCH_I386,
+					     PINK_ABI_I386)) < 0)
+			return r;
+	}
+
 	count = make_seccomp_filter(PINK_ABI_X86_64, &syscalls);
 	r = seccomp_apply(AUDIT_ARCH_X86_64, syscalls, count);
 	free(syscalls);

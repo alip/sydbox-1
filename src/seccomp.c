@@ -26,17 +26,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <sys/prctl.h>
-
-#include <linux/types.h>
-#include <linux/unistd.h>
-#include <linux/audit.h>
-#include <linux/filter.h>
-#include <linux/seccomp.h>
-
-#define syscall_nr (offsetof(struct seccomp_data, nr))
-#define arch_nr (offsetof(struct seccomp_data, arch))
-
 int seccomp_init(void)
 {
 	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) < 0)
