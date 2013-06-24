@@ -250,19 +250,36 @@ out:
 	return r;
 }
 
+static int restrict_open_flags(syd_proc_t *current, int flags)
+{
+	if (!sydbox->config.use_seccomp &&
+	    sydbox->config.restrict_file_control &&
+	    flags & (O_ASYNC|O_DIRECT|O_SYNC))
+		return deny(current, EINVAL);
+	return 0;
+}
+
 int sys_open(syd_proc_t *current)
 {
-	int r;
-	long flags;
+	bool strict;
+	int r, flags;
 	sysinfo_t info;
 	struct open_info open_info;
 
-	if (sandbox_read_off(current) && sandbox_write_off(current))
+	strict = !sydbox->config.use_seccomp &&
+		 sydbox->config.restrict_file_control;
+
+	if (!strict && sandbox_read_off(current) && sandbox_write_off(current))
 		return 0;
 
 	/* check flags first */
-	if ((r = syd_read_argument(current, 1, &flags)) < 0)
+	if ((r = syd_read_argument_int(current, 1, &flags)) < 0)
 		return r;
+	if ((r = restrict_open_flags(current, flags)) < 0)
+		return r;
+
+	if (sandbox_read_off(current) && sandbox_write_off(current))
+		return 0;
 
 	init_open_info(current, flags, &open_info);
 	init_sysinfo(&info);
@@ -274,17 +291,25 @@ int sys_open(syd_proc_t *current)
 
 int sys_openat(syd_proc_t *current)
 {
-	int r;
-	long flags;
+	bool strict;
+	int r, flags;
 	sysinfo_t info;
 	struct open_info open_info;
 
-	if (sandbox_read_off(current) && sandbox_write_off(current))
+	strict = !sydbox->config.use_seccomp &&
+		 sydbox->config.restrict_file_control;
+
+	if (!strict && sandbox_read_off(current) && sandbox_write_off(current))
 		return 0;
 
 	/* check flags first */
-	if ((r = syd_read_argument(current, 2, &flags)) < 0)
+	if ((r = syd_read_argument_int(current, 2, &flags)) < 0)
 		return r;
+	if ((r = restrict_open_flags(current, flags)) < 0)
+		return r;
+
+	if (sandbox_read_off(current) && sandbox_write_off(current))
+		return 0;
 
 	init_open_info(current, flags, &open_info);
 	init_sysinfo(&info);

@@ -201,6 +201,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_SANDBOX_NETWORK,
 
 	MAGIC_KEY_CORE_RESTRICT,
+	MAGIC_KEY_CORE_RESTRICT_FILE_CONTROL,
 	MAGIC_KEY_CORE_RESTRICT_SHARED_MEMORY_WRITABLE,
 
 	MAGIC_KEY_CORE_WHITELIST,
@@ -404,6 +405,7 @@ typedef struct {
 	sandbox_t child;
 
 	/* Non-inherited, "global" configuration data */
+	bool restrict_file_control;
 	bool restrict_shared_memory_writable;
 
 	bool whitelist_per_process_directories;
@@ -646,6 +648,8 @@ int magic_set_trace_use_seize(const void *val, syd_proc_t *current);
 int magic_query_trace_use_seize(syd_proc_t *current);
 int magic_set_trace_use_toolong_hack(const void *val, syd_proc_t *current);
 int magic_query_trace_use_toolong_hack(syd_proc_t *current);
+int magic_set_restrict_fcntl(const void *val, syd_proc_t *current);
+int magic_query_restrict_fcntl(syd_proc_t *current);
 int magic_set_restrict_shm_wr(const void *val, syd_proc_t *current);
 int magic_query_restrict_shm_wr(syd_proc_t *current);
 int magic_set_whitelist_ppd(const void *val, syd_proc_t *current);
@@ -713,6 +717,9 @@ static inline void init_sysinfo(sysinfo_t *info)
 	memset(info, 0, sizeof(sysinfo_t));
 }
 
+int filter_open(int arch, uint32_t sysnum);
+int filter_openat(int arch, uint32_t sysnum);
+int filter_fcntl(int arch, uint32_t sysnum);
 int filter_mmap(int arch, uint32_t sysnum);
 int sys_fallback_mmap(syd_proc_t *current);
 

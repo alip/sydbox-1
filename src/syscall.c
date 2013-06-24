@@ -73,10 +73,12 @@ static const sysentry_t syscall_entries[] = {
 
 	{
 		.name = "open",
+		.filter = filter_open,
 		.enter = sys_open,
 	},
 	{
 		.name = "openat",
+		.filter = filter_openat,
 		.enter = sys_openat,
 	},
 	{
@@ -84,6 +86,18 @@ static const sysentry_t syscall_entries[] = {
 		.enter = sys_creat,
 	},
 
+	{
+		.name = "fcntl",
+		.filter = filter_fcntl,
+		.enter = sys_fcntl,
+		.exit = sysx_fcntl,
+	},
+	{
+		.name = "fcntl64",
+		.filter = filter_fcntl,
+		.enter = sys_fcntl,
+		.exit = sysx_fcntl,
+	},
 	{
 		.name = "dup",
 		.enter = sys_dup,
@@ -98,16 +112,6 @@ static const sysentry_t syscall_entries[] = {
 		.name = "dup3",
 		.enter = sys_dup,
 		.exit = sysx_dup,
-	},
-	{
-		.name = "fcntl",
-		.enter = sys_fcntl,
-		.exit = sysx_fcntl,
-	},
-	{
-		.name = "fcntl64",
-		.enter = sys_fcntl,
-		.exit = sysx_fcntl,
 	},
 
 	{

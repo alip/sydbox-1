@@ -294,37 +294,62 @@ int sysx_dup(syd_proc_t *current)
 
 int sys_fcntl(syd_proc_t *current)
 {
-	int r;
-	long fd, cmd;
+	bool strict;
+	int r, fd, cmd, arg0;
 
 	current->args[0] = -1;
+	strict = !sydbox->config.use_seccomp &&
+		 sydbox->config.restrict_file_control;
 
-	if (sandbox_network_off(current) ||
-	    !sydbox->config.whitelist_successful_bind)
+	if (!strict && (sandbox_network_off(current) ||
+			!sydbox->config.whitelist_successful_bind))
 		return 0;
 
-	if ((r = syd_read_argument(current, 1, &cmd)) < 0)
+	if ((r = syd_read_argument_int(current, 1, &cmd)) < 0)
 		return r;
 
-	/* We're interested in two commands:
-	 * fcntl(fd, F_DUPFD);
-	 * fcntl(fd, F_DUPFD_CLOEXEC);
-	 */
 	switch (cmd) {
 	case F_DUPFD:
 #ifdef F_DUPFD_CLOEXEC
 	case F_DUPFD_CLOEXEC:
 #endif /* F_DUPFD_CLOEXEC */
-		current->args[1] = cmd;
 		break;
+	case F_SETFL:
+		if (!strict)
+			return 0;
+		if ((r = syd_read_argument_int(current, 0, &arg0)) < 0)
+			return r;
+		if (arg0 & (O_ASYNC|O_DIRECT))
+			return deny(current, EINVAL);
+		/* fall through */
+	case F_GETFL:
+	case F_SETOWN:
+	case F_SETLK:
+	case F_SETLKW:
+#if F_SETLK != F_SETLK64
+	case F_SETLK64:
+#endif
+#if F_SETLKW != F_SETLKW
+	case F_SETLKW64:
+#endif
+	case F_GETFD:
+	case F_SETFD:
+		return 0;
 	default:
+		if (strict)
+			return deny(current, EINVAL);
 		return 0;
 	}
 
-	if ((r = syd_read_argument(current, 0, &fd)) < 0)
+	if (sandbox_network_off(current) ||
+	     !sydbox->config.whitelist_successful_bind)
+	    return 0;
+
+	if ((r = syd_read_argument_int(current, 0, &fd)) < 0)
 		return r;
 
 	current->args[0] = fd;
+	current->args[1] = cmd;
 	current->flags |= SYD_STOP_AT_SYSEXIT;
 	return 0;
 }
