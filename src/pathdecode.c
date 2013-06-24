@@ -56,13 +56,11 @@ int path_decode(syd_proc_t *current, unsigned arg_index, char **buf)
 int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf)
 {
 	int r, fd;
-	long fd_l;
 	char *prefix = NULL;
 	pid_t pid = current->pid;
 
-	if ((r = syd_read_argument(current, arg_index, &fd_l)) < 0)
+	if ((r = syd_read_argument_int(current, arg_index, &fd)) < 0)
 		return r;
-	fd = (int)fd_l;
 
 	r = 0;
 	if (fd == AT_FDCWD) {

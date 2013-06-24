@@ -524,6 +524,7 @@ int syd_regset_fill(syd_proc_t *current);
 int syd_read_syscall(syd_proc_t *current, long *sysnum);
 int syd_read_retval(syd_proc_t *current, long *retval, int *error);
 int syd_read_argument(syd_proc_t *current, unsigned arg_index, long *argval);
+int syd_read_argument_int(syd_proc_t *current, unsigned arg_index, int *argval);
 ssize_t syd_read_string(syd_proc_t *current, long addr, char *dest, size_t len);
 int syd_write_syscall(syd_proc_t *current, long sysnum);
 int syd_write_retval(syd_proc_t *current, long retval, int error);

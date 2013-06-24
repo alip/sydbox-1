@@ -149,6 +149,26 @@ int syd_read_argument(syd_proc_t *current, unsigned arg_index, long *argval)
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
+int syd_read_argument_int(syd_proc_t *current, unsigned arg_index, int *argval)
+{
+	int r;
+	long arg_l;
+
+	assert(current);
+	assert(argval);
+
+	r = pink_read_argument(current->pid, current->regset, arg_index, &arg_l);
+	if (r == 0) {
+		*argval = (int)arg_l;
+		return 0;
+	} else if (r == -ESRCH) {
+		err_trace(-r, "read_argument_int() failed");
+	} else if (r < 0) {
+		err_warning(-r, "read_argument_int() failed");
+	}
+	return (r == -ESRCH) ? -ESRCH : panic(current);
+
+}
 ssize_t syd_read_string(syd_proc_t *current, long addr, char *dest, size_t len)
 {
 	ssize_t r;
