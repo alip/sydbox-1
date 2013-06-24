@@ -39,28 +39,15 @@ static inline void sysinfo_read_access(syd_proc_t *current, sysinfo_t *info)
 	info->access_filter = &sydbox->config.filter_read;
 }
 
-static inline void sysinfo_exec_access(syd_proc_t *current, sysinfo_t *info)
-{
-	info->access_mode = sandbox_exec_deny(current)
-			    ? ACCESS_WHITELIST
-			    : ACCESS_BLACKLIST;
-	info->access_list = sandbox_exec_deny(current)
-			    ? &current->config.whitelist_exec
-			    : &current->config.blacklist_exec;
-	info->access_filter = &sydbox->config.filter_exec;
-}
-
 static bool check_access_mode(syd_proc_t *current, int mode)
 {
 	bool r;
 
 	assert(current);
 
-	if (mode & R_OK && !sandbox_read_off(current))
+	if (mode & W_OK && !sandbox_write_off(current))
 		r = true;
-	else if (mode & W_OK && !sandbox_write_off(current))
-		r = true;
-	else if (mode & X_OK && !sandbox_exec_off(current))
+	else if (mode & (F_OK|R_OK|X_OK) && !sandbox_read_off(current))
 		r = true;
 	else
 		r = false;
@@ -83,19 +70,10 @@ static int check_access(syd_proc_t *current, sysinfo_t *info, int mode)
 			goto out;
 	}
 
-	if (!sandbox_read_off(current) && mode & R_OK) {
+	if (!sandbox_read_off(current) && mode & (F_OK|R_OK|X_OK)) {
 		info->cache_abspath = abspath;
 		info->cache_statbuf = info->ret_statbuf; /* cached or NULL */
 		sysinfo_read_access(current, info);
-		r = box_check_path(current, info);
-		if (r || sysdeny(current))
-			goto out;
-	}
-
-	if (!sandbox_exec_off(current) && mode & X_OK) {
-		info->cache_abspath = abspath;
-		info->cache_statbuf = info->ret_statbuf; /* cached or NULL */
-		sysinfo_exec_access(current, info);
 		r = box_check_path(current, info);
 		if (r || sysdeny(current))
 			goto out;
