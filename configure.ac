@@ -382,7 +382,7 @@ x111)
 	;;
 esac
 AC_SUBST([PTRACE_SUPPORTS_SEIZE])
-AC_DEFINE([PTRACE_SUPPORTS_SEIZE], [$PTRACE_SUPPORTS_SEIZE], [ptrace() seize support])
+AC_DEFINE_UNQUOTED([PTRACE_SUPPORTS_SEIZE], [$PTRACE_SUPPORTS_SEIZE], [ptrace() seize support])
 
 AC_SUBST([PINK_HAVE_GETREGSET])
 AC_SUBST([PINK_HAVE_SETREGSET])
@@ -426,14 +426,13 @@ if test x"$WANT_SECCOMP" = x"yes" ; then
 	AC_CHECK_DECL([SECCOMP_RET_TRACE],   [], [AC_MSG_ERROR([I need SECCOMP_RET_TRACE for seccomp support!])],
 		      [#include <linux/seccomp.h>])
 	SYDBOX_HAVE_SECCOMP=1
-	AC_DEFINE([SYDBOX_HAVE_SECCOMP], [1], [Enable seccomp support])
 else
 	SYDBOX_HAVE_SECCOMP=0
-	AC_DEFINE([SYDBOX_HAVE_SECCOMP], [0], [Enable seccomp support])
 fi
 AC_MSG_CHECKING([for seccomp support])
 AC_MSG_RESULT([$WANT_SECCOMP])
 AM_CONDITIONAL([WANT_SECCOMP], test x"$WANT_SECCOMP" = x"yes")
+AC_DEFINE_UNQUOTED([SYDBOX_HAVE_SECCOMP], [$SYDBOX_HAVE_SECCOMP], [Enable seccomp support])
 AC_SUBST([SYDBOX_HAVE_SECCOMP])
 
 dnl check for IPV6 support
