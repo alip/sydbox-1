@@ -207,8 +207,10 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 			sm.last_node = true;
 		else
 			sm.last_node = false;
-		if ((r = stat_mode(resolved, &sm, &sb)) < 0)
+		if ((r = stat_mode(resolved, &sm, &sb)) < 0) {
+			free(resolved);
 			return r;
+		}
 		if (S_ISLNK(sb.st_mode)) {
 			if (symlinks++ > SYDBOX_MAXSYMLINKS) {
 				free(resolved);
