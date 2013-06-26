@@ -77,7 +77,7 @@ sydbox_SOURCES= \
 sydfmt_SOURCES= \
 		sydfmt.c
 
-# http://troydhanson.github.com/uthash/
+# http://troydhanson.github.io/uthash/ v1.9.8.p3
 noinst_HEADERS+= \
 		 uthash.h
 

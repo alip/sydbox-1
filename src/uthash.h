@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2003-2013, Troy D. Hanson     http://uthash.sourceforge.net
+Copyright (c) 2003-2013, Troy D. Hanson     http://troydhanson.github.com/uthash/
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -64,7 +64,7 @@ typedef unsigned char uint8_t;
 #include <inttypes.h>   /* uint32_t */
 #endif
 
-#define UTHASH_VERSION 1.9.7
+#define UTHASH_VERSION 1.9.8
 
 #ifndef uthash_fatal
 #define uthash_fatal(msg) exit(-1)        /* fatal error (out of memory,etc) */
@@ -135,6 +135,7 @@ do {                                                                            
 #define HASH_BLOOM_FREE(tbl) 
 #define HASH_BLOOM_ADD(tbl,hashv) 
 #define HASH_BLOOM_TEST(tbl,hashv) (1)
+#define HASH_BLOOM_BYTELEN 0
 #endif
 
 #define HASH_MAKE_TABLE(hh,head)                                                 \
@@ -253,7 +254,7 @@ do {                                                                            
 #define HASH_ADD_STR(head,strfield,add)                                          \
     HASH_ADD(hh,head,strfield,strlen(add->strfield),add)
 #define HASH_REPLACE_STR(head,strfield,add,replaced)                             \
-  HASH_REPLACE(hh,head,strfield,strlen(add->strfield),replaced)
+  HASH_REPLACE(hh,head,strfield,strlen(add->strfield),add,replaced)
 #define HASH_FIND_INT(head,findint,out)                                          \
     HASH_FIND(hh,head,findint,sizeof(int),out)
 #define HASH_ADD_INT(head,intfield,add)                                          \
@@ -415,10 +416,10 @@ do {                                                                            
 #define HASH_JEN(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
   unsigned _hj_i,_hj_j,_hj_k;                                                    \
-  char *_hj_key=(char*)(key);                                                    \
+  unsigned char *_hj_key=(unsigned char*)(key);                                  \
   hashv = 0xfeedbeef;                                                            \
   _hj_i = _hj_j = 0x9e3779b9;                                                    \
-  _hj_k = (unsigned)keylen;                                                                \
+  _hj_k = (unsigned)keylen;                                                      \
   while (_hj_k >= 12) {                                                          \
     _hj_i +=    (_hj_key[0] + ( (unsigned)_hj_key[1] << 8 )                      \
         + ( (unsigned)_hj_key[2] << 16 )                                         \
@@ -466,7 +467,7 @@ do {                                                                            
 #endif
 #define HASH_SFH(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
-  char *_sfh_key=(char*)(key);                                                   \
+  unsigned char *_sfh_key=(unsigned char*)(key);                                 \
   uint32_t _sfh_tmp, _sfh_len = keylen;                                          \
                                                                                  \
   int _sfh_rem = _sfh_len & 3;                                                   \
@@ -476,7 +477,7 @@ do {                                                                            
   /* Main loop */                                                                \
   for (;_sfh_len > 0; _sfh_len--) {                                              \
     hashv    += get16bits (_sfh_key);                                            \
-    _sfh_tmp       = (get16bits (_sfh_key+2) << 11) ^ hashv;                     \
+    _sfh_tmp       = (uint32_t)(get16bits (_sfh_key+2)) << 11  ^ hashv;          \
     hashv     = (hashv << 16) ^ _sfh_tmp;                                        \
     _sfh_key += 2*sizeof (uint16_t);                                             \
     hashv    += hashv >> 11;                                                     \
@@ -486,7 +487,7 @@ do {                                                                            
   switch (_sfh_rem) {                                                            \
     case 3: hashv += get16bits (_sfh_key);                                       \
             hashv ^= hashv << 16;                                                \
-            hashv ^= _sfh_key[sizeof (uint16_t)] << 18;                          \
+            hashv ^= (uint32_t)(_sfh_key[sizeof (uint16_t)] << 18);              \
             hashv += hashv >> 11;                                                \
             break;                                                               \
     case 2: hashv += get16bits (_sfh_key);                                       \
@@ -847,6 +848,12 @@ do {                                                                            
     (head)=NULL;                                                                 \
   }                                                                              \
 } while(0)
+
+#define HASH_OVERHEAD(hh,head)                                                   \
+ (size_t)((((head)->hh.tbl->num_items   * sizeof(UT_hash_handle))   +            \
+           ((head)->hh.tbl->num_buckets * sizeof(UT_hash_bucket))   +            \
+            (sizeof(UT_hash_table))                                 +            \
+            (HASH_BLOOM_BYTELEN)))
 
 #ifdef NO_DECLTYPE
 #define HASH_ITER(hh,head,el,tmp)                                                \
