@@ -365,9 +365,9 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 
 	/* Step 0: check for cached abspath from a previous check */
 	if (info->cache_abspath) {
-		log_check("using cached resolved path `%s'", info->cache_abspath);
 		prefix = path = NULL;
 		abspath = (char *)info->cache_abspath;
+		log_check("using cached resolved path `%s'", abspath);
 		goto check_access;
 	}
 
@@ -498,9 +498,17 @@ out:
 		free(prefix);
 	if (path)
 		free(path);
-	if (abspath && !info->cache_abspath)
-		free(abspath);
-
+	if (r == 0) {
+		if (info->ret_abspath)
+			*info->ret_abspath = abspath;
+		else if (abspath && !info->cache_abspath)
+			free(abspath);
+	} else {
+		if (abspath && !info->cache_abspath)
+			free(abspath);
+		if (info->ret_abspath)
+			*info->ret_abspath = NULL;
+	}
 	return r;
 }
 
@@ -629,7 +637,7 @@ out:
 		/* Access granted. */
 		if (info->ret_abspath)
 			*info->ret_abspath = abspath;
-		else if (abspath)
+		else if (abspath && !info->cache_abspath)
 			free(abspath);
 
 		if (info->ret_addr)
@@ -638,7 +646,7 @@ out:
 			free(psa);
 	} else {
 		free(psa);
-		if (abspath)
+		if (abspath && !info->cache_abspath)
 			free(abspath);
 		if (info->ret_abspath)
 			*info->ret_abspath = NULL;

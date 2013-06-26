@@ -47,7 +47,7 @@ static bool check_access_mode(syd_proc_t *current, int mode)
 
 	if (mode & W_OK && !sandbox_write_off(current))
 		r = true;
-	else if (mode & (F_OK|R_OK|X_OK) && !sandbox_read_off(current))
+	else if (!sandbox_read_off(current))
 		r = true;
 	else
 		r = false;
@@ -59,24 +59,33 @@ static bool check_access_mode(syd_proc_t *current, int mode)
 static int check_access(syd_proc_t *current, sysinfo_t *info, int mode)
 {
 	int r = 0;
+	bool rd, wr;
 	char *abspath = NULL;
 	struct stat statbuf;
 
-	if (!sandbox_write_off(current) && mode & W_OK) {
+	rd = !sandbox_read_off(current); /* every mode `check' is a read access */
+	wr = !sandbox_write_off(current) && mode & W_OK;
+
+	if (wr && rd) {
 		info->ret_abspath = &abspath;
 		info->ret_statbuf = &statbuf;
+	}
+	if (wr) {
 		r = box_check_path(current, info);
 		if (r || sysdeny(current))
 			goto out;
 	}
-
-	if (!sandbox_read_off(current) && mode & (F_OK|R_OK|X_OK)) {
-		info->cache_abspath = abspath;
-		info->cache_statbuf = info->ret_statbuf; /* cached or NULL */
+	if (rd) {
+		if (info->ret_abspath) {
+			info->cache_abspath = abspath;
+			info->ret_abspath = NULL;
+		}
+		if (info->ret_statbuf) {
+			info->cache_statbuf = info->ret_statbuf;
+			info->ret_statbuf = NULL;
+		}
 		sysinfo_read_access(current, info);
 		r = box_check_path(current, info);
-		if (r || sysdeny(current))
-			goto out;
 	}
 
 out:
@@ -203,25 +212,39 @@ static void init_open_info(syd_proc_t *current, int flags, struct open_info *inf
 		  info->rmode, info->syd_mode);
 }
 
-static int check_open(syd_proc_t *current, sysinfo_t *info, bool may_write)
+static int check_open(syd_proc_t *current, sysinfo_t *info,
+		      const struct open_info *open_info)
 {
 	int r = 0;
 	char *abspath = NULL;
+	bool rd, wr;
 	struct stat statbuf;
 
-	if (may_write && !sandbox_write_off(current)) {
+	rd = !sandbox_read_off(current) && open_info->may_read;
+	wr = !sandbox_write_off(current) && open_info->may_write;
+
+	if (wr && rd) {
 		info->ret_abspath = &abspath;
 		info->ret_statbuf = &statbuf;
+	}
+	if (wr) {
 		r = box_check_path(current, info);
-		if (r || sysdeny(current) || sandbox_read_off(current))
+		if (r || sysdeny(current))
 			goto out;
 	}
+	if (rd) {
+		if (info->ret_abspath) {
+			info->cache_abspath = *info->ret_abspath;
+			info->ret_abspath = NULL;
+		}
+		if (info->ret_statbuf) {
+			info->cache_statbuf = info->ret_statbuf;
+			info->ret_statbuf = NULL;
+		}
+		sysinfo_read_access(current, info);
+		r = box_check_path(current, info);
+	}
 
-	info->cache_abspath = abspath;
-	info->cache_statbuf = info->ret_statbuf; /* cached or NULL */
-	sysinfo_read_access(current, info);
-
-	r = box_check_path(current, info);
 out:
 	if (abspath)
 		free(abspath);
@@ -264,7 +287,7 @@ int sys_open(syd_proc_t *current)
 	info.rmode = open_info.rmode;
 	info.syd_mode = open_info.syd_mode;
 
-	return check_open(current, &info, open_info.may_write);
+	return check_open(current, &info, &open_info);
 }
 
 int sys_openat(syd_proc_t *current)
@@ -296,7 +319,7 @@ int sys_openat(syd_proc_t *current)
 	info.rmode = open_info.rmode;
 	info.syd_mode = open_info.syd_mode;
 
-	return check_open(current, &info, open_info.may_write);
+	return check_open(current, &info, &open_info);
 }
 
 int sys_chmod(syd_proc_t *current)
