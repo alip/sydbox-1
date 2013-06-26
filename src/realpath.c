@@ -86,7 +86,7 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 	char *p, *q, *s;
 	size_t left_len, resolved_len;
 	unsigned symlinks;
-	int r, slen;
+	int r, slen = 0;
 	char left[SYDBOX_PATH_MAX], next_token[SYDBOX_PATH_MAX];
 	char symlink[SYDBOX_PATH_MAX];
 
