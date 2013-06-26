@@ -104,7 +104,7 @@ int parse_boolean(const char *s, bool *ret_bool)
 
 int parse_pid(const char *s, pid_t *ret_pid)
 {
-	unsigned long ul;
+	unsigned long ul = 0;
 	pid_t pid;
 	int r;
 
@@ -129,7 +129,7 @@ int parse_pid(const char *s, pid_t *ret_pid)
 int parse_port(const char *s, unsigned *ret_port)
 {
 	int r;
-	unsigned port;
+	unsigned port = 0;
 	struct servent *service;
 
 	assert(s);
