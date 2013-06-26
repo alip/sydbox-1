@@ -24,41 +24,52 @@ struct sockmap {
 	UT_hash_handle hh;
 };
 
-static inline void sockmap_add(struct sockmap *map, int fd, struct sockinfo *info)
+static inline void sockmap_add(struct sockmap **map, int fd, struct sockinfo *info)
 {
 	struct sockmap *s = xmalloc(sizeof(struct sockmap));
 	s->fd = fd;
 	s->info = info;
-	HASH_ADD_INT(map, fd, s);
+	HASH_ADD_INT(*map, fd, s);
 }
 
-static inline const struct sockinfo *sockmap_find(struct sockmap *map, int fd)
+static inline const struct sockinfo *sockmap_find(struct sockmap **map, int fd)
 {
 	struct sockmap *s;
 
-	HASH_FIND_INT(map, &fd, s);
+	if (!*map)
+		return NULL;
+
+	HASH_FIND_INT(*map, &fd, s);
 	return s ? s->info : NULL;
 }
 
-static inline void sockmap_remove(struct sockmap *map, int fd)
+static inline void sockmap_remove(struct sockmap **map, int fd)
 {
 	struct sockmap *s;
 
-	HASH_FIND_INT(map, &fd, s);
-	HASH_DEL(map, s);
+	if (!*map)
+		return;
+
+	HASH_FIND_INT(*map, &fd, s);
+	HASH_DEL(*map, s);
 	free_sockinfo(s->info);
 	free(s);
 }
 
-static inline void sockmap_destroy(struct sockmap *map)
+static inline void sockmap_destroy(struct sockmap **map)
 {
 	struct sockmap *e, *t;
 
-	HASH_ITER(hh, map, e, t) {
+	if (!*map)
+		return;
+
+	HASH_ITER(hh, *map, e, t) {
+		HASH_DEL(*map, e);
 		if (e->info)
 			free_sockinfo(e->info);
+		free(e);
 	}
-	HASH_CLEAR(hh, map);
+	HASH_CLEAR(hh, *map);
 }
 
 #endif

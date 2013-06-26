@@ -87,6 +87,37 @@ def test():
             except: pass
             loops -= 1
 """, False), # no threads
+        ("bind() port zero",
+"""
+def test():
+    import socket
+
+    rd, wr = os.pipe()
+    if os.fork():
+        os.close(wr)
+        port = int(os.read(rd, 64))
+        os.close(rd)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(("localhost", port))
+        s.send("syd".encode())
+        s.close()
+        sys.exit(0)
+    else:
+        os.close(rd)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(("localhost", 0))
+        port = s.getsockname()[1]
+        os.write(wr, bytes('{}'.format(port), "UTF-8"))
+        os.close(wr)
+        s.listen(4)
+        cli, addr = s.accept()
+        data = cli.recv(32).decode()
+        cli.close()
+        s.close()
+        if data.endswith("syd"):
+            sys.exit(0)
+        sys.exit(1)
+""", False, 1), # no threads, one loop
 )
 
 def which(name):
@@ -151,7 +182,8 @@ def eval_ext(expr, syd=None, syd_opts=[],
                 "-mwhitelist/write+/dev/stdout",
                 "-mwhitelist/write+/dev/stderr",
                 #"-mwhitelist/write+/dev/zero",
-                "-mwhitelist/write+/dev/null",])
+                "-mwhitelist/write+/dev/null",
+                "-mwhitelist/network/bind+LOOPBACK@0",])
         args.extend(syd_opts)
         args.append("--")
 
@@ -190,8 +222,7 @@ else:
     e = e.replace("@THREAD_COUNT@", "%d" % thread_count)
     return e
 
-def run_test(name, expr, threaded=True):
-    loops = 100
+def run_test(name, expr, loops=100, threaded=True):
     if threaded:
         threads = 10
     else:
@@ -247,7 +278,9 @@ def main(argv):
         if not match(bee[0]):
             print("skip %r" % bee[0])
             continue
-        if len(bee) == 3:
+        if len(bee) == 4:
+            run_test(bee[0], bee[1], threaded=bee[2], loops=bee[3])
+        elif len(bee) == 3:
             run_test(bee[0], bee[1], threaded=bee[2])
         else:
             run_test(bee[0], bee[1])

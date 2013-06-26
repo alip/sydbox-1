@@ -282,12 +282,12 @@ int sysx_dup(syd_proc_t *current)
 		return 0;
 	}
 
-	if (!(oldinfo = sockmap_find(current->sockmap, current->args[0]))) {
+	if (!(oldinfo = sockmap_find(&current->sockmap, current->args[0]))) {
 		log_check("duplicated unknown fd:%ld to fd:%ld", current->args[0], retval);
 		return 0;
 	}
 
-	sockmap_add(current->sockmap, retval, sockinfo_xdup(oldinfo));
+	sockmap_add(&current->sockmap, retval, sockinfo_xdup(oldinfo));
 	log_check("duplicated fd:%ld to fd:%ld", current->args[0], retval);
 	return 0;
 }
@@ -373,12 +373,12 @@ int sysx_fcntl(syd_proc_t *current)
 		return 0;
 	}
 
-	if (!(oldinfo = sockmap_find(current->sockmap, current->args[0]))) {
+	if (!(oldinfo = sockmap_find(&current->sockmap, current->args[0]))) {
 		log_check("duplicated unknown fd:%ld to fd:%ld", current->args[0], retval);
 		return 0;
 	}
 
-	sockmap_add(current->sockmap, retval, sockinfo_xdup(oldinfo));
+	sockmap_add(&current->sockmap, retval, sockinfo_xdup(oldinfo));
 	log_check("duplicated fd:%ld to fd:%ld", current->args[0], retval);
 	return 0;
 }

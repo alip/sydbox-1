@@ -187,7 +187,7 @@ void ignore_proc(syd_proc_t *p)
 	if (p->savebind)
 		free_sockinfo(p->savebind);
 	if (p->sockmap)
-		sockmap_destroy(p->sockmap);
+		sockmap_destroy(&p->sockmap);
 
 	/* Free the sandbox */
 	free_sandbox(&p->config);

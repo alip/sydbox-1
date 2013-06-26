@@ -130,7 +130,8 @@ int sysx_bind(syd_proc_t *current)
 	SLIST_INSERT_HEAD(&sydbox->config.whitelist_network_connect_auto, snode, up);
 	return 0;
 zero:
-	sockmap_add(current->sockmap, retval, current->savebind);
+	log_check("saving sockfd:%ld with port zero for whitelisting", current->args[0]);
+	sockmap_add(&current->sockmap, current->args[0], current->savebind);
 	current->savebind = NULL;
 	return 0;
 }
@@ -192,7 +193,7 @@ int sys_getsockname(syd_proc_t *current)
 	if ((r = syd_read_socket_argument(current, decode_socketcall, 0, &fd)) < 0)
 		return r;
 
-	if (sockmap_find(current->sockmap, fd)) {
+	if (sockmap_find(&current->sockmap, fd)) {
 		current->args[0] = fd;
 		current->flags |= SYD_STOP_AT_SYSEXIT;
 	}
@@ -225,13 +226,14 @@ int sysx_getsockname(syd_proc_t *current)
 	}
 
 	decode_socketcall = !!(current->subcall == PINK_SOCKET_SUBCALL_GETSOCKNAME);
-	if ((r = syd_read_socket_address(current, decode_socketcall, 1, NULL, &psa)) < 0)
+	if ((r = syd_read_socket_address(current, decode_socketcall, 1, NULL, &psa)) < 0) {
 		return r;
+	}
 
-	info = sockmap_find(current->sockmap, current->args[0]);
+	info = sockmap_find(&current->sockmap, current->args[0]);
 	assert(info);
 	match = sockmatch_new(info);
-	sockmap_remove(current->sockmap, current->args[0]);
+	sockmap_remove(&current->sockmap, current->args[0]);
 
 	switch (match->family) {
 	case AF_INET:
@@ -250,7 +252,7 @@ int sysx_getsockname(syd_proc_t *current)
 		assert_not_reached();
 	}
 
-	log_trace("whitelisting bind(port:0->%u) for connect()", port);
+	log_check("whitelisting bind(port:0->%u) for connect()", port);
 	snode = xcalloc(1, sizeof(struct snode));
 	snode->data = match;
 	SLIST_INSERT_HEAD(&sydbox->config.whitelist_network_connect_auto, snode, up);

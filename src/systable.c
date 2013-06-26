@@ -44,6 +44,7 @@ void systable_free(void)
 	for (short abi = 0; abi < PINK_ABIS_SUPPORTED; abi++) {
 		struct systable *s, *tmp;
 		HASH_ITER(hh, systable[abi], s, tmp) {
+			HASH_DEL(systable[abi], s);
 			free(s);
 		}
 		HASH_CLEAR(hh, systable[abi]);

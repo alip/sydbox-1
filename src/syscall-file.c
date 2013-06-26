@@ -429,7 +429,7 @@ int sys_close(syd_proc_t *current)
 
 	if ((r = syd_read_argument(current, 0, &fd)) < 0)
 		return r;
-	if (sockmap_find(current->sockmap, fd))
+	if (sockmap_find(&current->sockmap, fd))
 		current->args[0] = fd;
 	return 0;
 }
@@ -452,7 +452,7 @@ int sysx_close(syd_proc_t *current)
 		return 0;
 	}
 
-	sockmap_remove(current->sockmap, current->args[0]);
+	sockmap_remove(&current->sockmap, current->args[0]);
 	log_trace("closed fd: %ld", current->args[0]);
 	return 0;
 }
