@@ -12,10 +12,10 @@
 #include <errno.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <sys/mman.h>
 
 #if SYDBOX_HAVE_SECCOMP
 # include "seccomp.h"
-# include <sys/mman.h>
 #endif
 
 static int filter_open_index(int arch, uint32_t sysnum, unsigned flag_index)
