@@ -116,25 +116,41 @@ static void box_report_violation_sock(syd_proc_t *current,
 	}
 }
 
+static char *box_resolve_path_special(const char *abspath, pid_t tid)
+{
+	char *p;
+	const char *tail;
+
+	/*
+	 * Special case for a couple of special files under /proc
+	 */
+
+	p = NULL;
+	if (streq(abspath, "/proc/mounts")) {
+		/* /proc/mounts -> /proc/$tid/mounts */
+		xasprintf(&p, "/proc/%u/mounts", tid);
+	} else if (startswith(abspath, "/proc/net")) {
+		/* /proc/net/ -> /proc/$tid/net/ */
+		tail = abspath + STRLEN_LITERAL("/proc/net");
+		xasprintf(&p, "/proc/%u/net%s", tid, tail);
+	} else if (startswith(abspath, "/proc/self")) {
+		/* /proc/self/ -> /proc/$tid/ */
+		tail = abspath + STRLEN_LITERAL("/proc/self");
+		xasprintf(&p, "/proc/%u%s", tid, tail);
+	}
+
+	if (p)
+		log_check("special symlink `%s' changed to `%s'", abspath, p);
+	return p;
+}
+
 static int box_resolve_path_helper(const char *abspath, pid_t tid,
 				   unsigned rmode, char **res)
 {
 	int r;
 	char *p;
 
-	p = NULL;
-	/* Special case for /proc/self.
-	 * This symbolic link resolves to /proc/$tid, if we let
-	 * realpath_mode() resolve this, we'll get a different result.
-	 */
-	if (startswith(abspath, "/proc/self")) {
-		const char *tail = abspath + STRLEN_LITERAL("/proc/self");
-		if (!*tail || *tail == '/') {
-			if (asprintf(&p, "/proc/%u%s", tid, tail) < 0)
-				return -errno;
-		}
-		log_check("proc_self(%u) = `/proc/%u'", tid, tid);
-	}
+	p = box_resolve_path_special(abspath, tid);
 
 	r = realpath_mode(p ? p : abspath, rmode, res);
 	if (r == 0)
