@@ -97,9 +97,15 @@ int main(int argc, char **argv)
 		path1 = realpath(test_file, NULL);
 		save_errno1 = errno;
 
-		if (!path1)
+		path2 = NULL;
+		r = realpath_mode(test_file, test_mode, &path2);
+		save_errno2 = -r;
+
+		if (!path1 && !path2)
 			return EXIT_FAILURE;
 		if (expect_errno(save_errno1, 0) == EXIT_FAILURE)
+			return EXIT_FAILURE;
+		if (!(test_mode & RPATH_NOFOLLOW) && expect_errno(save_errno2, 0) == EXIT_FAILURE)
 			return EXIT_FAILURE;
 		printf("%s", path1);
 		return EXIT_SUCCESS;
