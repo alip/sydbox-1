@@ -774,6 +774,7 @@ int sys_rename(syd_proc_t *current)
 	info.rmode = RPATH_NOFOLLOW;
 	info.ret_statbuf = &statbuf;
 
+	statbuf.st_mode = 0;
 	r = box_check_path(current, &info);
 	if (!r && !sysdeny(current)) {
 		info.arg_index = 1;
