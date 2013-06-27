@@ -107,6 +107,8 @@ int sys_execve(syd_proc_t *current)
 	 * successful, we'll check for kill_if_match and resume_if_match lists
 	 * and kill or resume the process as necessary.
 	 */
+	if (current->abspath)
+		free(current->abspath);
 	current->abspath = abspath;
 
 	switch (current->config.sandbox_exec) {
