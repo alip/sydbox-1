@@ -73,6 +73,7 @@ int sysx_chdir(syd_proc_t *current)
 int sys_fork(syd_proc_t *current)
 {
 	sydbox->pidwait = current->pid;
+	log_trace("waitpid set to pid:%u", sydbox->pidwait);
 	return 0;
 }
 

@@ -176,18 +176,30 @@ void ignore_proc(syd_proc_t *p)
 		return;
 	pid = p->pid;
 
-	if (p->abspath)
+	/*
+	 * We need the regset to determine system call entry of
+	 * fork/vfork/clone! That's why we free it in remove_proc().
+	 */
+	if (p->abspath) {
 		free(p->abspath);
-	if (p->cwd)
+		p->abspath = NULL;
+	}
+	if (p->cwd) {
 		free(p->cwd);
-	if (p->comm)
+		p->cwd = NULL;
+	}
+	if (p->comm) {
 		free(p->comm);
-	if (p->regset)
-		pink_regset_free(p->regset);
-	if (p->savebind)
+		p->comm = NULL;
+	}
+	if (p->savebind) {
 		free_sockinfo(p->savebind);
-	if (p->sockmap)
+		p->savebind = NULL;
+	}
+	if (p->sockmap) {
 		sockmap_destroy(&p->sockmap);
+		p->sockmap = NULL;
+	}
 
 	/* Free the sandbox */
 	free_sandbox(&p->config);
@@ -205,8 +217,10 @@ void remove_proc(syd_proc_t *p)
 		return;
 	pid = p->pid;
 
-	ignore_proc(p);
 	SYD_PROCESS_REMOVE(p);
+	ignore_proc(p);
+	if (p->regset)
+		pink_regset_free(p->regset);
 	free(p);
 
 	log_context(NULL);
@@ -894,8 +908,13 @@ static int event_seccomp(syd_proc_t *current)
 		return 0;
 	}
 
-	if (current->flags & SYD_IGNORE)
-		return 0;
+	/*
+	 * Note: We can't return here in case SYD_IGNORE is set, because
+	 * otherwise sys_fork() callback can not set sydbox->pidwait which in
+	 * turn means we will face the well-known race condition between child
+	 * stop and parent fork! This only makes sense for seccomp because
+	 * processes are just removed (not ignored) otherwise.
+	 */
 
 	if ((r = syd_regset_fill(current)) < 0)
 		return r; /* process dead */
