@@ -943,9 +943,6 @@ static int trace(void)
 	int status, sig;
 	unsigned event;
 	syd_proc_t *current;
-#ifdef __WALL
-	static int waitpid_options = __WALL;
-#endif
 	int syscall_trap_sig;
 
 	syscall_trap_sig = sydbox->trace_options & PINK_TRACE_OPTION_SYSGOOD
@@ -962,24 +959,7 @@ static int trace(void)
 		wait_pid = sydbox->pidwait > 0 ? sydbox->pidwait : -1;
 		if (interactive)
 			sigprocmask(SIG_SETMASK, &empty_set, NULL);
-#ifdef __WALL
-		pid = waitpid(wait_pid, &status, waitpid_options);
-		if (pid < 0 && (waitpid_options & __WALL) && errno == EINVAL) {
-			/* this kernel does not support __WALL */
-			waitpid_options &= ~__WALL;
-			pid = waitpid(wait_pid, &status, waitpid_options);
-		}
-		if (pid < 0 && !(waitpid_options & __WALL) && errno == ECHILD) {
-			/* most likely a "cloned" process */
-			pid = waitpid(wait_pid, &status, __WCLONE);
-			if (pid < 0) {
-				err_fatal(errno, "wait failed");
-				goto cleanup;
-			}
-		}
-#else
-		pid = waitpid(wait_pid, &status, 0);
-#endif /* __WALL */
+		pid = waitpid(wait_pid, &status, __WALL);
 		wait_errno = errno;
 		if (interactive)
 			sigprocmask(SIG_SETMASK, &blocked_set, NULL);
