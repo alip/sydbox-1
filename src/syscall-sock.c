@@ -54,33 +54,29 @@ int sys_bind(syd_proc_t *current)
 	}
 
 	r = box_check_socket(current, &info);
-
-	if (r == 0 && sydbox->config.whitelist_successful_bind) {
+	if (r < 0)
+		goto out;
+	if (sydbox->config.whitelist_successful_bind &&
+	    (psa->family == AF_UNIX || psa->family == AF_INET
+#if SYDBOX_HAVE_IPV6
+	     || psa->family == AF_INET6
+#endif
+	    )) {
 		/* Access granted.
 		 * Read the file descriptor, for use in exit.
 		 */
-		r = syd_read_socket_argument(current, info.decode_socketcall,
-					     0, &fd);
+		r = syd_read_socket_argument(current, info.decode_socketcall, 0, &fd);
 		if (r < 0)
-			return r;
+			goto out;
 		current->args[0] = fd;
-
-		switch (psa->family) {
-		case AF_UNIX:
-		case AF_INET:
-#if SYDBOX_HAVE_IPV6
-		case AF_INET6:
-#endif /* SYDBOX_HAVE_IPV6 */
-			current->savebind = xmalloc(sizeof(struct sockinfo));
-			current->savebind->path = unix_abspath;
-			current->savebind->addr = psa;
-			/* fall through */
-		default:
-			current->flags |= SYD_STOP_AT_SYSEXIT;
-			return 0;
-		}
+		current->savebind = xmalloc(sizeof(struct sockinfo));
+		current->savebind->path = unix_abspath;
+		current->savebind->addr = psa;
+		current->flags |= SYD_STOP_AT_SYSEXIT;
+		return 0;
 	}
 
+out:
 	if (sydbox->config.whitelist_successful_bind) {
 		if (unix_abspath)
 			free(unix_abspath);
@@ -88,7 +84,7 @@ int sys_bind(syd_proc_t *current)
 			free(psa);
 	}
 
-	return 0;
+	return r;
 }
 
 int sysx_bind(syd_proc_t *current)
