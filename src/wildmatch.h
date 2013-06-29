@@ -5,9 +5,7 @@
 #ifndef WILDMATCH_H
 #define WILDMATCH_H 1
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "sydconf.h"
 
 int wildmatch(const char *pattern, const char *text);
 int iwildmatch(const char *pattern, const char *text);

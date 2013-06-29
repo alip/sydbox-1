@@ -9,10 +9,7 @@
 **  work differently than '*', and to fix the character-class code.
 */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
-
+#include "sydconf.h"
 #include "wildmatch.h"
 
 #ifndef uchar

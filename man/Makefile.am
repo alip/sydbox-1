@@ -1,23 +1,36 @@
 CLEANFILES= \
 	    sydbox.1 \
-	    sydfmt.1
-	    sydbox.html
-	    sydfmt.html
+	    sydfmt.1 \
+	    sydbox.html \
+	    sydfmt.html \
+	    sydbox.ent
 EXTRA_DIST= \
 	    sydbox.xml \
-	    sydfmt.xml
+	    sydfmt.xml \
+	    sydbox.ent.in
 
 if HAVE_XSLTPROC
 XSLTPROC_FLAGS= \
 		--encoding "'UTF-8'" \
 		--nonet \
-		--param funcsynopsis.style "'ansi'"
+		--param funcsynopsis.style "'ansi'" \
+		--path "$(top_builddir)/man"
 
-%.1: %.xml
+BUILT_SOURCES= sydbox.ent
+%.ent: %.ent.in
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) \
+		-e "s|@SYDBOX_API_VERSION@|$(SYDBOX_API_VERSION)|" \
+		-e "s|@SYDBOX_FNAME_EXT@|$(SYDBOX_FNAME_EXT)|" \
+		-e "s|@VERSION@|$(VERSION)|" \
+		-e "s|@GITHEAD@|$(GITHEAD)|" \
+		$< > $@
+
+%.1: %.xml sydbox.ent
 	$(AM_V_GEN)
 	$(AM_V_at)$(XSLTPROC) -o $@ $(XSLTPROC_FLAGS) http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
 
-%.html: %.xml
+%.html: %.xml sydbox.ent
 	$(AM_V_GEN)
 	$(AM_V_at)$(XSLTPROC) -o $@ $(XSLTPROC_FLAGS) http://docbook.sourceforge.net/release/xsl/current/xhtml-1_1/docbook.xsl $<
 

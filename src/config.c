@@ -16,6 +16,20 @@
 #include "macro.h"
 #include "log.h"
 
+static int filename_api(const char *filename, unsigned *api)
+{
+	const char *ext;
+
+	ext = filename_ext(filename);
+	if (!ext)
+		return -EINVAL;
+	if (!startswith(ext, SYDBOX_FNAME_EXT))
+		return -EINVAL;
+
+	ext += STRLEN_LITERAL(SYDBOX_FNAME_EXT);
+	return safe_atou(ext, api);
+}
+
 void config_init(void)
 {
 	assert(sydbox);
@@ -53,9 +67,17 @@ void config_done(void)
 void config_parse_file(const char *filename)
 {
 	int r;
+	unsigned api;
 	char line[LINE_MAX];
 	size_t line_count;
 	FILE *fp;
+
+	if ((r = filename_api(filename, &api)) < 0)
+		die("no API information in file name `%s', current API is %u",
+		    filename, SYDBOX_API_VERSION);
+	if (api != SYDBOX_API_VERSION)
+		die("config file name `%s' API mismatch: %u != %u",
+		    filename, api, SYDBOX_API_VERSION);
 
 	fp = fopen(filename, "r");
 	if (!fp)
@@ -81,14 +103,23 @@ void config_parse_spec(const char *pathspec)
 {
 	size_t len;
 	char *filename;
+	bool has_ext;
 
 	if (pathspec[0] == SYDBOX_PROFILE_CHAR) {
+		has_ext = endswith(pathspec, SYDBOX_API_EXT);
 		pathspec++;
-		len = sizeof(DATADIR) + sizeof(PACKAGE) + strlen(pathspec) + 1;
+		len = sizeof(DATADIR) + sizeof(PACKAGE); /* /usr/share/sydbox */
+		len += strlen(pathspec) + 1; /* profile name */
+		if (!has_ext)
+			len += STRLEN_LITERAL(SYDBOX_API_EXT) + 1; /* API extension */
 		filename = xcalloc(len, sizeof(char));
 
 		strcpy(filename, DATADIR "/" PACKAGE "/");
 		strcat(filename, pathspec);
+		if (!has_ext) {
+			strcat(filename, ".");
+			strcat(filename, SYDBOX_API_EXT);
+		}
 
 		config_parse_file(filename);
 		free(filename);

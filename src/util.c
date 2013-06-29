@@ -9,9 +9,7 @@
  * Distributed under the terms of the GNU General Public License v2
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "sydconf.h"
 
 #include <errno.h>
 #include <stdbool.h>

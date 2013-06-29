@@ -7,9 +7,7 @@
  * Released under the terms of the 3-clause BSD license
  */
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "sydconf.h"
 
 #ifdef PACKAGE
 # undef PACKAGE
@@ -20,7 +18,6 @@
 # define _GNU_SOURCE
 #endif
 
-#include "sydconf.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,6 +1,9 @@
 <?xml version='1.0' encoding="UTF-8"?>
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-        "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+  "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+  <!ENTITY % sydbox SYSTEM "sydbox.ent">
+  %sydbox;
+]>
 
 <!--
    Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
@@ -25,8 +28,8 @@
   <refmeta>
     <refentrytitle>sydbox</refentrytitle>
     <manvolnum>1</manvolnum>
-    <refmiscinfo class="source">sydbox</refmiscinfo>
-    <refmiscinfo class="manual">Sydbox</refmiscinfo>
+    <refmiscinfo class="source">sydbox-&SYDBOX_VERSION;</refmiscinfo>
+    <refmiscinfo class="manual">Sydbox-&SYDBOX_VERSION;</refmiscinfo>
   </refmeta>
 
   <refnamediv>
@@ -310,10 +313,26 @@
       <title>Configuration File Format</title>
 
       <para role="summary">
-        Sydbox's configuration file format is simple. It is just a way to supply many magic commands in a convenient
+        Configuration file format of sydbox is simple. It is just a way to supply many magic commands in a convenient
         way. All empty lines and lines starting with the number sign '<constant>#</constant>' are ignored. All the other
         lines are treated as if they were supplied to Sydbox via the <option>-m</option> command line switch.
       </para>
+
+    </refsect2>
+
+    <refsect2 id="configuration-file-naming">
+      <title>Configuration File Naming</title>
+
+      <para role="summary">
+        Configuration file naming of sydbox follows a naming scheme which makes it possible to extract magic command API
+        version from the file name. A sydbox configuration file must have the extension "&SYDBOX_FNAME_EXT;" followed by
+        the API version (e.g. "&SYDBOX_FNAME_EXT;&SYDBOX_API_VERSION;" for API version &SYDBOX_API_VERSION;).
+      </para>
+
+      <para>
+        Current magic command API of sydbox version is `&SYDBOX_API_VERSION;'.
+      </para>
+
     </refsect2>
 
     <refsect2>
@@ -1424,6 +1443,15 @@
     <para>
       Sydbox dumps information about the traced process tree to standard error upon receiving the SIGUSR1 signal.
       Send SIGUSR2 signal for more verbose process information.
+    </para>
+  </refsect1>
+
+  <refsect1 id="notes">
+    <title>Notes</title>
+
+    <para>
+      This manual page was written for sydbox version `&SYDBOX_VERSION;'.
+      This version is considered unstable.
     </para>
   </refsect1>
 

@@ -12,9 +12,7 @@
 #ifndef SECCOMP_H
 #define SECCOMP_H 1
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "sydconf.h"
 
 #if SYDBOX_HAVE_SECCOMP
 # include <sys/prctl.h>

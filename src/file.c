@@ -9,9 +9,7 @@
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "sydconf.h"
 
 #ifndef _GNU_SOURCE
 # define _GNU_SOURCE 1
@@ -49,6 +47,14 @@ char *truncate_nl(char *s)
 
 	s[strcspn(s, NEWLINE)] = 0;
 	return s;
+}
+
+const char *filename_ext(const char *s)
+{
+	const char *ext;
+
+	ext = strrchr(s, '.');
+	return ext ? ext + 1 : NULL;
 }
 
 int basename_copy(const char *path, char *dest, size_t len)

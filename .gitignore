@@ -87,6 +87,7 @@ man/sydbox.1
 man/sydbox.html
 man/sydfmt.1
 man/sydfmt.html
+man/sydbox.ent
 
 src/sydbox
 src/sydfmt

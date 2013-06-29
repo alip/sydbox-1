@@ -36,8 +36,8 @@ static const struct key key_table[] = {
 	},
 
 	[MAGIC_KEY_VERSION] = {
-		.name = STRINGIFY(SYDBOX_VERSION_MAJOR),
-		.lname = STRINGIFY(SYDBOX_VERSION_MAJOR),
+		.name = STRINGIFY(SYDBOX_API_VERSION),
+		.lname = STRINGIFY(SYDBOX_API_VERSION),
 		.parent = MAGIC_KEY_NONE,
 		.type = MAGIC_TYPE_NONE,
 	},

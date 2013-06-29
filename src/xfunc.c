@@ -5,10 +5,7 @@
  * Released under the terms of the 3-clause BSD license
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
+#include "sydconf.h"
 #include "xfunc.h"
 
 #include <signal.h>

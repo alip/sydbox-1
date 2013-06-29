@@ -7,9 +7,7 @@
  * Released under the terms of the 3-clause BSD license
  */
 
-#ifndef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "sydconf.h"
 
 #include "sockmatch.h"
 #include <stdbool.h>

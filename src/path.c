@@ -9,9 +9,7 @@
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "sydconf.h"
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1

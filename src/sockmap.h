@@ -10,10 +10,7 @@
 #ifndef SOCKMAP_H
 #define SOCKMAP_H 1
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
+#include "sydconf.h"
 #include "xfunc.h"
 #include "sockmatch.h"
 #include "sydhash.h"

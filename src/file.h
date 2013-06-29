@@ -19,6 +19,8 @@
 bool empty_line(const char *s);
 char *truncate_nl(char *s);
 
+const char *filename_ext(const char *s);
+
 int basename_copy(const char *path, char *dest, size_t len);
 int basename_alloc(const char *path, char **buf);
 ssize_t readlink_copy(const char *path, char *dest, size_t len);

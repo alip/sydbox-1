@@ -1,6 +1,6 @@
 sydboxsharedir= $(datadir)/$(PACKAGE)
 sydboxshare_DATA= \
-		  paludis
+		  paludis.syd-1
 
 dist_doc_DATA= \
 	       poems.txt

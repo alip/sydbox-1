@@ -8,6 +8,14 @@
 #ifndef SYDCONF_H
 #define SYDCONF_H
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#ifndef SYDBOX_API_VERSION
+# error "SYDBOX_API_VERSION is not defined!"
+#endif
+
 #include <limits.h>
 
 /* Configuration */
@@ -29,6 +37,14 @@
 # else
 #  define SYDBOX_MAXSYMLINKS 32
 # endif
+#endif
+
+#ifndef SYDBOX_FNAME_EXT
+# define SYDBOX_FNAME_EXT "syd-"
+#endif
+
+#ifndef SYDBOX_API_EXT
+# define SYDBOX_API_EXT SYDBOX_FNAME_EXT STRINGIFY(SYDBOX_API_VERSION)
 #endif
 
 #ifndef SYDBOX_PROFILE_CHAR

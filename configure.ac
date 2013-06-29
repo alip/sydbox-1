@@ -13,6 +13,9 @@ m4_define([sydbox_version_suffix], [_beta])
 m4_define([sydbox_version_full],   [sydbox_version_major.sydbox_version_minor.sydbox_version_micro[]sydbox_version_suffix])
 m4_define([sydbox_version],        [sydbox_version_full])
 
+m4_define([sydbox_api_version],    [sydbox_version_major])
+m4_define([sydbox_fname_ext],      [syd-])
+
 dnl pinktrace-1.0
 m4_define([pinktrace_version_major],  [1])
 m4_define([pinktrace_version_minor],  [0])
@@ -81,10 +84,16 @@ PINKTRACE_PC_SLOT="${PINK_VERSION_MAJOR}.${PINK_VERSION_MINOR}${PINK_VERSION_SUF
 AC_MSG_CHECKING([for pinktrace slot])
 AC_MSG_RESULT([$PINKTRACE_PC_SLOT])
 
-SYDBOX_CFLAGS='-DSYDBOX_VERSION_MAJOR=sydbox_version_major'
 PINKTRACE_CFLAGS=
 PINKTRACE_PC_CFLAGS=
 PINKTRACE_PC_LIBS="-lpinktrace_${PINKTRACE_PC_SLOT}"
+
+SYDBOX_API_VERSION=sydbox_api_version
+SYDBOX_FNAME_EXT="sydbox_fname_ext"
+AC_DEFINE_UNQUOTED([SYDBOX_API_VERSION], [$SYDBOX_API_VERSION], [Sydbox magic API version])
+AC_SUBST([SYDBOX_API_VERSION])
+AC_DEFINE_UNQUOTED([SYDBOX_FNAME_EXT], ["$SYDBOX_FNAME_EXT"], [Sydbox filename extension])
+AC_SUBST([SYDBOX_FNAME_EXT])
 
 dnl remove the check for c++ and fortran compiler
 m4_defun([_LT_AC_LANG_CXX_CONFIG], [:])

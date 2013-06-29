@@ -8,9 +8,7 @@
 #ifndef SYDBOX_GUARD_SYDBOX_H
 #define SYDBOX_GUARD_SYDBOX_H 1
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "sydconf.h"
 
 #ifndef _ATFILE_SOURCE
 #define _ATFILE_SOURCE 1
@@ -33,7 +31,6 @@
 #include "sockmap.h"
 #include "util.h"
 #include "xfunc.h"
-#include "sydconf.h"
 
 /* Definitions */
 #ifdef KERNEL_VERSION
