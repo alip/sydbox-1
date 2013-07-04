@@ -33,7 +33,7 @@ AC_CONFIG_SRCDIR([src/sydbox.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
-AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip std-options foreign])
+AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip std-options subdir-objects foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 PINK_VERSION_MAJOR=pinktrace_version_major

@@ -43,11 +43,11 @@ noinst_HEADERS+= \
 
 realpath_test_SOURCES= \
 		       realpath-test.c \
-		       $(top_srcdir)/src/realpath.c \
-		       $(top_srcdir)/src/strlcat.c \
-		       $(top_srcdir)/src/strlcpy.c \
-		       $(top_srcdir)/src/file.c \
-		       $(top_srcdir)/src/util.c
+		       ../../src/realpath.c \
+		       ../../src/strlcat.c \
+		       ../../src/strlcpy.c \
+		       ../../src/file.c \
+		       ../../src/util.c
 realpath_test_CFLAGS= \
 		      $(DEFS) \
 		      $(AM_CFLAGS) \
@@ -71,7 +71,7 @@ emily_SOURCES= \
 	       emily-rename.c \
 	       emily-rmdir.c \
 	       emily-utimensat.c \
-	       $(top_srcdir)/src/util.c
+	       ../../src/util.c
 emily_CFLAGS= \
 	      $(DEFS) \
 	      $(AM_CFLAGS) \

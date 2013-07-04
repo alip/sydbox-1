@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS= -I m4 ${ACLOCAL_FLAGS}
-AUTOMAKE_OPTIONS= dist-bzip2 no-dist-gzip std-options foreign
+AUTOMAKE_OPTIONS= dist-bzip2 no-dist-gzip std-options subdir-objects foreign
 AM_MAKEFLAGS= --no-print-directory
 
 CLEANFILES= *~
