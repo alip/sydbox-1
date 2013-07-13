@@ -967,7 +967,16 @@ static int trace(void)
 	syscall_trap_sig = sydbox->trace_options & PINK_TRACE_OPTION_SYSGOOD
 			   ? SIGTRAP | 0x80
 			   : SIGTRAP;
-	while(SYD_PROCESS_COUNT() > 0) {
+	/*
+	 * Used to be while(SYD_PROCESS_COUNT() > 0), but in this testcase:
+	 * int main() { _exit(!!fork()); }
+	 * under sydbox, parent sometimes (rarely) manages
+	 * to exit before we see the first stop of the child,
+	 * and we are losing track of it.
+	 *
+	 * Waiting for ECHILD works better.
+	 */
+	while (1) {
 		log_context(NULL);
 
 		if (interrupted) {
@@ -988,7 +997,12 @@ static int trace(void)
 			case EINTR:
 				continue;
 			case ECHILD:
-				goto cleanup;
+				if (SYD_PROCESS_COUNT() == 0)
+					goto cleanup;
+				/* If process count > 0, ECHILD is not expected,
+				 * treat it as any other error here.
+				 * fall through...
+				 */
 			default:
 				err_fatal(wait_errno, "wait failed");
 				goto cleanup;
