@@ -6,10 +6,20 @@ CLEANFILES= \
 	    *.gcov \
 	    *.log \
 	    *.trs
-EXTRA_DIST=
+EXTRA_DIST= \
+	    README
 noinst_DATA=
 noinst_HEADERS=
 noinst_SCRIPTS=
+check_SCRIPTS=
+BUILT_SOURCES=
+
+check_SCRIPTS+= \
+		test-lib-functions.sh \
+		test-lib-sydbox.sh \
+		test-runner.sh \
+		valgrind/analyze.sh
+EXTRA_DIST+= $(check_SCRIPTS)
 
 test-lib.sh: test-lib.sh.in
 	$(AM_V_GEN)
@@ -18,12 +28,14 @@ test-lib.sh: test-lib.sh.in
 		-e "s:@PTRACE_SEIZE@:$(PTRACE_SUPPORTS_SEIZE):g" \
 		-e "s:@PTRACE_SECCOMP@:$(SYDBOX_HAVE_SECCOMP):g" \
 		$< > $@
+BUILT_SOURCES+= test-lib.sh
+EXTRA_DIST+= test-lib.sh.in
 CLEANFILES+= test-lib.sh
 
-noinst_DATA+= wildtest.txt
-
-noinst_DATA+= valgrind/default.supp
-noinst_SCRIPTS+= valgrind/analyze.sh
+noinst_DATA+= \
+	      wildtest.txt \
+	      valgrind/default.supp
+EXTRA_DIST+= $(noinst_DATA)
 
 SYDBOX_CHECK_OPTIONS= --verbose
 export SYDBOX_CHECK_OPTIONS
@@ -67,11 +79,5 @@ TESTS= \
 	t3025-fs-symlink.sh \
 	t3026-fs-symlinkat.sh \
 	t3027-fs-mount.sh
-EXTRA_DIST+= \
-	     README \
-	     $(TESTS) \
-	     test-lib.sh.in \
-	     test-lib-functions.sh
-
-check_SCRIPTS= \
-	       test-lib.sh
+check_SCRIPTS+= $(TESTS)
+EXTRA_DIST+= $(TESTS)

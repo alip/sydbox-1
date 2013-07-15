@@ -16,6 +16,7 @@ sydbox: sydbox.in Makefile
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
 CLEANFILES+= sydbox
+EXTRA_DIST+= sydbox.in
 
 sydfmt: sydfmt.in Makefile
 	$(AM_V_GEN)
@@ -24,6 +25,7 @@ sydfmt: sydfmt.in Makefile
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
 CLEANFILES+= sydfmt
+EXTRA_DIST+= sydfmt.in
 
 DEFS+= \
        -DDATADIR=\"$(datadir)\" \

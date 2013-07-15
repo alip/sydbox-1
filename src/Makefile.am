@@ -6,8 +6,9 @@ CLEANFILES= \
 EXTRA_DIST=
 noinst_HEADERS=
 
-noinst_SCRIPTS=\
-	       kingbee.py
+noinst_SCRIPTS= \
+		kingbee.py
+EXTRA_DIST+= $(noinst_SCRIPTS)
 
 DEFS+= \
        -DDATADIR=\"$(datadir)\" \
