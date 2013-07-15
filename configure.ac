@@ -533,6 +533,20 @@ PKG_CHECK_MODULES([check], [check >= $CHECK_REQ],
 		  [HAVE_CHECK=no])
 AM_CONDITIONAL([HAVE_CHECK], test x"$HAVE_CHECK" = x"yes")
 
+dnl installed tests
+AC_MSG_CHECKING([whether tests should be installed])
+AC_ARG_ENABLE([installed-tests],
+	      AS_HELP_STRING([--enable-installed-tests], [Install tests]),
+	      [ENABLE_INSTALLED_TESTS=$enableval],
+	      [ENABLE_INSTALLED_TESTS=no])
+AC_MSG_RESULT([$ENABLE_INSTALLED_TESTS])
+if test x"$ENABLE_INSTALLED_TESTS" = x"yes"; then
+	if test x"$HAVE_CHECK" = x"no"; then
+		AC_MSG_ERROR([Installed tests require check-$CHECK_REQ or newer])
+	fi
+fi
+AM_CONDITIONAL([ENABLE_INSTALLED_TESTS], test "x$ENABLE_INSTALLED_TESTS" = x"yes")
+
 dnl doxygen
 AC_MSG_CHECKING([whether doxygen should be enabled])
 AC_ARG_ENABLE([doxygen],
