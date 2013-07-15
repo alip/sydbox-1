@@ -25,7 +25,6 @@
 #include <sys/types.h>
 #include <limits.h>
 #include <pinktrace/pink.h>
-#include "canonicalize.h"
 #include "slist.h"
 #include "sockmatch.h"
 #include "sockmap.h"
