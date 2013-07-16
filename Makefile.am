@@ -22,13 +22,29 @@ DISTCHECK_CONFIGURE_FLAGS= \
 			   --enable-doxygen \
 			   --enable-ipv6
 
+TAR_FILE= $(PACKAGE)-$(VERSION).tar.bz2
+SHA1_FILE= $(TAR_FILE).sha1sum
+GPG_FILE= $(SHA1_FILE).asc
+
 .PHONY: doxygen
 doxygen: all
 	$(MAKE) -C doc $@
+
+$(SHA1_FILE): dist
+	@echo "SHA1 $(TAR_FILE)"
+	sha1sum $(TAR_FILE) > $(SHA1_FILE)
+
+$(GPG_FILE): $(SHA1_FILE)
+	@echo "SIGN $(SHA1_FILE)"
+	gpg --detach-sign --armor $(SHA1_FILE)
 
 .PHONY: upload
 upload:
 	$(MAKE) -C data upload
 	$(MAKE) -C man upload
+
+.PHONY: upload-release
+upload-release: upload $(SHA1_FILE) $(GPG_FILE)
+	rsync --partial --progress -ave ssh $(TAR_FILE) $(SHA1_FILE) $(GPG_FILE) tchaikovsky.exherbo.org:public_html/sydbox/
 
 SUBDIRS= pinktrace src data doc man pkg-config tests .
