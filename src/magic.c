@@ -526,6 +526,18 @@ static const struct key key_table[] = {
 	},
 };
 
+enum magic_ret magic_errno(int err_no)
+{
+	switch (err_no) {
+	case 0:
+		return MAGIC_RET_OK;
+	case EAFNOSUPPORT:
+		return MAGIC_RET_NOT_SUPPORTED;
+	default:
+		return MAGIC_RET_INVALID_VALUE;
+	}
+}
+
 const char *magic_strerror(int error)
 {
 	if (error < 0)

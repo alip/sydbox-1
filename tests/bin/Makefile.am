@@ -84,6 +84,12 @@ emily_LDADD= \
 	     $(abs_top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
 emily_LDFLAGS= -no-install
 
+unlink_simple_SOURCES= \
+		       unlink-simple.c
+unlink_simple_CFLAGS= \
+		      $(DEFS) \
+		      $(AM_CFLAGS)
+
 wildtest_SOURCES= \
 		  wildtest.c
 wildtest_CFLAGS= \
@@ -95,6 +101,7 @@ wildtest_CFLAGS= \
 check_PROGRAMS= \
 		emily \
 		realpath-test \
+		unlink-simple \
 		wildtest
 
 check_SCRIPTS= \

@@ -20,10 +20,10 @@ BUILT_SOURCES= sydbox.ent
 %.ent: %.ent.in
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) \
-		-e "s|@SYDBOX_API_VERSION@|$(SYDBOX_API_VERSION)|" \
-		-e "s|@SYDBOX_FNAME_EXT@|$(SYDBOX_FNAME_EXT)|" \
-		-e "s|@VERSION@|$(VERSION)|" \
-		-e "s|@GITHEAD@|$(GITHEAD)|" \
+		-e "s|:SYDBOX_API_VERSION:|$(SYDBOX_API_VERSION)|" \
+		-e "s|:SYDBOX_FNAME_EXT:|$(SYDBOX_FNAME_EXT)|" \
+		-e "s|:VERSION:|$(VERSION)|" \
+		-e "s|:GITHEAD:|$(GITHEAD)|" \
 		$< > $@
 
 %.1: %.xml sydbox.ent

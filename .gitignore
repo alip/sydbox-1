@@ -100,6 +100,7 @@ tests/bin/sydbox
 tests/bin/sydfmt
 tests/bin/emily
 tests/bin/realpath-test
+tests/bin/unlink-simple
 tests/bin/wildtest
 tests/t[0-9][0-9][0-9]*
 !tests/t[0-9][0-9][0-9]*.c

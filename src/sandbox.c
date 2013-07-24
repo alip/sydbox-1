@@ -188,100 +188,53 @@ int box_resolve_path(const char *path, const char *prefix, pid_t tid,
 	return r;
 }
 
-bool box_match_path(const slist_t *patterns, const char *path,
-		   const char **match)
+static bool box_check_access(enum sys_access_mode mode,
+			     enum acl_action (*match_func)(enum acl_action defaction,
+							   const aclq_t *aclq,
+							   const void *needle,
+							   struct acl_node **match),
+			     const aclq_t *aclq_list[], size_t aclq_list_len,
+			     const void *needle)
 {
-	struct snode *node;
+	size_t i;
+	unsigned r;
+	enum acl_action acl_mode;
 
-	SLIST_FOREACH(node, patterns, up) {
-		if (pathmatch(node->data, path)) {
-			if (match)
-				*match = node->data;
-			return true;
-		}
+	assert(match_func);
+	assert(needle);
+
+	switch (mode) {
+	case ACCESS_WHITELIST: /* deny by default, whitelist entries */
+		acl_mode = ACL_ACTION_WHITELIST;
+		break;
+	case ACCESS_BLACKLIST: /* allow by default, blacklist entries */
+		acl_mode = ACL_ACTION_BLACKLIST;
+		break;
+	default:
+		assert_not_reached();
 	}
 
-	return false;
-}
-
-static bool box_match_path_(const slist_t *patterns, const void *path)
-{
-	return box_match_path(patterns, path, NULL);
-}
-
-static bool box_match_path_saun(const slist_t *patterns, const char *sun_path,
-			       const char **match)
-{
-	struct snode *node;
-	struct sockmatch *m;
-
-	SLIST_FOREACH(node, patterns, up) {
-		m = node->data;
-		if (m->family == AF_UNIX && !m->addr.sa_un.abstract) {
-			if (pathmatch(m->addr.sa_un.path, sun_path)) {
-				if (match)
-					*match = node->data;
-				return true;
+	for (i = 0; i < aclq_list_len; i++) {
+		r = match_func(acl_mode, aclq_list[i], needle, NULL);
+		if (r & ACL_MATCH) {
+			r &= ~ACL_MATCH_MASK;
+			switch (r) {
+			case ACL_ACTION_WHITELIST:
+				return true; /* access granted */
+			case ACL_ACTION_BLACKLIST:
+				return false; /* access denied */
+			default:
+				assert_not_reached();
 			}
 		}
 	}
 
-	return false;
-}
-
-static bool box_match_path_saun_(const slist_t *patterns, const void *sun_path)
-{
-	return box_match_path_saun(patterns, sun_path, NULL);
-}
-
-static bool box_match_socket(const slist_t *patterns,
-			    const struct pink_sockaddr *psa,
-			    struct sockmatch **match)
-{
-	struct snode *node;
-
-	SLIST_FOREACH(node, patterns, up) {
-		if (sockmatch(node->data, psa)) {
-			if (match)
-				*match = node->data;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-static bool box_match_socket_(const slist_t *patterns, const void *psa)
-{
-	return box_match_socket(patterns, psa, NULL);
-}
-
-static bool box_check_access(enum sys_access_mode mode,
-			    bool (*match_func)(const slist_t *patterns,
-					       const void *needle),
-			    slist_t **pattern_list,
-			    size_t pattern_list_len,
-			    void *needle)
-{
-	unsigned i;
-
-	assert(match_func);
-
+	/* No match */
 	switch (mode) {
 	case ACCESS_WHITELIST:
-		for (i = 0; i < pattern_list_len; i++) {
-			if (pattern_list[i] &&
-			    match_func(pattern_list[i], needle))
-				return true; /* access granted */
-		}
-		return false; /* access denied */
+		return false; /* access denied (default) */
 	case ACCESS_BLACKLIST:
-		for (i = 0; i < pattern_list_len; i++) {
-			if (pattern_list[i] &&
-			    match_func(pattern_list[i], needle))
-				return false; /* access denied */
-		}
-		return true; /* access granted */
+		return true; /* access granted (default) */
 	default:
 		assert_not_reached();
 	}
@@ -445,7 +398,8 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 
 	/* Step 4: Check for access */
 	enum sys_access_mode access_mode;
-	slist_t *access_lists[2], *access_filter;
+	const aclq_t *access_lists[2];
+	const aclq_t *access_filter;
 
 check_access:
 	if (info->access_mode != ACCESS_0)
@@ -457,14 +411,11 @@ check_access:
 
 	if (info->access_list)
 		access_lists[0] = info->access_list;
-	else if (access_mode == ACCESS_WHITELIST)
-		access_lists[0] = &current->config.whitelist_write;
-	else /* if (info->access_mode == ACCESS_BLACKLIST) */
-		access_lists[0] = &current->config.blacklist_write;
+	else
+		access_lists[0] = &current->config.acl_write;
 	access_lists[1] = info->access_list_global;
 
-	if (box_check_access(access_mode, box_match_path_,
-			     access_lists, 2, abspath)) {
+	if (box_check_access(access_mode, acl_pathmatch, access_lists, 2, abspath)) {
 		log_access("allowing access to `%s'", abspath);
 		r = 0;
 		goto out;
@@ -501,7 +452,7 @@ check_access:
 	else
 		access_filter = &sydbox->config.filter_write;
 
-	if (!box_match_path(access_filter, abspath, NULL)) {
+	if (!acl_match_path(ACL_ACTION_NONE, access_filter, abspath, NULL)) {
 		if (info->at_func)
 			box_report_violation_path_at(current, info->arg_index,
 						     path, prefix);
@@ -591,7 +542,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 		goto report;
 	}
 
-	slist_t *access_lists[2];
+	const aclq_t *access_lists[2];
 	access_lists[0] = info->access_list;
 	access_lists[1] = info->access_list_global;
 
@@ -609,7 +560,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 			goto out;
 		}
 
-		if (box_check_access(info->access_mode, box_match_path_saun_,
+		if (box_check_access(info->access_mode, acl_sockmatch_saun,
 				     access_lists, 2, abspath)) {
 			log_access("access to sun_path `%s' granted", abspath);
 			r = 0;
@@ -618,7 +569,7 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 			log_access("access to sun_path `%s' denied", abspath);
 		}
 	} else {
-		if (box_check_access(info->access_mode, box_match_socket_,
+		if (box_check_access(info->access_mode, acl_sockmatch,
 				     access_lists, 2, psa)) {
 			log_access("access to sockaddr `%p' granted", (void *)psa);
 			r = 0;
@@ -632,13 +583,13 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
-		if (box_match_path_saun(info->access_filter, abspath, NULL)) {
+		if (acl_match_saun(ACL_ACTION_NONE, info->access_filter, abspath, NULL)) {
 			log_access("sun_path=`%s' matches a filter pattern, violation filtered",
 				   abspath);
 			goto out;
 		}
 	} else {
-		if (box_match_socket(info->access_filter, psa, NULL)) {
+		if (acl_match_sock(ACL_ACTION_NONE, info->access_filter, psa, NULL)) {
 			log_access("sockaddr=%p matches a filter pattern, violation filtered",
 				   (void *)psa);
 			goto out;

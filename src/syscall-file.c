@@ -33,9 +33,7 @@ static inline void sysinfo_read_access(syd_proc_t *current, sysinfo_t *info)
 	info->access_mode = sandbox_read_deny(current)
 			    ? ACCESS_WHITELIST
 			    : ACCESS_BLACKLIST;
-	info->access_list = sandbox_read_deny(current)
-			    ? &current->config.whitelist_read
-			    : &current->config.blacklist_read;
+	info->access_list = &current->config.acl_read;
 	info->access_filter = &sydbox->config.filter_read;
 }
 

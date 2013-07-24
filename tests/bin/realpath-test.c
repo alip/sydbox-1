@@ -28,7 +28,6 @@ Options:\n\
 	exit(exitcode);
 }
 
-
 int main(int argc, char **argv)
 {
 	int optc, r;

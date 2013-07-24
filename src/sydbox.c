@@ -275,7 +275,7 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 	pid_t pid = current->pid;
 	short abi = current->abi;
 	pid_t ppid = current->ppid;
-	struct snode *node;
+	struct acl_node *node;
 	struct sockmatch *match;
 
 	if (isatty(STDERR_FILENO)) {
@@ -364,17 +364,17 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 		CE);
 	fprintf(stderr, "\t%sMagic Lock: %s%s\n", CN, lock_state_to_string(current->config.magic_lock), CE);
 	fprintf(stderr, "\t%sExec Whitelist:%s\n", CI, CE);
-	SLIST_FOREACH(node, &current->config.whitelist_exec, up)
-		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->data, CE);
+	ACLQ_FOREACH(node, &current->config.acl_exec)
+		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->match, CE);
 	fprintf(stderr, "\t%sRead Whitelist:%s\n", CI, CE);
-	SLIST_FOREACH(node, &current->config.whitelist_read, up)
-		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->data, CE);
+	ACLQ_FOREACH(node, &current->config.acl_read)
+		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->match, CE);
 	fprintf(stderr, "\t%sWrite Whitelist:%s\n", CI, CE);
-	SLIST_FOREACH(node, &current->config.whitelist_write, up)
-		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->data, CE);
+	ACLQ_FOREACH(node, &current->config.acl_write)
+		fprintf(stderr, "\t\t%s`%s'%s\n", CN, (char *)node->match, CE);
 	fprintf(stderr, "\t%sNetwork Whitelist bind():%s\n", CI, CE);
-	SLIST_FOREACH(node, &current->config.whitelist_network_bind, up) {
-		match = node->data;
+	ACLQ_FOREACH(node, &current->config.acl_network_bind) {
+		match = node->match;
 		if (match->str) {
 			fprintf(stderr, "\t\t%s`%s'%s\n", CN, match->str, CE);
 		} else {
@@ -382,8 +382,8 @@ static bool dump_one_process(syd_proc_t *current, bool verbose)
 		}
 	}
 	fprintf(stderr, "\t%sNetwork Whitelist connect():%s\n", CI, CE);
-	SLIST_FOREACH(node, &current->config.whitelist_network_connect, up) {
-		match = node->data;
+	ACLQ_FOREACH(node, &current->config.acl_network_connect) {
+		match = node->match;
 		if (match->str) {
 			fprintf(stderr, "\t\t%s`%s'%s\n", CN, match->str, CE);
 		} else {
@@ -482,20 +482,20 @@ static void init_signals(void)
 
 static void cleanup(void)
 {
-	struct snode *node;
+	struct acl_node *node;
 
 	assert(sydbox);
 
 	/* Free the global configuration */
 	free_sandbox(&sydbox->config.child);
 
-	SLIST_FREE_ALL(node, &sydbox->config.exec_kill_if_match, up, free);
-	SLIST_FREE_ALL(node, &sydbox->config.exec_resume_if_match, up, free);
+	ACLQ_FREE(node, &sydbox->config.exec_kill_if_match, free);
+	ACLQ_FREE(node, &sydbox->config.exec_resume_if_match, free);
 
-	SLIST_FREE_ALL(node, &sydbox->config.filter_exec, up, free);
-	SLIST_FREE_ALL(node, &sydbox->config.filter_read, up, free);
-	SLIST_FREE_ALL(node, &sydbox->config.filter_write, up, free);
-	SLIST_FREE_ALL(node, &sydbox->config.filter_network, up, free_sockmatch);
+	ACLQ_FREE(node, &sydbox->config.filter_exec, free);
+	ACLQ_FREE(node, &sydbox->config.filter_read, free);
+	ACLQ_FREE(node, &sydbox->config.filter_write, free);
+	ACLQ_FREE(node, &sydbox->config.filter_network, free_sockmatch);
 
 	free(sydbox->program_invocation_name);
 	free(sydbox);
@@ -630,7 +630,7 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 {
 	char *comm;
 	char *cwd;
-	struct snode *node, *newnode;
+	struct acl_node *node, *newnode;
 	sandbox_t *inherit;
 
 	if (!parent) {
@@ -661,31 +661,11 @@ static void inherit_sandbox(syd_proc_t *current, syd_proc_t *parent)
 	current->sockmap = NULL;
 
 	/* Copy the lists  */
-	SLIST_COPY_ALL(node, &inherit->whitelist_exec, up,
-		       &current->config.whitelist_exec, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->whitelist_read, up,
-		       &current->config.whitelist_read, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->whitelist_write, up,
-		       &current->config.whitelist_write, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->whitelist_network_bind, up,
-		       &current->config.whitelist_network_bind, newnode,
-		       sockmatch_xdup);
-	SLIST_COPY_ALL(node, &inherit->whitelist_network_connect, up,
-		       &current->config.whitelist_network_connect, newnode,
-		       sockmatch_xdup);
-
-	SLIST_COPY_ALL(node, &inherit->blacklist_exec, up,
-		       &current->config.blacklist_exec, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->blacklist_read, up,
-		       &current->config.blacklist_read, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->blacklist_write, up,
-		       &current->config.blacklist_write, newnode, xstrdup);
-	SLIST_COPY_ALL(node, &inherit->blacklist_network_bind, up,
-		       &current->config.blacklist_network_bind, newnode,
-		       sockmatch_xdup);
-	SLIST_COPY_ALL(node, &inherit->blacklist_network_connect, up,
-		       &current->config.blacklist_network_connect, newnode,
-		       sockmatch_xdup);
+	ACLQ_DUP(node, &inherit->acl_exec, &current->config.acl_exec, newnode, xstrdup);
+	ACLQ_DUP(node, &inherit->acl_read, &current->config.acl_read, newnode, xstrdup);
+	ACLQ_DUP(node, &inherit->acl_write, &current->config.acl_write, newnode, xstrdup);
+	ACLQ_DUP(node, &inherit->acl_network_bind, &current->config.acl_network_bind, newnode, sockmatch_xdup);
+	ACLQ_DUP(node, &inherit->acl_network_connect, &current->config.acl_network_connect, newnode, sockmatch_xdup);
 
 	if (sydbox->config.whitelist_per_process_directories) {
 		char magic[sizeof("/proc/%u/***") + sizeof(int)*3 + /*paranoia:*/16];
@@ -795,7 +775,7 @@ static int event_exec(syd_proc_t *current)
 
 	/* kill_if_match and resume_if_match */
 	r = 0;
-	if (box_match_path(&sydbox->config.exec_kill_if_match,
+	if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_kill_if_match,
 			   current->abspath, &match)) {
 		log_warning("kill_if_match pattern=`%s' matches execve path=`%s'",
 			    match, current->abspath);
@@ -803,7 +783,7 @@ static int event_exec(syd_proc_t *current)
 		syd_trace_kill(current, SIGKILL);
 		ignore_proc(current);
 		return -ESRCH;
-	} else if (box_match_path(&sydbox->config.exec_resume_if_match,
+	} else if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_resume_if_match,
 				  current->abspath, &match)) {
 		log_warning("resume_if_match pattern=`%s' matches execve path=`%s'",
 			    match, current->abspath);

@@ -53,6 +53,20 @@ void config_init(void)
 	sydbox->config.violation_decision = VIOLATION_DENY;
 	sydbox->config.violation_exit_code = -1;
 	sydbox->config.child.magic_lock = LOCK_UNSET;
+
+	/* initialize access control lists */
+	ACLQ_INIT(&sydbox->config.exec_kill_if_match);
+	ACLQ_INIT(&sydbox->config.exec_resume_if_match);
+	ACLQ_INIT(&sydbox->config.filter_exec);
+	ACLQ_INIT(&sydbox->config.filter_read);
+	ACLQ_INIT(&sydbox->config.filter_write);
+	ACLQ_INIT(&sydbox->config.filter_network);
+	ACLQ_INIT(&sydbox->config.acl_network_connect_auto);
+	ACLQ_INIT(&sydbox->config.child.acl_exec);
+	ACLQ_INIT(&sydbox->config.child.acl_read);
+	ACLQ_INIT(&sydbox->config.child.acl_write);
+	ACLQ_INIT(&sydbox->config.child.acl_network_bind);
+	ACLQ_INIT(&sydbox->config.child.acl_network_connect);
 }
 
 void config_done(void)

@@ -39,13 +39,9 @@ int sys_bind(syd_proc_t *current)
 	info.deny_errno = EADDRNOTAVAIL;
 	if (current->subcall == PINK_SOCKET_SUBCALL_BIND)
 		info.decode_socketcall = true;
-	if (sandbox_network_deny(current)) {
-		info.access_mode = ACCESS_WHITELIST;
-		info.access_list = &current->config.whitelist_network_bind;
-	} else {
-		info.access_mode = ACCESS_BLACKLIST;
-		info.access_list = &current->config.blacklist_network_bind;
-	}
+	info.access_mode = sandbox_network_deny(current) ? ACCESS_WHITELIST
+							 : ACCESS_BLACKLIST;
+	info.access_list = &current->config.acl_network_bind;
 	info.access_filter = &sydbox->config.filter_network;
 
 	if (sydbox->config.whitelist_successful_bind) {
@@ -91,7 +87,7 @@ int sysx_bind(syd_proc_t *current)
 {
 	int r;
 	long retval;
-	struct snode *snode;
+	struct acl_node *node;
 	struct sockmatch *match;
 
 	if (sandbox_network_off(current) ||
@@ -120,10 +116,10 @@ int sysx_bind(syd_proc_t *current)
 #endif
 
 	log_trace("whitelisting socket address");
-	snode = xcalloc(1, sizeof(struct snode));
+	node = xcalloc(1, sizeof(struct acl_node));
 	match = sockmatch_new(current->savebind);
-	snode->data = match;
-	SLIST_INSERT_HEAD(&sydbox->config.whitelist_network_connect_auto, snode, up);
+	node->match = match;
+	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
 	return 0;
 zero:
 	log_check("saving sockfd:%ld with port zero for whitelisting", current->args[0]);
@@ -144,13 +140,10 @@ static int sys_connect_or_sendto(syd_proc_t *current, unsigned arg_index)
 		return 0;
 
 	init_sysinfo(&info);
-	info.access_mode = sandbox_network_deny(current)
-			   ? ACCESS_WHITELIST
-			   : ACCESS_BLACKLIST;
-	info.access_list = sandbox_network_deny(current)
-			   ? &current->config.whitelist_network_connect
-			   : &current->config.blacklist_network_connect;
-	info.access_list_global = &sydbox->config.whitelist_network_connect_auto;
+	info.access_mode = sandbox_network_deny(current) ? ACCESS_WHITELIST
+							 : ACCESS_BLACKLIST;
+	info.access_list = &current->config.acl_network_connect;
+	info.access_list_global = &sydbox->config.acl_network_connect_auto;
 	info.access_filter = &sydbox->config.filter_network;
 	info.rmode = RPATH_NOLAST;
 	info.arg_index = arg_index;
@@ -204,7 +197,7 @@ int sysx_getsockname(syd_proc_t *current)
 	unsigned port;
 	long retval;
 	struct pink_sockaddr psa;
-	struct snode *snode;
+	struct acl_node *node;
 	const struct sockinfo *info;
 	struct sockmatch *match;
 
@@ -248,10 +241,10 @@ int sysx_getsockname(syd_proc_t *current)
 		assert_not_reached();
 	}
 
-	log_check("whitelisting bind(port:0->%u) for connect()", port);
-	snode = xcalloc(1, sizeof(struct snode));
-	snode->data = match;
-	SLIST_INSERT_HEAD(&sydbox->config.whitelist_network_connect_auto, snode, up);
+	log_trace("whitelisting bind(port:0->%u) for connect()", port);
+	node = xcalloc(1, sizeof(struct acl_node));
+	node->match = match;
+	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
 	return 0;
 }
 

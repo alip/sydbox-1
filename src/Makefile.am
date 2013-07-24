@@ -22,6 +22,7 @@ bin_PROGRAMS= sydbox sydfmt
 sydbox_CPPFLAGS= -DSYDBOX
 sydfmt_CPPFLAGS= -DSYDFMT
 noinst_HEADERS+= \
+		 acl-queue.h \
 		 asyd.h \
 		 file.h \
 		 log.h \
@@ -30,7 +31,6 @@ noinst_HEADERS+= \
 		 pathlookup.h \
 		 proc.h \
 		 seccomp.h \
-		 slist.h \
 		 pathdecode.h \
 		 pathmatch.h \
 		 sockmatch.h \
@@ -51,18 +51,17 @@ sydbox_SOURCES= \
 		 pathdecode.c \
 		 pathmatch.c \
 		 sockmatch.c \
+		 acl-queue.c \
 		 util.c \
 		 xfunc.c \
 		 magic-panic.c \
 		 magic-sandbox.c \
-		 magic-socklist.c \
-		 magic-strlist.c \
 		 magic-trace.c \
 		 magic-restrict.c \
 		 magic-whitelist.c \
+		 magic-acl.c \
 		 magic-log.c \
 		 magic-match.c \
-		 magic-if_match.c \
 		 magic-cmd.c \
 		 magic.c \
 		 sandbox.c \

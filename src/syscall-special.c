@@ -115,11 +115,15 @@ int sys_execve(syd_proc_t *current)
 	case SANDBOX_OFF:
 		return 0;
 	case SANDBOX_DENY:
-		if (box_match_path(&current->config.whitelist_exec, abspath, NULL))
+		if (acl_match_path(ACL_ACTION_WHITELIST,
+				   &current->config.acl_exec,
+				   abspath, NULL))
 			return 0;
 		break;
 	case SANDBOX_ALLOW:
-		if (!box_match_path(&current->config.blacklist_exec, abspath, NULL))
+		if (acl_match_path(ACL_ACTION_BLACKLIST,
+				   &current->config.acl_exec,
+				   abspath, NULL))
 			return 0;
 		break;
 	default:
@@ -128,7 +132,7 @@ int sys_execve(syd_proc_t *current)
 
 	r = deny(current, EACCES);
 
-	if (!box_match_path(&sydbox->config.filter_exec, abspath, NULL))
+	if (!acl_match_path(ACL_ACTION_NONE, &sydbox->config.filter_exec, abspath, NULL))
 		violation(current, "%s(`%s')", current->sysname, abspath);
 
 	free(abspath);

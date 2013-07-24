@@ -1260,6 +1260,10 @@
         everything in the directory (as if "dir_name/**" had been specified).</para>
       </listitem>
     </itemizedlist>
+
+    <note>
+      <simpara>For multiple patterns the first matching pattern wins and the rest is not checked.</simpara>
+    </note>
   </refsect1>
 
   <refsect1 id="address-matching">

@@ -25,7 +25,7 @@
 #include <sys/types.h>
 #include <limits.h>
 #include <pinktrace/pink.h>
-#include "slist.h"
+#include "acl-queue.h"
 #include "sockmatch.h"
 #include "sockmap.h"
 #include "util.h"
@@ -322,17 +322,11 @@ typedef struct {
 
 	enum lock_state magic_lock;
 
-	slist_t whitelist_exec;
-	slist_t whitelist_read;
-	slist_t whitelist_write;
-	slist_t whitelist_network_bind;
-	slist_t whitelist_network_connect;
-
-	slist_t blacklist_exec;
-	slist_t blacklist_read;
-	slist_t blacklist_write;
-	slist_t blacklist_network_bind;
-	slist_t blacklist_network_connect;
+	aclq_t acl_exec;
+	aclq_t acl_read;
+	aclq_t acl_write;
+	aclq_t acl_network_bind;
+	aclq_t acl_network_connect;
 } sandbox_t;
 
 /* process information */
@@ -427,15 +421,15 @@ typedef struct {
 
 	char *log_file;
 
-	slist_t exec_kill_if_match;
-	slist_t exec_resume_if_match;
+	aclq_t exec_kill_if_match;
+	aclq_t exec_resume_if_match;
 
-	slist_t filter_exec;
-	slist_t filter_read;
-	slist_t filter_write;
-	slist_t filter_network;
+	aclq_t filter_exec;
+	aclq_t filter_read;
+	aclq_t filter_write;
+	aclq_t filter_network;
 
-	slist_t whitelist_network_connect_auto;
+	aclq_t acl_network_connect_auto;
 } config_t;
 
 typedef struct {
@@ -504,10 +498,10 @@ typedef struct {
 	/* Access control mode (whitelist, blacklist) */
 	enum sys_access_mode access_mode;
 	/* Access control lists (per-process, global) */
-	slist_t *access_list;
-	slist_t *access_list_global;
+	aclq_t *access_list;
+	aclq_t *access_list_global;
 	/* Access filter lists (only global) */
-	slist_t *access_filter;
+	aclq_t *access_filter;
 
 	/* Pointer to the data to be returned */
 	int *ret_fd;
@@ -575,7 +569,6 @@ void callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 		     unsigned rmode, char **res);
-bool box_match_path(const slist_t *patterns, const char *path, const char **match);
 int box_check_path(syd_proc_t *current, sysinfo_t *info);
 int box_check_socket(syd_proc_t *current, sysinfo_t *info);
 
@@ -586,23 +579,13 @@ static inline sandbox_t *box_current(syd_proc_t *current)
 
 static inline void free_sandbox(sandbox_t *box)
 {
-	struct snode *node;
+	struct acl_node *node;
 
-	SLIST_FREE_ALL(node, &box->whitelist_exec, up, free);
-	SLIST_FREE_ALL(node, &box->whitelist_read, up, free);
-	SLIST_FREE_ALL(node, &box->whitelist_write, up, free);
-	SLIST_FREE_ALL(node, &box->whitelist_network_bind, up,
-		       free_sockmatch);
-	SLIST_FREE_ALL(node, &box->whitelist_network_connect, up,
-		       free_sockmatch);
-
-	SLIST_FREE_ALL(node, &box->blacklist_exec, up, free);
-	SLIST_FREE_ALL(node, &box->blacklist_read, up, free);
-	SLIST_FREE_ALL(node, &box->blacklist_write, up, free);
-	SLIST_FREE_ALL(node, &box->blacklist_network_bind, up,
-		       free_sockmatch);
-	SLIST_FREE_ALL(node, &box->blacklist_network_connect, up,
-		       free_sockmatch);
+	ACLQ_FREE(node, &box->acl_exec, free);
+	ACLQ_FREE(node, &box->acl_read, free);
+	ACLQ_FREE(node, &box->acl_write, free);
+	ACLQ_FREE(node, &box->acl_network_bind, free_sockmatch);
+	ACLQ_FREE(node, &box->acl_network_connect, free_sockmatch);
 }
 
 void systable_init(void);
@@ -618,6 +601,7 @@ int sysinit_seccomp(void);
 int sysenter(syd_proc_t *current);
 int sysexit(syd_proc_t *current);
 
+enum magic_ret magic_errno(int err_no);
 const char *magic_strerror(int error);
 const char *magic_strkey(enum magic_key key);
 unsigned magic_key_type(enum magic_key key);
