@@ -74,7 +74,7 @@ unsigned acl_sockmatch_saun(enum acl_action defaction, const aclq_t *aclq,
 
 	ACLQ_FOREACH(node, aclq) {
 		m = node->match;
-		if (m->family != AF_UNIX || !m->addr.sa_un.abstract)
+		if (m->family != AF_UNIX || m->addr.sa_un.abstract)
 			continue;
 		if (pathmatch(m->addr.sa_un.path, abspath)) {
 			if (match)
