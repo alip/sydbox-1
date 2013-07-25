@@ -928,16 +928,20 @@ static int event_seccomp(syd_proc_t *current)
 }
 #endif
 
-static int event_exit(syd_proc_t *current, int status)
+static int event_exit(syd_proc_t *current)
 {
 	int code = EXIT_FAILURE;
+	int r, status;
+
+	if ((r = syd_trace_geteventmsg(current, (unsigned long *)&status)) < 0)
+		return r; /* process dead */
 
 	if (WIFEXITED(status)) {
 		code = WEXITSTATUS(status);
-		log_trace("exited with code:%d (status:0x%04x)", code, status);
+		log_trace("exiting with code:%d (status:0x%04x)", code, status);
 	} else {
 		code = 128 + WTERMSIG(status);
-		log_trace("terminated with signal:%d (status:0x%04x)",
+		log_trace("terminating with signal:%d (status:0x%04x)",
 			  WTERMSIG(status), status);
 	}
 
@@ -945,12 +949,10 @@ static int event_exit(syd_proc_t *current, int status)
 		sydbox->exit_code = code;
 		if (!sydbox->config.exit_wait_all) {
 			log_trace("aborting loop (wait_all not set)");
-			remove_proc(current);
 			cont_all();
 			exit(sydbox->exit_code);
 		}
 	}
-	remove_proc(current);
 	return 0;
 }
 
@@ -1115,7 +1117,7 @@ dont_switch_procs:
 		}
 
 		if (WIFSIGNALED(status) || WIFEXITED(status)) {
-			event_exit(current, status);
+			remove_proc(current);
 			continue;
 		}
 
@@ -1163,6 +1165,10 @@ dont_switch_procs:
 					continue; /* process dead */
 			}
 #endif
+			else if (event == PINK_EVENT_EXIT) {
+				if ((r = event_exit(current)) < 0)
+					continue; /* process dead */
+			}
 			goto restart_tracee_with_sig_0;
 		}
 
@@ -1329,7 +1335,9 @@ int main(int argc, char **argv)
 	systable_init();
 	sysinit();
 
-	ptrace_options = PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC;
+	ptrace_options = PINK_TRACE_OPTION_SYSGOOD |
+			 PINK_TRACE_OPTION_EXEC |
+			 PINK_TRACE_OPTION_EXIT;
 	ptrace_default_step = SYD_STEP_SYSCALL;
 	if (sydbox->config.follow_fork)
 		ptrace_options |= (PINK_TRACE_OPTION_FORK |
