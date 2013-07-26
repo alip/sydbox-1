@@ -101,6 +101,10 @@ sydbox_SOURCES+= \
 		 strlcat.c \
 		 strlcpy.c
 
+# imported from OpenBSD
+noinst_HEADERS+= \
+		 sys-queue.h
+
 sydbox_LDADD= \
 	      $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
 
