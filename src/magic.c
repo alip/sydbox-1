@@ -526,11 +526,13 @@ static const struct key key_table[] = {
 	},
 };
 
-enum magic_ret magic_errno(int err_no)
+enum magic_ret magic_check_call(int rval)
 {
-	switch (err_no) {
+	switch (rval) {
 	case 0:
-		return MAGIC_RET_OK;
+		if (errno != EAFNOSUPPORT)
+			return MAGIC_RET_OK;
+		/* fall through (for cases like --disable-ipv6) */
 	case EAFNOSUPPORT:
 		return MAGIC_RET_NOT_SUPPORTED;
 	default:

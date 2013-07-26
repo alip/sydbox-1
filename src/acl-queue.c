@@ -200,7 +200,7 @@ int acl_remove_pathmatch(enum acl_action action, const char *pattern, aclq_t *ac
 
 int acl_append_sockmatch(enum acl_action action, const char *pattern, aclq_t *aclq)
 {
-	int r;
+	int r, save_errno;
 	int c, f;
 	char **list;
 	struct sockmatch *match;
@@ -211,6 +211,7 @@ int acl_append_sockmatch(enum acl_action action, const char *pattern, aclq_t *ac
 
 	/* Expand network alias */
 	r = 0;
+	save_errno = 0;
 	c = f = sockmatch_expand(pattern, &list) - 1;
 	for (; c >= 0; c--) {
 		errno = 0;
@@ -219,7 +220,8 @@ int acl_append_sockmatch(enum acl_action action, const char *pattern, aclq_t *ac
 			goto out;
 		} else if (errno == EAFNOSUPPORT) {
 			/* IPv6 support disabled? */
-			r = -errno;
+			r = 0;
+			save_errno = errno;
 			goto out;
 		}
 		node = xmalloc(sizeof(struct acl_node));
@@ -233,6 +235,7 @@ out:
 		free(list[f]);
 	free(list);
 
+	errno = save_errno;
 	return r;
 }
 

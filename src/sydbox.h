@@ -601,7 +601,7 @@ int sysinit_seccomp(void);
 int sysenter(syd_proc_t *current);
 int sysexit(syd_proc_t *current);
 
-enum magic_ret magic_errno(int err_no);
+enum magic_ret magic_check_call(int rval);
 const char *magic_strerror(int error);
 const char *magic_strkey(enum magic_key key);
 unsigned magic_key_type(enum magic_key key);
