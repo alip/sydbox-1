@@ -16,7 +16,8 @@ EXTRA_DIST= \
 
 dist_doc_DATA= \
 	       COPYRIGHT \
-	       README.mkd
+	       README.mkd \
+	       man/ptrace-ntpl.txt
 
 DISTCHECK_CONFIGURE_FLAGS= \
 			   --enable-doxygen \
