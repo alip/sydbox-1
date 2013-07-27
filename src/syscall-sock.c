@@ -118,6 +118,7 @@ int sysx_bind(syd_proc_t *current)
 	log_trace("whitelisting socket address");
 	node = xcalloc(1, sizeof(struct acl_node));
 	match = sockmatch_new(current->savebind);
+	node->action = ACL_ACTION_WHITELIST;
 	node->match = match;
 	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
 	return 0;
@@ -243,6 +244,7 @@ int sysx_getsockname(syd_proc_t *current)
 
 	log_trace("whitelisting bind(port:0->%u) for connect()", port);
 	node = xcalloc(1, sizeof(struct acl_node));
+	node->action = ACL_ACTION_WHITELIST;
 	node->match = match;
 	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
 	return 0;
