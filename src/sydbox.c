@@ -1325,8 +1325,13 @@ int main(int argc, char **argv)
 				   PINK_TRACE_OPTION_CLONE);
 	if (sydbox->config.use_seccomp) {
 #if SYDBOX_HAVE_SECCOMP
-		ptrace_options |= PINK_TRACE_OPTION_SECCOMP;
-		ptrace_default_step = SYD_STEP_RESUME;
+		if (os_release >= KERNEL_VERSION(3,5,0)) {
+			ptrace_options |= PINK_TRACE_OPTION_SECCOMP;
+			ptrace_default_step = SYD_STEP_RESUME;
+		} else {
+			log_warning("Linux-3.5.0 required for seccomp support, disabling");
+			sydbox->config.use_seccomp = false;
+		}
 #else
 		log_info("seccomp not supported, disabling");
 		sydbox->config.use_seccomp = false;
