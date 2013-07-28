@@ -252,7 +252,8 @@ def run_test(name, expr, loops=100, threaded=True):
                                                                t))
         print("\t%d: sydbox [seize:%d, seccomp:%d]: check with valgrind" %
                 (test_no, choice[0], choice[1]))
-        eval_ext(expr_once, syd=SYDBOX, syd_opts=[opt_seize, opt_seccomp], valgrind=VALGRIND)
+        eval_ext(expr_once, syd=SYDBOX, syd_opts=[opt_seize, opt_seccomp],
+                valgrind=VALGRIND, valgrind_opts=VALGRIND_OPTS)
         test_no += 1
 
 def main(argv):
