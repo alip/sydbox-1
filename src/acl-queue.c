@@ -16,77 +16,86 @@
 #include "pathmatch.h"
 #include "sockmatch.h"
 
+static inline unsigned acl_default(enum acl_action defaction,
+				   struct acl_node **match_ptr)
+{
+	if (match_ptr)
+		*match_ptr = NULL;
+	return defaction | ACL_NOMATCH;
+}
+
+static inline unsigned acl_check(enum acl_action defaction,
+				 struct acl_node *match_node,
+				 struct acl_node **match_ptr)
+{
+	if (match_node) {
+		if (match_ptr)
+			*match_ptr = match_node;
+		return match_node->action | ACL_MATCH;
+	}
+
+	return acl_default(defaction, match_ptr);
+}
+
 unsigned acl_pathmatch(enum acl_action defaction, const aclq_t *aclq,
 		       const void *needle, struct acl_node **match)
 {
-	struct acl_node *node;
+	struct acl_node *node, *node_match;
 	const char *path = needle;
 
 	if (!aclq || !needle)
-		goto out;
+		return acl_default(defaction, match);
 
+	/* The last matching pattern decides */
+	node_match = NULL;
 	ACLQ_FOREACH(node, aclq) {
-		if (pathmatch(node->match, path)) {
-			if (match)
-				*match = node;
-			return node->action | ACL_MATCH;
-		}
+		if (pathmatch(node->match, path))
+			node_match = node;
 	}
 
-out:
-	if (match)
-		*match = NULL;
-	return defaction | ACL_NOMATCH;
+	return acl_check(defaction, node_match, match);
 }
 
 unsigned acl_sockmatch(enum acl_action defaction, const aclq_t *aclq,
 		       const void *needle, struct acl_node **match)
 {
-	struct acl_node *node;
+	struct acl_node *node, *node_match;
 	const struct pink_sockaddr *psa = needle;
 
 	if (!aclq || !needle)
-		goto out;
+		return acl_default(defaction, match);
 
+	/* The last matching pattern decides */
+	node_match = NULL;
 	ACLQ_FOREACH(node, aclq) {
-		if (sockmatch(node->match, psa)) {
-			if (match)
-				*match = node;
-			return node->action | ACL_MATCH;
-		}
+		if (sockmatch(node->match, psa))
+			node_match = node;
 	}
 
-out:
-	if (match)
-		*match = NULL;
-	return defaction | ACL_NOMATCH;
+	return acl_check(defaction, node_match, match);
 }
 
 unsigned acl_sockmatch_saun(enum acl_action defaction, const aclq_t *aclq,
 			    const void *needle, struct acl_node **match)
 {
-	struct acl_node *node;
+	struct acl_node *node, *node_match;
 	struct sockmatch *m;
 	const char *abspath = needle;
 
 	if (!aclq || !needle)
-		goto out;
+		return acl_default(defaction, match);
 
+	/* The last matching pattern decides */
+	node_match = NULL;
 	ACLQ_FOREACH(node, aclq) {
 		m = node->match;
 		if (m->family != AF_UNIX || m->addr.sa_un.abstract)
 			continue;
-		if (pathmatch(m->addr.sa_un.path, abspath)) {
-			if (match)
-				*match = node;
-			return node->action | ACL_MATCH;
-		}
+		if (pathmatch(m->addr.sa_un.path, abspath))
+			node_match = node;
 	}
 
-out:
-	if (match)
-		*match = NULL;
-	return defaction | ACL_NOMATCH;
+	return acl_check(defaction, node_match, match);
 }
 
 bool acl_match_path(enum acl_action defaction, const aclq_t *aclq,

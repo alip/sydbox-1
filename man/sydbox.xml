@@ -1262,7 +1262,8 @@
     </itemizedlist>
 
     <note>
-      <simpara>For multiple patterns the first matching pattern wins and the rest is not checked.</simpara>
+      <simpara>Sydbox checks patterns from multiple sources. There is no precedence between different sources,
+      and the last matching pattern decides the outcome.</simpara>
     </note>
   </refsect1>
 

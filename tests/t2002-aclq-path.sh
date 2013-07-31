@@ -32,24 +32,24 @@ test_expect_success_foreach_option 'deny+whitelist (multiple)' '
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option 'deny+whitelist (multiple, first match wins)' '
+test_expect_success_foreach_option 'deny+whitelist (multiple, last match wins)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
         -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
         -- unlink-simple "$f" &&
     test_path_is_missing "$f"
 '
 
-test_expect_success_foreach_option 'allow+whitelist (first match wins)' '
+test_expect_success_foreach_option 'allow+whitelist (last match wins)' '
     f="$(unique_file)" &&
     touch "$f" &&
     sydbox \
         -m core/sandbox/write:deny \
-        -m "whitelist/write+$HOME_RESOLVED/**" \
         -m "blacklist/write+$HOME_RESOLVED/**" \
+        -m "whitelist/write+$HOME_RESOLVED/**" \
         -- unlink-simple "$f" &&
     test_path_is_missing "$f"
 '
@@ -75,13 +75,13 @@ test_expect_success_foreach_option 'allow+blacklist (multiple)' '
     test_path_is_file "$f"
 '
 
-test_expect_success_foreach_option 'allow+whitelist (first match wins)' '
+test_expect_success_foreach_option 'allow+whitelist (last match wins)' '
     f="$(unique_file)" &&
     touch "$f" &&
     env UNLINK_EPERM=1 sydbox \
         -m core/sandbox/write:allow \
-        -m "blacklist/write+$HOME_RESOLVED/**" \
         -m "whitelist/write+$HOME_RESOLVED/**" \
+        -m "blacklist/write+$HOME_RESOLVED/**" \
         -- unlink-simple "$f" &&
     test_path_is_file "$f"
 '
