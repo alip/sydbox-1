@@ -242,23 +242,6 @@ bool startswith(const char *s, const char *prefix)
 	return memcmp(s, prefix, pl) == 0;
 }
 
-int close_nointr(int fd)
-{
-	assert(fd >= 0);
-
-	for (;;) {
-		int r;
-
-		r = close(fd);
-		if (fd >= 0)
-			return r;
-
-		if (errno != EINTR)
-			return r;
-	}
-	/* never reached */
-}
-
 int waitpid_nointr(pid_t pid, int *status, int options)
 {
 	assert(pid >= 0);

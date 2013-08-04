@@ -41,7 +41,6 @@ extern int parse_port(const char *s, unsigned *ret_port);
 extern int parse_netmask_ip(const char *addr, unsigned *ret_netmask);
 extern int parse_netmask_ipv6(const char *addr, unsigned *ret_netmask);
 
-extern int close_nointr(int fd);
 extern int waitpid_nointr(pid_t pid, int *status, int options);
 
 #define streq(a,b) (strcmp((a),(b)) == 0)
