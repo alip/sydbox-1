@@ -44,7 +44,7 @@ enum no_wildcard pathmatch_get_no_wildcard(void)
 
 int pathmatch_expand(const char *pattern, char ***buf)
 {
-	int i, bufsiz;
+	ssize_t bufsiz;
 	char *s, *p, *cp;
 	char **list;
 	bool literal = false;
@@ -68,6 +68,8 @@ int pathmatch_expand(const char *pattern, char ***buf)
 	p = path_kill_slashes(p);
 
 	if (literal || endswith(p, WILD3_SUFFIX)) {
+		size_t i;
+
 		list = xmalloc(sizeof(char *) * 2);
 		s = xstrdup(p);
 		i = strrchr(s, '/') - s;

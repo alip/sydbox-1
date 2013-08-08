@@ -16,7 +16,6 @@
 
 int magic_set_log_file(const void *val, syd_proc_t *current)
 {
-	int r;
 	const char *filename = val;
 
 	if (!filename /* || !*filename */)
@@ -25,6 +24,8 @@ int magic_set_log_file(const void *val, syd_proc_t *current)
 	log_close();
 
 	if (*filename) {
+		int r;
+
 		if ((r = log_init(filename)) < 0) {
 			errno = -r;
 			die_errno("log_init for file `%s' failed", filename);

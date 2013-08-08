@@ -115,11 +115,11 @@ void config_parse_file(const char *filename)
 
 void config_parse_spec(const char *pathspec)
 {
-	size_t len;
-	char *filename;
-	bool has_ext;
-
 	if (pathspec[0] == SYDBOX_PROFILE_CHAR) {
+		size_t len;
+		char *filename;
+		bool has_ext;
+
 		has_ext = endswith(pathspec, SYDBOX_API_EXT);
 		pathspec++;
 		len = sizeof(DATADIR) + sizeof(PACKAGE); /* /usr/share/sydbox */

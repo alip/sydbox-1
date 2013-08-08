@@ -79,7 +79,6 @@ unsigned acl_sockmatch_saun(enum acl_action defaction, const aclq_t *aclq,
 			    const void *needle, struct acl_node **match)
 {
 	struct acl_node *node, *node_match;
-	struct sockmatch *m;
 	const char *abspath = needle;
 
 	if (!aclq || !needle)
@@ -88,7 +87,7 @@ unsigned acl_sockmatch_saun(enum acl_action defaction, const aclq_t *aclq,
 	/* The last matching pattern decides */
 	node_match = NULL;
 	ACLQ_FOREACH(node, aclq) {
-		m = node->match;
+		struct sockmatch *m = node->match;
 		if (m->family != AF_UNIX || m->addr.sa_un.abstract)
 			continue;
 		if (pathmatch(m->addr.sa_un.path, abspath))
@@ -156,7 +155,6 @@ int acl_append_pathmatch(enum acl_action action, const char *pattern, aclq_t *ac
 {
 	int c, f;
 	char **list;
-	struct acl_node *node;
 
 	if (!aclq || !pattern || !*pattern)
 		return -EINVAL;
@@ -164,7 +162,7 @@ int acl_append_pathmatch(enum acl_action action, const char *pattern, aclq_t *ac
 	/* Expand path pattern */
 	c = f = pathmatch_expand(pattern, &list) - 1;
 	for (; c >= 0; c--) {
-		node = xmalloc(sizeof(struct acl_node));
+		struct acl_node *node = xmalloc(sizeof(struct acl_node));
 		node->action = action;
 		node->match = xstrdup(list[c]);
 		ACLQ_INSERT_TAIL(aclq, node);

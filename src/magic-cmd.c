@@ -45,10 +45,8 @@ static inline int execve_errno(int err_no)
 
 static void free_argv(char **argv)
 {
-	unsigned i;
-
 	if (argv) {
-		for (i = 0; i < ELEMENTSOF(argv); i++)
+		for (unsigned i = 0; i < ELEMENTSOF(argv); i++)
 			if (argv[i])
 				free(argv[i]);
 		free(argv);

@@ -568,8 +568,8 @@ int sys_umount(syd_proc_t *current)
 
 int sys_umount2(syd_proc_t *current)
 {
-	int r;
 #ifdef UMOUNT_NOFOLLOW
+	int r;
 	long flags;
 #endif
 	sysinfo_t info;

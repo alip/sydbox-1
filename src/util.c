@@ -126,9 +126,7 @@ int parse_pid(const char *s, pid_t *ret_pid)
 
 int parse_port(const char *s, unsigned *ret_port)
 {
-	int r;
 	unsigned port = 0;
-	struct servent *service;
 
 	assert(s);
 	assert(ret_port);
@@ -138,6 +136,7 @@ int parse_port(const char *s, unsigned *ret_port)
 
 	if (isdigit(*s)) {
 		/* Looks like a digit! */
+		int r;
 		if ((r = safe_atou(s, &port)) < 0)
 			return r;
 
@@ -146,6 +145,7 @@ int parse_port(const char *s, unsigned *ret_port)
 	}
 	else {
 		/* Looks like a service name! */
+		struct servent *service;
 		if (!(service = getservbyname(s, NULL)))
 			return -EINVAL;
 

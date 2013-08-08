@@ -197,7 +197,6 @@ static bool box_check_access(enum sys_access_mode mode,
 			     const void *needle)
 {
 	size_t i;
-	unsigned r;
 	enum acl_action acl_mode;
 
 	assert(match_func);
@@ -215,6 +214,8 @@ static bool box_check_access(enum sys_access_mode mode,
 	}
 
 	for (i = 0; i < aclq_list_len; i++) {
+		unsigned r;
+
 		r = match_func(acl_mode, aclq_list[i], needle, NULL);
 		if (r & ACL_MATCH) {
 			r &= ~ACL_MATCH_MASK;
@@ -242,7 +243,6 @@ static bool box_check_access(enum sys_access_mode mode,
 
 static int box_check_ftype(const char *path, sysinfo_t *info)
 {
-	bool call_lstat;
 	int deny_errno, stat_ret;
 	short rflags = info->rmode & ~RPATH_MASK;
 	struct stat buf;
@@ -257,8 +257,8 @@ static int box_check_ftype(const char *path, sysinfo_t *info)
 		memcpy(&buf, info->cache_statbuf, 0);
 		stat_ret = 0;
 	} else {
-		call_lstat = !!(rflags & RPATH_NOFOLLOW);
-		stat_ret = call_lstat ? lstat(path, &buf) : stat(path, &buf);
+		stat_ret = rflags & RPATH_NOFOLLOW ? lstat(path, &buf)
+						   : stat(path, &buf);
 	}
 
 	if (stat_ret < 0)
