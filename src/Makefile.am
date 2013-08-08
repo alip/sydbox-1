@@ -125,3 +125,9 @@ sparse-check:
 		$(SPARSE) $(DEFS) $(AM_CFLAGS) $(SPARSE_CPPFLAGS) $$src || exit 1; \
 	done
 .PHONY: sparse-check
+
+cppcheck:
+	cppcheck $(sydbox_SOURCES) \
+		$(DEFS) -I$(top_builddir) -I$(top_srcdir) \
+		--std=c99 --std=posix --enable=all
+.PHONY: cppcheck
