@@ -236,11 +236,16 @@ int proc_environ(pid_t pid, char ***envp)
 
 	i = 0;
 	env = malloc(sizeof(char *) * (i+2));
-	if (!env)
+	if (!env) {
+		fclose(f);
 		return -ENOMEM;
+	}
 	env[i] = malloc(sizeof(char) * MAX_ARG_STRLEN);
-	if (!env[i])
+	if (!env[i]) {
+		fclose(f);
+		free(env);
 		return -ENOMEM;
+	}
 	env[i][0] = '\0';
 	env[i+1] = NULL;
 	j = 0;
