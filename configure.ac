@@ -332,6 +332,9 @@ m4_define([include_linux_ptrace_h],
 	   #ifdef __ia64__
 	   #undef ia64_fpreg
 	   #undef pt_all_user_regs
+	   #endif
+	   #ifdef HAVE_STRUCT_PTRACE_PEEKSIGINFO_ARGS
+	   #undef ptrace_peeksiginfo_args
 	   #endif])
 m4_define([include_ptrace_h],
 	  [#include <sys/ptrace.h>
