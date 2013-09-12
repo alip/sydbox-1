@@ -224,8 +224,6 @@ static bool box_check_access(enum sys_access_mode mode,
 				return true; /* access granted */
 			case ACL_ACTION_BLACKLIST:
 				return false; /* access denied */
-                        case ACL_ACTION_NONE:
-                                continue;
 			default:
 				assert_not_reached();
 			}
