@@ -313,7 +313,7 @@ AC_SUBST([PINK_HAVE_PROCESS_VM_READV])
 AC_SUBST([PINK_HAVE_PROCESS_VM_WRITEV])
 
 dnl check for types
-AC_CHECK_TYPES([struct pt_all_user_regs, struct ia64_fpreg],,,[#include <sys/ptrace.h>])
+AC_CHECK_TYPES([struct pt_all_user_regs, struct ia64_fpreg, struct ptrace_peeksiginfo_args],,,[#include <sys/ptrace.h>])
 
 dnl We need a hack to include linux/ptrace.h after sys/ptrace.h on some systems.
 m4_define([include_linux_ptrace_h],
@@ -325,6 +325,9 @@ m4_define([include_linux_ptrace_h],
 	   #define pt_all_user_regs XXX_pt_all_user_regs
 	   #endif
 	   #endif
+           #ifdef HAVE_STRUCT_PTRACE_PEEKSIGINFO_ARGS
+           #define ptrace_peeksiginfo_args XXX_ptrace_peeksiginfo_args
+           #endif
 	   #include <linux/ptrace.h>
 	   #ifdef __ia64__
 	   #undef ia64_fpreg
