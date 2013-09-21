@@ -25,6 +25,21 @@ int magic_query_trace_follow_fork(syd_proc_t *current)
 	return MAGIC_BOOL(sydbox->config.follow_fork);
 }
 
+int magic_set_trace_exit_kill(const void *val, syd_proc_t *current)
+{
+#if PINK_HAVE_OPTION_EXITKILL
+	sydbox->config.exit_kill = PTR_TO_BOOL(val);
+#else
+	log_magic("PTRACE_O_EXITKILL not supported, ignoring magic");
+#endif
+	return MAGIC_RET_OK;
+}
+
+int magic_query_trace_exit_kill(syd_proc_t *current)
+{
+	return MAGIC_BOOL(sydbox->config.exit_kill);
+}
+
 int magic_set_trace_exit_wait_all(const void *val, syd_proc_t *current)
 {
 #if SYDBOX_HAVE_SECCOMP

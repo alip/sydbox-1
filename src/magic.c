@@ -304,6 +304,14 @@ static const struct key key_table[] = {
 		.set    = magic_set_trace_follow_fork,
 		.query  = magic_query_trace_follow_fork
 	},
+	[MAGIC_KEY_CORE_TRACE_EXIT_KILL] = {
+		.name   = "exit_kill",
+		.lname  = "core.trace.exit_kill",
+		.parent = MAGIC_KEY_CORE_TRACE,
+		.type   = MAGIC_TYPE_BOOLEAN,
+		.set    = magic_set_trace_exit_kill,
+		.query  = magic_query_trace_exit_kill,
+	},
 	[MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL] = {
 		.name   = "exit_wait_all",
 		.lname  = "core.trace.exit_wait_all",

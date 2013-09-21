@@ -1323,6 +1323,10 @@ int main(int argc, char **argv)
 		ptrace_options |= (PINK_TRACE_OPTION_FORK |
 				   PINK_TRACE_OPTION_VFORK |
 				   PINK_TRACE_OPTION_CLONE);
+#if PINK_HAVE_OPTION_EXITKILL
+	if (sydbox->config.exit_kill)
+		ptrace_options |= PINK_TRACE_OPTION_EXITKILL;
+#endif
 	if (sydbox->config.use_seccomp) {
 #if SYDBOX_HAVE_SECCOMP
 		if (os_release >= KERNEL_VERSION(3,5,0)) {
