@@ -79,4 +79,8 @@
 # define SYDBOX_MAGIC_EXEC_CHAR '!'
 #endif /* !SYDBOX_MAGIC_EXEC_CHAR */
 
+#ifndef SYDBOX_NO_GETDENTS
+# undef SYDBOX_NO_GETDENTS
+#endif
+
 #endif

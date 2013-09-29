@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 
 #include "file.h"
 #include "bsd-compat.h"
@@ -171,25 +172,80 @@ out:
 	return r;
 }
 
-/* TODO: Use getdents() on Linux for a slight performance gain. */
+static inline bool dot_ignore(const char *entry)
+{
+	if (entry[0] != '.')
+		return false;
+	if (entry[1] == '\0')
+		return true;
+	if (entry[1] != '.')
+		return false;
+	if (entry[1] == '\0')
+		return true;
+	return false;
+}
+
 int empty_dir(const char *dname)
 {
+#if !defined(SYDBOX_NO_GETDENTS) && defined(__linux__) && defined(SYS_getdents64)
+	struct linux_dirent {
+		unsigned long long d_ino;
+		long long d_off;
+		unsigned short d_reclen;
+		unsigned char d_type;
+		char d_name[];
+	} *d;
+# define DIRENT_BUF_SIZE 64
+	char buf[DIRENT_BUF_SIZE];
+	int r, fd, count_read, count_ent;
+
+	fd = open(dname, O_RDONLY|O_DIRECTORY);
+	if (fd < 0)
+		return -errno;
+
+	r = 0;
+	count_ent = 0;
+	for (;;) {
+		count_read = syscall(SYS_getdents64, fd, buf, DIRENT_BUF_SIZE);
+		if (count_read < 0) {
+			r = -errno;
+			goto out;
+		} else if (count_read == 0) { /* end-of-directory */
+			break;
+		}
+
+		for (int i = 0; i < count_read;) {
+			d = (struct linux_dirent *)(buf + i);
+			if (++count_ent > 2 || !dot_ignore(d->d_name)) {
+				r = -ENOTEMPTY;
+				goto out;
+			}
+			i += d->d_reclen;
+		}
+	}
+out:
+	close(fd);
+	return r;
+# undef DIRENT_BUF_SIZE
+#else /* !__linux__ */
 	int r;
 	DIR *d;
+	struct dirent *ent;
 
 	d = opendir(dname);
 	if (!d)
 		return -errno;
 
 	r = 0;
-	for (unsigned n = 0; readdir(d) != NULL; n++) {
-		if (n > 2) {
+	for (unsigned n = 0; (ent = readdir(d)) != NULL; n++) {
+		if (n > 2 || !dot_ignore(ent->d_name)) {
 			r = -ENOTEMPTY;
 			break;
 		}
 	}
 	closedir(d);
 	return r;
+#endif
 }
 
 /* reset access and modification time */

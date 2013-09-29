@@ -87,6 +87,21 @@ def test():
             except: pass
             loops -= 1
 """, False), # no threads
+        ("rmdir non-empty directory",
+"""
+def test():
+    import os
+
+    dname = "kingbee.d"
+    if not os.path.isdir(dname):
+        os.mkdir(dname)
+        for i in range(1000000):
+            open("%s/kingbee-%d.f" % (dname, i), "a").close()
+    try:
+        os.rmdir(dname) # fail with ENOTEMPTY!
+    except:
+        pass
+""", False, 1), # no threads, one loop
         ("bind() port zero",
 """
 def test():
@@ -183,6 +198,7 @@ def eval_ext(expr, syd=None, syd_opts=[],
                 "-mwhitelist/write+/dev/stderr",
                 #"-mwhitelist/write+/dev/zero",
                 "-mwhitelist/write+/dev/null",
+                "-mwhitelist/write+%s" % os.path.join(os.path.realpath("."), "kingbee.d", "***"),
                 "-mwhitelist/network/bind+LOOPBACK@0",])
         args.extend(syd_opts)
         args.append("--")
