@@ -180,7 +180,7 @@ static inline bool dot_ignore(const char *entry)
 		return true;
 	if (entry[1] != '.')
 		return false;
-	if (entry[1] == '\0')
+	if (entry[2] == '\0')
 		return true;
 	return false;
 }
