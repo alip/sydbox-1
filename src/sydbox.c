@@ -24,7 +24,6 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
-#include <sys/queue.h>
 #include <getopt.h>
 #include "asyd.h"
 #include "macro.h"

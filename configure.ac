@@ -270,7 +270,6 @@ AC_CHECK_HEADERS([linux/ptrace.h sys/reg.h sys/uio.h], [], [])
 dnl check for sydbox headers
 AC_CHECK_HEADER([limits.h]       [], AC_MSG_ERROR([I need limits.h]))
 AC_CHECK_HEADER([signal.h],      [], AC_MSG_ERROR([I need signal.h]))
-AC_CHECK_HEADER([sys/queue.h],   [], AC_MSG_ERROR([I need sys/queue.h]))
 AC_CHECK_HEADER([sys/utsname.h], [], AC_MSG_ERROR([I need sys/utsname.h]))
 AC_CHECK_HEADER([sys/socket.h],  [], AC_MSG_ERROR([I need sys/socket.h]))
 AC_CHECK_HEADER([ctype.h],       [], AC_MSG_ERROR([I need ctype.h]))

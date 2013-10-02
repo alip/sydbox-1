@@ -9,7 +9,6 @@
 
 #include <errno.h>
 #include <string.h>
-#include <sys/queue.h>
 
 #include <pinktrace/pink.h>
 

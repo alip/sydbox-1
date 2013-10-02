@@ -21,7 +21,6 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <sys/queue.h>
 #include <sys/types.h>
 #include <limits.h>
 #include <pinktrace/pink.h>
