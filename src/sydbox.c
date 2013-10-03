@@ -1275,7 +1275,7 @@ int main(int argc, char **argv)
 				/* special case for backwards compatibility */
 				profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 1));
 				profile_name[0] = SYDBOX_PROFILE_CHAR;
-				strcat(profile_name, optarg);
+				strcpy(&profile_name[1], optarg);
 				config_parse_spec(profile_name);
 				free(profile_name);
 				break;
