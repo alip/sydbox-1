@@ -524,17 +524,6 @@ AC_SUBST([PINKTRACE_PC_LIBS])
 AC_SUBST([PINKTRACE_PC_VERSION])
 AC_SUBST([PINKTRACE_PC_SLOT])
 
-dnl Make pkg-config work
-m4_pattern_forbid([^PKG_[A-Z_]+$], [missing some pkg-config macros])
-PKG_PROG_PKG_CONFIG([0.9.0])
-
-dnl tests
-CHECK_REQ=0.9.8
-PKG_CHECK_MODULES([check], [check >= $CHECK_REQ],
-		  [HAVE_CHECK=yes],
-		  [HAVE_CHECK=no])
-AM_CONDITIONAL([HAVE_CHECK], test x"$HAVE_CHECK" = x"yes")
-
 dnl installed tests
 AC_MSG_CHECKING([whether tests should be installed])
 AC_ARG_ENABLE([installed-tests],
