@@ -28,7 +28,12 @@
 #endif
 
 #include <stdint.h>
-#include <linux/audit.h>
+#ifdef HAVE_LINUX_AUDIT_H
+# include <linux/audit.h>
+#else
+# define AUDIT_ARCH_I386	(3|0x40000000)
+# define AUDIT_ARCH_X86_64	(62|0x80000000|0x40000000)
+#endif
 
 int seccomp_init(void);
 int seccomp_apply(int arch, uint32_t *syscalls, int count);

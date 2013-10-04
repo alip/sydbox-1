@@ -437,11 +437,21 @@ AC_ARG_ENABLE([seccomp],
 	      [WANT_SECCOMP="no"])
 if test x"$WANT_SECCOMP" = x"yes" ; then
 	AC_CHECK_HEADER([sys/prctl.h],       [], [AC_MSG_ERROR([I need sys/prctl.h for seccomp support!])])
-	AC_CHECK_HEADER([linux/seccomp.h],   [], [AC_MSG_ERROR([I need linux/seccomp.h for seccomp support!])])
-	AC_CHECK_DECL([SECCOMP_MODE_FILTER], [], [AC_MSG_ERROR([I need SECCOMP_MODE_FILTER for seccomp support!])],
-		      [#include <linux/seccomp.h>])
-	AC_CHECK_DECL([SECCOMP_RET_TRACE],   [], [AC_MSG_ERROR([I need SECCOMP_RET_TRACE for seccomp support!])],
-		      [#include <linux/seccomp.h>])
+	AC_CHECK_HEADERS([linux/audit.h linux/seccomp.h])
+	m4_define([include_seccomp_headers],
+		  [#include <stdint.h>
+		   #include <sys/prctl.h>
+		   #ifdef HAVE_LINUX_AUDIT_H
+		   #include <linux/audit.h>
+		   #endif
+		   #ifdef HAVE_LINUX_SECCOMP_H
+		   #include <linux/seccomp.h>
+		   #endif
+		  ])
+	AC_CHECK_DECL([SECCOMP_MODE_FILTER], [], [AC_MSG_WARN([SECCOMP_MODE_FILTER not declared! (seccomp may not work!)])],
+		      [include_seccomp_headers])
+	AC_CHECK_DECL([SECCOMP_RET_TRACE],   [], [AC_MSG_WARN([SECCOMP_RET_TRACE not declared! (seccomp may not work!)])],
+		      [include_seccomp_headers])
 	SYDBOX_HAVE_SECCOMP=1
 else
 	SYDBOX_HAVE_SECCOMP=0
