@@ -358,10 +358,10 @@ int sys_fcntl(syd_proc_t *current)
 	case F_SETOWN:
 	case F_SETLK:
 	case F_SETLKW:
-#if F_SETLK != F_SETLK64
+#if defined(F_SETLK64) && F_SETLK != F_SETLK64
 	case F_SETLK64:
 #endif
-#if F_SETLKW != F_SETLKW
+#if defined(F_SETLKW64) && F_SETLKW != F_SETLKW64
 	case F_SETLKW64:
 #endif
 	case F_GETFD:
