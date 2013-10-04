@@ -265,7 +265,7 @@ AC_CHECK_HEADER([sys/ptrace.h], [], AC_MSG_ERROR([I need sys/ptrace.h]))
 AC_CHECK_HEADER([sys/socket.h], [], AC_MSG_ERROR([I need sys/socket.h]))
 AC_CHECK_HEADER([netinet/in.h], [], AC_MSG_ERROR([I need netinet/in.h]))
 AC_CHECK_HEADER([sys/un.h],     [], AC_MSG_ERROR([I need sys/un.h]))
-AC_CHECK_HEADERS([linux/ptrace.h sys/reg.h sys/uio.h], [], [])
+AC_CHECK_HEADERS([sys/reg.h sys/uio.h], [], [])
 
 dnl check for sydbox headers
 AC_CHECK_HEADER([limits.h],      [], AC_MSG_ERROR([I need limits.h]))
@@ -310,8 +310,10 @@ dnl check for types
 AC_CHECK_TYPES([struct pt_all_user_regs, struct ia64_fpreg, struct ptrace_peeksiginfo_args],,,[#include <sys/ptrace.h>])
 
 dnl We need a hack to include linux/ptrace.h after sys/ptrace.h on some systems.
+AC_CHECK_HEADERS([linux/ptrace.h])
 m4_define([include_linux_ptrace_h],
-	  [#ifdef __ia64__
+	  [#ifdef HAVE_LINUX_PTRACE_H
+	   #ifdef __ia64__
 	   #ifdef HAVE_STRUCT_IA64_FPREG
 	   #define ia64_fpreg XXX_ia64_fpreg
 	   #endif
@@ -329,6 +331,7 @@ m4_define([include_linux_ptrace_h],
 	   #endif
 	   #ifdef HAVE_STRUCT_PTRACE_PEEKSIGINFO_ARGS
 	   #undef ptrace_peeksiginfo_args
+	   #endif
 	   #endif])
 m4_define([include_ptrace_h],
 	  [#include <sys/ptrace.h>
@@ -370,22 +373,21 @@ AC_CHECK_DECL([PTRACE_EVENT_SECCOMP],     [PINK_HAVE_EVENT_SECCOMP=1],     [PINK
 AC_CHECK_DECL([PTRACE_EVENT_STOP],        [PINK_HAVE_EVENT_STOP=1],        [PINK_HAVE_EVENT_STOP=0],        [include_ptrace_h])
 AC_CHECK_DECL([PTRACE_GETEVENTMSG],       [PINK_HAVE_GETEVENTMSG=1],       [PINK_HAVE_GETEVENTMSG=0],       [include_ptrace_h])
 AC_CHECK_DECL([PTRACE_GETSIGINFO],        [PINK_HAVE_GETSIGINFO=1],        [PINK_HAVE_GETSIGINFO=0],        [include_ptrace_h])
+dnl XXX musl-libc doesn't define SYSEMU constants but the functionality may be available.
 AC_CHECK_DECL([PTRACE_SYSEMU],            [PINK_HAVE_SYSEMU=1],            [PINK_HAVE_SYSEMU=0],            [include_ptrace_h])
 AC_CHECK_DECL([PTRACE_SYSEMU_SINGLESTEP], [PINK_HAVE_SYSEMU_SINGLESTEP=1], [PINK_HAVE_SYSEMU_SINGLESTEP=0], [include_ptrace_h])
 dnl If PTRACE_SEIZE_DEVEL is available, we don't use PTRACE_SEIZE, PTRACE_INTERRUPT or PTRACE_LISTEN!
 dnl Note: We don't include <sys/ptrace.h> for these checks because glibc may have a definition of PTRACE_SEIZE_DEVEL itself.
-AC_CHECK_DECL([PTRACE_SEIZE],
-	      [AC_CHECK_DECL([PTRACE_SEIZE_DEVEL], [PINK_HAVE_SEIZE=0], [PINK_HAVE_SEIZE=1], [include_linux_ptrace_h])],
-	      [PINK_HAVE_SEIZE=0],
-	      [include_linux_ptrace_h])
-AC_CHECK_DECL([PTRACE_LISTEN],
-	      [AC_CHECK_DECL([PTRACE_SEIZE_DEVEL], [PINK_HAVE_LISTEN=0], [PINK_HAVE_LISTEN=1], [include_linux_ptrace_h])],
-	      [PINK_HAVE_LISTEN=0],
-	      [include_linux_ptrace_h])
-AC_CHECK_DECL([PTRACE_INTERRUPT],
-	      [AC_CHECK_DECL([PTRACE_SEIZE_DEVEL], [PINK_HAVE_INTERRUPT=0], [PINK_HAVE_INTERRUPT=1], [include_linux_ptrace_h])],
-	      [PINK_HAVE_INTERRUPT=0],
-	      [include_linux_ptrace_h])
+dnl For other libc's which we care about (read musl-libc) PTRACE_SEIZE_DEVEL was never defined anyway.
+dnl (Judging by the fact that git log -SPINK_SEIZE_DEVEL --all returns nothing under musl.git)
+AC_CHECK_DECL([PTRACE_SEIZE_DEVEL], [seize_in_development=1], [seize_in_development=0], [include_linux_ptrace_h])
+if test x"$seize_in_development" = x"1"; then
+	AC_MSG_WARN([PTRACE_SEIZE functionality in development, not using])
+else
+	AC_CHECK_DECL([PTRACE_SEIZE],     [PINK_HAVE_SEIZE=1],     [PINK_HAVE_SEIZE=0],     [include_ptrace_h])
+	AC_CHECK_DECL([PTRACE_LISTEN],    [PINK_HAVE_LISTEN=1],    [PINK_HAVE_LISTEN=0],    [include_ptrace_h])
+	AC_CHECK_DECL([PTRACE_INTERRUPT], [PINK_HAVE_INTERRUPT=1], [PINK_HAVE_INTERRUPT=0], [include_ptrace_h])
+fi
 
 case x"${PINK_HAVE_SEIZE}${PINK_HAVE_INTERRUPT}${PINK_HAVE_LISTEN}" in
 x111)
