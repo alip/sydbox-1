@@ -53,7 +53,7 @@ int magic_cmd_exec(const void *val, syd_proc_t *current)
 	int r = MAGIC_RET_OK;
 	unsigned i, j, k;
 	const char *args = val;
-	char **argv = NULL, **envp = NULL;
+	char **argv = NULL;
 
 	assert(val);
 
@@ -87,14 +87,8 @@ int magic_cmd_exec(const void *val, syd_proc_t *current)
 		}
 	}
 
-	/* Step 2: fill envp[] from /proc/$tid/environ */
-	r = proc_environ(current->pid, &envp);
-	if (r < 0)
-		goto out;
-
 	/*
-	 * Step 3: fork and execute the process
-	 * TODO: Use the new pipe(2) helpers for sane error handling
+	 * Step 2: fork, set the environment and execute the process
 	 */
 	pid_t childpid;
 	int err_no, status;
@@ -106,11 +100,15 @@ int magic_cmd_exec(const void *val, syd_proc_t *current)
 		r = deny(current, err_no);
 		return r;
 	} else if (childpid == 0) {
+		if (clearenv() != 0)
+			_exit(ENOMEM);
+		if (proc_environ(current->pid) < 0)
+			_exit(errno);
 		if (chdir(current->cwd) < 0)
 			_exit(errno);
 		if (pink_trace_me() < 0)
 			_exit(errno);
-		execvpe(argv[0], argv, envp);
+		execvp(argv[0], argv);
 		_exit(errno);
 	}
 
@@ -148,7 +146,6 @@ int magic_cmd_exec(const void *val, syd_proc_t *current)
 
 out:
 	free_argv(argv);
-	free_argv(envp);
 
 	return r;
 }

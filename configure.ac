@@ -282,7 +282,6 @@ AC_CHECK_FUNCS([asprintf],      [], [AC_MSG_ERROR([I need asprintf])])
 AC_CHECK_FUNCS([isdigit],       [], [AC_MSG_ERROR([I need isdigit])])
 AC_CHECK_FUNCS([ntohs],         [], [AC_MSG_ERROR([I need ntohs])])
 AC_CHECK_FUNCS([getservbyname], [], [AC_MSG_ERROR([I need getservbyname])])
-AC_CHECK_FUNCS([execvpe],       [], [AC_MSG_ERROR([I need execvpe])])
 AC_CHECK_FUNCS([pipe2])
 AC_CHECK_FUNCS([fchdir])
 

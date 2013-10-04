@@ -208,83 +208,6 @@ int proc_comm(pid_t pid, char **name)
 }
 
 /*
- * read /proc/$pid/environ
- */
-int proc_environ(pid_t pid, char ***envp)
-{
-	int c, r;
-	unsigned i, j;
-	char *p;
-	FILE *f;
-	char **env = NULL;
-
-	assert(pid >= 1);
-	assert(envp);
-
-	if (asprintf(&p, "/proc/%u/environ", pid) < 0)
-		return -ENOMEM;
-
-	f = fopen(p, "r");
-	free(p);
-	if (!f)
-		return -errno;
-
-	i = 0;
-	env = malloc(sizeof(char *) * (i+2));
-	if (!env) {
-		fclose(f);
-		return -ENOMEM;
-	}
-	env[i] = malloc(sizeof(char) * MAX_ARG_STRLEN);
-	if (!env[i]) {
-		fclose(f);
-		free(env);
-		return -ENOMEM;
-	}
-	env[i][0] = '\0';
-	env[i+1] = NULL;
-	j = 0;
-	while ((c = fgetc(f)) != EOF) {
-		if (j >= MAX_ARG_STRLEN) {
-			r = -E2BIG;
-			goto err;
-		}
-		env[i][j] = c;
-		if (c == '\0') { /* end of unit */
-			i++;
-			if (i+2 >= MAX_ARG_STRINGS) {
-				r = -E2BIG;
-				goto err;
-			}
-			env = realloc(env, sizeof(char *) * (i+2));
-			if (!env)
-				return -ENOMEM;
-			env[i] = malloc(sizeof(char) * MAX_ARG_STRLEN);
-			if (!env[i])
-				return -ENOMEM;
-			env[i][0] = '\0';
-			env[i+1] = NULL;
-			j = 0;
-		} else {
-			j++;
-		}
-	}
-
-	fclose(f);
-
-	*envp = env;
-	return 0;
-err:
-	for (i = 0; i < ELEMENTSOF(env); i++) {
-		if (env[i])
-			free(env[i]);
-	}
-	free(env);
-
-	return r;
-}
-
-/*
  * read /proc/$pid/stat
  */
 int proc_stat(pid_t pid, struct proc_statinfo *info)
@@ -335,4 +258,45 @@ int proc_stat(pid_t pid, struct proc_statinfo *info)
 
 	fclose(f);
 	return 0;
+}
+
+/*
+ * read /proc/$pid/environ and set the environment.
+ * (call clearenv() beforehand to reset the environment.)
+ */
+int proc_environ(pid_t pid)
+{
+	int c, r;
+	unsigned i;
+	char *p, s[MAX_ARG_STRLEN];
+	FILE *f;
+
+	assert(pid >= 1);
+
+	if (asprintf(&p, "/proc/%u/environ", pid) < 0)
+		return -ENOMEM;
+
+	f = fopen(p, "r");
+	r = -errno;
+	free(p);
+	if (!f)
+		return r;
+
+	r = 0;
+	for (i = 0; (c = fgetc(f)) != EOF; i++) {
+		if (i >= MAX_ARG_STRLEN) {
+			r = -E2BIG;
+			break;
+		}
+		s[i] = c;
+
+		if (c == '\0' && putenv(s) != 0) { /* end of unit */
+			r = -ENOMEM;
+			break;
+		}
+	}
+
+	fclose(f);
+	errno = r;
+	return r;
 }
