@@ -17,6 +17,13 @@
 #endif
 
 #include <limits.h>
+#include <unistd.h>
+
+#ifndef PAGE_SIZE
+# define PAGE_SIZE sysconf(_SC_PAGESIZE)
+#endif
+#define MAX_ARG_STRLEN (PAGE_SIZE * 32)
+#define MAX_ARG_STRINGS 0x7FFFFFFF
 
 /* Configuration */
 #ifndef SYDBOX_PATH_MAX

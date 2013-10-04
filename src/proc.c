@@ -24,11 +24,6 @@
 #include <sys/stat.h>
 #include <sys/user.h>
 
-#ifndef PAGE_SIZE
-# define PAGE_SIZE sysconf(_SC_PAGESIZE)
-#endif
-#include <linux/binfmts.h>
-
 #include "file.h"
 #include "macro.h"
 #include "log.h"
