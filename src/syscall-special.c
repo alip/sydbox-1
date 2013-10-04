@@ -14,11 +14,11 @@
 
 #include "sydbox.h"
 #include <stdbool.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/types.h>
 #include <errno.h>
-#include <stdlib.h>
+#include <sys/types.h>
 #include <pinktrace/pink.h>
 #include "pathdecode.h"
 #include "proc.h"
@@ -29,16 +29,32 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #if PINK_ARCH_X86_64
-# define __i386__
-# define stat kernel_stat
-# define stat64 kernel_stat64
-# define __old_kernel_stat stat32
 /* These might be macros. */
-# undef st_atime
-# undef st_mtime
-# undef st_ctime
-# include <asm/stat.h>
-# undef __i386__
+# ifdef st_atime
+#  undef st_atime
+#  define st_atime_was_a_macro
+# endif
+# ifdef st_mtime
+#  undef st_mtime
+#  define st_mtime_was_a_macro
+# endif
+# ifdef st_ctime
+#  undef st_ctime
+#  define st_ctime_was_a_macro
+# endif
+struct stat32 { /* for 32bit emulation */
+	unsigned short st_dev;
+	unsigned short st_ino;
+	unsigned short st_mode;
+	unsigned short st_nlink;
+	unsigned short st_uid;
+	unsigned short st_gid;
+	unsigned short st_rdev;
+	unsigned int st_size;
+	unsigned int st_atime;
+	unsigned int st_mtime;
+	unsigned int st_ctime;
+};
 #elif PINK_ABIS_SUPPORTED > 1
 # warning do not know the size of stat buffer for non-default ABIs
 #endif
@@ -222,6 +238,15 @@ int sys_stat(syd_proc_t *current)
 			memset(&buf, 0, sizeof(struct stat));
 			buf.st_mode = FAKE_MODE;
 			buf.st_rdev = FAKE_RDEV;
+#ifdef st_atime_was_a_macro
+# define st_atime st_atim.tv_sec
+#endif
+#ifdef st_mtime_was_a_macro
+# define st_mtime st_mtim.tv_sec
+#endif
+#ifdef st_ctime_was_a_macro
+# define st_ctime st_ctim.tv_sec
+#endif
 			buf.st_atime = FAKE_ATIME;
 			buf.st_mtime = FAKE_MTIME;
 			buf.st_ctime = FAKE_CTIME;
