@@ -287,8 +287,8 @@ AC_CHECK_FUNCS([pipe2])
 AC_CHECK_FUNCS([fchdir])
 
 dnl check for system calls
-AC_CHECK_DECL([__NR_tkill],  [PINK_HAVE_TKILL=1],  [PINK_HAVE_TKILL=0],  [#include <asm/unistd.h>])
-AC_CHECK_DECL([__NR_tgkill], [PINK_HAVE_TGKILL=1], [PINK_HAVE_TGKILL=0], [#include <asm/unistd.h>])
+AC_CHECK_DECL([SYS_tkill],  [PINK_HAVE_TKILL=1],  [PINK_HAVE_TKILL=0],  [#include <sys/syscall.h>])
+AC_CHECK_DECL([SYS_tgkill], [PINK_HAVE_TGKILL=1], [PINK_HAVE_TGKILL=0], [#include <sys/syscall.h>])
 AC_SUBST([PINK_HAVE_TKILL])
 AC_SUBST([PINK_HAVE_TGKILL])
 
