@@ -164,10 +164,6 @@ x86?64*)
 		AC_DEFINE([X32], 1, [Define for the 32bit AMD x86-64 architecture.])
 	fi
 	;;
-ia64)
-	arch=ia64
-	AC_DEFINE([IA64], 1, [Define for the IA64 architecture.])
-	;;
 powerpc*)
 	arch=powerpc
 	AC_DEFINE([POWERPC], 1, [Define for the PowerPC architecture.])
@@ -182,6 +178,10 @@ powerpc*)
 arm*)
 	arch=arm
 	AC_DEFINE([ARM], 1, [Define for the ARM architecture.])
+	;;
+ia64)
+	AC_MSG_RESULT([NO!])
+	AC_MSG_ERROR([pinktrace ia64 support was disabled due to lack of testing])
 	;;
 *)
 	AC_MSG_RESULT([NO!])
