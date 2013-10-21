@@ -88,6 +88,7 @@ EOF
 '
 
 test_expect_success_foreach_option 'magic core/violation/raise_fail:1 works' '
+    f="no-$(unique_file)" &&
     d="$(unique_dir)" &&
     mkdir "$d" &&
     test_must_violate sydbox \
