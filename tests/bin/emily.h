@@ -41,15 +41,16 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
-#if defined(__linux__) && defined(__arm__)
-# define flock XXX_flock
-# include <asm/fcntl.h> /* FIXME: wtf? O_DIRECTORY is undefind otherwise */
-# undef flock
-#endif
 #include <sys/mount.h>
 #include <sys/time.h>
 #include <utime.h>
 #include <getopt.h>
+
+#if defined(__linux__) && defined(__arm__) /* Workaround <fcntl.h> bug */
+# ifndef O_DIRECTORY
+#  define O_DIRECTORY 00200000
+# endif
+#endif
 
 #include <pinktrace/pink.h>
 
