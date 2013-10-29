@@ -168,7 +168,7 @@ int acl_append_pathmatch(enum acl_action action, const char *pattern, aclq_t *ac
 		ACLQ_INSERT_TAIL(aclq, node);
 	}
 
-	for (; f > 0; f--)
+	for (; f >= 0; f--)
 		free(list[f]);
 	free(list);
 
