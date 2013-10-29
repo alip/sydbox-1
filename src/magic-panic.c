@@ -13,7 +13,7 @@
 
 #include "macro.h"
 
-int magic_set_abort_decision(const void *val, syd_proc_t *current)
+int magic_set_abort_decision(const void *val, syd_process_t *current)
 {
 	int d;
 	const char *str = val;
@@ -26,7 +26,7 @@ int magic_set_abort_decision(const void *val, syd_proc_t *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_set_panic_decision(const void *val, syd_proc_t *current)
+int magic_set_panic_decision(const void *val, syd_process_t *current)
 {
 	int d;
 	const char *str = val;
@@ -39,13 +39,13 @@ int magic_set_panic_decision(const void *val, syd_proc_t *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_set_panic_exit_code(const void *val, syd_proc_t *current)
+int magic_set_panic_exit_code(const void *val, syd_process_t *current)
 {
 	sydbox->config.panic_exit_code = PTR_TO_INT(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_set_violation_decision(const void *val, syd_proc_t *current)
+int magic_set_violation_decision(const void *val, syd_process_t *current)
 {
 	int d;
 	const char *str = val;
@@ -58,30 +58,30 @@ int magic_set_violation_decision(const void *val, syd_proc_t *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_set_violation_exit_code(const void *val, syd_proc_t *current)
+int magic_set_violation_exit_code(const void *val, syd_process_t *current)
 {
 	sydbox->config.violation_exit_code = PTR_TO_INT(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_set_violation_raise_fail(const void *val, syd_proc_t *current)
+int magic_set_violation_raise_fail(const void *val, syd_process_t *current)
 {
 	sydbox->config.violation_raise_fail = PTR_TO_BOOL(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_query_violation_raise_fail(syd_proc_t *current)
+int magic_query_violation_raise_fail(syd_process_t *current)
 {
 	return MAGIC_BOOL(sydbox->config.violation_raise_fail);
 }
 
-int magic_set_violation_raise_safe(const void *val, syd_proc_t *current)
+int magic_set_violation_raise_safe(const void *val, syd_process_t *current)
 {
 	sydbox->config.violation_raise_safe = PTR_TO_BOOL(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_query_violation_raise_safe(syd_proc_t *current)
+int magic_query_violation_raise_safe(syd_process_t *current)
 {
 	return MAGIC_BOOL(sydbox->config.violation_raise_safe);
 }

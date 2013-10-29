@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <limits.h>
+#include <errno.h>
+#include <sched.h>
 #include <pinktrace/pink.h>
 #include "acl-queue.h"
 #include "sockmatch.h"
@@ -41,18 +43,15 @@
 /* Process flags */
 #define SYD_STARTUP		00001 /* process attached, needs to be set up */
 #define SYD_IGNORE_ONE_SIGSTOP	00002 /* initial sigstop is to be ignored */
-#define SYD_IGNORE		00004 /* process is ignored (no sandboxing) */
-#define SYD_READY		00010 /* process' sandbox is initialised */
-#define SYD_IN_SYSCALL		00020 /* process is in system call */
+#define SYD_READY		00004 /* process' sandbox is initialised */
+#define SYD_IN_SYSCALL		00010 /* process is in system call */
+#define SYD_IN_LABOUR		00020 /* process entered clone(2) */
 #define SYD_DENY_SYSCALL	00040 /* system call is to be denied */
 #define SYD_STOP_AT_SYSEXIT	00100 /* seccomp: stop at system call exit */
 #define SYD_SYDBOX_CHILD	00200 /* process is the child exec()'ed by sydbox */
 
-#define entering(p)	(!((p)->flags & SYD_IN_SYSCALL))
-#define exiting(p)	((p)->flags & SYD_IN_SYSCALL)
-#define sysdeny(p)	((p)->flags & SYD_DENY_SYSCALL)
-#define sydchild(p)	((p)->flags & SYD_SYDBOX_CHILD)
-#define hasparent(p)	((p)->ppid >= 1)
+#define SYD_PPID_NONE		0      /* no parent PID (yet) */
+#define SYD_PPID_ORPHAN		-0xbad /* special parent process id for orphans */
 
 /* Type declarations */
 enum sandbox_mode {
@@ -66,26 +65,6 @@ static const char *const sandbox_mode_table[] = {
 	[SANDBOX_ALLOW] = "allow",
 };
 DEFINE_STRING_TABLE_LOOKUP(sandbox_mode, int)
-
-#define sandbox_exec_allow(proc)	(!!((proc)->config.sandbox_exec == SANDBOX_ALLOW))
-#define sandbox_exec_off(proc)		(!!((proc)->config.sandbox_exec == SANDBOX_OFF))
-#define sandbox_exec_deny(proc)		(!!((proc)->config.sandbox_exec == SANDBOX_DENY))
-
-#define sandbox_read_allow(proc)	(!!((proc)->config.sandbox_read == SANDBOX_ALLOW))
-#define sandbox_read_off(proc)		(!!((proc)->config.sandbox_read == SANDBOX_OFF))
-#define sandbox_read_deny(proc)		(!!((proc)->config.sandbox_read == SANDBOX_DENY))
-
-#define sandbox_write_allow(proc)	(!!((proc)->config.sandbox_write == SANDBOX_ALLOW))
-#define sandbox_write_off(proc)		(!!((proc)->config.sandbox_write == SANDBOX_OFF))
-#define sandbox_write_deny(proc)	(!!((proc)->config.sandbox_write == SANDBOX_DENY))
-
-#define sandbox_file_off(proc)		(sandbox_exec_off((proc)) && \
-					 sandbox_read_off((proc)) && \
-					 sandbox_write_off((proc)))
-
-#define sandbox_network_allow(proc)	(!!((proc)->config.sandbox_network == SANDBOX_ALLOW))
-#define sandbox_network_off(proc)	(!!((proc)->config.sandbox_network == SANDBOX_OFF))
-#define sandbox_network_deny(proc)	(!!((proc)->config.sandbox_network == SANDBOX_DENY))
 
 enum lock_state {
 	LOCK_UNSET,
@@ -330,18 +309,18 @@ typedef struct {
 } sandbox_t;
 
 /* process information */
-typedef struct syd_proc {
-	/* Process ID */
+typedef struct syd_process {
+	/* Process/Thread ID */
 	pid_t pid;
+
+	/* Parent process ID */
+	pid_t ppid;
 
 	/* Process registry set */
 	struct pink_regset *regset;
 
 	/* System call ABI */
 	short abi;
-
-	/* Parent process ID */
-	pid_t ppid;
 
 	/* SYD_* flags */
 	short flags;
@@ -358,41 +337,129 @@ typedef struct syd_proc {
 	/* Arguments of last system call */
 	long args[PINK_MAX_ARGS];
 
+	/* Resolved path argument for specially treated system calls like execve() */
+	char *abspath;
+
 	/* Last (socket) subcall */
 	long subcall;
 
 	/* Denied system call will return this value */
 	long retval;
 
-	/* Resolved path argument for specially treated system calls like execve() */
-	char *abspath;
+	/* clone(2) flags used to spawn *this* thread */
+	unsigned long clone_flags;
 
-	/* Current working directory, read from /proc/$pid/cwd */
-	char *cwd;
+	/* Last clone(2) flags (used to spawn a *new* thread) */
+	unsigned long new_clone_flags;
 
-	/* Process name, read from /proc/$pid/comm for initial process and
-	 * updated after successful execve() */
-	char *comm;
+	/* Per-thread shared data */
+	struct syd_process_shared {
+		struct syd_process_shared_clone_thread {
+			/* Process name:
+			 * - Read from /proc/$pid/comm for initial process
+			 * - Updated after successful execve()
+			 */
+			char *comm;
+#define			P_COMM(p) ((p)->shm.clone_thread->comm)
 
-	/* Information about the last bind address with port zero */
-	struct sockinfo *savebind;
+			/* Per-process sandbox */
+			sandbox_t *box;
+#define			P_BOX(p) ((p)->shm.clone_thread->box)
 
-	/* fd -> sock_info_t mappings  */
-	struct sockmap *sockmap;
+			/* Thread hash table */
+			struct syd_process *threads;
+#define			P_THREADS(p) ((p)->shm.clone_thread->threads)
 
-	/* Per-process configuration */
-	sandbox_t config;
+			/* Reference count */
+			unsigned refcnt;
+#define			P_CLONE_THREAD_REFCNT(p) ((p)->shm.clone_thread->refcnt)
+#define			P_CLONE_THREAD_RETAIN(p) ((p)->shm.clone_thread->refcnt++)
+#define			P_CLONE_THREAD_RELEASE(p) \
+			do { \
+				(p)->shm.clone_thread->refcnt--; \
+				if ((p)->shm.clone_thread->refcnt == 0) { \
+					if ((p)->shm.clone_thread->comm) { \
+						free((p)->shm.clone_thread->comm); \
+					} \
+					if ((p)->shm.clone_thread->box) { \
+						free_sandbox((p)->shm.clone_thread->box); \
+					} \
+					free((p)->shm.clone_thread); \
+					(p)->shm.clone_thread = NULL; \
+				} \
+			} while (0)
+		} *clone_thread;
 
-	/* hash table entry */
-	UT_hash_handle hh;
-} syd_proc_t;
+		/* Shared items when CLONE_FS is set. */
+		struct syd_process_shared_clone_fs {
+			/* Current working directory */
+			char *cwd;
+#define			P_CWD(p) ((p)->shm.clone_fs->cwd)
+
+			/* Reference count */
+			unsigned refcnt;
+#define			P_CLONE_FS_REFCNT(p) ((p)->shm.clone_fs->refcnt)
+#define			P_CLONE_FS_RETAIN(p) ((p)->shm.clone_fs->refcnt++)
+#define			P_CLONE_FS_RELEASE(p) \
+			do { \
+				(p)->shm.clone_fs->refcnt--; \
+				if ((p)->shm.clone_fs->refcnt == 0) { \
+					if ((p)->shm.clone_fs->cwd) { \
+						free((p)->shm.clone_fs->cwd); \
+					} \
+					free((p)->shm.clone_fs); \
+					(p)->shm.clone_fs = NULL; \
+				} \
+			} while (0)
+		} *clone_fs;
+
+		/* Shared items when CLONE_FILES is set. */
+		struct syd_process_shared_clone_files {
+			/*
+			 * Last bind(2) address with port argument zero
+			 */
+			struct sockinfo *savebind;
+#define			P_SAVEBIND(p) ((p)->shm.clone_files->savebind)
+
+			/*
+			 * File descriptor mappings for savebind
+			 */
+			struct sockmap *sockmap;
+#define			P_SOCKMAP(p) ((p)->shm.clone_files->sockmap)
+
+			/* Reference count */
+			unsigned refcnt;
+#define			P_CLONE_FILES_REFCNT(p) ((p)->shm.clone_files->refcnt)
+#define			P_CLONE_FILES_RETAIN(p) ((p)->shm.clone_files->refcnt++)
+#define			P_CLONE_FILES_RELEASE(p) \
+			do { \
+				(p)->shm.clone_files->refcnt--; \
+				if ((p)->shm.clone_files->refcnt == 0) { \
+					if ((p)->shm.clone_files->savebind) { \
+						free_sockinfo((p)->shm.clone_files->savebind); \
+					} \
+					if ((p)->shm.clone_files->sockmap) { \
+						sockmap_destroy(&(p)->shm.clone_files->sockmap); \
+						free((p)->shm.clone_files->sockmap); \
+					} \
+					free((p)->shm.clone_files); \
+					(p)->shm.clone_files = NULL; \
+				} \
+			} while (0)
+		} *clone_files;
+	} shm;
+
+	/* hash table entries */
+	UT_hash_handle hh; /* for process table lookup */
+	UT_hash_handle hht; /* for thread table lookup */
+} syd_process_t;
 
 typedef struct {
 	/* magic access to core.*  */
 	bool magic_core_allow;
 
 	/* Per-process sandboxing data */
-	sandbox_t child;
+	sandbox_t box_static;
 
 	/* Non-inherited, "global" configuration data */
 	bool restrict_file_control;
@@ -434,7 +501,7 @@ typedef struct {
 } config_t;
 
 typedef struct {
-	syd_proc_t *proctab;
+	syd_process_t *proctab;
 
 	int trace_options;
 	enum syd_step trace_step;
@@ -454,7 +521,7 @@ typedef struct {
 	config_t config;
 } sydbox_t;
 
-typedef int (*sysfunc_t) (syd_proc_t *current);
+typedef int (*sysfunc_t) (syd_process_t *current);
 typedef int (*sysfilter_t) (int arch, uint32_t sysnum);
 
 typedef struct {
@@ -517,48 +584,96 @@ typedef struct {
 
 /* Global variables */
 extern sydbox_t *sydbox;
-#define SYD_PROCESS_COUNT()		HASH_COUNT(sydbox->proctab)
-#define SYD_PROCESS_ITER(proc, tmp)	HASH_ITER(hh, sydbox->proctab, (proc), (tmp))
-#define SYD_PROCESS_ADD(proc)		HASH_ADD_INT(sydbox->proctab, pid, (proc))
-#define SYD_PROCESS_REMOVE(proc)	HASH_DEL(sydbox->proctab, (proc))
+
+#define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
+#define exiting(p) ((p)->flags & SYD_IN_SYSCALL)
+#define sysdeny(p) ((p)->flags & SYD_DENY_SYSCALL)
+#define sydchild(p) ((p)->flags & SYD_SYDBOX_CHILD)
+#define hasparent(p) ((p)->ppid >= 0)
+#define orphan(p) ((p)->ppid == SYD_PPID_ORPHAN)
+
+#define sandbox_allow(p, box) (!!(P_BOX(p)->sandbox_ ## box == SANDBOX_ALLOW))
+#define sandbox_deny(p, box) (!!(P_BOX(p)->sandbox_ ## box == SANDBOX_DENY))
+#define sandbox_off(p, box) (!!(P_BOX(p)->sandbox_ ## box == SANDBOX_OFF))
+
+#define sandbox_allow_exec(p) (sandbox_allow((p), exec))
+#define sandbox_allow_read(p) (sandbox_allow((p), read))
+#define sandbox_allow_write(p) (sandbox_allow((p), write))
+#define sandbox_allow_network(p) (sandbox_allow((p), network))
+#define sandbox_allow_file(p) (sandbox_allow_exec((p)) && sandbox_allow_read((p)) && sandbox_allow_write((p)))
+
+#define sandbox_off_exec(p) (sandbox_off((p), exec))
+#define sandbox_off_read(p) (sandbox_off((p), read))
+#define sandbox_off_write(p) (sandbox_off((p), write))
+#define sandbox_off_network(p) (sandbox_off((p), network))
+#define sandbox_off_file(p) (sandbox_off_exec((p)) && sandbox_off_read((p)) && sandbox_off_write((p)))
+
+#define sandbox_deny_exec(p) (sandbox_deny((p), exec))
+#define sandbox_deny_read(p) (sandbox_deny((p), read))
+#define sandbox_deny_write(p) (sandbox_deny((p), write))
+#define sandbox_deny_network(p) (sandbox_deny((p), network))
+#define sandbox_deny_file(p) (sandbox_deny_exec((p)) && sandbox_deny_read((p)) && sandbox_deny_write((p)))
+
+#define process_count() HASH_COUNT(sydbox->proctab)
+#define process_iter(p, tmp) HASH_ITER(hh, sydbox->proctab, (p), (tmp))
+#define process_add(p) HASH_ADD(hh, sydbox->proctab, pid, sizeof(pid_t), (p))
+#define process_remove(p) HASH_DEL(sydbox->proctab, (p))
+
+#define thread_count(p) HASH_CNT(hht, (p)->shm.clone_thread->threads)
+#define thread_iter(p, tmp) HASH_ITER(hht, (p)->shm.clone_thread->threads, (p), (tmp))
+#define thread_add(p) HASH_ADD(hht, (p)->shm.clone_thread->threads, pid, sizeof(pid_t), (p))
+#define thread_remove(p) HASH_DELETE(hht, (p)->shm.clone_thread->threads, (p))
+#define threaded(p) ((p)->shm.clone_thread && (p)->shm.clone_thread->threads)
 
 /* Global functions */
-int syd_trace_detach(syd_proc_t *current, int sig);
-int syd_trace_kill(syd_proc_t *current, int sig);
-int syd_trace_setup(syd_proc_t *current);
-int syd_trace_geteventmsg(syd_proc_t *current, unsigned long *data);
-int syd_regset_fill(syd_proc_t *current);
-int syd_read_syscall(syd_proc_t *current, long *sysnum);
-int syd_read_retval(syd_proc_t *current, long *retval, int *error);
-int syd_read_argument(syd_proc_t *current, unsigned arg_index, long *argval);
-int syd_read_argument_int(syd_proc_t *current, unsigned arg_index, int *argval);
-ssize_t syd_read_string(syd_proc_t *current, long addr, char *dest, size_t len);
-int syd_write_syscall(syd_proc_t *current, long sysnum);
-int syd_write_retval(syd_proc_t *current, long retval, int error);
-int syd_read_socket_argument(syd_proc_t *current, bool decode_socketcall,
+int syd_trace_detach(syd_process_t *current, int sig);
+int syd_trace_kill(syd_process_t *current, int sig);
+int syd_trace_setup(syd_process_t *current);
+int syd_trace_geteventmsg(syd_process_t *current, unsigned long *data);
+int syd_regset_fill(syd_process_t *current);
+int syd_read_syscall(syd_process_t *current, long *sysnum);
+int syd_read_retval(syd_process_t *current, long *retval, int *error);
+int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval);
+int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argval);
+ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len);
+int syd_write_syscall(syd_process_t *current, long sysnum);
+int syd_write_retval(syd_process_t *current, long retval, int error);
+int syd_read_socket_argument(syd_process_t *current, bool decode_socketcall,
 			     unsigned arg_index, unsigned long *argval);
-int syd_read_socket_subcall(syd_proc_t *current, bool decode_socketcall,
+int syd_read_socket_subcall(syd_process_t *current, bool decode_socketcall,
 			    long *subcall);
-int syd_read_socket_address(syd_proc_t *current, bool decode_socketcall,
+int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
 			    unsigned arg_index, int *fd,
 			    struct pink_sockaddr *sockaddr);
 
-void clear_proc(syd_proc_t *p);
-void ignore_proc(syd_proc_t *p);
-void remove_proc(syd_proc_t *p);
-static inline syd_proc_t *lookup_proc(pid_t pid)
+void free_process(syd_process_t *p);
+void reset_process(syd_process_t *p);
+
+static inline syd_process_t *lookup_process(pid_t pid)
 {
-	syd_proc_t *p;
-	HASH_FIND_INT(sydbox->proctab, &pid, p);
-	return p;
+	syd_process_t *process;
+
+	HASH_FIND(hh, sydbox->proctab, &pid, sizeof(pid_t), process);
+	return process;
+}
+
+static inline syd_process_t *lookup_thread(syd_process_t *p, pid_t tid)
+{
+	syd_process_t *thread;
+
+	if (!p->shm.clone_thread || !p->shm.clone_thread->threads)
+		return NULL;
+
+	HASH_FIND(hh, p->shm.clone_thread->threads, &tid, sizeof(pid_t), thread);
+	return thread;
 }
 
 void cont_all(void);
 void abort_all(int fatal_sig);
-int deny(syd_proc_t *current, int err_no);
-int restore(syd_proc_t *current);
-int panic(syd_proc_t *current);
-int violation(syd_proc_t *current, const char *fmt, ...)
+int deny(syd_process_t *current, int err_no);
+int restore(syd_process_t *current);
+int panic(syd_process_t *current);
+int violation(syd_process_t *current, const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 2, 3)));
 
 void config_init(void);
@@ -570,23 +685,81 @@ void callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid,
 		     unsigned rmode, char **res);
-int box_check_path(syd_proc_t *current, sysinfo_t *info);
-int box_check_socket(syd_proc_t *current, sysinfo_t *info);
+int box_check_path(syd_process_t *current, sysinfo_t *info);
+int box_check_socket(syd_process_t *current, sysinfo_t *info);
 
-static inline sandbox_t *box_current(syd_proc_t *current)
+static inline sandbox_t *box_current(syd_process_t *current)
 {
-	return current ? &current->config : &sydbox->config.child;
+	return current ? P_BOX(current) : &sydbox->config.box_static;
+}
+
+static inline void init_sandbox(sandbox_t *box)
+{
+	box->sandbox_exec = SANDBOX_OFF;
+	box->sandbox_read = SANDBOX_OFF;
+	box->sandbox_write = SANDBOX_OFF;
+	box->sandbox_network = SANDBOX_OFF;
+
+	box->magic_lock = LOCK_UNSET;
+
+	ACLQ_INIT(&box->acl_exec);
+	ACLQ_INIT(&box->acl_read);
+	ACLQ_INIT(&box->acl_write);
+	ACLQ_INIT(&box->acl_network_bind);
+	ACLQ_INIT(&box->acl_network_connect);
+}
+
+static inline void copy_sandbox(sandbox_t *box_dest, sandbox_t *box_src)
+{
+	struct acl_node *node, *newnode;
+
+	if (!box_src)
+		return;
+
+	assert(box_dest);
+
+	box_dest->sandbox_exec = box_src->sandbox_exec;
+	box_dest->sandbox_read = box_src->sandbox_read;
+	box_dest->sandbox_write = box_src->sandbox_write;
+	box_dest->sandbox_network = box_src->sandbox_network;
+
+	box_dest->magic_lock = box_src->magic_lock;
+
+	ACLQ_COPY(node, &box_src->acl_exec, &box_dest->acl_exec, newnode, xstrdup);
+	ACLQ_COPY(node, &box_src->acl_read, &box_dest->acl_read, newnode, xstrdup);
+	ACLQ_COPY(node, &box_src->acl_write, &box_dest->acl_write, newnode, xstrdup);
+	ACLQ_COPY(node, &box_src->acl_network_bind, &box_dest->acl_network_bind, newnode, sockmatch_xdup);
+	ACLQ_COPY(node, &box_src->acl_network_connect, &box_dest->acl_network_connect, newnode, sockmatch_xdup);
+}
+
+static inline void reset_sandbox(sandbox_t *box)
+{
+	struct acl_node *node;
+
+	ACLQ_RESET(node, &box->acl_exec, free);
+	ACLQ_RESET(node, &box->acl_read, free);
+	ACLQ_RESET(node, &box->acl_write, free);
+	ACLQ_RESET(node, &box->acl_network_bind, free_sockmatch);
+	ACLQ_RESET(node, &box->acl_network_connect, free_sockmatch);
+}
+
+static inline int new_sandbox(sandbox_t **box_ptr)
+{
+	sandbox_t *box;
+
+	box = malloc(sizeof(sandbox_t));
+	if (!box)
+		return -errno;
+	init_sandbox(box);
+
+	*box_ptr = box;
+	return 0;
 }
 
 static inline void free_sandbox(sandbox_t *box)
 {
-	struct acl_node *node;
-
-	ACLQ_FREE(node, &box->acl_exec, free);
-	ACLQ_FREE(node, &box->acl_read, free);
-	ACLQ_FREE(node, &box->acl_write, free);
-	ACLQ_FREE(node, &box->acl_network_bind, free_sockmatch);
-	ACLQ_FREE(node, &box->acl_network_connect, free_sockmatch);
+	reset_sandbox(box);
+	free(box);
 }
 
 void systable_init(void);
@@ -599,8 +772,8 @@ const sysentry_t *systable_lookup(long no, short abi);
 size_t syscall_entries_max(void);
 void sysinit(void);
 int sysinit_seccomp(void);
-int sysenter(syd_proc_t *current);
-int sysexit(syd_proc_t *current);
+int sysenter(syd_process_t *current);
+int sysexit(syd_process_t *current);
 
 enum magic_ret magic_check_call(int rval);
 const char *magic_strerror(int error);
@@ -608,92 +781,92 @@ const char *magic_strkey(enum magic_key key);
 unsigned magic_key_type(enum magic_key key);
 unsigned magic_key_parent(enum magic_key key);
 unsigned magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len);
-int magic_cast(syd_proc_t *current, enum magic_op op, enum magic_key key,
+int magic_cast(syd_process_t *current, enum magic_op op, enum magic_key key,
 	       const void *val);
-int magic_cast_string(syd_proc_t *current, const char *magic, int prefix);
+int magic_cast_string(syd_process_t *current, const char *magic, int prefix);
 
-int magic_set_panic_exit_code(const void *val, syd_proc_t *current);
-int magic_set_violation_exit_code(const void *val, syd_proc_t *current);
-int magic_set_violation_raise_fail(const void *val, syd_proc_t *current);
-int magic_query_violation_raise_fail(syd_proc_t *current);
-int magic_set_violation_raise_safe(const void *val, syd_proc_t *current);
-int magic_query_violation_raise_safe(syd_proc_t *current);
-int magic_set_trace_follow_fork(const void *val, syd_proc_t *current);
-int magic_query_trace_follow_fork(syd_proc_t *current);
-int magic_set_trace_exit_kill(const void *val, syd_proc_t *current);
-int magic_query_trace_exit_kill(syd_proc_t *current);
-int magic_set_trace_exit_wait_all(const void *val, syd_proc_t *current);
-int magic_query_trace_exit_wait_all(syd_proc_t *current);
-int magic_set_trace_interrupt(const void *val, syd_proc_t *current);
-int magic_set_trace_use_seccomp(const void *val, syd_proc_t *current);
-int magic_query_trace_use_seccomp(syd_proc_t *current);
-int magic_set_trace_use_seize(const void *val, syd_proc_t *current);
-int magic_query_trace_use_seize(syd_proc_t *current);
-int magic_set_trace_use_toolong_hack(const void *val, syd_proc_t *current);
-int magic_query_trace_use_toolong_hack(syd_proc_t *current);
-int magic_set_restrict_fcntl(const void *val, syd_proc_t *current);
-int magic_query_restrict_fcntl(syd_proc_t *current);
-int magic_set_restrict_shm_wr(const void *val, syd_proc_t *current);
-int magic_query_restrict_shm_wr(syd_proc_t *current);
-int magic_set_whitelist_ppd(const void *val, syd_proc_t *current);
-int magic_query_whitelist_ppd(syd_proc_t *current);
-int magic_set_whitelist_sb(const void *val, syd_proc_t *current);
-int magic_query_whitelist_sb(syd_proc_t *current);
-int magic_set_whitelist_usf(const void *val, syd_proc_t *current);
-int magic_query_whitelist_usf(syd_proc_t *current);
-int magic_append_whitelist_exec(const void *val, syd_proc_t *current);
-int magic_remove_whitelist_exec(const void *val, syd_proc_t *current);
-int magic_append_whitelist_read(const void *val, syd_proc_t *current);
-int magic_remove_whitelist_read(const void *val, syd_proc_t *current);
-int magic_append_whitelist_write(const void *val, syd_proc_t *current);
-int magic_remove_whitelist_write(const void *val, syd_proc_t *current);
-int magic_append_blacklist_exec(const void *val, syd_proc_t *current);
-int magic_remove_blacklist_exec(const void *val, syd_proc_t *current);
-int magic_append_blacklist_read(const void *val, syd_proc_t *current);
-int magic_remove_blacklist_read(const void *val, syd_proc_t *current);
-int magic_append_blacklist_write(const void *val, syd_proc_t *current);
-int magic_remove_blacklist_write(const void *val, syd_proc_t *current);
-int magic_append_filter_exec(const void *val, syd_proc_t *current);
-int magic_remove_filter_exec(const void *val, syd_proc_t *current);
-int magic_append_filter_read(const void *val, syd_proc_t *current);
-int magic_remove_filter_read(const void *val, syd_proc_t *current);
-int magic_append_filter_write(const void *val, syd_proc_t *current);
-int magic_remove_filter_write(const void *val, syd_proc_t *current);
-int magic_append_whitelist_network_bind(const void *val, syd_proc_t *current);
-int magic_remove_whitelist_network_bind(const void *val, syd_proc_t *current);
-int magic_append_whitelist_network_connect(const void *val, syd_proc_t *current);
-int magic_remove_whitelist_network_connect(const void *val, syd_proc_t *current);
-int magic_append_blacklist_network_bind(const void *val, syd_proc_t *current);
-int magic_remove_blacklist_network_bind(const void *val, syd_proc_t *current);
-int magic_append_blacklist_network_connect(const void *val, syd_proc_t *current);
-int magic_remove_blacklist_network_connect(const void *val, syd_proc_t *current);
-int magic_append_filter_network(const void *val, syd_proc_t *current);
-int magic_remove_filter_network(const void *val, syd_proc_t *current);
-int magic_set_abort_decision(const void *val, syd_proc_t *current);
-int magic_set_panic_decision(const void *val, syd_proc_t *current);
-int magic_set_violation_decision(const void *val, syd_proc_t *current);
-int magic_set_trace_magic_lock(const void *val, syd_proc_t *current);
-int magic_set_log_file(const void *val, syd_proc_t *current);
-int magic_set_log_level(const void *val, syd_proc_t *current);
-int magic_set_log_console_fd(const void *val, syd_proc_t *current);
-int magic_set_log_console_level(const void *val, syd_proc_t *current);
-int magic_query_sandbox_exec(syd_proc_t *current);
-int magic_query_sandbox_read(syd_proc_t *current);
-int magic_query_sandbox_write(syd_proc_t *current);
-int magic_query_sandbox_network(syd_proc_t *current);
-int magic_set_sandbox_exec(const void *val, syd_proc_t *current);
-int magic_set_sandbox_read(const void *val, syd_proc_t *current);
-int magic_set_sandbox_write(const void *val, syd_proc_t *current);
-int magic_set_sandbox_network(const void *val, syd_proc_t *current);
-int magic_append_exec_kill_if_match(const void *val, syd_proc_t *current);
-int magic_remove_exec_kill_if_match(const void *val, syd_proc_t *current);
-int magic_append_exec_resume_if_match(const void *val, syd_proc_t *current);
-int magic_remove_exec_resume_if_match(const void *val, syd_proc_t *current);
-int magic_query_match_case_sensitive(syd_proc_t *current);
-int magic_set_match_case_sensitive(const void *val, syd_proc_t *current);
-int magic_set_match_no_wildcard(const void *val, syd_proc_t *current);
+int magic_set_panic_exit_code(const void *val, syd_process_t *current);
+int magic_set_violation_exit_code(const void *val, syd_process_t *current);
+int magic_set_violation_raise_fail(const void *val, syd_process_t *current);
+int magic_query_violation_raise_fail(syd_process_t *current);
+int magic_set_violation_raise_safe(const void *val, syd_process_t *current);
+int magic_query_violation_raise_safe(syd_process_t *current);
+int magic_set_trace_follow_fork(const void *val, syd_process_t *current);
+int magic_query_trace_follow_fork(syd_process_t *current);
+int magic_set_trace_exit_kill(const void *val, syd_process_t *current);
+int magic_query_trace_exit_kill(syd_process_t *current);
+int magic_set_trace_exit_wait_all(const void *val, syd_process_t *current);
+int magic_query_trace_exit_wait_all(syd_process_t *current);
+int magic_set_trace_interrupt(const void *val, syd_process_t *current);
+int magic_set_trace_use_seccomp(const void *val, syd_process_t *current);
+int magic_query_trace_use_seccomp(syd_process_t *current);
+int magic_set_trace_use_seize(const void *val, syd_process_t *current);
+int magic_query_trace_use_seize(syd_process_t *current);
+int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current);
+int magic_query_trace_use_toolong_hack(syd_process_t *current);
+int magic_set_restrict_fcntl(const void *val, syd_process_t *current);
+int magic_query_restrict_fcntl(syd_process_t *current);
+int magic_set_restrict_shm_wr(const void *val, syd_process_t *current);
+int magic_query_restrict_shm_wr(syd_process_t *current);
+int magic_set_whitelist_ppd(const void *val, syd_process_t *current);
+int magic_query_whitelist_ppd(syd_process_t *current);
+int magic_set_whitelist_sb(const void *val, syd_process_t *current);
+int magic_query_whitelist_sb(syd_process_t *current);
+int magic_set_whitelist_usf(const void *val, syd_process_t *current);
+int magic_query_whitelist_usf(syd_process_t *current);
+int magic_append_whitelist_exec(const void *val, syd_process_t *current);
+int magic_remove_whitelist_exec(const void *val, syd_process_t *current);
+int magic_append_whitelist_read(const void *val, syd_process_t *current);
+int magic_remove_whitelist_read(const void *val, syd_process_t *current);
+int magic_append_whitelist_write(const void *val, syd_process_t *current);
+int magic_remove_whitelist_write(const void *val, syd_process_t *current);
+int magic_append_blacklist_exec(const void *val, syd_process_t *current);
+int magic_remove_blacklist_exec(const void *val, syd_process_t *current);
+int magic_append_blacklist_read(const void *val, syd_process_t *current);
+int magic_remove_blacklist_read(const void *val, syd_process_t *current);
+int magic_append_blacklist_write(const void *val, syd_process_t *current);
+int magic_remove_blacklist_write(const void *val, syd_process_t *current);
+int magic_append_filter_exec(const void *val, syd_process_t *current);
+int magic_remove_filter_exec(const void *val, syd_process_t *current);
+int magic_append_filter_read(const void *val, syd_process_t *current);
+int magic_remove_filter_read(const void *val, syd_process_t *current);
+int magic_append_filter_write(const void *val, syd_process_t *current);
+int magic_remove_filter_write(const void *val, syd_process_t *current);
+int magic_append_whitelist_network_bind(const void *val, syd_process_t *current);
+int magic_remove_whitelist_network_bind(const void *val, syd_process_t *current);
+int magic_append_whitelist_network_connect(const void *val, syd_process_t *current);
+int magic_remove_whitelist_network_connect(const void *val, syd_process_t *current);
+int magic_append_blacklist_network_bind(const void *val, syd_process_t *current);
+int magic_remove_blacklist_network_bind(const void *val, syd_process_t *current);
+int magic_append_blacklist_network_connect(const void *val, syd_process_t *current);
+int magic_remove_blacklist_network_connect(const void *val, syd_process_t *current);
+int magic_append_filter_network(const void *val, syd_process_t *current);
+int magic_remove_filter_network(const void *val, syd_process_t *current);
+int magic_set_abort_decision(const void *val, syd_process_t *current);
+int magic_set_panic_decision(const void *val, syd_process_t *current);
+int magic_set_violation_decision(const void *val, syd_process_t *current);
+int magic_set_trace_magic_lock(const void *val, syd_process_t *current);
+int magic_set_log_file(const void *val, syd_process_t *current);
+int magic_set_log_level(const void *val, syd_process_t *current);
+int magic_set_log_console_fd(const void *val, syd_process_t *current);
+int magic_set_log_console_level(const void *val, syd_process_t *current);
+int magic_query_sandbox_exec(syd_process_t *current);
+int magic_query_sandbox_read(syd_process_t *current);
+int magic_query_sandbox_write(syd_process_t *current);
+int magic_query_sandbox_network(syd_process_t *current);
+int magic_set_sandbox_exec(const void *val, syd_process_t *current);
+int magic_set_sandbox_read(const void *val, syd_process_t *current);
+int magic_set_sandbox_write(const void *val, syd_process_t *current);
+int magic_set_sandbox_network(const void *val, syd_process_t *current);
+int magic_append_exec_kill_if_match(const void *val, syd_process_t *current);
+int magic_remove_exec_kill_if_match(const void *val, syd_process_t *current);
+int magic_append_exec_resume_if_match(const void *val, syd_process_t *current);
+int magic_remove_exec_resume_if_match(const void *val, syd_process_t *current);
+int magic_query_match_case_sensitive(syd_process_t *current);
+int magic_set_match_case_sensitive(const void *val, syd_process_t *current);
+int magic_set_match_no_wildcard(const void *val, syd_process_t *current);
 
-int magic_cmd_exec(const void *val, syd_proc_t *current);
+int magic_cmd_exec(const void *val, syd_process_t *current);
 
 static inline void init_sysinfo(sysinfo_t *info)
 {
@@ -704,68 +877,68 @@ int filter_open(int arch, uint32_t sysnum);
 int filter_openat(int arch, uint32_t sysnum);
 int filter_fcntl(int arch, uint32_t sysnum);
 int filter_mmap(int arch, uint32_t sysnum);
-int sys_fallback_mmap(syd_proc_t *current);
+int sys_fallback_mmap(syd_process_t *current);
 
-int sys_access(syd_proc_t *current);
-int sys_faccessat(syd_proc_t *current);
+int sys_access(syd_process_t *current);
+int sys_faccessat(syd_process_t *current);
 
-int sys_chmod(syd_proc_t *current);
-int sys_fchmodat(syd_proc_t *current);
-int sys_chown(syd_proc_t *current);
-int sys_lchown(syd_proc_t *current);
-int sys_fchownat(syd_proc_t *current);
-int sys_open(syd_proc_t *current);
-int sys_openat(syd_proc_t *current);
-int sys_creat(syd_proc_t *current);
-int sys_close(syd_proc_t *current);
-int sysx_close(syd_proc_t *current);
-int sys_mkdir(syd_proc_t *current);
-int sys_mkdirat(syd_proc_t *current);
-int sys_mknod(syd_proc_t *current);
-int sys_mknodat(syd_proc_t *current);
-int sys_rmdir(syd_proc_t *current);
-int sys_truncate(syd_proc_t *current);
-int sys_mount(syd_proc_t *current);
-int sys_umount(syd_proc_t *current);
-int sys_umount2(syd_proc_t *current);
-int sys_utime(syd_proc_t *current);
-int sys_utimes(syd_proc_t *current);
-int sys_utimensat(syd_proc_t *current);
-int sys_futimesat(syd_proc_t *current);
-int sys_unlink(syd_proc_t *current);
-int sys_unlinkat(syd_proc_t *current);
-int sys_link(syd_proc_t *current);
-int sys_linkat(syd_proc_t *current);
-int sys_rename(syd_proc_t *current);
-int sys_renameat(syd_proc_t *current);
-int sys_symlink(syd_proc_t *current);
-int sys_symlinkat(syd_proc_t *current);
-int sys_listxattr(syd_proc_t *current);
-int sys_llistxattr(syd_proc_t *current);
-int sys_setxattr(syd_proc_t *current);
-int sys_lsetxattr(syd_proc_t *current);
-int sys_removexattr(syd_proc_t *current);
-int sys_lremovexattr(syd_proc_t *current);
+int sys_chmod(syd_process_t *current);
+int sys_fchmodat(syd_process_t *current);
+int sys_chown(syd_process_t *current);
+int sys_lchown(syd_process_t *current);
+int sys_fchownat(syd_process_t *current);
+int sys_open(syd_process_t *current);
+int sys_openat(syd_process_t *current);
+int sys_creat(syd_process_t *current);
+int sys_close(syd_process_t *current);
+int sysx_close(syd_process_t *current);
+int sys_mkdir(syd_process_t *current);
+int sys_mkdirat(syd_process_t *current);
+int sys_mknod(syd_process_t *current);
+int sys_mknodat(syd_process_t *current);
+int sys_rmdir(syd_process_t *current);
+int sys_truncate(syd_process_t *current);
+int sys_mount(syd_process_t *current);
+int sys_umount(syd_process_t *current);
+int sys_umount2(syd_process_t *current);
+int sys_utime(syd_process_t *current);
+int sys_utimes(syd_process_t *current);
+int sys_utimensat(syd_process_t *current);
+int sys_futimesat(syd_process_t *current);
+int sys_unlink(syd_process_t *current);
+int sys_unlinkat(syd_process_t *current);
+int sys_link(syd_process_t *current);
+int sys_linkat(syd_process_t *current);
+int sys_rename(syd_process_t *current);
+int sys_renameat(syd_process_t *current);
+int sys_symlink(syd_process_t *current);
+int sys_symlinkat(syd_process_t *current);
+int sys_listxattr(syd_process_t *current);
+int sys_llistxattr(syd_process_t *current);
+int sys_setxattr(syd_process_t *current);
+int sys_lsetxattr(syd_process_t *current);
+int sys_removexattr(syd_process_t *current);
+int sys_lremovexattr(syd_process_t *current);
 
-int sys_dup(syd_proc_t *current);
-int sys_dup3(syd_proc_t *current);
-int sys_fcntl(syd_proc_t *current);
+int sys_dup(syd_process_t *current);
+int sys_dup3(syd_process_t *current);
+int sys_fcntl(syd_process_t *current);
 
-int sys_fork(syd_proc_t *current);
-int sys_execve(syd_proc_t *current);
-int sys_stat(syd_proc_t *current);
+int sys_clone(syd_process_t *current);
+int sys_execve(syd_process_t *current);
+int sys_stat(syd_process_t *current);
 
-int sys_socketcall(syd_proc_t *current);
-int sys_bind(syd_proc_t *current);
-int sys_connect(syd_proc_t *current);
-int sys_sendto(syd_proc_t *current);
-int sys_getsockname(syd_proc_t *current);
+int sys_socketcall(syd_process_t *current);
+int sys_bind(syd_process_t *current);
+int sys_connect(syd_process_t *current);
+int sys_sendto(syd_process_t *current);
+int sys_getsockname(syd_process_t *current);
 
-int sysx_chdir(syd_proc_t *current);
-int sysx_dup(syd_proc_t *current);
-int sysx_fcntl(syd_proc_t *current);
-int sysx_socketcall(syd_proc_t *current);
-int sysx_bind(syd_proc_t *current);
-int sysx_getsockname(syd_proc_t *current);
+int sysx_chdir(syd_process_t *current);
+int sysx_dup(syd_process_t *current);
+int sysx_fcntl(syd_process_t *current);
+int sysx_socketcall(syd_process_t *current);
+int sysx_bind(syd_process_t *current);
+int sysx_getsockname(syd_process_t *current);
 
 #endif

@@ -43,37 +43,37 @@ static inline int errno2retval(int err_no)
 
 void cont_all(void)
 {
-	syd_proc_t *node, *tmp;
+	syd_process_t *node, *tmp;
 
-	SYD_PROCESS_ITER(node, tmp) {
+	process_iter(node, tmp) {
 		syd_trace_detach(node, 0);
 	}
 }
 
 void kill_all(void)
 {
-	syd_proc_t *node, *tmp;
+	syd_process_t *node, *tmp;
 
-	SYD_PROCESS_ITER(node, tmp) {
+	process_iter(node, tmp) {
 		syd_trace_kill(node, SIGKILL);
 	}
 }
 
 void abort_all(int fatal_sig)
 {
-	syd_proc_t *node, *tmp;
+	syd_process_t *node, *tmp;
 
 	if (!sydbox)
 		return;
 
 	switch (sydbox->config.abort_decision) {
 	case ABORT_CONTALL:
-		SYD_PROCESS_ITER(node, tmp) {
+		process_iter(node, tmp) {
 			syd_trace_detach(node, 0);
 		}
 		break;
 	case ABORT_KILLALL:
-		SYD_PROCESS_ITER(node, tmp) {
+		process_iter(node, tmp) {
 			syd_trace_kill(node, SIGKILL);
 		}
 		break;
@@ -81,7 +81,7 @@ void abort_all(int fatal_sig)
 }
 
 PINK_GCC_ATTR((format (printf, 2, 0)))
-static void report(syd_proc_t *current, const char *fmt, va_list ap)
+static void report(syd_process_t *current, const char *fmt, va_list ap)
 {
 	char *cmdline;
 
@@ -89,8 +89,8 @@ static void report(syd_proc_t *current, const char *fmt, va_list ap)
 
 	log_access_v("-- Access Violation! --");
 	log_access_v("proc: %s[%u] (parent:%u)",
-		     current->comm, current->pid, current->ppid);
-	log_access_v("cwd: `%s'", current->cwd);
+		     P_COMM(current), current->pid, current->ppid);
+	log_access_v("cwd: `%s'", P_CWD(current));
 
 	if (proc_cmdline(current->pid, 128, &cmdline) == 0) {
 		log_access_v("cmdline: `%s'", cmdline);
@@ -102,7 +102,7 @@ static void report(syd_proc_t *current, const char *fmt, va_list ap)
 	log_context(current);
 }
 
-int deny(syd_proc_t *current, int err_no)
+int deny(syd_process_t *current, int err_no)
 {
 	current->flags |= SYD_DENY_SYSCALL | SYD_STOP_AT_SYSEXIT;
 	current->retval = errno2retval(err_no);
@@ -113,7 +113,7 @@ int deny(syd_proc_t *current, int err_no)
 	return syd_write_syscall(current, PINK_SYSCALL_INVALID);
 }
 
-int restore(syd_proc_t *current)
+int restore(syd_process_t *current)
 {
 	int r;
 	int retval, error;
@@ -136,7 +136,7 @@ int restore(syd_proc_t *current)
 	return syd_write_retval(current, retval, error);
 }
 
-int panic(syd_proc_t *current)
+int panic(syd_process_t *current)
 {
 	switch (sydbox->config.panic_decision) {
 	case PANIC_KILL:
@@ -165,7 +165,7 @@ int panic(syd_proc_t *current)
 	     : sydbox->exit_code);
 }
 
-int violation(syd_proc_t *current, const char *fmt, ...)
+int violation(syd_process_t *current, const char *fmt, ...)
 {
 	va_list ap;
 

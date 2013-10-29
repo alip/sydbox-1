@@ -20,11 +20,11 @@ struct key {
 	const char *lname;
 	unsigned parent;
 	enum magic_type type;
-	int (*set) (const void *val, syd_proc_t *current);
-	int (*append) (const void *val, syd_proc_t *current);
-	int (*remove) (const void *val, syd_proc_t *current);
-	int (*query) (syd_proc_t *current);
-	int (*cmd) (const void *val, syd_proc_t *current);
+	int (*set) (const void *val, syd_process_t *current);
+	int (*append) (const void *val, syd_process_t *current);
+	int (*remove) (const void *val, syd_process_t *current);
+	int (*query) (syd_process_t *current);
+	int (*cmd) (const void *val, syd_process_t *current);
 };
 
 static const struct key key_table[] = {
@@ -677,7 +677,7 @@ static int magic_ok(struct key entry, enum magic_op op)
 	return MAGIC_RET_OK;
 }
 
-int magic_cast(syd_proc_t *current, enum magic_op op, enum magic_key key, const void *val)
+int magic_cast(syd_process_t *current, enum magic_op op, enum magic_key key, const void *val)
 {
 	int r;
 	struct key entry;
@@ -720,7 +720,7 @@ static enum magic_key magic_next_key(const char *magic, enum magic_key key)
 	return MAGIC_KEY_INVALID;
 }
 
-int magic_cast_string(syd_proc_t *current, const char *magic, int prefix)
+int magic_cast_string(syd_process_t *current, const char *magic, int prefix)
 {
 	bool bval;
 	int ival;

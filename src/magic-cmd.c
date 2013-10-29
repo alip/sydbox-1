@@ -48,7 +48,7 @@ static void free_argv(char **argv)
 	}
 }
 
-int magic_cmd_exec(const void *val, syd_proc_t *current)
+int magic_cmd_exec(const void *val, syd_process_t *current)
 {
 	int r = MAGIC_RET_OK;
 	unsigned i, j, k;
@@ -104,7 +104,7 @@ int magic_cmd_exec(const void *val, syd_proc_t *current)
 			_exit(ENOMEM);
 		if (proc_environ(current->pid) < 0)
 			_exit(errno);
-		if (chdir(current->cwd) < 0)
+		if (chdir(P_CWD(current)) < 0)
 			_exit(errno);
 		if (pink_trace_me() < 0)
 			_exit(errno);
@@ -135,7 +135,7 @@ int magic_cmd_exec(const void *val, syd_proc_t *current)
 		log_magic("exec(`%s') terminated (signal:%d)", argv[0],
 			  WTERMSIG(status));
 		log_magic("sending signal:%d to %s[%u]", WTERMSIG(status),
-			  current->comm, current->pid);
+			  P_COMM(current), current->pid);
 		pink_trace_kill(current->pid, current->ppid, WTERMSIG(status));
 		r = MAGIC_RET_PROCESS_TERMINATED;
 	} else {

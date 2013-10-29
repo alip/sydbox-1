@@ -13,11 +13,21 @@
 #include <pinktrace/pink.h>
 #include "log.h"
 
-int syd_trace_detach(syd_proc_t *current, int sig)
+int syd_trace_detach(syd_process_t *current, int sig)
 {
 	int r;
 
 	assert(current);
+
+	if (sydbox->config.use_seccomp) {
+		/*
+		 * Careful! Detaching here would cause the untraced
+		 * process' observed system calls to return -ENOSYS.
+		 */
+		log_warning("seccomp active, refusing to detach from process %d", current->pid);
+		r = 0;
+		goto out;
+	}
 
 	r = pink_trace_detach(current->pid, sig);
 	if (r == 0)
@@ -27,17 +37,18 @@ int syd_trace_detach(syd_proc_t *current, int sig)
 	else
 		err_warning(-r, "trace_detach(sig:%d) failed", sig);
 
-	ignore_proc(current);
+out:
+	free_process(current);
 	return r;
 }
 
-int syd_trace_kill(syd_proc_t *current, int sig)
+int syd_trace_kill(syd_process_t *current, int sig)
 {
 	int r;
 
 	assert(current);
 
-	r = pink_trace_kill(current->pid, current->ppid, sig);
+	r = pink_trace_kill(current->pid, -1, sig);
 	if (r == 0)
 		log_trace("KILL sig:%d", sig);
 	else if (r == -ESRCH)
@@ -45,11 +56,11 @@ int syd_trace_kill(syd_proc_t *current, int sig)
 	else
 		err_warning(-r, "trace_kill(sig:%d) failed", sig);
 
-	ignore_proc(current);
+	free_process(current);
 	return r;
 }
 
-int syd_trace_setup(syd_proc_t *current)
+int syd_trace_setup(syd_process_t *current)
 {
 	int r;
 	int opts = sydbox->trace_options;
@@ -65,7 +76,7 @@ int syd_trace_setup(syd_proc_t *current)
 	return r;
 }
 
-int syd_trace_geteventmsg(syd_proc_t *current, unsigned long *data)
+int syd_trace_geteventmsg(syd_process_t *current, unsigned long *data)
 {
 	int r;
 
@@ -81,7 +92,7 @@ int syd_trace_geteventmsg(syd_proc_t *current, unsigned long *data)
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
-int syd_regset_fill(syd_proc_t *current)
+int syd_regset_fill(syd_process_t *current)
 {
 	int r;
 
@@ -99,7 +110,7 @@ int syd_regset_fill(syd_proc_t *current)
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
-int syd_read_syscall(syd_proc_t *current, long *sysnum)
+int syd_read_syscall(syd_process_t *current, long *sysnum)
 {
 	int r;
 
@@ -116,7 +127,7 @@ int syd_read_syscall(syd_proc_t *current, long *sysnum)
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
-int syd_read_retval(syd_proc_t *current, long *retval, int *error)
+int syd_read_retval(syd_process_t *current, long *retval, int *error)
 {
 	int r;
 
@@ -132,7 +143,7 @@ int syd_read_retval(syd_proc_t *current, long *retval, int *error)
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
-int syd_read_argument(syd_proc_t *current, unsigned arg_index, long *argval)
+int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
 {
 	int r;
 
@@ -149,7 +160,7 @@ int syd_read_argument(syd_proc_t *current, unsigned arg_index, long *argval)
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
-int syd_read_argument_int(syd_proc_t *current, unsigned arg_index, int *argval)
+int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argval)
 {
 	int r;
 	long arg_l;
@@ -169,7 +180,7 @@ int syd_read_argument_int(syd_proc_t *current, unsigned arg_index, int *argval)
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 
 }
-ssize_t syd_read_string(syd_proc_t *current, long addr, char *dest, size_t len)
+ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len)
 {
 	ssize_t r;
 	int save_errno;
@@ -194,7 +205,7 @@ ssize_t syd_read_string(syd_proc_t *current, long addr, char *dest, size_t len)
 	return r;
 }
 
-int syd_read_socket_argument(syd_proc_t *current, bool decode_socketcall,
+int syd_read_socket_argument(syd_process_t *current, bool decode_socketcall,
 			     unsigned arg_index, unsigned long *argval)
 {
 	int r;
@@ -213,7 +224,7 @@ int syd_read_socket_argument(syd_proc_t *current, bool decode_socketcall,
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
-int syd_read_socket_subcall(syd_proc_t *current, bool decode_socketcall,
+int syd_read_socket_subcall(syd_process_t *current, bool decode_socketcall,
 			    long *subcall)
 {
 	int r;
@@ -230,7 +241,7 @@ int syd_read_socket_subcall(syd_proc_t *current, bool decode_socketcall,
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
-int syd_read_socket_address(syd_proc_t *current, bool decode_socketcall,
+int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
 			    unsigned arg_index, int *fd,
 			    struct pink_sockaddr *sockaddr)
 {
@@ -250,7 +261,7 @@ int syd_read_socket_address(syd_proc_t *current, bool decode_socketcall,
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
-int syd_write_syscall(syd_proc_t *current, long sysnum)
+int syd_write_syscall(syd_process_t *current, long sysnum)
 {
 	int r;
 
@@ -266,7 +277,7 @@ int syd_write_syscall(syd_proc_t *current, long sysnum)
 	return (r == -ESRCH) ? -ESRCH : panic(current);
 }
 
-int syd_write_retval(syd_proc_t *current, long retval, int error)
+int syd_write_retval(syd_process_t *current, long retval, int error)
 {
 	int r;
 

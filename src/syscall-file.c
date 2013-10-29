@@ -28,24 +28,24 @@ struct open_info {
 	enum syd_stat syd_mode;
 };
 
-static inline void sysinfo_read_access(syd_proc_t *current, sysinfo_t *info)
+static inline void sysinfo_read_access(syd_process_t *current, sysinfo_t *info)
 {
-	info->access_mode = sandbox_read_deny(current)
+	info->access_mode = sandbox_deny_read(current)
 			    ? ACCESS_WHITELIST
 			    : ACCESS_BLACKLIST;
-	info->access_list = &current->config.acl_read;
+	info->access_list = &P_BOX(current)->acl_read;
 	info->access_filter = &sydbox->config.filter_read;
 }
 
-static bool check_access_mode(syd_proc_t *current, int mode)
+static bool check_access_mode(syd_process_t *current, int mode)
 {
 	bool r;
 
 	assert(current);
 
-	if (mode & W_OK && !sandbox_write_off(current))
+	if (mode & W_OK && !sandbox_off_write(current))
 		r = true;
-	else if (!sandbox_read_off(current))
+	else if (!sandbox_off_read(current))
 		r = true;
 	else
 		r = false;
@@ -54,15 +54,15 @@ static bool check_access_mode(syd_proc_t *current, int mode)
 	return r;
 }
 
-static int check_access(syd_proc_t *current, sysinfo_t *info, int mode)
+static int check_access(syd_process_t *current, sysinfo_t *info, int mode)
 {
 	int r = 0;
 	bool rd, wr;
 	char *abspath = NULL;
 	struct stat statbuf;
 
-	rd = !sandbox_read_off(current); /* every mode `check' is a read access */
-	wr = !sandbox_write_off(current) && mode & W_OK;
+	rd = !sandbox_off_read(current); /* every mode `check' is a read access */
+	wr = !sandbox_off_write(current) && mode & W_OK;
 
 	if (wr && rd) {
 		info->ret_abspath = &abspath;
@@ -93,13 +93,13 @@ out:
 }
 
 
-int sys_access(syd_proc_t *current)
+int sys_access(syd_process_t *current)
 {
 	int r;
 	long mode;
 	sysinfo_t info;
 
-	if (sandbox_file_off(current))
+	if (sandbox_off_file(current))
 		return 0;
 
 	if ((r = syd_read_argument(current, 1, &mode)) < 0)
@@ -114,13 +114,13 @@ int sys_access(syd_proc_t *current)
 	return check_access(current, &info, mode);
 }
 
-int sys_faccessat(syd_proc_t *current)
+int sys_faccessat(syd_process_t *current)
 {
 	int r;
 	long mode, flags;
 	sysinfo_t info;
 
-	if (sandbox_file_off(current))
+	if (sandbox_off_file(current))
 		return 0;
 
 	/* check mode and then the AT_SYMLINK_NOFOLLOW flag */
@@ -143,7 +143,7 @@ int sys_faccessat(syd_proc_t *current)
 }
 
 /* TODO: Do we need to care about O_PATH? */
-static void init_open_info(syd_proc_t *current, int flags, struct open_info *info)
+static void init_open_info(syd_process_t *current, int flags, struct open_info *info)
 {
 	assert(current);
 	assert(info);
@@ -210,7 +210,7 @@ static void init_open_info(syd_proc_t *current, int flags, struct open_info *inf
 		  info->rmode, info->syd_mode);
 }
 
-static int check_open(syd_proc_t *current, sysinfo_t *info,
+static int check_open(syd_process_t *current, sysinfo_t *info,
 		      const struct open_info *open_info)
 {
 	int r = 0;
@@ -218,8 +218,8 @@ static int check_open(syd_proc_t *current, sysinfo_t *info,
 	bool rd, wr;
 	struct stat statbuf;
 
-	rd = !sandbox_read_off(current) && open_info->may_read;
-	wr = !sandbox_write_off(current) && open_info->may_write;
+	rd = !sandbox_off_read(current) && open_info->may_read;
+	wr = !sandbox_off_write(current) && open_info->may_write;
 
 	if (wr && rd) {
 		info->ret_abspath = &abspath;
@@ -249,7 +249,7 @@ out:
 	return r;
 }
 
-static int restrict_open_flags(syd_proc_t *current, int flags)
+static int restrict_open_flags(syd_process_t *current, int flags)
 {
 	if (!sydbox->config.use_seccomp &&
 	    sydbox->config.restrict_file_control &&
@@ -258,7 +258,7 @@ static int restrict_open_flags(syd_proc_t *current, int flags)
 	return 0;
 }
 
-int sys_open(syd_proc_t *current)
+int sys_open(syd_process_t *current)
 {
 	bool strict;
 	int r, flags;
@@ -268,7 +268,7 @@ int sys_open(syd_proc_t *current)
 	strict = !sydbox->config.use_seccomp &&
 		 sydbox->config.restrict_file_control;
 
-	if (!strict && sandbox_read_off(current) && sandbox_write_off(current))
+	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
 	/* check flags first */
@@ -277,7 +277,7 @@ int sys_open(syd_proc_t *current)
 	if ((r = restrict_open_flags(current, flags)) < 0)
 		return r;
 
-	if (sandbox_read_off(current) && sandbox_write_off(current))
+	if (sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
 	init_open_info(current, flags, &open_info);
@@ -288,7 +288,7 @@ int sys_open(syd_proc_t *current)
 	return check_open(current, &info, &open_info);
 }
 
-int sys_openat(syd_proc_t *current)
+int sys_openat(syd_process_t *current)
 {
 	bool strict;
 	int r, flags;
@@ -298,7 +298,7 @@ int sys_openat(syd_proc_t *current)
 	strict = !sydbox->config.use_seccomp &&
 		 sydbox->config.restrict_file_control;
 
-	if (!strict && sandbox_read_off(current) && sandbox_write_off(current))
+	if (!strict && sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
 	/* check flags first */
@@ -307,7 +307,7 @@ int sys_openat(syd_proc_t *current)
 	if ((r = restrict_open_flags(current, flags)) < 0)
 		return r;
 
-	if (sandbox_read_off(current) && sandbox_write_off(current))
+	if (sandbox_off_read(current) && sandbox_off_write(current))
 		return 0;
 
 	init_open_info(current, flags, &open_info);
@@ -320,11 +320,11 @@ int sys_openat(syd_proc_t *current)
 	return check_open(current, &info, &open_info);
 }
 
-int sys_chmod(syd_proc_t *current)
+int sys_chmod(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -332,13 +332,13 @@ int sys_chmod(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_fchmodat(syd_proc_t *current)
+int sys_fchmodat(syd_process_t *current)
 {
 	int r;
 	long flags;
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	/* check for AT_SYMLINK_NOFOLLOW */
@@ -354,11 +354,11 @@ int sys_fchmodat(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_chown(syd_proc_t *current)
+int sys_chown(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -366,11 +366,11 @@ int sys_chown(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_lchown(syd_proc_t *current)
+int sys_lchown(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -379,13 +379,13 @@ int sys_lchown(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_fchownat(syd_proc_t *current)
+int sys_fchownat(syd_process_t *current)
 {
 	int r;
 	long flags;
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	/* check for AT_SYMLINK_NOFOLLOW */
@@ -401,11 +401,11 @@ int sys_fchownat(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_creat(syd_proc_t *current)
+int sys_creat(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -414,30 +414,30 @@ int sys_creat(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_close(syd_proc_t *current)
+int sys_close(syd_process_t *current)
 {
 	int r;
 	long fd;
 
 	current->args[0] = -1;
 
-	if (sandbox_network_off(current) ||
+	if (sandbox_off_network(current) ||
 	    !sydbox->config.whitelist_successful_bind)
 		return 0;
 
 	if ((r = syd_read_argument(current, 0, &fd)) < 0)
 		return r;
-	if (sockmap_find(&current->sockmap, fd))
+	if (sockmap_find(&P_SOCKMAP(current), fd))
 		current->args[0] = fd;
 	return 0;
 }
 
-int sysx_close(syd_proc_t *current)
+int sysx_close(syd_process_t *current)
 {
 	int r;
 	long retval;
 
-	if (sandbox_network_off(current) ||
+	if (sandbox_off_network(current) ||
 	    !sydbox->config.whitelist_successful_bind ||
 	    current->args[0] < 0)
 		return 0;
@@ -450,16 +450,16 @@ int sysx_close(syd_proc_t *current)
 		return 0;
 	}
 
-	sockmap_remove(&current->sockmap, current->args[0]);
+	sockmap_remove(&P_SOCKMAP(current), current->args[0]);
 	log_trace("closed fd: %ld", current->args[0]);
 	return 0;
 }
 
-int sys_mkdir(syd_proc_t *current)
+int sys_mkdir(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -469,41 +469,11 @@ int sys_mkdir(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_mkdirat(syd_proc_t *current)
+int sys_mkdirat(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
-		return 0;
-
-	init_sysinfo(&info);
-	info.at_func = true;
-	info.arg_index = 1;
-	info.rmode = RPATH_NOLAST;
-	info.syd_mode = SYD_STAT_NOEXIST;
-
-	return box_check_path(current, &info);
-}
-
-int sys_mknod(syd_proc_t *current)
-{
-	sysinfo_t info;
-
-	if (sandbox_write_off(current))
-		return 0;
-
-	init_sysinfo(&info);
-	info.rmode = RPATH_NOLAST;
-	info.syd_mode = SYD_STAT_NOEXIST;
-
-	return box_check_path(current, &info);
-}
-
-int sys_mknodat(syd_proc_t *current)
-{
-	sysinfo_t info;
-
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -515,11 +485,41 @@ int sys_mknodat(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_rmdir(syd_proc_t *current)
+int sys_mknod(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
+		return 0;
+
+	init_sysinfo(&info);
+	info.rmode = RPATH_NOLAST;
+	info.syd_mode = SYD_STAT_NOEXIST;
+
+	return box_check_path(current, &info);
+}
+
+int sys_mknodat(syd_process_t *current)
+{
+	sysinfo_t info;
+
+	if (sandbox_off_write(current))
+		return 0;
+
+	init_sysinfo(&info);
+	info.at_func = true;
+	info.arg_index = 1;
+	info.rmode = RPATH_NOLAST;
+	info.syd_mode = SYD_STAT_NOEXIST;
+
+	return box_check_path(current, &info);
+}
+
+int sys_rmdir(syd_process_t *current)
+{
+	sysinfo_t info;
+
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -529,11 +529,11 @@ int sys_rmdir(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_truncate(syd_proc_t *current)
+int sys_truncate(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -541,11 +541,11 @@ int sys_truncate(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_mount(syd_proc_t *current)
+int sys_mount(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -554,11 +554,11 @@ int sys_mount(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_umount(syd_proc_t *current)
+int sys_umount(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -566,7 +566,7 @@ int sys_umount(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_umount2(syd_proc_t *current)
+int sys_umount2(syd_process_t *current)
 {
 #ifdef UMOUNT_NOFOLLOW
 	int r;
@@ -574,7 +574,7 @@ int sys_umount2(syd_proc_t *current)
 #endif
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -589,11 +589,11 @@ int sys_umount2(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_utime(syd_proc_t *current)
+int sys_utime(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -601,11 +601,11 @@ int sys_utime(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_utimes(syd_proc_t *current)
+int sys_utimes(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -613,13 +613,13 @@ int sys_utimes(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_utimensat(syd_proc_t *current)
+int sys_utimensat(syd_process_t *current)
 {
 	int r;
 	long flags;
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	/* check for AT_SYMLINK_NOFOLLOW */
@@ -636,11 +636,11 @@ int sys_utimensat(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_futimesat(syd_proc_t *current)
+int sys_futimesat(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -651,11 +651,11 @@ int sys_futimesat(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_unlink(syd_proc_t *current)
+int sys_unlink(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -665,13 +665,13 @@ int sys_unlink(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_unlinkat(syd_proc_t *current)
+int sys_unlinkat(syd_process_t *current)
 {
 	int r;
 	long flags;
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	if ((r = syd_read_argument(current, 2, &flags)) < 0)
@@ -695,12 +695,12 @@ int sys_unlinkat(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_link(syd_proc_t *current)
+int sys_link(syd_process_t *current)
 {
 	int r;
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -728,13 +728,13 @@ int sys_link(syd_proc_t *current)
 	return r;
 }
 
-int sys_linkat(syd_proc_t *current)
+int sys_linkat(syd_process_t *current)
 {
 	int r;
 	long flags;
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	/* check for AT_SYMLINK_FOLLOW */
@@ -759,13 +759,13 @@ int sys_linkat(syd_proc_t *current)
 	return r;
 }
 
-int sys_rename(syd_proc_t *current)
+int sys_rename(syd_process_t *current)
 {
 	int r;
 	struct stat statbuf;
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -792,13 +792,13 @@ int sys_rename(syd_proc_t *current)
 	return r;
 }
 
-int sys_renameat(syd_proc_t *current)
+int sys_renameat(syd_process_t *current)
 {
 	int r;
 	struct stat statbuf;
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -826,11 +826,11 @@ int sys_renameat(syd_proc_t *current)
 	return r;
 }
 
-int sys_symlink(syd_proc_t *current)
+int sys_symlink(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -841,11 +841,11 @@ int sys_symlink(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_symlinkat(syd_proc_t *current)
+int sys_symlinkat(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -857,11 +857,11 @@ int sys_symlinkat(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-static int check_listxattr(syd_proc_t *current, bool nofollow)
+static int check_listxattr(syd_process_t *current, bool nofollow)
 {
 	sysinfo_t info;
 
-	if (sandbox_read_off(current))
+	if (sandbox_off_read(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -874,21 +874,21 @@ static int check_listxattr(syd_proc_t *current, bool nofollow)
 	return box_check_path(current, &info);
 }
 
-int sys_listxattr(syd_proc_t *current)
+int sys_listxattr(syd_process_t *current)
 {
 	return check_listxattr(current, false);
 }
 
-int sys_llistxattr(syd_proc_t *current)
+int sys_llistxattr(syd_process_t *current)
 {
 	return check_listxattr(current, true);
 }
 
-int sys_setxattr(syd_proc_t *current)
+int sys_setxattr(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -896,11 +896,11 @@ int sys_setxattr(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_lsetxattr(syd_proc_t *current)
+int sys_lsetxattr(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -909,11 +909,11 @@ int sys_lsetxattr(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_removexattr(syd_proc_t *current)
+int sys_removexattr(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -921,11 +921,11 @@ int sys_removexattr(syd_proc_t *current)
 	return box_check_path(current, &info);
 }
 
-int sys_lremovexattr(syd_proc_t *current)
+int sys_lremovexattr(syd_process_t *current)
 {
 	sysinfo_t info;
 
-	if (sandbox_write_off(current))
+	if (sandbox_off_write(current))
 		return 0;
 
 	init_sysinfo(&info);

@@ -10,7 +10,7 @@
 
 #include "sydbox.h"
 
-int path_decode(syd_proc_t *current, unsigned arg_index, char **buf);
-int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf);
+int path_decode(syd_process_t *current, unsigned arg_index, char **buf);
+int path_prefix(syd_process_t *current, unsigned arg_index, char **buf);
 
 #endif

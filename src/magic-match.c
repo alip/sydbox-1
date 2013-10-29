@@ -14,18 +14,18 @@
 #include "macro.h"
 #include "pathmatch.h"
 
-int magic_set_match_case_sensitive(const void *val, syd_proc_t *current)
+int magic_set_match_case_sensitive(const void *val, syd_process_t *current)
 {
 	pathmatch_set_case(PTR_TO_BOOL(val));
 	return 0;
 }
 
-int magic_query_match_case_sensitive(syd_proc_t *current)
+int magic_query_match_case_sensitive(syd_process_t *current)
 {
 	return MAGIC_BOOL(pathmatch_get_case());
 }
 
-int magic_set_match_no_wildcard(const void *val, syd_proc_t *current)
+int magic_set_match_no_wildcard(const void *val, syd_process_t *current)
 {
 	int no_wild;
 	const char *str = val;

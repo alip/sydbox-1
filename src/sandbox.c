@@ -28,7 +28,7 @@
 #include "proc.h"
 #include "util.h"
 
-static void box_report_violation_path(syd_proc_t *current,
+static void box_report_violation_path(syd_process_t *current,
 				      unsigned arg_index,
 				      const char *path)
 {
@@ -53,7 +53,7 @@ static void box_report_violation_path(syd_proc_t *current,
 	}
 }
 
-static void box_report_violation_path_at(syd_proc_t *current,
+static void box_report_violation_path_at(syd_process_t *current,
 					 unsigned arg_index,
 					 const char *path,
 					 const char *prefix)
@@ -76,7 +76,7 @@ static void box_report_violation_path_at(syd_proc_t *current,
 	}
 }
 
-static void box_report_violation_sock(syd_proc_t *current,
+static void box_report_violation_sock(syd_process_t *current,
 				      const sysinfo_t *info,
 				      const struct pink_sockaddr *paddr)
 {
@@ -308,7 +308,7 @@ static int box_check_ftype(const char *path, sysinfo_t *info)
 	return deny_errno;
 }
 
-int box_check_path(syd_proc_t *current, sysinfo_t *info)
+int box_check_path(syd_process_t *current, sysinfo_t *info)
 {
 	bool badfd;
 	int r, deny_errno, stat_errno;
@@ -322,7 +322,7 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 	prefix = path = abspath = NULL;
 	deny_errno = info->deny_errno ? info->deny_errno : EPERM;
 
-	log_check("arg_index=%u cwd:`%s'", info->arg_index, current->cwd);
+	log_check("arg_index=%u cwd:`%s'", info->arg_index, P_CWD(current));
 	log_check("at_func=%s null_ok=%s rmode=%u syd_mode=0x%x",
 		  info->at_func ? "yes" : "no",
 		  info->null_ok ? "yes" : "no",
@@ -386,10 +386,10 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 	}
 
 	/* Step 3: resolve path */
-	if ((r = box_resolve_path(path, prefix ? prefix : current->cwd,
+	if ((r = box_resolve_path(path, prefix ? prefix : P_CWD(current),
 				  pid, info->rmode, &abspath)) < 0) {
 		err_access(-r, "resolve_path(`%s', `%s')",
-			   prefix ? prefix : current->cwd, path);
+			   prefix ? prefix : P_CWD(current), path);
 		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s()", current->sysname);
@@ -404,7 +404,7 @@ int box_check_path(syd_proc_t *current, sysinfo_t *info)
 check_access:
 	if (info->access_mode != ACCESS_0)
 		access_mode = info->access_mode;
-	else if (sandbox_write_deny(current))
+	else if (sandbox_deny_write(current))
 		access_mode = ACCESS_WHITELIST;
 	else
 		access_mode = ACCESS_BLACKLIST;
@@ -412,7 +412,7 @@ check_access:
 	if (info->access_list)
 		access_lists[0] = info->access_list;
 	else
-		access_lists[0] = &current->config.acl_write;
+		access_lists[0] = &P_BOX(current)->acl_write;
 	access_lists[1] = info->access_list_global;
 
 	if (box_check_access(access_mode, acl_pathmatch, access_lists, 2, abspath)) {
@@ -479,7 +479,7 @@ out:
 	return r;
 }
 
-int box_check_socket(syd_proc_t *current, sysinfo_t *info)
+int box_check_socket(syd_process_t *current, sysinfo_t *info)
 {
 	int r;
 	char *abspath;
@@ -549,11 +549,11 @@ int box_check_socket(syd_proc_t *current, sysinfo_t *info)
 	if (psa->family == AF_UNIX && !path_abstract(psa->u.sa_un.sun_path)) {
 		/* Non-abstract UNIX socket, resolve the path. */
 		r = box_resolve_path(psa->u.sa_un.sun_path,
-				     current->cwd, pid,
+				     P_CWD(current), pid,
 				     info->rmode, &abspath);
 		if (r < 0) {
 			err_access(-r, "resolve_path(`%s', `%s')",
-				   current->cwd, psa->u.sa_un.sun_path);
+				   P_CWD(current), psa->u.sa_un.sun_path);
 			r = deny(current, -r);
 			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", current->sysname);

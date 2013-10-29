@@ -240,15 +240,15 @@ static const sysentry_t syscall_entries[] = {
 
 	{
 		.name = "fork",
-		.enter = sys_fork,
+		.enter = sys_clone,
 	},
 	{
 		.name = "vfork",
-		.enter = sys_fork,
+		.enter = sys_clone,
 	},
 	{
 		.name = "clone",
-		.enter = sys_fork,
+		.enter = sys_clone,
 	},
 
 	{
@@ -443,24 +443,20 @@ int sysinit_seccomp(void)
 }
 #endif
 
-int sysenter(syd_proc_t *current)
+int sysenter(syd_process_t *current)
 {
 	int r;
 	long sysnum;
 	const sysentry_t *entry;
+
+	assert(current);
+	log_context(current);
 
 	if ((r = syd_read_syscall(current, &sysnum)) < 0)
 		return r;
 
 	entry = systable_lookup(sysnum, current->abi);
 	if (entry) {
-		/*
-		 * See the note in function event_syscall() in sydbox.c
-		 * about why we need sys_fork() entry for ignored processes.
-		 */
-		if (entry->enter != sys_fork && current->flags & SYD_IGNORE)
-			return 0;
-
 		current->sysnum = sysnum;
 		current->sysname = entry->name;
 		log_syscall("entering system call");
@@ -468,7 +464,7 @@ int sysenter(syd_proc_t *current)
 			return entry->enter(current);
 		else if (entry->exit)
 			current->flags |= SYD_STOP_AT_SYSEXIT;
-	} else if (!(current->flags & SYD_IGNORE)) {
+	} else {
 		if (log_has_level(LOG_LEVEL_SYS_ALL)) {
 			const char *sysname;
 			sysname = pink_name_syscall(sysnum, current->abi);
@@ -479,13 +475,13 @@ int sysenter(syd_proc_t *current)
 	return 0;
 }
 
-int sysexit(syd_proc_t *current)
+int sysexit(syd_process_t *current)
 {
 	int r;
 	const sysentry_t *entry;
 
-	if (current->flags & SYD_IGNORE)
-		return 0;
+	assert(current);
+	log_context(current);
 
 	if (sysdeny(current)) {
 		r = restore(current);
@@ -495,6 +491,6 @@ int sysexit(syd_proc_t *current)
 	entry = systable_lookup(current->sysnum, current->abi);
 	r = (entry && entry->exit) ? entry->exit(current) : 0;
 out:
-	clear_proc(current);
+	reset_process(current);
 	return r;
 }

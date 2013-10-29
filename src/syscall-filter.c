@@ -135,7 +135,7 @@ int filter_mmap(int arch, uint32_t sysnum)
 	return 0;
 }
 
-int sys_fallback_mmap(syd_proc_t *current)
+int sys_fallback_mmap(syd_process_t *current)
 {
 	int r;
 	int prot, flags;

@@ -20,7 +20,7 @@ enum sandbox_type {
 	SANDBOX_NETWORK,
 };
 
-static int magic_query_sandbox(enum sandbox_type t, syd_proc_t *current)
+static int magic_query_sandbox(enum sandbox_type t, syd_process_t *current)
 {
 	enum sandbox_mode mode;
 	sandbox_t *box;
@@ -46,7 +46,7 @@ static int magic_query_sandbox(enum sandbox_type t, syd_proc_t *current)
 	return MAGIC_BOOL(mode != SANDBOX_OFF);
 }
 
-static int magic_set_sandbox(enum sandbox_type t, const char *str, syd_proc_t *current)
+static int magic_set_sandbox(enum sandbox_type t, const char *str, syd_process_t *current)
 {
 	int r;
 	sandbox_t *box;
@@ -76,42 +76,42 @@ static int magic_set_sandbox(enum sandbox_type t, const char *str, syd_proc_t *c
 	return MAGIC_RET_OK;
 }
 
-int magic_query_sandbox_exec(syd_proc_t *current)
+int magic_query_sandbox_exec(syd_process_t *current)
 {
 	return magic_query_sandbox(SANDBOX_EXEC, current);
 }
 
-int magic_query_sandbox_read(syd_proc_t *current)
+int magic_query_sandbox_read(syd_process_t *current)
 {
 	return magic_query_sandbox(SANDBOX_READ, current);
 }
 
-int magic_query_sandbox_write(syd_proc_t *current)
+int magic_query_sandbox_write(syd_process_t *current)
 {
 	return magic_query_sandbox(SANDBOX_WRITE, current);
 }
 
-int magic_query_sandbox_network(syd_proc_t *current)
+int magic_query_sandbox_network(syd_process_t *current)
 {
 	return magic_query_sandbox(SANDBOX_NETWORK, current);
 }
 
-int magic_set_sandbox_exec(const void *val, syd_proc_t *current)
+int magic_set_sandbox_exec(const void *val, syd_process_t *current)
 {
 	return magic_set_sandbox(SANDBOX_EXEC, val, current);
 }
 
-int magic_set_sandbox_read(const void *val, syd_proc_t *current)
+int magic_set_sandbox_read(const void *val, syd_process_t *current)
 {
 	return magic_set_sandbox(SANDBOX_READ, val, current);
 }
 
-int magic_set_sandbox_write(const void *val, syd_proc_t *current)
+int magic_set_sandbox_write(const void *val, syd_process_t *current)
 {
 	return magic_set_sandbox(SANDBOX_WRITE, val, current);
 }
 
-int magic_set_sandbox_network(const void *val, syd_proc_t *current)
+int magic_set_sandbox_network(const void *val, syd_process_t *current)
 {
 	return magic_set_sandbox(SANDBOX_NETWORK, val, current);
 }

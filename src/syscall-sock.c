@@ -22,7 +22,7 @@
 #include "log.h"
 #include "sockmap.h"
 
-int sys_bind(syd_proc_t *current)
+int sys_bind(syd_process_t *current)
 {
 	int r;
 	unsigned long fd;
@@ -30,7 +30,7 @@ int sys_bind(syd_proc_t *current)
 	struct pink_sockaddr *psa;
 	sysinfo_t info;
 
-	if (sandbox_network_off(current))
+	if (sandbox_off_network(current))
 		return 0;
 
 	init_sysinfo(&info);
@@ -39,9 +39,9 @@ int sys_bind(syd_proc_t *current)
 	info.deny_errno = EADDRNOTAVAIL;
 	if (current->subcall == PINK_SOCKET_SUBCALL_BIND)
 		info.decode_socketcall = true;
-	info.access_mode = sandbox_network_deny(current) ? ACCESS_WHITELIST
+	info.access_mode = sandbox_deny_network(current) ? ACCESS_WHITELIST
 							 : ACCESS_BLACKLIST;
-	info.access_list = &current->config.acl_network_bind;
+	info.access_list = &P_BOX(current)->acl_network_bind;
 	info.access_filter = &sydbox->config.filter_network;
 
 	if (sydbox->config.whitelist_successful_bind) {
@@ -65,9 +65,9 @@ int sys_bind(syd_proc_t *current)
 		if (r < 0)
 			goto out;
 		current->args[0] = fd;
-		current->savebind = xmalloc(sizeof(struct sockinfo));
-		current->savebind->path = unix_abspath;
-		current->savebind->addr = psa;
+		P_SAVEBIND(current) = xmalloc(sizeof(struct sockinfo));
+		P_SAVEBIND(current)->path = unix_abspath;
+		P_SAVEBIND(current)->addr = psa;
 		current->flags |= SYD_STOP_AT_SYSEXIT;
 		return 0;
 	}
@@ -83,16 +83,16 @@ out:
 	return r;
 }
 
-int sysx_bind(syd_proc_t *current)
+int sysx_bind(syd_process_t *current)
 {
 	int r;
 	long retval;
 	struct acl_node *node;
 	struct sockmatch *match;
 
-	if (sandbox_network_off(current) ||
+	if (sandbox_off_network(current) ||
 	    !sydbox->config.whitelist_successful_bind ||
-	    !current->savebind)
+	    !P_SAVEBIND(current))
 		return 0;
 
 	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
@@ -100,36 +100,36 @@ int sysx_bind(syd_proc_t *current)
 
 	if (retval < 0) {
 		log_trace("ignoring failed system call");
-		free_sockinfo(current->savebind);
-		current->savebind = NULL;
+		free_sockinfo(P_SAVEBIND(current));
+		P_SAVEBIND(current) = NULL;
 		return 0;
 	}
 
 	/* check for bind() with zero as port argument */
-	if (current->savebind->addr->family == AF_INET &&
-	    current->savebind->addr->u.sa_in.sin_port == 0)
+	if (P_SAVEBIND(current)->addr->family == AF_INET &&
+	    P_SAVEBIND(current)->addr->u.sa_in.sin_port == 0)
 		goto zero;
 #if SYDBOX_HAVE_IPV6
-	if (current->savebind->addr->family == AF_INET6 &&
-	    current->savebind->addr->u.sa6.sin6_port == 0)
+	if (P_SAVEBIND(current)->addr->family == AF_INET6 &&
+	    P_SAVEBIND(current)->addr->u.sa6.sin6_port == 0)
 		goto zero;
 #endif
 
 	log_trace("whitelisting socket address");
 	node = xcalloc(1, sizeof(struct acl_node));
-	match = sockmatch_new(current->savebind);
+	match = sockmatch_new(P_SAVEBIND(current));
 	node->action = ACL_ACTION_WHITELIST;
 	node->match = match;
 	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
 	return 0;
 zero:
 	log_check("saving sockfd:%ld with port zero for whitelisting", current->args[0]);
-	sockmap_add(&current->sockmap, current->args[0], current->savebind);
-	current->savebind = NULL;
+	sockmap_add(&P_SOCKMAP(current), current->args[0], P_SAVEBIND(current));
+	P_SAVEBIND(current) = NULL;
 	return 0;
 }
 
-static int sys_connect_or_sendto(syd_proc_t *current, unsigned arg_index)
+static int sys_connect_or_sendto(syd_process_t *current, unsigned arg_index)
 {
 	sysinfo_t info;
 #define sub_connect(p, i)	((i) == 1 && \
@@ -137,13 +137,13 @@ static int sys_connect_or_sendto(syd_proc_t *current, unsigned arg_index)
 #define sub_sendto(p, i)	((i) == 4 && \
 				 (p)->subcall == PINK_SOCKET_SUBCALL_SENDTO)
 
-	if (sandbox_network_off(current))
+	if (sandbox_off_network(current))
 		return 0;
 
 	init_sysinfo(&info);
-	info.access_mode = sandbox_network_deny(current) ? ACCESS_WHITELIST
+	info.access_mode = sandbox_deny_network(current) ? ACCESS_WHITELIST
 							 : ACCESS_BLACKLIST;
-	info.access_list = &current->config.acl_network_connect;
+	info.access_list = &P_BOX(current)->acl_network_connect;
 	info.access_list_global = &sydbox->config.acl_network_connect_auto;
 	info.access_filter = &sydbox->config.filter_network;
 	info.rmode = RPATH_NOLAST;
@@ -157,17 +157,17 @@ static int sys_connect_or_sendto(syd_proc_t *current, unsigned arg_index)
 	return box_check_socket(current, &info);
 }
 
-int sys_connect(syd_proc_t *current)
+int sys_connect(syd_process_t *current)
 {
 	return sys_connect_or_sendto(current, 1);
 }
 
-int sys_sendto(syd_proc_t *current)
+int sys_sendto(syd_process_t *current)
 {
 	return sys_connect_or_sendto(current, 4);
 }
 
-int sys_getsockname(syd_proc_t *current)
+int sys_getsockname(syd_process_t *current)
 {
 	int r;
 	bool decode_socketcall;
@@ -175,7 +175,7 @@ int sys_getsockname(syd_proc_t *current)
 
 	current->args[0] = -1;
 
-	if (sandbox_network_off(current) ||
+	if (sandbox_off_network(current) ||
 	    !sydbox->config.whitelist_successful_bind)
 		return 0;
 
@@ -183,7 +183,7 @@ int sys_getsockname(syd_proc_t *current)
 	if ((r = syd_read_socket_argument(current, decode_socketcall, 0, &fd)) < 0)
 		return r;
 
-	if (sockmap_find(&current->sockmap, fd)) {
+	if (sockmap_find(&P_SOCKMAP(current), fd)) {
 		current->args[0] = fd;
 		current->flags |= SYD_STOP_AT_SYSEXIT;
 	}
@@ -191,7 +191,7 @@ int sys_getsockname(syd_proc_t *current)
 	return 0;
 }
 
-int sysx_getsockname(syd_proc_t *current)
+int sysx_getsockname(syd_process_t *current)
 {
 	int r;
 	bool decode_socketcall;
@@ -202,7 +202,7 @@ int sysx_getsockname(syd_proc_t *current)
 	const struct sockinfo *info;
 	struct sockmatch *match;
 
-	if (sandbox_network_off(current) ||
+	if (sandbox_off_network(current) ||
 	    !sydbox->config.whitelist_successful_bind ||
 	    current->args[0] < 0)
 		return 0;
@@ -220,10 +220,10 @@ int sysx_getsockname(syd_proc_t *current)
 		return r;
 	}
 
-	info = sockmap_find(&current->sockmap, current->args[0]);
+	info = sockmap_find(&P_SOCKMAP(current), current->args[0]);
 	assert(info);
 	match = sockmatch_new(info);
-	sockmap_remove(&current->sockmap, current->args[0]);
+	sockmap_remove(&P_SOCKMAP(current), current->args[0]);
 
 	switch (match->family) {
 	case AF_INET:
@@ -250,12 +250,12 @@ int sysx_getsockname(syd_proc_t *current)
 	return 0;
 }
 
-int sys_socketcall(syd_proc_t *current)
+int sys_socketcall(syd_process_t *current)
 {
 	int r;
 	long subcall;
 
-	if (sandbox_network_off(current))
+	if (sandbox_off_network(current))
 		return 0;
 
 	if ((r = syd_read_socket_subcall(current, true, &subcall)) < 0)
@@ -278,9 +278,9 @@ int sys_socketcall(syd_proc_t *current)
 	}
 }
 
-int sysx_socketcall(syd_proc_t *current)
+int sysx_socketcall(syd_process_t *current)
 {
-	if (sandbox_network_off(current))
+	if (sandbox_off_network(current))
 		return 0;
 
 	switch (current->subcall) {

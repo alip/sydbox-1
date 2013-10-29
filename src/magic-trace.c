@@ -14,18 +14,18 @@
 #include "macro.h"
 #include "log.h"
 
-int magic_set_trace_follow_fork(const void *val, syd_proc_t *current)
+int magic_set_trace_follow_fork(const void *val, syd_process_t *current)
 {
 	sydbox->config.follow_fork = PTR_TO_BOOL(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_query_trace_follow_fork(syd_proc_t *current)
+int magic_query_trace_follow_fork(syd_process_t *current)
 {
 	return MAGIC_BOOL(sydbox->config.follow_fork);
 }
 
-int magic_set_trace_exit_kill(const void *val, syd_proc_t *current)
+int magic_set_trace_exit_kill(const void *val, syd_process_t *current)
 {
 #if PINK_HAVE_OPTION_EXITKILL
 	sydbox->config.exit_kill = PTR_TO_BOOL(val);
@@ -35,12 +35,12 @@ int magic_set_trace_exit_kill(const void *val, syd_proc_t *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_query_trace_exit_kill(syd_proc_t *current)
+int magic_query_trace_exit_kill(syd_process_t *current)
 {
 	return MAGIC_BOOL(sydbox->config.exit_kill);
 }
 
-int magic_set_trace_exit_wait_all(const void *val, syd_proc_t *current)
+int magic_set_trace_exit_wait_all(const void *val, syd_process_t *current)
 {
 #if SYDBOX_HAVE_SECCOMP
 	log_magic("seccomp support enabled, force exit_wait_all to true");
@@ -51,12 +51,12 @@ int magic_set_trace_exit_wait_all(const void *val, syd_proc_t *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_query_trace_exit_wait_all(syd_proc_t *current)
+int magic_query_trace_exit_wait_all(syd_process_t *current)
 {
 	return MAGIC_BOOL(sydbox->config.exit_wait_all);
 }
 
-int magic_set_trace_use_seccomp(const void *val, syd_proc_t *current)
+int magic_set_trace_use_seccomp(const void *val, syd_process_t *current)
 {
 #if SYDBOX_HAVE_SECCOMP
 	sydbox->config.use_seccomp = PTR_TO_BOOL(val);
@@ -66,7 +66,7 @@ int magic_set_trace_use_seccomp(const void *val, syd_proc_t *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_query_trace_use_seccomp(syd_proc_t *current)
+int magic_query_trace_use_seccomp(syd_process_t *current)
 {
 #if SYDBOX_HAVE_SECCOMP
 	return sydbox->config.use_seccomp;
@@ -75,7 +75,7 @@ int magic_query_trace_use_seccomp(syd_proc_t *current)
 #endif
 }
 
-int magic_set_trace_use_seize(const void *val, syd_proc_t *current)
+int magic_set_trace_use_seize(const void *val, syd_process_t *current)
 {
 #if PINK_HAVE_SEIZE && PINK_HAVE_INTERRUPT && PINK_HAVE_LISTEN
 	sydbox->config.use_seize = PTR_TO_BOOL(val);
@@ -85,7 +85,7 @@ int magic_set_trace_use_seize(const void *val, syd_proc_t *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_query_trace_use_seize(syd_proc_t *current)
+int magic_query_trace_use_seize(syd_process_t *current)
 {
 #if PINK_HAVE_SEIZE && PINK_HAVE_INTERRUPT && PINK_HAVE_LISTEN
 	return sydbox->config.use_seize;
@@ -94,18 +94,18 @@ int magic_query_trace_use_seize(syd_proc_t *current)
 #endif
 }
 
-int magic_set_trace_use_toolong_hack(const void *val, syd_proc_t *current)
+int magic_set_trace_use_toolong_hack(const void *val, syd_process_t *current)
 {
 	sydbox->config.use_toolong_hack = PTR_TO_BOOL(val);
 	return MAGIC_RET_OK;
 }
 
-int magic_query_trace_use_toolong_hack(syd_proc_t *current)
+int magic_query_trace_use_toolong_hack(syd_process_t *current)
 {
 	return sydbox->config.use_toolong_hack;
 }
 
-int magic_set_trace_magic_lock(const void *val, syd_proc_t *current)
+int magic_set_trace_magic_lock(const void *val, syd_process_t *current)
 {
 	int l;
 	const char *str = val;
@@ -119,7 +119,7 @@ int magic_set_trace_magic_lock(const void *val, syd_proc_t *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_set_trace_interrupt(const void *val, syd_proc_t *current)
+int magic_set_trace_interrupt(const void *val, syd_process_t *current)
 {
 	int intr;
 	const char *str = val;

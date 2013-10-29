@@ -19,6 +19,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sched.h>
 #include <pinktrace/pink.h>
 #include "pathdecode.h"
 #include "proc.h"
@@ -59,11 +60,12 @@ struct stat32 { /* for 32bit emulation */
 # warning do not know the size of stat buffer for non-default ABIs
 #endif
 
-int sysx_chdir(syd_proc_t *current)
+int sysx_chdir(syd_process_t *current)
 {
 	int r;
 	long retval;
-	char *cwd;
+	char *newcwd;
+	char *curcwd = P_CWD(current);
 
 	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
 		return r;
@@ -73,27 +75,35 @@ int sysx_chdir(syd_proc_t *current)
 		return 0;
 	}
 
-	if ((r = proc_cwd(current->pid, sydbox->config.use_toolong_hack, &cwd)) < 0) {
+	if ((r = proc_cwd(current->pid, sydbox->config.use_toolong_hack, &newcwd)) < 0) {
 		err_warning(-r, "proc_cwd failed");
 		return panic(current);
 	}
 
-	if (!streq(current->cwd, cwd))
-		log_check("dir change old=`%s' new=`%s'", current->cwd, cwd);
+	if (!streq(curcwd, newcwd))
+		log_check("dir change old=`%s' new=`%s'", curcwd, newcwd);
 
-	free(current->cwd);
-	current->cwd = cwd;
+	if (P_CWD(current))
+		free(P_CWD(current));
+	P_CWD(current) = newcwd;
 	return 0;
 }
 
-int sys_fork(syd_proc_t *current)
+int sys_clone(syd_process_t *current)
 {
+	int r;
+	long flags;
+
+	if ((r = syd_read_argument(current, 0, &flags)) < 0)
+		return r;
+	current->flags |= SYD_IN_LABOUR;
+	current->new_clone_flags = flags;
 	sydbox->pidwait = current->pid;
-	log_trace("waitpid set to pid:%u", sydbox->pidwait);
+
 	return 0;
 }
 
-int sys_execve(syd_proc_t *current)
+int sys_execve(syd_process_t *current)
 {
 	int r;
 	char *path = NULL, *abspath = NULL;
@@ -104,7 +114,7 @@ int sys_execve(syd_proc_t *current)
 	else if (r < 0)
 		return deny(current, errno);
 
-	r = box_resolve_path(path, current->cwd, current->pid, RPATH_EXIST, &abspath);
+	r = box_resolve_path(path, P_CWD(current), current->pid, RPATH_EXIST, &abspath);
 	if (r < 0) {
 		err_access(-r, "resolve_path(`%s')", path);
 		r = deny(current, -r);
@@ -127,18 +137,18 @@ int sys_execve(syd_proc_t *current)
 		free(current->abspath);
 	current->abspath = abspath;
 
-	switch (current->config.sandbox_exec) {
+	switch (P_BOX(current)->sandbox_exec) {
 	case SANDBOX_OFF:
 		return 0;
 	case SANDBOX_DENY:
 		if (acl_match_path(ACL_ACTION_WHITELIST,
-				   &current->config.acl_exec,
+				   &P_BOX(current)->acl_exec,
 				   abspath, NULL))
 			return 0;
 		break;
 	case SANDBOX_ALLOW:
 		if (acl_match_path(ACL_ACTION_BLACKLIST,
-				   &current->config.acl_exec,
+				   &P_BOX(current)->acl_exec,
 				   abspath, NULL))
 			return 0;
 		break;
@@ -157,13 +167,13 @@ int sys_execve(syd_proc_t *current)
 	return r;
 }
 
-int sys_stat(syd_proc_t *current)
+int sys_stat(syd_process_t *current)
 {
 	int r;
 	long addr;
 	char path[SYDBOX_PATH_MAX];
 
-	if (current->config.magic_lock == LOCK_SET) {
+	if (P_BOX(current)->magic_lock == LOCK_SET) {
 		/* No magic allowed! */
 		return 0;
 	}
@@ -276,14 +286,14 @@ skip_write:
 	return r;
 }
 
-int sys_dup(syd_proc_t *current)
+int sys_dup(syd_process_t *current)
 {
 	int r;
 	long fd;
 
 	current->args[0] = -1;
 
-	if (sandbox_network_off(current) ||
+	if (sandbox_off_network(current) ||
 	    !sydbox->config.whitelist_successful_bind)
 		return 0;
 
@@ -295,13 +305,13 @@ int sys_dup(syd_proc_t *current)
 	return 0;
 }
 
-int sysx_dup(syd_proc_t *current)
+int sysx_dup(syd_process_t *current)
 {
 	int r;
 	long retval;
 	const struct sockinfo *oldinfo;
 
-	if (sandbox_network_off(current) ||
+	if (sandbox_off_network(current) ||
 	    !sydbox->config.whitelist_successful_bind ||
 	    current->args[0] < 0)
 		return 0;
@@ -314,17 +324,17 @@ int sysx_dup(syd_proc_t *current)
 		return 0;
 	}
 
-	if (!(oldinfo = sockmap_find(&current->sockmap, current->args[0]))) {
+	if (!(oldinfo = sockmap_find(&P_SOCKMAP(current), current->args[0]))) {
 		log_check("duplicated unknown fd:%ld to fd:%ld", current->args[0], retval);
 		return 0;
 	}
 
-	sockmap_add(&current->sockmap, retval, sockinfo_xdup(oldinfo));
+	sockmap_add(&P_SOCKMAP(current), retval, sockinfo_xdup(oldinfo));
 	log_check("duplicated fd:%ld to fd:%ld", current->args[0], retval);
 	return 0;
 }
 
-int sys_fcntl(syd_proc_t *current)
+int sys_fcntl(syd_process_t *current)
 {
 	bool strict;
 	int r, fd, cmd, arg0;
@@ -333,7 +343,7 @@ int sys_fcntl(syd_proc_t *current)
 	strict = !sydbox->config.use_seccomp &&
 		 sydbox->config.restrict_file_control;
 
-	if (!strict && (sandbox_network_off(current) ||
+	if (!strict && (sandbox_off_network(current) ||
 			!sydbox->config.whitelist_successful_bind))
 		return 0;
 
@@ -373,7 +383,7 @@ int sys_fcntl(syd_proc_t *current)
 		return 0;
 	}
 
-	if (sandbox_network_off(current) ||
+	if (sandbox_off_network(current) ||
 	     !sydbox->config.whitelist_successful_bind)
 	    return 0;
 
@@ -386,13 +396,13 @@ int sys_fcntl(syd_proc_t *current)
 	return 0;
 }
 
-int sysx_fcntl(syd_proc_t *current)
+int sysx_fcntl(syd_process_t *current)
 {
 	int r;
 	long retval;
 	const struct sockinfo *oldinfo;
 
-	if (sandbox_network_off(current) ||
+	if (sandbox_off_network(current) ||
 	    !sydbox->config.whitelist_successful_bind ||
 	    current->args[0] < 0)
 		return 0;
@@ -405,12 +415,12 @@ int sysx_fcntl(syd_proc_t *current)
 		return 0;
 	}
 
-	if (!(oldinfo = sockmap_find(&current->sockmap, current->args[0]))) {
+	if (!(oldinfo = sockmap_find(&P_SOCKMAP(current), current->args[0]))) {
 		log_check("duplicated unknown fd:%ld to fd:%ld", current->args[0], retval);
 		return 0;
 	}
 
-	sockmap_add(&current->sockmap, retval, sockinfo_xdup(oldinfo));
+	sockmap_add(&P_SOCKMAP(current), retval, sockinfo_xdup(oldinfo));
 	log_check("duplicated fd:%ld to fd:%ld", current->args[0], retval);
 	return 0;
 }

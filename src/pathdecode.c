@@ -20,7 +20,7 @@
  * -errno : Negated errno indicating error code
  *  0     : Successful run
  */
-int path_decode(syd_proc_t *current, unsigned arg_index, char **buf)
+int path_decode(syd_process_t *current, unsigned arg_index, char **buf)
 {
 	int r;
 	ssize_t count_read;
@@ -53,7 +53,7 @@ int path_decode(syd_proc_t *current, unsigned arg_index, char **buf)
  * -errno : Negated errno indicating error code
  *  0     : Successful run
  */
-int path_prefix(syd_proc_t *current, unsigned arg_index, char **buf)
+int path_prefix(syd_process_t *current, unsigned arg_index, char **buf)
 {
 	int r, fd;
 	char *prefix = NULL;

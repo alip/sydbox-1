@@ -39,7 +39,7 @@ static int cdebug = (LOG_LEVEL_FATAL
 static const char *prefix = LOG_DEFAULT_PREFIX;
 static const char *suffix = LOG_DEFAULT_SUFFIX;
 
-static const syd_proc_t *current_proc;
+static const syd_process_t *current_proc;
 
 /* abort function. */
 static void (*abort_func)(int sig);
@@ -79,10 +79,10 @@ static void log_me(FILE *fp, unsigned level, const char *fmt, va_list ap)
 	fprintf(fp, "%s", p);
 	if (prefix) {
 		fprintf(fp, "%s@%lu:", prefix, time(NULL));
-		if (current_proc) {
+		if (current_proc && current_proc->shm.clone_thread) {
 			fprintf(fp, " %s[%u.%d:%u]",
-				current_proc->comm ? current_proc->comm
-						   : sydbox->program_invocation_name,
+				P_COMM(current_proc) ? P_COMM(current_proc)
+						     : sydbox->program_invocation_name,
 				current_proc->pid,
 				current_proc->abi,
 				current_proc->ppid);
@@ -151,7 +151,7 @@ bool log_has_level(int level)
 {
 	if (debug & level)
 		return true;
-	if (logcfp && cdebug & level)
+	if (logcfp && (cdebug & level))
 		return true;
 	return false;
 }
@@ -185,12 +185,12 @@ void log_msg_va(unsigned level, const char *fmt, va_list ap)
 {
 	va_list aq;
 
-	if (logcfp && (level & cdebug)) {
+	if (logcfp && (cdebug & level)) {
 		va_copy(aq, ap);
 		log_me(logcfp, level, fmt, aq);
 		va_end(aq);
 	}
-	if (logfp && (level & debug)) {
+	if (logfp && (debug & level)) {
 		va_copy(aq, ap);
 		log_me(logfp, level, fmt, aq);
 		va_end(aq);

@@ -14,7 +14,7 @@
 #include "log.h"
 #include "macro.h"
 
-int magic_set_log_file(const void *val, syd_proc_t *current)
+int magic_set_log_file(const void *val, syd_process_t *current)
 {
 	const char *filename = val;
 
@@ -37,13 +37,13 @@ int magic_set_log_file(const void *val, syd_proc_t *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_set_log_level(const void *val, syd_proc_t *current)
+int magic_set_log_level(const void *val, syd_process_t *current)
 {
 	log_debug_level(PTR_TO_INT(val));
 	return MAGIC_RET_OK;
 }
 
-int magic_set_log_console_fd(const void *val, syd_proc_t *current)
+int magic_set_log_console_fd(const void *val, syd_process_t *current)
 {
 	int r;
 	int fd = PTR_TO_INT(val);
@@ -56,7 +56,7 @@ int magic_set_log_console_fd(const void *val, syd_proc_t *current)
 	return MAGIC_RET_OK;
 }
 
-int magic_set_log_console_level(const void *val, syd_proc_t *current)
+int magic_set_log_console_level(const void *val, syd_process_t *current)
 {
 	log_debug_console_level(PTR_TO_INT(val));
 	return MAGIC_RET_OK;

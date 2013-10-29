@@ -84,9 +84,8 @@ int acl_remove_sockmatch(enum acl_action action, const char *pattern, aclq_t *ac
 #define ACLQ_REMOVE(head, elm) \
 	TAILQ_REMOVE((head), (elm), link)
 
-#define ACLQ_DUP(var, head, newhead, newvar, copymatch) \
+#define ACLQ_COPY(var, head, newhead, newvar, copymatch) \
 	do { \
-		ACLQ_INIT((newhead)); \
 		ACLQ_FOREACH((var), (head)) { \
 			(newvar) = xcalloc(1, sizeof(struct acl_node)); \
 			(newvar)->action = var->action; \
@@ -104,7 +103,6 @@ int acl_remove_sockmatch(enum acl_action action, const char *pattern, aclq_t *ac
 				(freematch)(var->match); \
 			free((var)); \
 		} \
-		ACLQ_INIT((head)); \
 	} while (0)
 
 #define ACLQ_RESET(var, head, freematch) \
