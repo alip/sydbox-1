@@ -16,6 +16,7 @@ DEFS+= \
 AM_CFLAGS= \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
+	   $(pinktrace_CFLAGS) \
 	   @SYDBOX_CFLAGS@
 
 bin_PROGRAMS= sydbox sydfmt
@@ -105,8 +106,7 @@ sydbox_SOURCES+= \
 noinst_HEADERS+= \
 		 sys-queue.h
 
-sydbox_LDADD= \
-	      $(top_builddir)/pinktrace/libpinktrace_@PINKTRACE_PC_SLOT@.la
+sydbox_LDADD= $(pinktrace_LIBS)
 
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \
