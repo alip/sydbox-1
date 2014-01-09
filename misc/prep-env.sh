@@ -1,7 +1,17 @@
 #!/bin/sh -x
 
-CFLAGS="-D__ALIP_WAS_HERE -O0 -g -ggdb3 -D__PINK_IS_BEHIND_THE_WALL"
-PKG_CONFIG_PATH="$HOME/pink/lib/pkgconfig:$PKG_CONFIG_PATH"
-
+CFLAGS="-D__ALIP_WAS_HERE"
+CFLAGS="${CFLAGS} -pedantic -W -Wall -Wextra -Wshadow -Wno-unused-parameter"
+CFLAGS="${CFLAGS} -O0 -g -ggdb3"
+CFLAGS="${CFLAGS} -Wall"
+CFLAGS="${CFLAGS} -Werror=implicit-function-declaration"
+CFLAGS="${CFLAGS} -Werror=implicit-int"
+CFLAGS="${CFLAGS} -Werror=pointer-sign"
+CFLAGS="${CFLAGS} -Werror=pointer-arith"
+CFLAGS="${CFLAGS} -D__PINK_IS_BEHIND_THE_WALL"
 export CFLAGS
-export PKG_CONFIG_PATH
+
+if [[ ! -e /etc/exherbo-release ]]; then
+    PKG_CONFIG_PATH="$HOME/pink/lib/pkgconfig:$PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
+fi
