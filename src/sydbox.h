@@ -366,10 +366,6 @@ typedef struct syd_process {
 			sandbox_t *box;
 #define			P_BOX(p) ((p)->shm.clone_thread->box)
 
-			/* Thread hash table */
-			struct syd_process *threads;
-#define			P_THREADS(p) ((p)->shm.clone_thread->threads)
-
 			/* Reference count */
 			unsigned refcnt;
 #define			P_CLONE_THREAD_REFCNT(p) ((p)->shm.clone_thread->refcnt)
@@ -619,12 +615,6 @@ extern sydbox_t *sydbox;
 #define process_add(p) HASH_ADD(hh, sydbox->proctab, pid, sizeof(pid_t), (p))
 #define process_remove(p) HASH_DEL(sydbox->proctab, (p))
 
-#define thread_count(p) HASH_CNT(hht, (p)->shm.clone_thread->threads)
-#define thread_iter(p, tmp) HASH_ITER(hht, (p)->shm.clone_thread->threads, (p), (tmp))
-#define thread_add(p) HASH_ADD(hht, (p)->shm.clone_thread->threads, pid, sizeof(pid_t), (p))
-#define thread_remove(p) HASH_DELETE(hht, (p)->shm.clone_thread->threads, (p))
-#define threaded(p) ((p)->shm.clone_thread && (p)->shm.clone_thread->threads)
-
 /* Global functions */
 int syd_trace_detach(syd_process_t *current, int sig);
 int syd_trace_kill(syd_process_t *current, int sig);
@@ -655,17 +645,6 @@ static inline syd_process_t *lookup_process(pid_t pid)
 
 	HASH_FIND(hh, sydbox->proctab, &pid, sizeof(pid_t), process);
 	return process;
-}
-
-static inline syd_process_t *lookup_thread(syd_process_t *p, pid_t tid)
-{
-	syd_process_t *thread;
-
-	if (!p->shm.clone_thread || !p->shm.clone_thread->threads)
-		return NULL;
-
-	HASH_FIND(hh, p->shm.clone_thread->threads, &tid, sizeof(pid_t), thread);
-	return thread;
 }
 
 void cont_all(void);
