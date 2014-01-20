@@ -1432,7 +1432,7 @@ int main(int argc, char **argv)
 		case 0:
 			if (streq(long_options[options_index].name, "profile")) {
 				/* special case for backwards compatibility */
-				profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 1));
+				profile_name = xmalloc(sizeof(char) * (strlen(optarg) + 2));
 				profile_name[0] = SYDBOX_PROFILE_CHAR;
 				strcpy(&profile_name[1], optarg);
 				config_parse_spec(profile_name);
