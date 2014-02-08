@@ -45,10 +45,9 @@
 #define SYD_IGNORE_ONE_SIGSTOP	00002 /* initial sigstop is to be ignored */
 #define SYD_READY		00004 /* process' sandbox is initialised */
 #define SYD_IN_SYSCALL		00010 /* process is in system call */
-#define SYD_IN_LABOUR		00020 /* process entered clone(2) */
-#define SYD_DENY_SYSCALL	00040 /* system call is to be denied */
-#define SYD_STOP_AT_SYSEXIT	00100 /* seccomp: stop at system call exit */
-#define SYD_SYDBOX_CHILD	00200 /* process is the child exec()'ed by sydbox */
+#define SYD_DENY_SYSCALL	00020 /* system call is to be denied */
+#define SYD_STOP_AT_SYSEXIT	00040 /* seccomp: stop at system call exit */
+#define SYD_SYDBOX_CHILD	00100 /* process is the child exec()'ed by sydbox */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
 #define SYD_PPID_ORPHAN		-0xbad /* special parent process id for orphans */
@@ -502,8 +501,6 @@ typedef struct {
 	int trace_options;
 	enum syd_step trace_step;
 
-	pid_t pidwait;
-
 	bool wait_execve;
 	int exit_code;
 
@@ -586,7 +583,6 @@ extern sydbox_t *sydbox;
 #define sysdeny(p) ((p)->flags & SYD_DENY_SYSCALL)
 #define sydchild(p) ((p)->flags & SYD_SYDBOX_CHILD)
 #define hasparent(p) ((p)->ppid >= 0)
-#define orphan(p) ((p)->ppid == SYD_PPID_ORPHAN)
 
 #define sandbox_allow(p, box) (!!(P_BOX(p)->sandbox_ ## box == SANDBOX_ALLOW))
 #define sandbox_deny(p, box) (!!(P_BOX(p)->sandbox_ ## box == SANDBOX_DENY))

@@ -18,6 +18,13 @@
 
 #include "log.h"
 
+#if 0
+void die_errno(const char *msg)
+{
+	fprintf(stderr, "%s (errno:%d %s)\n", msg, errno, strerror(errno));
+}
+#endif
+
 void *xmalloc(size_t size)
 {
 	void *ptr;

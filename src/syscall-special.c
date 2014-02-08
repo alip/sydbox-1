@@ -89,20 +89,6 @@ int sysx_chdir(syd_process_t *current)
 	return 0;
 }
 
-int sys_clone(syd_process_t *current)
-{
-	int r;
-	long flags;
-
-	if ((r = syd_read_argument(current, 0, &flags)) < 0)
-		return r;
-	current->flags |= SYD_IN_LABOUR;
-	current->new_clone_flags = flags;
-	sydbox->pidwait = current->pid;
-
-	return 0;
-}
-
 int sys_execve(syd_process_t *current)
 {
 	int r;

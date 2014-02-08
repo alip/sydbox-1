@@ -11,6 +11,7 @@
  */
 
 #include "sydbox.h"
+#include "dump.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -344,10 +345,6 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "%sREADY", (r == 1) ? "|" : "");
 		r = 1;
 	}
-	if (current->flags & SYD_IN_LABOUR) {
-		fprintf(stderr, "%sIN_LABOUR", (r == 1) ? "|" : "");
-		r = 1;
-	}
 	if (current->flags & SYD_IN_SYSCALL) {
 		fprintf(stderr, "%sIN_SYSCALL", (r == 1) ? "|" : "");
 		r = 1;
@@ -361,8 +358,15 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 		r = 1;
 	}
 	fprintf(stderr, "%s\n", CN);
+#if 0
+	if (current->clone_flags) {
+		name = dump_clone_flags(current->clone_flags);
+		fprintf(stderr, "\t%sClone flags: %s%s\n", CN, name, CE);
+		free(name);
+	}
+#endif
 	if (current->clone_flags & (CLONE_THREAD|CLONE_FS|CLONE_FILES)) {
-		fprintf(stderr, "\t%sClone flags: ", CN);
+		fprintf(stderr, "\t%sClone flag refs: ", CN);
 		r = 0;
 		if (current->clone_flags & CLONE_THREAD) {
 			fprintf(stderr, "%sCLONE_THREAD{ref=%u}", (r == 1) ? "|" : "",
@@ -385,9 +389,14 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 			r = 1;
 		}
 		fprintf(stderr, "%s\n", CN);
-	} else {
-		fprintf(stderr, "\t%sClone flags: 0%s\n", CN, CN);
 	}
+#if 0
+	if (current->new_clone_flags) {
+		name = dump_clone_flags(current->new_clone_flags);
+		fprintf(stderr, "\t%sNew clone flags: %s%s\n", CN, name, CE);
+		free(name);
+	}
+#endif
 
 	if ((r = proc_stat(pid, &info)) < 0) {
 		fprintf(stderr, "%sproc_stat failed (errno:%d %s)%s\n",
@@ -483,10 +492,10 @@ static void init_early(void)
 	sydbox = xmalloc(sizeof(sydbox_t));
 	sydbox->proctab = NULL;
 	sydbox->violation = false;
-	sydbox->pidwait = 0;
 	sydbox->wait_execve = false;
 	sydbox->exit_code = EXIT_SUCCESS;
 	config_init();
+	dump(DUMP_INIT);
 	log_init(NULL);
 	log_abort_func(abort_all);
 }
@@ -535,6 +544,7 @@ static void init_signals(void)
 		x_sigaction(SIGTERM, &sa, NULL);
 	}
 #undef x_sigaction
+	signal(SIGABRT, abort_all);
 	signal(SIGUSR1, sig_usr);
 	signal(SIGUSR2, sig_usr);
 }
@@ -561,85 +571,6 @@ static void cleanup(void)
 
 	systable_free();
 	log_close();
-}
-
-static void startup_child(char **argv)
-{
-	int r;
-	char *pathname;
-	pid_t pid = 0;
-	syd_process_t *child;
-
-	r = path_lookup(argv[0], &pathname);
-	if (r < 0) {
-		errno = -r;
-		die_errno("can't exec `%s'", argv[0]);
-	}
-
-	pid = fork();
-	if (pid < 0)
-		die_errno("can't fork");
-	else if (pid == 0) {
-#if SYDBOX_HAVE_SECCOMP
-		if (sydbox->config.use_seccomp) {
-			if ((r = seccomp_init()) < 0) {
-				fprintf(stderr,
-					"seccomp_init failed (errno:%d %s)\n",
-					-r, strerror(-r));
-				_exit(EXIT_FAILURE);
-			}
-
-			if ((r = sysinit_seccomp()) < 0) {
-				fprintf(stderr,
-					"seccomp_apply failed (errno:%d %s)\n",
-					-r, strerror(-r));
-				_exit(EXIT_FAILURE);
-			}
-		}
-#endif
-		pid = getpid();
-		if (!syd_use_seize) {
-			if ((r = pink_trace_me() < 0)) {
-				fprintf(stderr,
-					"ptrace(PTRACE_TRACEME) failed (errno:%d %s)\n",
-					-r, strerror(-r));
-				_exit(EXIT_FAILURE);
-			}
-		}
-
-		kill(pid, SIGSTOP);
-
-		execv(pathname, argv);
-		fprintf(stderr, "execv failed (errno:%d %s)\n", errno, strerror(errno));
-		_exit(EXIT_FAILURE);
-	}
-
-	free(pathname);
-#if PINK_HAVE_SEIZE
-	if (syd_use_seize) {
-		/* Wait until child stopped itself */
-		int status;
-		while (waitpid(pid, &status, WSTOPPED) < 0) {
-			if (errno == EINTR)
-				continue;
-			die_errno("waitpid");
-		}
-		if (!WIFSTOPPED(status) || WSTOPSIG(status) != SIGSTOP) {
-			kill_save_errno(pid, SIGKILL);
-			die_errno("Unexpected wait status %x", status);
-		}
-		if ((r = pink_trace_seize(pid, sydbox->trace_options)) < 0 ||
-		    (r = pink_trace_interrupt(pid)) < 0) {
-			kill_save_errno(pid, SIGKILL);
-			die_errno("Can't attach to %u", pid);
-		}
-		kill(pid, SIGCONT);
-	}
-#endif
-	child = new_process_or_kill(pid, SYD_SYDBOX_CHILD | post_attach_sigstop);
-	process_add(child);
-
-	sydbox->wait_execve = true;
 }
 
 static int handle_interrupt(int fatal_sig)
@@ -687,65 +618,81 @@ static int ptrace_step(syd_process_t *current, int sig)
 	return (r < 0) ? ptrace_error(current, msg, -r) : r;
 }
 
-static void inherit_shareable_data(syd_process_t *current, syd_process_t *parent)
+static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 {
 	bool share_thread, share_fs, share_files;
 
+	if (!parent) {
+		new_shared_memory(current);
+		if (sydchild(current))
+			P_COMM(current) = xstrdup(sydbox->program_invocation_name);
+		P_CWD(current) = xgetcwd(); /* FIXME: toolong hack changes
+					       directories, this may not work! */
+		copy_sandbox(P_BOX(current), box_current(NULL));
+		return;
+	}
+
 	share_thread = share_fs = share_files = false;
-	if (parent && parent->new_clone_flags) {
-		if (parent->new_clone_flags & CLONE_THREAD)
-			share_thread = true;
-		if (parent->new_clone_flags & CLONE_FS)
-			share_fs = true;
-		if (parent->new_clone_flags & CLONE_FILES)
-			share_files = true;
-		}
+	if (parent->new_clone_flags & CLONE_THREAD)
+		share_thread = true;
+	if (parent->new_clone_flags & CLONE_FS)
+		share_fs = true;
+	if (parent->new_clone_flags & CLONE_FILES)
+		share_files = true;
 
-	if (sydchild(current)) {
-		P_COMM(current) = xstrdup(sydbox->program_invocation_name);
-		P_CWD(current) = xgetcwd();
-		copy_sandbox(P_BOX(current), box_current(NULL));
-	} else if (!hasparent(current)) {
-		log_warning("inheriting global (unmodified) sandbox");
-		P_CWD(current) = xgetcwd();
-		copy_sandbox(P_BOX(current), box_current(NULL));
+	/*
+	 * Link together for memory sharing, as necessary
+	 * Note: thread in this context is any process which shares memory.
+	 * (May not always be a real thread: (e.g. vfork)
+	 */
+	current->clone_flags = parent->new_clone_flags;
+
+	if (share_thread) {
+		current->shm.clone_thread = parent->shm.clone_thread;
+		P_CLONE_THREAD_RETAIN(current);
 	} else {
-		/*
-		 * Link together for memory sharing.
-		 * Note: thread in this context is any process which shares memory.
-		 * (May not always be a real thread: (e.g. vfork)
-		 */
-		current->clone_flags = parent->new_clone_flags;
+		new_shared_memory_clone_thread(current);
+		P_COMM(current) = xstrdup(P_COMM(parent));
+		copy_sandbox(P_BOX(current), box_current(parent));
+	}
 
-		if (share_thread) {
-			current->shm.clone_thread = parent->shm.clone_thread;
-			P_CLONE_THREAD_RETAIN(current);
-		} else {
-			new_shared_memory_clone_thread(current);
-			P_COMM(current) = xstrdup(P_COMM(parent));
-			copy_sandbox(P_BOX(current), box_current(parent));
-		}
+	if (share_fs) {
+		current->shm.clone_fs = parent->shm.clone_fs;
+		P_CLONE_FS_RETAIN(current);
+	} else {
+		new_shared_memory_clone_fs(current);
+		P_CWD(current) = xstrdup(P_CWD(parent));
+	}
 
-		if (share_fs) {
-			current->shm.clone_fs = parent->shm.clone_fs;
-			P_CLONE_FS_RETAIN(current);
-		} else {
-			new_shared_memory_clone_fs(current);
-			P_CWD(current) = xstrdup(P_CWD(parent));
-		}
-
-		if (share_files) {
-			current->shm.clone_files = parent->shm.clone_files;
-			P_CLONE_FILES_RETAIN(current);
-		} else {
-			new_shared_memory_clone_files(current);
-		}
+	if (share_files) {
+		current->shm.clone_files = parent->shm.clone_files;
+		P_CLONE_FILES_RETAIN(current);
+	} else {
+		new_shared_memory_clone_files(current);
 	}
 }
 
-static void inherit_process_data(syd_process_t *current, syd_process_t *parent)
+static void init_process_data(syd_process_t *current, syd_process_t *parent)
 {
-	inherit_shareable_data(current, parent);
+	if (current->flags & SYD_READY)
+		return;
+
+	if (sydchild(current))
+		parent = NULL;
+	else if (!parent) {
+		if (!hasparent(current)) {
+			log_warning("no parent, refusing to set up");
+			return;
+		}
+
+		parent = lookup_process(current->ppid);
+		if (!parent) {
+			log_warning("invalid parent process %d", current->ppid);
+			log_warning("inheriting global sandbox");
+		}
+	}
+
+	init_shareable_data(current, parent);
 
 	if (sydbox->config.whitelist_per_process_directories &&
 	    (!parent || current->pid != parent->pid)) {
@@ -754,89 +701,40 @@ static void inherit_process_data(syd_process_t *current, syd_process_t *parent)
 		magic_append_whitelist_read(magic, current);
 		magic_append_whitelist_write(magic, current);
 	}
-}
 
-static void init_process_data(syd_process_t *current)
-{
-	pid_t pid;
-	syd_process_t *parent;
-
-	if (current->flags & SYD_READY)
-		return;
-
-	pid = current->pid;
-
-	if (sydchild(current)) {
-		inherit_process_data(current, NULL);
-		goto out;
-	}
-
-	parent = NULL;
-	if (hasparent(current)) {
-		parent = lookup_process(current->ppid);
-		if (parent) {
-			inherit_process_data(current, parent);
-			goto out;
-		}
-		log_warning("invalid parent process %d", current->ppid);
-	} else if (orphan(current)) {
-		log_warning("process %d is an orphan", current->pid);
-	} else {
-		log_warning("process %d has no parent", current->pid);
-	}
-
-	inherit_process_data(current, NULL);
-out:
 	current->flags |= SYD_READY;
-	log_trace("process %u is ready for access control", pid);
+	log_trace("process %u is ready for access control", current->pid);
 }
 
 static int event_startup(syd_process_t *current)
 {
 	int r;
 
+	if (!(current->flags & SYD_STARTUP))
+		return 0;
+
 	if ((r = syd_trace_setup(current)) < 0)
 		return ptrace_error(current, "PTRACE_SETOPTIONS", -r);
-	init_process_data(current);
+
 	current->flags &= ~SYD_STARTUP;
 	return 0;
 }
 
-static int event_clone(syd_process_t *current, pid_t cpid_early)
+static int event_clone(syd_process_t *current)
 {
 	int r = 0;
+	long flags;
 	pid_t pid, cpid;
 	syd_process_t *thread = NULL;
-	bool waiting_for_me = false;
 
-	assert(current);
-	if (sydbox->pidwait == current->pid) {
-		waiting_for_me = true;
-		sydbox->pidwait = -1;
-	}
-
-	if (!(current->flags & SYD_IN_LABOUR)) {
-		/*
-		 * Child was born early and event_clone was simulated.
-		 * Nothing left to do.
-		 */
-		goto out;
-	}
-	current->flags &= ~SYD_IN_LABOUR;
-
-	/*
-	 * The second argument is > -1 if the child's initial SIGSTOP
-	 * came before EVENT_CLONE
-	 */
-	if (cpid_early != -1)
-		cpid = cpid_early;
-	else if ((r = syd_trace_geteventmsg(current, (unsigned long *)&cpid)) < 0)
-		goto out; /* process dead */
+	if ((r = syd_trace_geteventmsg(current, (unsigned long *)&cpid)) < 0)
+		return r;; /* process dead */
 
 	pid = current->pid;
 	thread = lookup_process(cpid);
 	if (!thread) {
 		thread = new_thread_or_kill(cpid, post_attach_sigstop);
+		process_add(thread);
 	} else if (hasparent(thread)) {
 		if (thread->ppid == current->pid)
 			log_warning("[%s] error: child %u of current process %d is already in process list",
@@ -844,18 +742,16 @@ static int event_clone(syd_process_t *current, pid_t cpid_early)
 		else
 			log_warning("[%s] WTF! child %u of %u is already in process list",
 				    __func__, cpid, pid);
-		goto out;
+		return 0;
 	}
 
-	process_add(thread);
+	if ((r = syd_read_argument(current, 0, &flags)) < 0)
+		return r;
 	thread->ppid = pid;
-	inherit_process_data(thread, current); /* expects ->ppid to be valid. */
-	thread->flags |= SYD_READY;
+	current->new_clone_flags = flags;
+	init_process_data(thread, current); /* expects ->ppid to be valid. */
 	current->new_clone_flags = 0;
 
-out:
-	if (waiting_for_me)
-		log_trace("reset wait_pid %d to -1 after clone %d", pid, cpid);
 	return r;
 }
 
@@ -1062,12 +958,12 @@ static int event_exit(syd_process_t *current)
 
 static int trace(void)
 {
-	int pid, wait_pid, wait_errno, wait_options;
+	int pid, wait_errno;
 	bool stopped;
 	int r;
 	int status, sig;
 	unsigned event;
-	syd_process_t *current, *parent;
+	syd_process_t *current;
 	int syscall_trap_sig;
 
 	syscall_trap_sig = sydbox->trace_options & PINK_TRACE_OPTION_SYSGOOD
@@ -1090,17 +986,11 @@ static int trace(void)
 			return handle_interrupt(sig);
 		}
 
-		if (sydbox->pidwait > 0) {
-			wait_pid = sydbox->pidwait;
-		} else {
-			wait_pid = -1;
-		}
-		wait_options = __WALL;
-
 		if (interactive)
 			sigprocmask(SIG_SETMASK, &empty_set, NULL);
-		pid = waitpid(wait_pid, &status, __WALL);
+		pid = waitpid(-1, &status, __WALL);
 		wait_errno = errno;
+		dump(DUMP_STATE_CHANGE, pid, status, wait_errno);
 		if (interactive)
 			sigprocmask(SIG_SETMASK, &blocked_set, NULL);
 
@@ -1109,14 +999,6 @@ static int trace(void)
 			case EINTR:
 				continue;
 			case ECHILD:
-				if (sydbox->pidwait > 0) {
-					log_warning("wait(%d, %d) failed (errno:%d ECHILD)",
-						    sydbox->pidwait, wait_options, ECHILD);
-					log_warning("retrying to wait with -1");
-					/* TODO: unset SYD_IN_LABOUR here! */
-					sydbox->pidwait = -1;
-					continue;
-				}
 				if (process_count() == 0)
 					goto cleanup;
 				/* If process count > 0, ECHILD is not expected,
@@ -1124,90 +1006,19 @@ static int trace(void)
 				 * fall through...
 				 */
 			default:
-				err_fatal(wait_errno, "wait(%d, %d) failed", sydbox->pidwait, wait_options);
+				err_fatal(wait_errno, "wait failed");
 				goto cleanup;
 			}
 		}
 
 		event = pink_event_decide(status);
-		if (log_has_level(LOG_LEVEL_TRACE)) {
-			char buf[sizeof("WIFEXITED,exitcode=%u") + sizeof(int)*3 /*paranoia:*/ + 16];
-			char evbuf[sizeof(",PTRACE_EVENT_?? (%u)") + sizeof(int)*3 /*paranoia:*/ + 16];
-			strcpy(buf, "???");
-			if (WIFSIGNALED(status))
-
-#ifdef WCOREDUMP
-				sprintf(buf, "WIFSIGNALED,%ssig=%d|%s|",
-					WCOREDUMP(status) ? "core," : "",
-					WTERMSIG(status),
-					pink_name_signal(WTERMSIG(status), 0));
-#else
-				sprintf(buf, "WIFSIGNALED,sig=%d|%s|",
-					WTERMSIG(status),
-					pink_name_signal(WTERMSIG(status), 0));
-#endif
-			if (WIFEXITED(status))
-				sprintf(buf, "WIFEXITED,exitcode=%u", WEXITSTATUS(status));
-			if (WIFSTOPPED(status))
-				sprintf(buf, "WIFSTOPPED,sig=%d|%s|",
-					WSTOPSIG(status),
-					pink_name_signal(WSTOPSIG(status), 0));
-#ifdef WIFCONTINUED
-			if (WIFCONTINUED(status))
-				strcpy(buf, "WIFCONTINUED");
-#endif
-			evbuf[0] = '\0';
-			if (event != 0) {
-				const char *e;
-				e = pink_name_event(event);
-				if (!e) {
-					sprintf(buf, "?? (%u)", event);
-					e = buf;
-				}
-				sprintf(evbuf, "PTRACE_EVENT_%s", e);
-			}
-			log_trace("[wait(%d, 0x%04x) = %u] %s%s", wait_pid, status,
-				  pid, buf, evbuf);
-		}
-
 		current = lookup_process(pid);
 		log_context(NULL);
 		if (!current) {
-			/*
-			 * This can also happen due to a race condition for path:
-			 * clone(2) -> New child born -> EVENT_CLONE
-			 * (which is a race condition between child and parent)
-			 *
-			 * FIXME: This can happen if a clone call used CLONE_PTRACE itself.
-			 */
-			if (sydbox->pidwait != -1) {
-				/* Simulate clone event */
-				parent = lookup_process(sydbox->pidwait);
-				if (!parent) {
-					log_warning("parent %d gone before child birth", sydbox->pidwait);
-					log_warning("child %d is an orphan", pid);
-					current = new_thread_or_kill(pid, post_attach_sigstop);
-					goto orphan;
-				}
-				event_clone(parent, pid);
-				current = lookup_process(pid);
-			} else {
-				/* Add the (currently) orphan process to the
-				 * process list. */
-				current = new_thread_or_kill(pid, post_attach_sigstop);
-			}
+			/* Add the (currently) orphan process to the process
+			 * list but do not create shared memory. */
+			current = new_thread_or_kill(pid, post_attach_sigstop);
 			log_context(current);
-		} else if (!hasparent(current)) {
-orphan:
-			/*
-			 * Process is an orphan.
-			 * This is most probably because the parent is gone for
-			 * good.
-			 */
-			current->ppid = SYD_PPID_ORPHAN;
-			new_shared_memory(current);
-			log_context(current);
-			init_process_data(current);
 		}
 
 		/* Under Linux, execve changes pid to thread leader's pid,
@@ -1278,7 +1089,7 @@ dont_switch_procs:
 			if (event == PINK_EVENT_FORK ||
 			    event == PINK_EVENT_VFORK ||
 			    event == PINK_EVENT_CLONE) {
-				if ((r = event_clone(current, -1)) < 0)
+				if ((r = event_clone(current)) < 0)
 					continue; /* process dead */
 			}
 #if PINK_HAVE_SEIZE
@@ -1365,6 +1176,10 @@ handle_stopsig:
 		 * (Or it still can be that pesky post-execve SIGTRAP!)
 		 * Handle it.
 		 */
+		if (!(current->flags & SYD_READY)) {
+			fprintf(stderr, "%u not ready\n", current->pid);
+			abort();
+		}
 		r = event_syscall(current);
 		if (r != 0) {
 			/* ptrace() failed in event_syscall().
@@ -1395,6 +1210,89 @@ cleanup:
 	log_info("return value %d (%s access violations)",
 		 r, sydbox->violation ? "due to" : "no");
 	return r;
+}
+
+static void startup_child(char **argv)
+{
+	int r;
+	char *pathname;
+	pid_t pid = 0;
+	syd_process_t *child;
+
+	r = path_lookup(argv[0], &pathname);
+	if (r < 0) {
+		errno = -r;
+		die_errno("can't exec `%s'", argv[0]);
+	}
+
+	pid = fork();
+	if (pid < 0)
+		die_errno("can't fork");
+	else if (pid == 0) {
+#if SYDBOX_HAVE_SECCOMP
+		if (sydbox->config.use_seccomp) {
+			if ((r = seccomp_init()) < 0) {
+				fprintf(stderr,
+					"seccomp_init failed (errno:%d %s)\n",
+					-r, strerror(-r));
+				_exit(EXIT_FAILURE);
+			}
+
+			if ((r = sysinit_seccomp()) < 0) {
+				fprintf(stderr,
+					"seccomp_apply failed (errno:%d %s)\n",
+					-r, strerror(-r));
+				_exit(EXIT_FAILURE);
+			}
+		}
+#endif
+		pid = getpid();
+		if (!syd_use_seize) {
+			if ((r = pink_trace_me() < 0)) {
+				fprintf(stderr,
+					"ptrace(PTRACE_TRACEME) failed (errno:%d %s)\n",
+					-r, strerror(-r));
+				_exit(EXIT_FAILURE);
+			}
+		}
+
+		kill(pid, SIGSTOP);
+
+		execv(pathname, argv);
+		fprintf(stderr, "execv failed (errno:%d %s)\n", errno, strerror(errno));
+		_exit(EXIT_FAILURE);
+	}
+
+	free(pathname);
+#if PINK_HAVE_SEIZE
+	if (syd_use_seize) {
+		/* Wait until child stopped itself */
+		int status;
+		while (waitpid(pid, &status, WSTOPPED) < 0) {
+			if (errno == EINTR)
+				continue;
+			die_errno("waitpid");
+		}
+		if (!WIFSTOPPED(status) || WSTOPSIG(status) != SIGSTOP) {
+			kill_save_errno(pid, SIGKILL);
+			die_errno("Unexpected wait status %x", status);
+		}
+		if ((r = pink_trace_seize(pid, sydbox->trace_options)) < 0 ||
+		    (r = pink_trace_interrupt(pid)) < 0) {
+			kill_save_errno(pid, SIGKILL);
+			die_errno("Can't attach to %u", pid);
+		}
+		kill(pid, SIGCONT);
+	}
+#endif
+	child = new_process_or_kill(pid, SYD_SYDBOX_CHILD | post_attach_sigstop);
+	process_add(child);
+	init_process_data(child, NULL);
+	if ((r = event_startup(child)) < 0) {
+		kill_save_errno(pid, SIGKILL);
+		die_errno("Can't set options of %u", pid);
+	}
+	sydbox->wait_execve = true;
 }
 
 int main(int argc, char **argv)
