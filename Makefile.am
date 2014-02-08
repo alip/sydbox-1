@@ -48,4 +48,8 @@ upload:
 upload-release: upload $(SHA1_FILE) $(GPG_FILE)
 	rsync --partial --progress -ave ssh $(TAR_FILE) $(SHA1_FILE) $(GPG_FILE) tchaikovsky.exherbo.org:public_html/sydbox/
 
+.PHONY: jenkins
+jenkins:
+	misc/jenkins-build.sh
+
 SUBDIRS= src data man tests .
