@@ -17,9 +17,11 @@
 
 enum dump {
 	DUMP_INIT,
+	DUMP_CLOSE,
 	DUMP_FLUSH,
 	DUMP_STATE_CHANGE, /* waitpid(2) */
 	DUMP_PTRACE_EXECVE, /* PTRACE_EVENT_EXEC */
+	DUMP_PTRACE_STEP, /* PTRACE_SYSCALL or PTRACE_RESUME */
 };
 
 void dump(enum dump what, ...);

@@ -34,6 +34,12 @@ static int nodump = -1;
 static unsigned long flags;
 static unsigned long long id;
 
+static void dump_close(void)
+{
+	fclose(fp);
+	fp = NULL;
+}
+
 static void dump_flush(void)
 {
 	fflush(fp);
@@ -442,7 +448,11 @@ void dump(enum dump what, ...)
 		return;
 	if (what == DUMP_INIT)
 		return;
-	else if (what == DUMP_FLUSH) {
+	if (what == DUMP_CLOSE) {
+		dump_close();
+		return;
+	}
+	if (what == DUMP_FLUSH) {
 		dump_flush();
 		return;
 	}
@@ -503,6 +513,31 @@ void dump(enum dump what, ...)
 			fprintf(fp, "null");
 		else
 			dump_process(t);
+		fprintf(fp, "}");
+	} else if (what == DUMP_PTRACE_STEP) {
+		int sig = va_arg(ap, int);
+		int ptrace_errno = va_arg(ap, int);
+		enum syd_step step = va_arg(ap, enum syd_step);
+		const char *step_name = va_arg(ap, const char *);
+		syd_process_t *p = va_arg(ap, syd_process_t *);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\","
+			J(step)"%u,"
+			J(step_name)"\"%s\","
+			J(sig)"%d,"
+			J(pid)"%d",
+			id++, DUMP_PTRACE_STEP, "ptrace_step",
+			step, step_name, sig, p->pid);
+
+		fprintf(fp, ","J(ptrace));
+		dump_errno(ptrace_errno);
+
+		fprintf(fp, ","J(process));
+		dump_process(p);
+
 		fprintf(fp, "}");
 	} else {
 		abort();

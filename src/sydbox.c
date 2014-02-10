@@ -615,6 +615,7 @@ static int ptrace_step(syd_process_t *current, int sig)
 		assert_not_reached();
 	}
 
+	dump(DUMP_PTRACE_STEP, sig, -r, step, msg, current);
 	return (r < 0) ? ptrace_error(current, msg, -r) : r;
 }
 
@@ -1045,7 +1046,7 @@ static int trace(void)
 					err_fatal(-r, "old_pid not available after execve for pid:%u", pid);
 			}
 
-			dump(DUMP_PTRACE_EXECVE, pid, old_tid);
+			/* dump(DUMP_PTRACE_EXECVE, pid, old_tid); */
 
 			if (pid == old_tid)
 				goto dont_switch_procs;
@@ -1102,11 +1103,8 @@ dont_switch_procs:
 				 * PTRACE_INTERRUPT-stop or group-stop.
 				 * PTRACE_INTERRUPT-stop has sig == SIGTRAP here.
 				 */
-				if (sig == SIGSTOP ||
-				    sig == SIGTSTP ||
-				    sig == SIGTTIN ||
-				    sig == SIGTTOU
-				) {
+				if (sig == SIGSTOP || sig == SIGTSTP ||
+				    sig == SIGTTIN || sig == SIGTTOU) {
 					stopped = true;
 					goto handle_stopsig;
 				}
@@ -1182,6 +1180,7 @@ handle_stopsig:
 		 */
 		if (!(current->flags & SYD_READY)) {
 			fprintf(stderr, "%u not ready\n", current->pid);
+			dump(DUMP_CLOSE);
 			abort();
 		}
 		r = event_syscall(current);

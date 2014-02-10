@@ -9,6 +9,85 @@ import argparse, bz2, json, re, tempfile
 SIGNAME = dict((k, v) for v, k in signal.__dict__.iteritems() if v.startswith('SIG'))
 sydbox_pid = -1
 
+class ShoeBox:
+    FORMATS_SUPPORTED = (1,)
+
+    def __init__(self, dump = 'dump.shoebox', flags = 'r'):
+        self.dump  = dump
+        self.flags = flags
+
+        self.fmt  = None
+        self.head = None
+
+    def __enter__(self):
+        self.fp = bz2.BZ2File(self.dump, self.flags)
+        self.check_format()
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.fp.close()
+        if exc_type is not None:
+            return False # Raise the exception
+        return True
+
+    def check_format(self):
+        line = self.fp.readline()
+        obj  = json.loads(line)
+
+        if 'id' not in obj:
+            self.fp.close()
+            raise NotImplementedError("missing id attribute")
+        elif obj['id'] != 0:
+            self.fp.close()
+            raise NotImplementedError("invalid id attribute `%r' for format check" % obj['id'])
+        elif 'shoebox' not in obj:
+            self.fp.close()
+            raise NotImplementedError("missing shoebox attribute")
+        elif obj['shoebox'] not in ShoeBox.FORMATS_SUPPORTED:
+            self.fp.close()
+            raise NotImplementedError("unsupported shoebox format `%r'" % obj['shoebox'])
+
+        self.fmt  = obj['shoebox']
+        self.head = self.fp.tell()
+
+    def rewind(self):
+        self.fp.seek(self.head, os.SEEK_SET)
+
+    def read_events(self):
+        for json_line in self.fp.readlines():
+            yield json.loads(json_line)
+
+    def tree(self, pid, proc_stat = False):
+        events = []
+
+        for event in self.read_events():
+            if 'pid' not in event:
+                continue
+            if event['pid'] != pid:
+                continue
+            events.append(event)
+
+        parents = set()
+
+        for event in events:
+            if 'process' in event:
+                if proc_stat:
+                    if 'proc_stat' not in event['process']:
+                        continue
+                    if event['process']['proc_stat'] is None:
+                        continue
+                    if 'errno' in event['process']['proc_stat']:
+                        continue # TODO: warn
+                    parents.add(event['process']['proc_stat']['ppid'])
+                else:
+                    parents.add(event['process']['ppid'])
+
+        for ppid in parents:
+            events += self.tree(ppid)
+
+        return sorted(events, key = lambda event: event['id'])
+
 def sydbox(argv0, argv, fifo):
     os.environ['SHOEBOX'] = fifo
 
@@ -74,6 +153,12 @@ def match_any(patterns, string, flags = 0):
             return True
     return False
 
+def command_tree(args, rest):
+    with ShoeBox(args.dump) as sb:
+        events = sb.tree(args.pid)
+        for event in events:
+            dump_json(event, args.format)
+
 def command_show(args, rest):
     if args.pid is None:
         match_pid = None
@@ -121,8 +206,8 @@ Attaching poems encourages consideration tremendously.''')
     parser_sydbox.set_defaults(func = command_sydbox)
 
     parser_show = subparser.add_parser('show', help = 'Show dump')
-    parser_show.add_argument('-f', '--format', nargs = '?',
-                             help = 'Format string')
+    parser_show.add_argument('-f', '--format',
+                             default = None, help = 'Format string')
     parser_show.add_argument('-p', '--pid', nargs = '+',
                              metavar = 'PID', type = int, action = 'append',
                              help = 'PIDs to match')
@@ -130,6 +215,14 @@ Attaching poems encourages consideration tremendously.''')
                              metavar = 'COMM', action = 'append',
                              help = 'COMM patterns to match (regex)')
     parser_show.set_defaults(func = command_show)
+
+    parser_tree = subparser.add_parser('tree', help = 'Show process tree')
+    parser_tree.add_argument('-f', '--format',
+                             default = None, help = 'Format string')
+    parser_tree.add_argument('-p', '--pid',
+                             metavar = 'PID', required = True,
+                             help = 'PID to match')
+    parser_tree.set_defaults(func = command_tree)
 
     args, rest = parser.parse_known_args()
     return args.func(args, rest)
