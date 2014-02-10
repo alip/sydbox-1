@@ -437,7 +437,6 @@ static int dump_init(void)
 void dump(enum dump what, ...)
 {
 	va_list ap;
-	syd_process_t *p;
 
 	if (dump_init() != 0)
 		return;
@@ -454,6 +453,7 @@ void dump(enum dump what, ...)
 		pid_t pid = va_arg(ap, pid_t);
 		int status = va_arg(ap, int);
 		int wait_errno = va_arg(ap, int);
+		syd_process_t *p;
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
@@ -474,6 +474,35 @@ void dump(enum dump what, ...)
 			fprintf(fp, "null");
 		else
 			dump_process(p);
+		fprintf(fp, "}");
+	} else if (what == DUMP_PTRACE_EXECVE) {
+		pid_t pid = va_arg(ap, pid_t);
+		long old_tid = va_arg(ap, long);
+		syd_process_t *p, *t;
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\","
+			J(pid)"%d,"
+			J(old_tid)"%ld,",
+			id++, DUMP_PTRACE_EXECVE, "ptrace_execve",
+			pid, old_tid);
+
+		p = lookup_process(pid);
+		fprintf(fp, ","J(process));
+		if (!p)
+			fprintf(fp, "null");
+		else
+			dump_process(p);
+
+		fprintf(fp, ","J(execve_thread));
+		if (pid == old_tid)
+			fprintf(fp, "0");
+		else if (!(t = lookup_process(old_tid)))
+			fprintf(fp, "null");
+		else
+			dump_process(t);
 		fprintf(fp, "}");
 	} else {
 		abort();

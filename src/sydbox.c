@@ -1035,20 +1035,24 @@ static int trace(void)
 		 * PTRACE_GETEVENTMSG returns old pid starting from Linux 3.0.
 		 * On 2.6 and earlier, it can return garbage.
 		 */
-		if (event == PINK_EVENT_EXEC && os_release >= KERNEL_VERSION(3,0,0)) {
+		if (event == PINK_EVENT_EXEC) {
 			syd_process_t *execve_thread;
-			long old_tid = 0;
+			long old_tid = -1;
 
-			if ((r = pink_trace_geteventmsg(pid, (unsigned long *) &old_tid)) < 0
-			    || old_tid <= 0)
-				err_fatal(-r, "old pid not available after execve for pid:%u", pid);
-			if (old_tid == pid)
+			if (os_release >= KERNEL_VERSION(3,0,0)) {
+				r = pink_trace_geteventmsg(pid, (unsigned long *) &old_tid);
+				if (r < 0 || old_tid <= 0)
+					err_fatal(-r, "old_pid not available after execve for pid:%u", pid);
+			}
+
+			dump(DUMP_PTRACE_EXECVE, pid, old_tid);
+
+			if (pid == old_tid)
 				goto dont_switch_procs;
+
 			execve_thread = lookup_process(old_tid);
-			/* It should be !NULL, but someone feels paranoid */
-			if (!execve_thread)
-				err_fatal(-r, "old pid not available after execve for pid:%u", pid);
-			log_trace("leader %lu superseded by execve in tid %u", old_tid, pid);
+			assert(execve_thread);
+
 			/* Drop leader, switch to the thread, reusing leader's tid */
 			execve_thread->pid = current->pid;
 			execve_thread->ppid = current->ppid;
@@ -1056,8 +1060,8 @@ static int trace(void)
 			current = execve_thread;
 			log_context(current);
 		}
-dont_switch_procs:
 		if (event == PINK_EVENT_EXEC) {
+dont_switch_procs:
 			r = event_exec(current);
 			if (r == -ECHILD) /* process ignored */
 				goto restart_tracee_with_sig_0;
