@@ -84,13 +84,16 @@ class ShoeBox:
                     parents.add(event['process']['ppid'])
 
         for ppid in parents:
-            events += self.tree(ppid)
+            self.rewind()
+            events += self.tree(ppid, proc_stat)
 
         return sorted(events, key = lambda event: event['id'])
 
 def sydbox(argv0, argv, fifo):
     os.environ['SHOEBOX'] = fifo
     argv.insert(0, argv0)
+    #argv.insert(0, 'strace')
+    #argv0 = 'strace'
 
     signal.signal(signal.SIGCHLD, signal.SIG_DFL)
     os.execvp(argv0, argv)
@@ -221,7 +224,7 @@ Attaching poems encourages consideration tremendously.''')
     parser_tree.add_argument('-f', '--format',
                              default = None, help = 'Format string')
     parser_tree.add_argument('-p', '--pid',
-                             metavar = 'PID', required = True,
+                             type = int, metavar = 'PID', required = True,
                              help = 'PID to match')
     parser_tree.set_defaults(func = command_tree)
 
