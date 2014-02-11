@@ -495,7 +495,7 @@ void dump(enum dump what, ...)
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(pid)"%d,"
-			J(old_tid)"%ld,",
+			J(old_tid)"%ld",
 			id++, DUMP_PTRACE_EXECVE, "ptrace_execve",
 			pid, old_tid);
 
