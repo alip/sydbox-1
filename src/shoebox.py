@@ -54,9 +54,44 @@ class ShoeBox:
     def rewind(self):
         self.fp.seek(self.head, os.SEEK_SET)
 
-    def read_events(self):
-        for json_line in self.fp.readlines():
-            yield json.loads(json_line)
+    def readlines(self, limit = 0):
+        if limit == 0:
+            for line in self.fp.readlines():
+                yield line
+        elif limit > 0:
+            for line in self.fp.readlines():
+                yield line
+                limit -= 1
+                if limit == 0:
+                    break
+        else: # limit < 0
+            self.fp.seek(0, os.SEEK_END)
+            fpos = self.fp.tell()
+            self.fp.seek(max(fpos - (2048 * abs(limit)), self.head), os.SEEK_SET)
+            lines = self.fp.readlines()[limit:]
+            for line in lines:
+                yield line
+
+    def read_events(self, limit = 0):
+        for json_line in self.readlines(limit):
+            try:
+                obj = json.loads(json_line)
+            except TypeError as err:
+                sys.stderr.write("WTF? %r\n" % json_line)
+                raise
+            except ValueError as err:
+                sys.stderr.write("Unable to parse JSON: %r\n" % err)
+                match = re.search('char (?P<char>[0-9]+)', err.message)
+                if match is not None:
+                    char = int(match.group('char'))
+                    bh = max([char - 10, 0])
+                    eh = min([char + 10, len(json_line)])
+                    hl = json_line[:bh] + '\033[1m\033[91m' + json_line[bh:eh] + '\033[0m' + json_line[eh:]
+                else:
+                    hl = json_line
+                sys.stderr.write(hl)
+                raise
+            yield obj
 
     def tree(self, pid, proc_stat = False):
         events = []
@@ -164,29 +199,33 @@ def command_tree(args, rest):
             dump_json(event, args.format)
 
 def command_show(args, rest):
-    if args.pid is None:
-        match_pid = None
+    if args.pattern is None:
+        match_event = lambda event: True
     else:
-        match_pid = [pid for l in args.pid for pid in l]
+        pattern     = re.compile(args.pattern, re.UNICODE)
+        match_event = lambda event: pattern.match(args.match.format(**event))
 
-    if args.comm is None:
-        match_comm = None
-    else:
-        match_comm = [re.compile(comm, re.UNICODE) for l in args.comm for comm in l]
-
-    with bz2.BZ2File(args.dump, 'r') as f:
-        check_format(f)
-        for json_line in f.readlines():
-            obj = json.loads(json_line)
-            dump = list()
-            dump.append(match_pid is None or
-                        ('pid' in obj and obj['pid'] in match_pid))
-            dump.append(match_comm is None or
-                        ('process' in obj and 'comm' in obj['process'] and
-                         match_any(match_comm, obj['process']['comm'])))
-            if not all(dump):
-                continue
-            dump_json(obj, args.format)
+    limit  = args.limit_match
+    events = []
+    events_size = 0
+    with ShoeBox(args.dump) as sb:
+        for event in sb.read_events(args.limit_event):
+            if match_event(event):
+                if limit == 0:
+                    dump_json(event, args.format)
+                elif limit > 0:
+                    dump_json(event, args.format)
+                    limit -= 1
+                    if limit == 0:
+                        break
+                else:
+                    events.append(event)
+                    events_size += 1
+                    if events_size > abs(limit):
+                        events.pop(0)
+    if limit < 0:
+        for event in events:
+            dump_json(event, args.format)
 
 def main():
     parser = argparse.ArgumentParser(prog='shoebox',
@@ -210,14 +249,11 @@ Attaching poems encourages consideration tremendously.''')
     parser_sydbox.set_defaults(func = command_sydbox)
 
     parser_show = subparser.add_parser('show', help = 'Show dump')
-    parser_show.add_argument('-f', '--format',
-                             default = None, help = 'Format string')
-    parser_show.add_argument('-p', '--pid', nargs = '+',
-                             metavar = 'PID', type = int, action = 'append',
-                             help = 'PIDs to match')
-    parser_show.add_argument('-c', '--comm', nargs = '+',
-                             metavar = 'COMM', action = 'append',
-                             help = 'COMM patterns to match (regex)')
+    parser_show.add_argument('-m', '--match', default = '{pid}', help = 'Match format')
+    parser_show.add_argument('-p', '--pattern', help = 'Match pattern (regex)')
+    parser_show.add_argument('-f', '--format', default = None, help = 'Format string')
+    parser_show.add_argument('-l', '--limit-match', default = 0, type = int, help = 'Limit matches')
+    parser_show.add_argument('-L', '--limit-event', default = 0, type = int, help = 'Limit events')
     parser_show.set_defaults(func = command_show)
 
     parser_tree = subparser.add_parser('tree', help = 'Show process tree')
