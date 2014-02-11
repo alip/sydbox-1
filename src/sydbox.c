@@ -1046,7 +1046,7 @@ static int trace(void)
 					err_fatal(-r, "old_pid not available after execve for pid:%u", pid);
 			}
 
-			/* dump(DUMP_PTRACE_EXECVE, pid, old_tid); */
+			dump(DUMP_PTRACE_EXECVE, pid, old_tid);
 
 			if (pid == old_tid)
 				goto dont_switch_procs;
