@@ -90,9 +90,11 @@ class ShoeBox:
 
 def sydbox(argv0, argv, fifo):
     os.environ['SHOEBOX'] = fifo
-
     argv.insert(0, argv0)
+
+    signal.signal(signal.SIGCHLD, signal.SIG_DFL)
     os.execvp(argv0, argv)
+
     os._exit(127)
 
 def handle_death(signum, frame):
@@ -114,6 +116,7 @@ def command_sydbox(args, rest):
     fifo   = os.path.join(tmpdir, 'shoebox.fifo')
     os.mkfifo(fifo, 0600)
 
+    signal.signal(signal.SIGCHLD, handle_death)
     pid = os.fork()
     if pid == 0:
         sydbox(args.path, rest, fifo)
@@ -126,8 +129,6 @@ def command_sydbox(args, rest):
 
         global dump_out
         dump_out = bz2.BZ2File(args.dump, 'w')
-
-        signal.signal(signal.SIGCHLD, handle_death)
 
         with dump_in, dump_out:
             for json_line in dump_in:
