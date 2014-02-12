@@ -169,6 +169,7 @@ static syd_process_t *new_thread(pid_t pid, short flags)
 	thread->flags = SYD_STARTUP | flags;
 	thread->trace_step = SYD_STEP_NOT_SET;
 
+	dump(DUMP_THREAD_NEW, thread);
 	return thread;
 }
 

@@ -539,6 +539,20 @@ void dump(enum dump what, ...)
 		dump_process(p);
 
 		fprintf(fp, "}");
+	} else if (what == DUMP_THREAD_NEW) {
+		syd_process_t *t = va_arg(ap, syd_process_t *);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\","
+			J(pid)"%d",
+			id++, DUMP_THREAD_NEW, "thread_new", t->pid);
+
+		fprintf(fp, ","J(process));
+		dump_process(t);
+
+		fprintf(fp, "}");
 	} else {
 		abort();
 	}
