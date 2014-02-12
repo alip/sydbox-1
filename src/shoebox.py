@@ -126,9 +126,6 @@ class ShoeBox:
 
 def sydbox(argv0, argv, fifo):
     os.environ['SHOEBOX'] = fifo
-    argv.insert(0, argv0)
-    #argv.insert(0, 'strace')
-    #argv0 = 'strace'
 
     signal.signal(signal.SIGCHLD, signal.SIG_DFL)
     os.execvp(argv0, argv)
@@ -154,10 +151,20 @@ def command_sydbox(args, rest):
     fifo   = os.path.join(tmpdir, 'shoebox.fifo')
     os.mkfifo(fifo, 0600)
 
+    if args.gdb:
+        argv0 = args.gdb[0]
+        argv  = args.gdb + [args.path] + rest
+    elif args.strace:
+        argv0 = args.strace[0]
+        argv  = args.strace + [args.path] + rest
+    else:
+        argv0 = args.path
+        argv = [args.path] + rest
+
     signal.signal(signal.SIGCHLD, handle_death)
     pid = os.fork()
     if pid == 0:
-        sydbox(args.path, rest, fifo)
+        sydbox(argv0, argv, fifo)
     else:
         global sydbox_pid
         sydbox_pid = pid
@@ -240,6 +247,12 @@ Can you help me?
 
 Send bug reports to "alip@exherbo.org"
 Attaching poems encourages consideration tremendously.''')
+    parser.add_argument('+gdb',
+                        action = 'store_const', const = ['gdb', '--args'],
+                        help = 'Run under gdb')
+    parser.add_argument('+strace',
+                        action = 'store_const', const = ['strace',],
+                        help = 'Run under strace')
     parser.add_argument('+dump', nargs=1, default = 'dump.shoebox', help = 'Path to the dump file')
     parser.add_argument('+path', nargs=1, default = 'sydbox', help = 'Path to sydbox')
 
