@@ -1048,21 +1048,18 @@ static int trace(void)
 
 			dump(DUMP_PTRACE_EXECVE, pid, old_tid);
 
-			if (pid == old_tid)
-				goto dont_switch_procs;
+			if (old_tid > 0 && pid != old_tid) {
+				execve_thread = lookup_process(old_tid);
+				assert(execve_thread);
 
-			execve_thread = lookup_process(old_tid);
-			assert(execve_thread);
+				/* Drop leader, switch to the thread, reusing leader's tid */
+				execve_thread->pid = current->pid;
+				execve_thread->ppid = current->ppid;
+				execve_thread->clone_flags = current->clone_flags;
+				current = execve_thread;
+				log_context(current);
+			}
 
-			/* Drop leader, switch to the thread, reusing leader's tid */
-			execve_thread->pid = current->pid;
-			execve_thread->ppid = current->ppid;
-			execve_thread->clone_flags = current->clone_flags;
-			current = execve_thread;
-			log_context(current);
-		}
-		if (event == PINK_EVENT_EXEC) {
-dont_switch_procs:
 			r = event_exec(current);
 			if (r == -ECHILD) /* process ignored */
 				goto restart_tracee_with_sig_0;
@@ -1089,37 +1086,54 @@ dont_switch_procs:
 
 		sig = WSTOPSIG(status);
 
-		if (event != 0) {
-			/* Ptrace event */
-			if (event == PINK_EVENT_FORK ||
-			    event == PINK_EVENT_VFORK ||
-			    event == PINK_EVENT_CLONE) {
-				if ((r = event_clone(current)) < 0)
-					continue; /* process dead */
-			}
+		switch (event) {
+		case 0:
+			break;
+		case PINK_EVENT_FORK:
+		case PINK_EVENT_VFORK:
+		case PINK_EVENT_CLONE:
+			r = event_clone(current);
+			if (r < 0)
+				continue; /* process dead */
+			goto restart_tracee_with_sig_0;
 #if PINK_HAVE_SEIZE
-			else if (event == PINK_EVENT_STOP) {
-				/*
-				 * PTRACE_INTERRUPT-stop or group-stop.
-				 * PTRACE_INTERRUPT-stop has sig == SIGTRAP here.
-				 */
-				if (sig == SIGSTOP || sig == SIGTSTP ||
-				    sig == SIGTTIN || sig == SIGTTOU) {
-					stopped = true;
-					goto handle_stopsig;
+		case PINK_EVENT_STOP:
+			/*
+			 * PTRACE_INTERRUPT-stop or group-stop.
+			 * PTRACE_INTERRUPT-stop has sig == SIGTRAP here.
+			 */
+			switch (sig) {
+			case SIGSTOP:
+			case SIGTSTP:
+			case SIGTTIN:
+			case SIGTTOU:
+				stopped = true;
+				goto handle_stopsig;
+			case SIGTRAP:
+				if (current->flags & SYD_STARTUP) {
+					r = event_startup(current);
+					if (r < 0)
+						continue; /* process dead */
 				}
+				/* fall through */
+			default:
+				break;
 			}
+			goto restart_tracee_with_sig_0;
 #endif
 #if SYDBOX_HAVE_SECCOMP
-			else if (event == PINK_EVENT_SECCOMP) {
-				if ((r = event_seccomp(current)) < 0)
-					continue; /* process dead */
-			}
+		case PINK_EVENT_SECCOMP:
+			r = event_seccomp(current);
+			if (r < 0)
+				continue; /* process dead */
+			goto restart_tracee_with_sig_0;
 #endif
-			else if (event == PINK_EVENT_EXIT) {
-				if ((r = event_exit(current)) < 0)
-					continue; /* process dead */
-			}
+		case PINK_EVENT_EXIT:
+			r = event_exit(current);
+			if (r < 0)
+				continue; /* process dead, huh? */
+			/* fall through */
+		default:
 			goto restart_tracee_with_sig_0;
 		}
 
