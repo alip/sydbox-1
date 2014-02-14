@@ -369,6 +369,13 @@ static void dump_process(syd_process_t *p)
 		p->abi,
 		p->sysname);
 
+	fprintf(fp, ","J(regset)"");
+	if (!(flags & DUMP_PTRACE_REGSET))
+		fprintf(fp, "null");
+	else {
+		/* TODO */;
+	}
+
 	fprintf(fp, ","J(proc_stat)"");
 	if (!(flags & DUMP_PROCFS))
 		fprintf(fp, "null");
