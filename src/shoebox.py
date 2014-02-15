@@ -9,6 +9,16 @@ import argparse, bz2, json, re, tempfile
 SIGNAME = dict((k, v) for v, k in signal.__dict__.iteritems() if v.startswith('SIG'))
 sydbox_pid = -1
 
+def match_event(event, pattern = None, match_format = None):
+    if pattern is None:
+        return True
+    try:
+        return pattern.match(match_format.format(**event))
+    except KeyError:
+        return False
+    except AttributeError:
+        return False
+
 class ShoeBox:
     FORMATS_SUPPORTED = (1,)
 
@@ -93,7 +103,7 @@ class ShoeBox:
                 raise
             yield obj
 
-    def tree(self, pid, proc_stat = False):
+    def tree(self, pid, pattern, match_format, quick = False):
         events = []
 
         for event in self.read_events():
@@ -107,32 +117,33 @@ class ShoeBox:
 
         for event in events:
             if 'process' in event:
-                if proc_stat:
-                    if 'proc_stat' not in event['process']:
+                if 'stat' in event['process']:
+                    if event['process']['stat'] is None:
                         continue
-                    if event['process']['proc_stat'] is None:
-                        continue
-                    if 'errno' in event['process']['proc_stat']:
+                    if 'errno' in event['process']['stat']:
                         continue # TODO: warn
-                    parents.add(event['process']['proc_stat']['ppid'])
-                else:
-                    parents.add(event['process']['ppid'])
+                    parents.add(event['process']['stat']['ppid'])
+                elif 'syd' in event['process']:
+                    if event['process']['syd'] is None:
+                        continue # TODO: warn
+                    parents.add(event['process']['syd']['ppid'])
 
         for ppid in parents:
             self.rewind()
-            events += self.tree(ppid, proc_stat)
+            events += self.tree(ppid, None, None, True)
 
-        return sorted(events, key = lambda event: event['id'])
+        if quick:
+            return events
+
+        events_out = filter(lambda event: match_event(event, pattern, match_format), events)
+        return sorted(events_out, key = lambda event: event['id'])
 
 def sydbox(argv0, argv, fifo):
     os.environ['SHOEBOX'] = fifo
-
-    signal.signal(signal.SIGCHLD, signal.SIG_DFL)
     os.execvp(argv0, argv)
-
     os._exit(127)
 
-def handle_death(signum, frame):
+def wait_for_the_worms():
     pid, status = os.waitpid(sydbox_pid, os.WUNTRACED)
 
     exit_code = 0
@@ -161,7 +172,6 @@ def command_sydbox(args, rest):
         argv0 = args.path
         argv = [args.path] + rest
 
-    signal.signal(signal.SIGCHLD, handle_death)
     pid = os.fork()
     if pid == 0:
         sydbox(argv0, argv, fifo)
@@ -178,6 +188,7 @@ def command_sydbox(args, rest):
         with dump_in, dump_out:
             for json_line in dump_in:
                 dump_out.write(json_line)
+        wait_for_the_worms()
 
 def check_format(f):
     obj = json.loads(f.readline())
@@ -200,24 +211,32 @@ def match_any(patterns, string, flags = 0):
     return False
 
 def command_tree(args, rest):
+    if args.pattern is None:
+        pattern = None
+        match_format = None
+    else:
+        pattern = re.compile(args.pattern, re.UNICODE)
+        match_format = args.match
+
     with ShoeBox(args.dump) as sb:
-        events = sb.tree(args.pid)
+        events = sb.tree(args.pid, pattern, match_format)
         for event in events:
             dump_json(event, args.format)
 
 def command_show(args, rest):
     if args.pattern is None:
-        match_event = lambda event: True
+        pattern = None
+        match_format = None
     else:
-        pattern     = re.compile(args.pattern, re.UNICODE)
-        match_event = lambda event: pattern.match(args.match.format(**event))
+        pattern = re.compile(args.pattern, re.UNICODE)
+        match_format = args.match
 
     limit  = args.limit_match
     events = []
     events_size = 0
     with ShoeBox(args.dump) as sb:
         for event in sb.read_events(args.limit_event):
-            if match_event(event):
+            if match_event(event, pattern, match_format):
                 if limit == 0:
                     dump_json(event, args.format)
                 elif limit > 0:
@@ -271,10 +290,16 @@ Attaching poems encourages consideration tremendously.''')
 
     parser_tree = subparser.add_parser('tree', help = 'Show process tree')
     parser_tree.add_argument('-f', '--format',
-                             default = None, help = 'Format string')
-    parser_tree.add_argument('-p', '--pid',
-                             type = int, metavar = 'PID', required = True,
-                             help = 'PID to match')
+                             metavar = 'FORMAT',
+                             default = None,
+                             help = 'Format string, default: "%(default)s"')
+#    parser_tree.add_argument('-F', '--filter',
+#                             type = eval, metavar = 'CODE',
+#                             default = 'lambda event: True',
+#                             help = 'Filter code, default: "%(default)s"')
+    parser_tree.add_argument('-m', '--match', default = '{event_name}', help = 'Match format')
+    parser_tree.add_argument('-p', '--pattern', help = 'Match pattern (regex)')
+    parser_tree.add_argument('pid', type = int, metavar = 'PID', help = 'PID to match')
     parser_tree.set_defaults(func = command_tree)
 
     args, rest = parser.parse_known_args()

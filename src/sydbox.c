@@ -169,7 +169,9 @@ static syd_process_t *new_thread(pid_t pid, short flags)
 	thread->flags = SYD_STARTUP | flags;
 	thread->trace_step = SYD_STEP_NOT_SET;
 
-	dump(DUMP_THREAD_NEW, thread);
+	process_add(thread);
+
+	dump(DUMP_THREAD_NEW, pid);
 	return thread;
 }
 
@@ -237,6 +239,7 @@ void free_process(syd_process_t *p)
 	if (!p)
 		return;
 	pid = p->pid;
+	dump(DUMP_THREAD_FREE, pid);
 
 	if (p->abspath)
 		free(p->abspath);
@@ -616,7 +619,7 @@ static int ptrace_step(syd_process_t *current, int sig)
 		assert_not_reached();
 	}
 
-	dump(DUMP_PTRACE_STEP, sig, -r, step, msg, current);
+	dump(DUMP_PTRACE_STEP, current->pid, sig, -r, step, msg);
 	return (r < 0) ? ptrace_error(current, msg, -r) : r;
 }
 
@@ -736,7 +739,6 @@ static int event_clone(syd_process_t *current)
 	thread = lookup_process(cpid);
 	if (!thread) {
 		thread = new_thread_or_kill(cpid, post_attach_sigstop);
-		process_add(thread);
 	} else if (hasparent(thread)) {
 		if (thread->ppid == current->pid)
 			log_warning("[%s] error: child %u of current process %d is already in process list",
@@ -1111,11 +1113,6 @@ static int trace(void)
 				stopped = true;
 				goto handle_stopsig;
 			case SIGTRAP:
-				if (current->flags & SYD_STARTUP) {
-					r = event_startup(current);
-					if (r < 0)
-						continue; /* process dead */
-				}
 				/* fall through */
 			default:
 				break;
@@ -1196,7 +1193,7 @@ handle_stopsig:
 		if (!(current->flags & SYD_READY)) {
 			fprintf(stderr, "%u not ready\n", current->pid);
 			dump(DUMP_CLOSE);
-			abort();
+			exit(3);
 		}
 		r = event_syscall(current);
 		if (r != 0) {
@@ -1304,7 +1301,6 @@ static void startup_child(char **argv)
 	}
 #endif
 	child = new_process_or_kill(pid, SYD_SYDBOX_CHILD | post_attach_sigstop);
-	process_add(child);
 	init_process_data(child, NULL);
 	if ((r = event_startup(child)) < 0) {
 		kill_save_errno(pid, SIGKILL);
