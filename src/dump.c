@@ -31,8 +31,18 @@
 
 static FILE *fp;
 static int nodump = -1;
-static unsigned long flags = DUMP_PROCFS;
+static unsigned long flags = DUMPF_PROCFS|DUMPF_SYSARGV;
 static unsigned long long id;
+
+struct sysdump {
+	const char *name;
+	int argf[PINK_MAX_ARGS];
+};
+
+#if 0
+static const struct sysdump syscall_dump[] = {
+};
+#endif
 
 static void dump_close(void)
 {
@@ -105,10 +115,7 @@ static void dump_errno(int err_no)
 
 static void dump_wait_status(int status)
 {
-	enum pink_event pink_event;
 	const char *name;
-
-	pink_event = pink_event_decide(status);
 
 	fprintf(fp, "{"
 		J(value)"%d,"
@@ -119,8 +126,7 @@ static void dump_wait_status(int status)
 		J(WIFCONTINUED)"%s,"
 		J(WEXITSTATUS)"%u,"
 		J(WTERMSIG)"%d,"
-		J(WSTOPSIG)"%d,"
-		J(ptrace)"%d",
+		J(WSTOPSIG)"%d",
 		status,
 		J_BOOL(WIFEXITED(status)),
 		J_BOOL(WIFSIGNALED(status)),
@@ -129,8 +135,7 @@ static void dump_wait_status(int status)
 		J_BOOL(WIFCONTINUED(status)),
 		WIFEXITED(status) ? WEXITSTATUS(status) : 0,
 		WIFSIGNALED(status) ? WTERMSIG(status) : 0,
-		WIFSTOPPED(status) ? WSTOPSIG(status) : 0,
-		pink_event);
+		WIFSTOPPED(status) ? WSTOPSIG(status) : 0);
 
 	fprintf(fp, ","J(WTERMSIG_name));
 	if(WIFSIGNALED(status)) {
@@ -154,13 +159,105 @@ static void dump_wait_status(int status)
 		dump_null();
 	}
 
-	fprintf(fp, ","J(ptrace_name));
-	if (pink_event) {
-		name = pink_name_event(pink_event);
-		if (name == NULL)
-			dump_null();
+	fprintf(fp, "}");
+}
+
+static void dump_ptrace(pid_t pid, int status)
+{
+	enum pink_event pink_event = pink_event_decide(status);
+	const char *name = pink_name_event(pink_event);
+	int r = 0;
+	unsigned long msg;
+
+	fprintf(fp, "{"J(value)"%u", pink_event);
+
+	fprintf(fp, ","J(name));
+	if (name)
+		fprintf(fp, "\"%s\"", name);
+	else
+		dump_null();
+
+	fprintf(fp, ","J(msg));
+	switch (pink_event) {
+	case PINK_EVENT_EXEC:
+	case PINK_EVENT_FORK:
+	case PINK_EVENT_VFORK:
+	case PINK_EVENT_CLONE:
+	case PINK_EVENT_VFORK_DONE:
+	case PINK_EVENT_SECCOMP:
+		r = pink_trace_geteventmsg(pid, &msg);
+		if (r < 0)
+			dump_errno(-r);
 		else
-			fprintf(fp, "\"%s\"", name);
+			fprintf(fp, "%lu", msg);
+		break;
+	default:
+		dump_null();
+		break;
+	}
+
+	fprintf(fp, ","J(syscall));
+	if (WIFSTOPPED(status) && WSTOPSIG(status) == (SIGTRAP|0x80)) {
+		struct pink_regset *regset = NULL;
+
+		r = pink_regset_alloc(&regset);
+		if (r < 0) {
+			dump_errno(-r);
+			goto out;
+		}
+		r = pink_regset_fill(pid, regset);
+		if (r < 0) {
+			dump_errno(-r);
+			goto out;
+		}
+
+		short abi;
+		pink_read_abi(pid, regset, &abi);
+
+		fprintf(fp, "{"
+			J(abi)"%u,"J(abi_wordsize)"%zu",
+			abi, pink_abi_wordsize(abi));
+
+		long sysnum;
+		const char *sysname = NULL;
+
+		pink_read_syscall(pid, regset, &sysnum);
+		fprintf(fp, ","J(value)"%ld", sysnum);
+
+		fprintf(fp, ","J(name));
+		sysname = pink_name_syscall(sysnum, abi);
+		if (sysname != NULL)
+			fprintf(fp, "\"%s\"", sysname);
+		else
+			dump_null();
+
+		long retval;
+		int error;
+
+		fprintf(fp, ","J(retval));
+		pink_read_retval(pid, regset, &retval, &error);
+		fprintf(fp, "{"J(value)"%ld", retval);
+		fprintf(fp, ","J(error)); dump_errno(error);
+		fprintf(fp, "}");
+
+		unsigned i;
+		long argval[PINK_MAX_ARGS];
+
+		for (i = 0; i < PINK_MAX_ARGS; i++)
+			pink_read_argument(pid, regset, i, &argval[i]);
+
+		fprintf(fp, ","J(argv)"[");
+		for (i = 0; i < PINK_MAX_ARGS; i++) {
+			if (i > 0)
+				fprintf(fp, ",");
+			fprintf(fp, "%ld", argval[i]);
+		}
+		fprintf(fp, "]");
+
+		fprintf(fp, "}");
+out:
+		if (regset)
+			pink_regset_free(regset);
 	} else {
 		dump_null();
 	}
@@ -249,7 +346,7 @@ static void dump_process(pid_t pid)
 	}
 
 	fprintf(fp, ","J(stat));
-	if (flags & DUMP_PROCFS) {
+	if (flags & DUMPF_PROCFS) {
 		r = proc_stat(pid, &info);
 		if (r < 0)
 			dump_errno(-r);
@@ -438,7 +535,7 @@ static void dump_process(pid_t pid)
 	dump_null();
 
 	fprintf(fp, ","J(sandbox)"");
-	if (!(flags & DUMP_SANDBOX) || !p->shm.clone_thread)
+	if (!(flags & DUMPF_SANDBOX) || !p->shm.clone_thread)
 		dump_null();
 	else
 		dump_sandbox(p->shm.clone_thread->box);
@@ -525,12 +622,18 @@ void dump(enum dump what, ...)
 			J(id)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
-			J(pid)"%d,"
-			J(status),
+			J(pid)"%d",
 			id++, DUMP_STATE_CHANGE, "state_change", pid);
 
+		fprintf(fp, ","J(status));
 		if (wait_errno == 0)
 			dump_wait_status(status);
+		else
+			dump_errno(wait_errno);
+
+		fprintf(fp, ","J(ptrace));
+		if (wait_errno == 0)
+			dump_ptrace(pid, status);
 		else
 			dump_errno(wait_errno);
 
@@ -559,6 +662,26 @@ void dump(enum dump what, ...)
 			fprintf(fp, "0");
 		else
 			dump_process(old_tid);
+
+		fprintf(fp, "}");
+	} else if (what == DUMP_PTRACE_CLONE) {
+		pid_t pid = va_arg(ap, pid_t);
+		long child_pid = va_arg(ap, long);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\","
+			J(pid)"%d,"
+			J(child_pid)"%ld",
+			id++, DUMP_PTRACE_CLONE, "ptrace_clone",
+			pid, child_pid);
+
+		fprintf(fp, ","J(process));
+		dump_process(pid);
+
+		fprintf(fp, ","J(child));
+		dump_process(child_pid);
 
 		fprintf(fp, "}");
 	} else if (what == DUMP_PTRACE_STEP) {

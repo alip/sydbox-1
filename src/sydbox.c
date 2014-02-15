@@ -725,15 +725,12 @@ static int event_startup(syd_process_t *current)
 	return 0;
 }
 
-static int event_clone(syd_process_t *current)
+static int event_clone(syd_process_t *current, pid_t cpid)
 {
 	int r = 0;
 	long flags;
-	pid_t pid, cpid;
+	pid_t pid;
 	syd_process_t *thread = NULL;
-
-	if ((r = syd_trace_geteventmsg(current, (unsigned long *)&cpid)) < 0)
-		return r;; /* process dead */
 
 	pid = current->pid;
 	thread = lookup_process(cpid);
@@ -962,7 +959,8 @@ static int event_exit(syd_process_t *current)
 
 static int trace(void)
 {
-	int pid, wait_errno;
+	int pid; long cpid;
+	int wait_errno;
 	bool stopped;
 	int r;
 	int status, sig;
@@ -1095,7 +1093,12 @@ static int trace(void)
 		case PINK_EVENT_FORK:
 		case PINK_EVENT_VFORK:
 		case PINK_EVENT_CLONE:
-			r = event_clone(current);
+			cpid = -1;
+			r = pink_trace_geteventmsg(pid, (unsigned long *)&cpid);
+			if (r < 0 || cpid <= 0)
+				err_fatal(-r, "child pid not available after clone for pid:%u", pid);
+			dump(DUMP_PTRACE_CLONE, pid, cpid);
+			r = event_clone(current, cpid);
 			if (r < 0)
 				continue; /* process dead */
 			goto restart_tracee_with_sig_0;

@@ -12,8 +12,10 @@
 
 #define DUMP_ENV "SHOEBOX"
 #define DUMP_FMT 1
-#define DUMP_PROCFS 0x00000100
-#define DUMP_SANDBOX 0x00000200
+
+#define DUMPF_PROCFS	0x00000100 /* read /proc/$pid/stat */
+#define DUMPF_SYSARGV	0x00000200 /* decode system call arguments */
+#define DUMPF_SANDBOX	0x00000400 /* dump process sandbox */
 
 enum dump {
 	DUMP_INIT,
@@ -21,6 +23,7 @@ enum dump {
 	DUMP_FLUSH,
 	DUMP_STATE_CHANGE, /* waitpid(2) */
 	DUMP_PTRACE_EXECVE, /* PTRACE_EVENT_EXEC */
+	DUMP_PTRACE_CLONE, /* PTRACE_EVENT_{FORK,VORK,CLONE} */
 	DUMP_PTRACE_STEP, /* PTRACE_SYSCALL or PTRACE_RESUME */
 	DUMP_THREAD_NEW, /* new_thread() */
 	DUMP_THREAD_FREE, /* free_process() */
