@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <sched.h>
 #include <signal.h>
+#include <time.h>
 
 #include "dump.h"
 #include "proc.h"
@@ -645,6 +646,7 @@ static int dump_init(void)
 void dump(enum dump what, ...)
 {
 	va_list ap;
+	time_t now;
 
 	if (dump_init() != 0)
 		return;
@@ -659,6 +661,7 @@ void dump(enum dump what, ...)
 		return;
 	}
 
+	time(&now);
 	va_start(ap, what);
 
 	if (what == DUMP_WAIT) {
@@ -668,10 +671,12 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
+			J(time)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(pid)"%d",
-			id++, DUMP_WAIT, "wait", pid);
+			id++, (unsigned long long)now,
+			DUMP_WAIT, "wait", pid);
 
 		fprintf(fp, ","J(status));
 		if (wait_errno == 0)
@@ -697,10 +702,12 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
+			J(time)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(pid)"%d",
-			id++, DUMP_PINK, "pink", pid);
+			id++, (unsigned long long)now,
+			DUMP_PINK, "pink", pid);
 
 		fprintf(fp, ","J(pink));
 		dump_pink(name, retval, save_errno, pid, ap);
@@ -787,10 +794,12 @@ void dump(enum dump what, ...)
 
 		fprintf(fp, "{"
 			J(id)"%llu,"
+			J(time)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(pid)"%d",
-			id++, what, event_name, pid);
+			id++, (unsigned long long)now,
+			what, event_name, pid);
 
 		fprintf(fp, ","J(process));
 		dump_process(pid);
