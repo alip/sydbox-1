@@ -3,7 +3,7 @@
  *
  * match socket information
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <sys/un.h>
-#include <pinktrace/pink.h>
+#include "pink.h"
 
 #define MATCH_UNIX	"unix:"
 #define MATCH_UNIX_ABS	"unix-abstract:"

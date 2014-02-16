@@ -3,7 +3,7 @@
  *
  * Socket related system call handlers
  *
- * Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -17,7 +17,7 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <sys/un.h>
-#include <pinktrace/pink.h>
+#include "pink.h"
 #include "bsd-compat.h"
 #include "log.h"
 #include "sockmap.h"

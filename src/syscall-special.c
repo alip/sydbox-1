@@ -3,7 +3,7 @@
  *
  * Special system call handlers
  *
- * Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -20,7 +20,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sched.h>
-#include <pinktrace/pink.h>
+#include "pink.h"
 #include "pathdecode.h"
 #include "proc.h"
 #include "bsd-compat.h"
@@ -408,5 +408,17 @@ int sysx_fcntl(syd_process_t *current)
 
 	sockmap_add(&P_SOCKMAP(current), retval, sockinfo_xdup(oldinfo));
 	log_check("duplicated fd:%ld to fd:%ld", current->args[0], retval);
+	return 0;
+}
+
+int sys_clone(syd_process_t *current)
+{
+	int r;
+	long flags;
+
+	if ((r = syd_read_argument(current, 0, &flags)) < 0)
+		return r;
+	current->new_clone_flags = flags;
+
 	return 0;
 }

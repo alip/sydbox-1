@@ -44,6 +44,42 @@ static const struct sysdump syscall_dump[] = {
 };
 #endif
 
+/* I know, I am so damn lazy... */
+#define pink_wrap(prototype, func, rtype, ...) \
+	rtype __real_pink_##prototype ; \
+	rtype __wrap_pink_##prototype \
+	{ \
+		rtype r; \
+		int save_errno; \
+		\
+		r = __real_pink_##func(__VA_ARGS__); \
+		\
+		save_errno = errno; \
+		dump(DUMP_PINK, #func, r, save_errno, __VA_ARGS__); \
+		errno = save_errno; \
+		\
+		return r; \
+	}
+
+pink_wrap(trace_resume(pid_t pid, int sig), trace_resume, int, pid, sig)
+pink_wrap(trace_kill(pid_t tid, pid_t tgid, int sig), trace_kill, int, tid, tgid, sig)
+pink_wrap(trace_singlestep(pid_t pid, int sig), trace_singlestep, int, pid, sig)
+pink_wrap(trace_syscall(pid_t pid, int sig), trace_syscall, int, pid, sig)
+pink_wrap(trace_geteventmsg(pid_t pid, unsigned long *data), trace_geteventmsg, int, pid, data)
+pink_wrap(trace_get_regs(pid_t pid, void *regs), trace_get_regs, int, pid, regs)
+pink_wrap(trace_get_regset(pid_t pid, void *regset, int n_type), trace_get_regset, int, pid, regset, n_type)
+pink_wrap(trace_set_regs(pid_t pid, const void *regs), trace_set_regs, int, pid, regs)
+pink_wrap(trace_set_regset(pid_t pid, const void *regset, int n_type), trace_set_regset, int, pid, regset, n_type)
+pink_wrap(trace_get_siginfo(pid_t pid, void *info), trace_get_siginfo, int, pid, info)
+pink_wrap(trace_setup(pid_t pid, int options), trace_setup, int, pid, options)
+pink_wrap(trace_sysemu(pid_t pid, int sig), trace_sysemu, int, pid, sig)
+pink_wrap(trace_sysemu_singlestep(pid_t pid, int sig), trace_sysemu_singlestep, int, pid, sig)
+pink_wrap(trace_attach(pid_t pid), trace_attach, int, pid)
+pink_wrap(trace_detach(pid_t pid, int sig), trace_detach, int, pid, sig)
+pink_wrap(trace_seize(pid_t pid, int options), trace_seize, int, pid, options)
+pink_wrap(trace_interrupt(pid_t pid), trace_interrupt, int, pid)
+pink_wrap(trace_listen(pid_t pid), trace_listen, int, pid)
+
 static void dump_close(void)
 {
 	fclose(fp);
@@ -185,7 +221,7 @@ static void dump_ptrace(pid_t pid, int status)
 	case PINK_EVENT_CLONE:
 	case PINK_EVENT_VFORK_DONE:
 	case PINK_EVENT_SECCOMP:
-		r = pink_trace_geteventmsg(pid, &msg);
+		r = __real_pink_trace_geteventmsg(pid, &msg);
 		if (r < 0)
 			dump_errno(-r);
 		else
@@ -284,6 +320,18 @@ static void dump_proc_statinfo(const struct proc_statinfo *info)
 		info->comm, info->state,
 		info->session, info->tty_nr, info->tpgid,
 		info->nice, info->num_threads);
+}
+
+static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, va_list ap)
+{
+	fprintf(fp, "{"
+		J(name)"\"%s\","
+		J(return)"%d,"
+		J(errno)"%d,"
+		J(pid)"%d",
+		name, retval, save_errno, pid);
+
+	fprintf(fp, "}");
 }
 
 static void dump_aclq(const aclq_t *aclq, void (*dump_match_func)(const void *))
@@ -613,7 +661,7 @@ void dump(enum dump what, ...)
 
 	va_start(ap, what);
 
-	if (what == DUMP_STATE_CHANGE) {
+	if (what == DUMP_WAIT) {
 		pid_t pid = va_arg(ap, pid_t);
 		int status = va_arg(ap, int);
 		int wait_errno = va_arg(ap, int);
@@ -623,7 +671,7 @@ void dump(enum dump what, ...)
 			J(event)"%u,"
 			J(event_name)"\"%s\","
 			J(pid)"%d",
-			id++, DUMP_STATE_CHANGE, "state_change", pid);
+			id++, DUMP_WAIT, "wait", pid);
 
 		fprintf(fp, ","J(status));
 		if (wait_errno == 0)
@@ -641,6 +689,24 @@ void dump(enum dump what, ...)
 		dump_process(pid);
 
 		fprintf(fp, "}");
+	} else if (what == DUMP_PINK) {
+		const char *name = va_arg(ap, const char *);
+		int retval = va_arg(ap, int);
+		int save_errno = va_arg(ap, int);
+		pid_t pid = va_arg(ap, pid_t);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\","
+			J(pid)"%d",
+			id++, DUMP_PINK, "pink", pid);
+
+		fprintf(fp, ","J(pink));
+		dump_pink(name, retval, save_errno, pid, ap);
+
+		fprintf(fp, "}");
+#if 0
 	} else if (what == DUMP_PTRACE_EXECVE) {
 		pid_t pid = va_arg(ap, pid_t);
 		long old_tid = va_arg(ap, long);
@@ -709,6 +775,7 @@ void dump(enum dump what, ...)
 		dump_process(pid);
 
 		fprintf(fp, "}");
+#endif
 	} else if (what == DUMP_THREAD_NEW || what == DUMP_THREAD_FREE) {
 		pid_t pid = va_arg(ap, pid_t);
 		const char *event_name;

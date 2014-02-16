@@ -31,6 +31,7 @@ noinst_HEADERS+= \
 		 macro.h \
 		 path.h \
 		 pathlookup.h \
+		 pink.h \
 		 proc.h \
 		 seccomp.h \
 		 pathdecode.h \
@@ -43,7 +44,6 @@ noinst_HEADERS+= \
 		 sydconf.h \
 		 sydbox.h
 sydbox_SOURCES= \
-		 dump.c \
 		 file.c \
 		 log.c \
 		 path.c \
@@ -79,6 +79,31 @@ sydbox_SOURCES= \
 		 sydbox.c
 sydfmt_SOURCES= \
 		sydfmt.c
+
+if WANT_DUMP
+sydbox_SOURCES+= dump.c
+sydbox_LDFLAGS= \
+	  -Wl,--wrap=pink_trace_resume \
+	  -Wl,--wrap=pink_trace_kill \
+	  -Wl,--wrap=pink_trace_singlestep \
+	  -Wl,--wrap=pink_trace_syscall \
+	  -Wl,--wrap=pink_trace_geteventmsg \
+	  -Wl,--wrap=pink_trace_get_regs \
+	  -Wl,--wrap=pink_trace_get_regset \
+	  -Wl,--wrap=pink_trace_set_regs \
+	  -Wl,--wrap=pink_trace_set_regset \
+	  -Wl,--wrap=pink_trace_get_siginfo \
+	  -Wl,--wrap=pink_trace_setup \
+	  -Wl,--wrap=pink_trace_sysemu \
+	  -Wl,--wrap=pink_trace_sysemu_singlestep \
+	  -Wl,--wrap=pink_trace_attach \
+	  -Wl,--wrap=pink_trace_detach \
+	  -Wl,--wrap=pink_trace_seize \
+	  -Wl,--wrap=pink_trace_interrupt \
+	  -Wl,--wrap=pink_trace_listen
+else
+sydbox_LDFLAGS=
+endif
 
 # http://troydhanson.github.io/uthash/ v1.9.8.p3
 noinst_HEADERS+= \

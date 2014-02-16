@@ -3,15 +3,61 @@
  *
  * pinktrace wrapper functions
  *
- * Copyright (c) 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
 #include "sydbox.h"
+#include "pink.h"
 #include <errno.h>
 #include <string.h>
-#include <pinktrace/pink.h>
 #include "log.h"
+
+static int syd_check(syd_process_t *current, int retval, const char *func_name, size_t line_count)
+{
+	if (retval == -ESRCH) {
+		free_process(current);
+	} else if (retval < 0) {
+		err_fatal(-retval, "pink: %s:%zu failed for pid:%u", func_name, line_count, current->pid);
+		return panic(current);
+	}
+	return retval;
+}
+#define SYD_CHECK(current, retval) syd_check((current), (retval), __func__, __LINE__)
+
+int syd_trace_step(syd_process_t *current, int sig)
+{
+	int r;
+	enum syd_step step;
+
+	step = current->trace_step == SYD_STEP_NOT_SET
+	       ? sydbox->trace_step
+	       : current->trace_step;
+
+	switch (step) {
+	case SYD_STEP_SYSCALL:
+		r = pink_trace_syscall(current->pid, sig);
+		break;
+	case SYD_STEP_RESUME:
+		r = pink_trace_resume(current->pid, sig);
+		break;
+	default:
+		assert_not_reached();
+	}
+
+	return SYD_CHECK(current, r);
+}
+
+int syd_trace_listen(syd_process_t *current)
+{
+	int r;
+
+	assert(current);
+
+	r = pink_trace_listen(current->pid);
+
+	return SYD_CHECK(current, r);
+}
 
 int syd_trace_detach(syd_process_t *current, int sig)
 {
@@ -24,21 +70,14 @@ int syd_trace_detach(syd_process_t *current, int sig)
 		 * Careful! Detaching here would cause the untraced
 		 * process' observed system calls to return -ENOSYS.
 		 */
-		log_warning("seccomp active, refusing to detach from process %d", current->pid);
 		r = 0;
-		goto out;
+	} else {
+		r = pink_trace_detach(current->pid, sig);
 	}
 
-	r = pink_trace_detach(current->pid, sig);
-	if (r == 0)
-		log_trace("DETACH sig:%d", sig);
-	else if (r == -ESRCH)
-		err_trace(-r, "trace_detach(sig:%d) failed", sig);
-	else
-		err_warning(-r, "trace_detach(sig:%d) failed", sig);
-
-out:
-	free_process(current);
+	r = SYD_CHECK(current, r);
+	if (r >= 0)
+		free_process(current);
 	return r;
 }
 
@@ -49,14 +88,10 @@ int syd_trace_kill(syd_process_t *current, int sig)
 	assert(current);
 
 	r = pink_trace_kill(current->pid, -1, sig);
-	if (r == 0)
-		log_trace("KILL sig:%d", sig);
-	else if (r == -ESRCH)
-		err_trace(-r, "trace_kill(sig:%d) failed", sig);
-	else
-		err_warning(-r, "trace_kill(sig:%d) failed", sig);
 
-	free_process(current);
+	r = SYD_CHECK(current, r);
+	if (r >= 0)
+		free_process(current);
 	return r;
 }
 
@@ -67,13 +102,9 @@ int syd_trace_setup(syd_process_t *current)
 
 	assert(current);
 
-	log_trace("setting trace options 0x%x", opts);
 	r = pink_trace_setup(current->pid, opts);
-	if (r == -ESRCH)
-		err_trace(-r, "trace_setup() failed");
-	else if (r < 0)
-		err_warning(-r, "trace_setup() failed");
-	return r;
+
+	return SYD_CHECK(current, r);
 }
 
 int syd_trace_geteventmsg(syd_process_t *current, unsigned long *data)
@@ -83,13 +114,8 @@ int syd_trace_geteventmsg(syd_process_t *current, unsigned long *data)
 	assert(current);
 
 	r = pink_trace_geteventmsg(current->pid, data);
-	if (r == 0)
-		return 0;
-	else if (r == -ESRCH)
-		err_trace(-r, "trace_geteventmsg() failed");
-	else if (r < 0)
-		err_warning(-r, "trace_geteventmsg() failed");
-	return (r == -ESRCH) ? -ESRCH : panic(current);
+
+	return SYD_CHECK(current, r);
 }
 
 int syd_regset_fill(syd_process_t *current)
@@ -102,12 +128,8 @@ int syd_regset_fill(syd_process_t *current)
 	if (r == 0) {
 		pink_read_abi(current->pid, current->regset, &current->abi);
 		return 0;
-	} else if (r == -ESRCH) {
-		err_trace(-r, "regset_fill() failed");
-	} else if (r < 0) {
-		err_warning(-r, "regset_fill() failed");
 	}
-	return (r == -ESRCH) ? -ESRCH : panic(current);
+	return SYD_CHECK(current, r);
 }
 
 int syd_read_syscall(syd_process_t *current, long *sysnum)
@@ -118,13 +140,8 @@ int syd_read_syscall(syd_process_t *current, long *sysnum)
 	assert(sysnum);
 
 	r = pink_read_syscall(current->pid, current->regset, sysnum);
-	if (r == 0)
-		return 0;
-	else if (r == -ESRCH)
-		err_trace(-r, "read_syscall() failed");
-	else if (r < 0)
-		err_warning(-r, "read_syscall() failed");
-	return (r == -ESRCH) ? -ESRCH : panic(current);
+
+	return SYD_CHECK(current, r);
 }
 
 int syd_read_retval(syd_process_t *current, long *retval, int *error)
@@ -134,13 +151,8 @@ int syd_read_retval(syd_process_t *current, long *retval, int *error)
 	assert(current);
 
 	r = pink_read_retval(current->pid, current->regset, retval, error);
-	if (r == 0)
-		return 0;
-	else if (r == -ESRCH)
-		err_trace(-r, "read_retval() failed");
-	else if (r < 0)
-		err_warning(-r, "read_retval() failed");
-	return (r == -ESRCH) ? -ESRCH : panic(current);
+
+	return SYD_CHECK(current, r);
 }
 
 int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
@@ -151,13 +163,8 @@ int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
 	assert(argval);
 
 	r = pink_read_argument(current->pid, current->regset, arg_index, argval);
-	if (r == 0)
-		return 0;
-	else if (r == -ESRCH)
-		err_trace(-r, "read_argument() failed");
-	else if (r < 0)
-		err_warning(-r, "read_argument() failed");
-	return (r == -ESRCH) ? -ESRCH : panic(current);
+
+	return SYD_CHECK(current, r);
 }
 
 int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argval)
@@ -172,37 +179,27 @@ int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argva
 	if (r == 0) {
 		*argval = (int)arg_l;
 		return 0;
-	} else if (r == -ESRCH) {
-		err_trace(-r, "read_argument_int() failed");
-	} else if (r < 0) {
-		err_warning(-r, "read_argument_int() failed");
 	}
-	return (r == -ESRCH) ? -ESRCH : panic(current);
-
+	return SYD_CHECK(current, r);
 }
+
 ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len)
 {
-	ssize_t r;
-	int save_errno;
+	ssize_t rlen;
 
 	assert(current);
 
 	errno = 0;
-	r = pink_read_string(current->pid, current->regset, addr, dest, len);
-	save_errno = errno;
-	if (r < 0) {
-		if (save_errno == EFAULT)
-			log_trace("read_string() hit NULL pointer");
-		else if (save_errno != ESRCH)
-			save_errno = panic(current);
-		errno = save_errno;
+	rlen = pink_read_string(current->pid, current->regset, addr, dest, len);
+	if (rlen < 0 && errno == EFAULT) { /* NULL pointer? */
 		return -1;
-	} else if ((size_t)r <= len) {
-		/* partial read? */
+	} else if (rlen >= 0 && (size_t)rlen <= len) { /* partial read? */
 		errno = 0;
-		dest[r] = '\0';
+		dest[rlen] = '\0';
 	}
-	return r;
+
+	SYD_CHECK(current, -errno);
+	return rlen;
 }
 
 int syd_read_socket_argument(syd_process_t *current, bool decode_socketcall,
@@ -213,15 +210,10 @@ int syd_read_socket_argument(syd_process_t *current, bool decode_socketcall,
 	assert(current);
 	assert(argval);
 
-	r = pink_read_socket_argument(current->pid, current->regset, decode_socketcall,
+	r = pink_read_socket_argument(current->pid, current->regset,
+				      decode_socketcall,
 				      arg_index, argval);
-	if (r == 0)
-		return 0;
-	else if (r == -ESRCH)
-		err_trace(-r, "read_socket_argument() failed");
-	else if (r < 0)
-		err_warning(-r, "read_socket_argument() failed");
-	return (r == -ESRCH) ? -ESRCH : panic(current);
+	return SYD_CHECK(current, r);
 }
 
 int syd_read_socket_subcall(syd_process_t *current, bool decode_socketcall,
@@ -231,14 +223,9 @@ int syd_read_socket_subcall(syd_process_t *current, bool decode_socketcall,
 
 	assert(current);
 
-	r = pink_read_socket_subcall(current->pid, current->regset, decode_socketcall, subcall);
-	if (r == 0)
-		return 0;
-	else if (r == -ESRCH)
-		err_trace(-r, "read_socket_subcall() failed");
-	else if (r < 0)
-		err_warning(-r, "read_socket_subcall() failed");
-	return (r == -ESRCH) ? -ESRCH : panic(current);
+	r = pink_read_socket_subcall(current->pid, current->regset,
+				     decode_socketcall, subcall);
+	return SYD_CHECK(current, r);
 }
 
 int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
@@ -250,15 +237,10 @@ int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
 	assert(current);
 	assert(sockaddr);
 
-	r = pink_read_socket_address(current->pid, current->regset, decode_socketcall,
+	r = pink_read_socket_address(current->pid, current->regset,
+				     decode_socketcall,
 				     arg_index, fd, sockaddr);
-	if (r == 0)
-		return 0;
-	else if (r == -ESRCH)
-		err_trace(-r, "read_socket_address() failed");
-	else if (r < 0)
-		err_warning(-r, "read_socket_address() failed");
-	return (r == -ESRCH) ? -ESRCH : panic(current);
+	return SYD_CHECK(current, r);
 }
 
 int syd_write_syscall(syd_process_t *current, long sysnum)
@@ -268,13 +250,8 @@ int syd_write_syscall(syd_process_t *current, long sysnum)
 	assert(current);
 
 	r = pink_write_syscall(current->pid, current->regset, sysnum);
-	if (r == 0)
-		return 0;
-	else if (r == -ESRCH)
-		err_trace(-r, "write_syscall() failed");
-	else if (r < 0)
-		err_warning(-r, "write_syscall() failed");
-	return (r == -ESRCH) ? -ESRCH : panic(current);
+
+	return SYD_CHECK(current, r);
 }
 
 int syd_write_retval(syd_process_t *current, long retval, int error)
@@ -284,11 +261,6 @@ int syd_write_retval(syd_process_t *current, long retval, int error)
 	assert(current);
 
 	r = pink_write_retval(current->pid, current->regset, retval, error);
-	if (r == 0)
-		return 0;
-	else if (r == -ESRCH)
-		err_trace(-r, "write_retval() failed");
-	else if (r < 0)
-		err_warning(-r, "write_retval() failed");
-	return (r == -ESRCH) ? -ESRCH : panic(current);
+
+	return SYD_CHECK(current, r);
 }

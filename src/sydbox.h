@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox.h
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -25,7 +25,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <sched.h>
-#include <pinktrace/pink.h>
+#include "pink.h"
 #include "acl-queue.h"
 #include "sockmatch.h"
 #include "sockmap.h"
@@ -612,6 +612,8 @@ extern sydbox_t *sydbox;
 #define process_remove(p) HASH_DEL(sydbox->proctab, (p))
 
 /* Global functions */
+int syd_trace_step(syd_process_t *current, int sig);
+int syd_trace_listen(syd_process_t *current);
 int syd_trace_detach(syd_process_t *current, int sig);
 int syd_trace_kill(syd_process_t *current, int sig);
 int syd_trace_setup(syd_process_t *current);

@@ -1,14 +1,14 @@
 /*
  * sydbox/systable.c
  *
- * Copyright (c) 2010, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
 #include "sydbox.h"
 #include <errno.h>
 #include <stdlib.h>
-#include <pinktrace/pink.h>
+#include "pink.h"
 #include "log.h"
 #include "sydhash.h"
 

@@ -3,7 +3,7 @@
  *
  * sydbox magic command formatter
  *
- * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pinktrace/pink.h>
+#include "pink.h"
 
 static int puts_exec(char **argv);
 

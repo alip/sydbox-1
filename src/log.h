@@ -3,7 +3,7 @@
  *
  * Simple debug logging for sydbox.
  *
- * Copyright 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Based in part upon privoxy which is:
  *   Copyright (c) 2001-2010 the Privoxy team. http://www.privoxy.org/
  * Distributed under the terms of the GNU General Public License v2
@@ -13,7 +13,7 @@
 #define LOG_H 1
 
 #include <stdarg.h>
-#include <pinktrace/pink.h>
+#include "pink.h"
 
 /* ANSI colour codes */
 #define ANSI_NORMAL		"[00;00m"

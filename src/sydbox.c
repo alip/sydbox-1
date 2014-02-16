@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -586,43 +586,6 @@ static int handle_interrupt(int fatal_sig)
 	return 128 + fatal_sig;
 }
 
-static int ptrace_error(syd_process_t *current, const char *req, int err_no)
-{
-	if (err_no != ESRCH) {
-		err_fatal(err_no, "ptrace(%s, %u) failed", req, current->pid);
-		return panic(current);
-	}
-	free_process(current);
-	return -ESRCH;
-}
-
-static int ptrace_step(syd_process_t *current, int sig)
-{
-	int r;
-	enum syd_step step;
-	const char *msg;
-
-	step = current->trace_step == SYD_STEP_NOT_SET
-	       ? sydbox->trace_step
-	       : current->trace_step;
-
-	switch (step) {
-	case SYD_STEP_SYSCALL:
-		r = pink_trace_syscall(current->pid, sig);
-		msg = "PTRACE_SYSCALL";
-		break;
-	case SYD_STEP_RESUME:
-		r = pink_trace_resume(current->pid, sig);
-		msg = "PTRACE_CONT";
-		break;
-	default:
-		assert_not_reached();
-	}
-
-	dump(DUMP_PTRACE_STEP, current->pid, sig, -r, step, msg);
-	return (r < 0) ? ptrace_error(current, msg, -r) : r;
-}
-
 static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 {
 	bool share_thread, share_fs, share_files;
@@ -713,47 +676,47 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 
 static int event_startup(syd_process_t *current)
 {
-	int r;
-
 	if (!(current->flags & SYD_STARTUP))
 		return 0;
 
-	if ((r = syd_trace_setup(current)) < 0)
-		return ptrace_error(current, "PTRACE_SETOPTIONS", -r);
+	syd_trace_setup(current);
 
 	current->flags &= ~SYD_STARTUP;
 	return 0;
 }
 
-static int event_clone(syd_process_t *current, pid_t cpid)
+static int event_clone(syd_process_t *parent, syd_process_t *child)
 {
 	int r = 0;
-	long flags;
-	pid_t pid;
-	syd_process_t *thread = NULL;
+	pid_t pid, ppid = -1;
 
-	pid = current->pid;
-	thread = lookup_process(cpid);
-	if (!thread) {
-		thread = new_thread_or_kill(cpid, post_attach_sigstop);
-	} else if (hasparent(thread)) {
-		if (thread->ppid == current->pid)
-			log_warning("[%s] error: child %u of current process %d is already in process list",
-				    __func__, cpid, pid);
-		else
-			log_warning("[%s] WTF! child %u of %u is already in process list",
-				    __func__, cpid, pid);
-		return 0;
+	assert(parent || child);
+
+	if (!child) {
+		ppid = parent->pid;
+		long cpid_l = -1;
+
+		r = pink_trace_geteventmsg(ppid, (unsigned long *)&cpid_l);
+		if (r < 0 || cpid_l <= 0)
+			err_fatal(-r, "child pid not available after clone for pid:%u", ppid);
+
+		child = lookup_process(cpid_l);
+		if (child)
+			return 0;
+		child = new_thread_or_kill(cpid_l, post_attach_sigstop);
+	} else if (!parent) {
+		pid = child->pid;
+
+		r = proc_ppid(pid, &ppid);
+		if (r < 0 || ppid <= 0 || !(parent = lookup_process(ppid)))
+			err_fatal(EINVAL, "parent pid not available after clone for pid:%u", pid);
 	}
 
-	if ((r = syd_read_argument(current, 0, &flags)) < 0)
-		return r;
-	thread->ppid = pid;
-	current->new_clone_flags = flags;
-	init_process_data(thread, current); /* expects ->ppid to be valid. */
-	current->new_clone_flags = 0;
+	child->ppid = ppid;
+	init_process_data(child, parent); /* expects ->ppid to be valid. */
+	parent->new_clone_flags = 0;
 
-	return r;
+	return 0;
 }
 
 static int event_exec(syd_process_t *current)
@@ -959,8 +922,7 @@ static int event_exit(syd_process_t *current)
 
 static int trace(void)
 {
-	int pid; long cpid;
-	int wait_errno;
+	int pid, wait_errno;
 	bool stopped;
 	int r;
 	int status, sig;
@@ -992,7 +954,7 @@ static int trace(void)
 			sigprocmask(SIG_SETMASK, &empty_set, NULL);
 		pid = waitpid(-1, &status, __WALL);
 		wait_errno = errno;
-		dump(DUMP_STATE_CHANGE, pid, status, wait_errno);
+		dump(DUMP_WAIT, pid, status, wait_errno);
 		if (interactive)
 			sigprocmask(SIG_SETMASK, &blocked_set, NULL);
 
@@ -1017,9 +979,10 @@ static int trace(void)
 		current = lookup_process(pid);
 		log_context(NULL);
 		if (!current) {
-			/* Add the (currently) orphan process to the process
-			 * list but do not create shared memory. */
 			current = new_thread_or_kill(pid, post_attach_sigstop);
+			r = event_clone(NULL, current);
+			if (r < 0)
+				continue; /* process dead */
 			log_context(current);
 		}
 
@@ -1046,8 +1009,6 @@ static int trace(void)
 				if (r < 0 || old_tid <= 0)
 					err_fatal(-r, "old_pid not available after execve for pid:%u", pid);
 			}
-
-			dump(DUMP_PTRACE_EXECVE, pid, old_tid);
 
 			if (old_tid > 0 && pid != old_tid) {
 				execve_thread = lookup_process(old_tid);
@@ -1093,12 +1054,7 @@ static int trace(void)
 		case PINK_EVENT_FORK:
 		case PINK_EVENT_VFORK:
 		case PINK_EVENT_CLONE:
-			cpid = -1;
-			r = pink_trace_geteventmsg(pid, (unsigned long *)&cpid);
-			if (r < 0 || cpid <= 0)
-				err_fatal(-r, "child pid not available after clone for pid:%u", pid);
-			dump(DUMP_PTRACE_CLONE, pid, cpid);
-			r = event_clone(current, cpid);
+			r = event_clone(current, NULL);
 			if (r < 0)
 				continue; /* process dead */
 			goto restart_tracee_with_sig_0;
@@ -1138,6 +1094,12 @@ static int trace(void)
 			goto restart_tracee_with_sig_0;
 		}
 
+		if (!(current->flags & SYD_READY)) {
+			fprintf(stderr, "%u not ready\n", current->pid);
+			dump(DUMP_CLOSE);
+			exit(3);
+		}
+
 		/* Is this post-attach SIGSTOP?
 		 * Interestingly, the process may stop
 		 * with STOPSIG equal to some other signal
@@ -1174,8 +1136,7 @@ handle_stopsig:
 				 * This makes stopping signals work properly on straced process
 				 * (that is, process really stops. It used to continue to run).
 				 */
-				if ((r = pink_trace_listen(pid) < 0))
-					ptrace_error(current, "PTRACE_LISTEN", -r);
+				syd_trace_listen(current);
 				continue;
 			}
 			/* We don't have PTRACE_LISTEN support... */
@@ -1193,11 +1154,6 @@ handle_stopsig:
 		 * (Or it still can be that pesky post-execve SIGTRAP!)
 		 * Handle it.
 		 */
-		if (!(current->flags & SYD_READY)) {
-			fprintf(stderr, "%u not ready\n", current->pid);
-			dump(DUMP_CLOSE);
-			exit(3);
-		}
 		r = event_syscall(current);
 		if (r != 0) {
 			/* ptrace() failed in event_syscall().
@@ -1213,7 +1169,7 @@ handle_stopsig:
 restart_tracee_with_sig_0:
 		sig = 0;
 restart_tracee:
-		ptrace_step(current, sig);
+		syd_trace_step(current, sig);
 	}
 cleanup:
 	r = sydbox->exit_code;

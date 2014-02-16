@@ -1,7 +1,7 @@
 /*
  * sydbox/syscall.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -12,7 +12,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pinktrace/pink.h>
+#include "pink.h"
 #include "macro.h"
 #include "log.h"
 #include "proc.h"
@@ -236,6 +236,19 @@ static const sysentry_t syscall_entries[] = {
 	{
 		.name = "symlinkat",
 		.enter = sys_symlinkat,
+	},
+
+	{
+		.name = "fork",
+		.enter = sys_clone,
+	},
+	{
+		.name = "vfork",
+		.enter = sys_clone,
+	},
+	{
+		.name = "clone",
+		.enter = sys_clone,
 	},
 
 	{

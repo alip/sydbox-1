@@ -3,7 +3,7 @@
  *
  * Useful utility macros
  *
- * Copyright (c) 2011, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -14,7 +14,7 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include <pinktrace/pink.h>
+#include "pink.h"
 
 #define likely(x)		PINK_GCC_LIKELY((x))
 #define unlikely(x)		PINK_GCC_UNLIKELY((x))

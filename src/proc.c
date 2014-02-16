@@ -3,7 +3,7 @@
  *
  * /proc related utilities
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright (C) 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -204,6 +204,39 @@ int proc_comm(pid_t pid, char **name)
 	if (r < 0)
 		return r;
 
+	return 0;
+}
+
+/* read PPID from /proc/$pid/stat */
+int proc_ppid(pid_t pid, pid_t *ppid)
+{
+	char *p;
+	FILE *f;
+	pid_t pp;
+
+	assert(pid >= 1);
+	assert(ppid);
+
+	if (asprintf(&p, "/proc/%u/stat", pid) < 0)
+		return -ENOMEM;
+
+	f = fopen(p, "r");
+	free(p);
+
+	if (!f)
+		return -errno;
+
+	if (fscanf(f,
+		"%*d"		/* pid */
+		" %*s"	/* comm */
+		" %*c"		/* state */
+		" %d",		/* ppid */
+		&pp) != 1) {
+		fclose(f);
+		return -EINVAL;
+	}
+
+	*ppid = pp;
 	return 0;
 }
 
