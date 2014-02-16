@@ -41,6 +41,9 @@ class ShoeBox:
             return False # Raise the exception
         return True
 
+    def abspath(self):
+        return os.path.abspath(self.dump)
+
     def check_format(self):
         line = self.fp.readline()
         obj  = json.loads(line)
@@ -143,18 +146,19 @@ def sydbox(argv0, argv, fifo):
     os.execvp(argv0, argv)
     os._exit(127)
 
-def wait_for_the_worms():
+def wait_for_the_worms(dump):
     pid, status = os.waitpid(sydbox_pid, os.WUNTRACED)
 
     exit_code = 0
     if os.WIFEXITED(status):
         exit_code = os.WEXITSTATUS(status)
         sys.stderr.write('sydbox exited with code %d\n' % exit_code)
-    if os.WIFSIGNALED(status):
+    elif os.WIFSIGNALED(status):
         term_sig = os.WTERMSIG(status)
         sys.stderr.write('sydbox was terminated by signal %d %s\n' % (term_sig, SIGNAME[term_sig]))
         exit_code = 128 + term_sig
 
+    sys.stderr.write('no poems? send dump: %s\n' % os.path.abspath(dump))
     sys.exit(exit_code)
 
 def command_sydbox(args, rest):
@@ -188,7 +192,7 @@ def command_sydbox(args, rest):
         with dump_in, dump_out:
             for json_line in dump_in:
                 dump_out.write(json_line)
-        wait_for_the_worms()
+        wait_for_the_worms(args.dump)
 
 def check_format(f):
     obj = json.loads(f.readline())
@@ -272,8 +276,8 @@ Attaching poems encourages consideration tremendously.''')
     parser.add_argument('+strace',
                         action = 'store_const', const = ['strace',],
                         help = 'Run under strace')
-    parser.add_argument('+dump', nargs=1, default = 'dump.shoebox', help = 'Path to the dump file')
-    parser.add_argument('+path', nargs=1, default = 'sydbox', help = 'Path to sydbox')
+    parser.add_argument('+dump', default = 'dump.shoebox', help = 'Path to the dump file')
+    parser.add_argument('+path', default = 'sydbox', help = 'Path to sydbox')
 
     subparser = parser.add_subparsers(help = 'command help')
 
