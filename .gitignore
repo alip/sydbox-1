@@ -92,6 +92,8 @@ man/sydbox.ent
 
 src/sydbox
 src/sydfmt
+src/sydbox-dump
+src/sydbox-dump-gcov
 
 tests/test-lib.sh
 tests/test-results

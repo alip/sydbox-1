@@ -63,6 +63,7 @@ m4_defun([_LT_AC_LANG_CXX_CONFIG], [:])
 m4_defun([_LT_AC_LANG_F77_CONFIG], [:])
 
 dnl toolchain checks
+: ${CFLAGS=""}
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC_C99
 if test x"$ac_cv_prog_cc_c99" = x"no"; then
@@ -164,21 +165,6 @@ PINKTRACE_REQUIRED=0.9
 PKG_PROG_PKG_CONFIG([0.20.0])
 PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],,
 		  AC_MSG_ERROR([sydbox requires pinktrace-$PINKTRACE_REQUIRED or newer]))
-
-dnl check whether JSON dump support is wanted
-AC_ARG_ENABLE([dump],
-	      [AS_HELP_STRING([--enable-dump], [enable dump output])],
-	      [WANT_DUMP="$enableval"],
-	      [WANT_DUMP="no"])
-if test x"$WANT_DUMP" = x"yes" ; then
-	SYDBOX_DUMP=1
-else
-	SYDBOX_DUMP=0
-fi
-AC_MSG_CHECKING([for dump output])
-AC_MSG_RESULT([$WANT_DUMP])
-AM_CONDITIONAL([WANT_DUMP], test x"$WANT_DUMP" = x"yes")
-AC_DEFINE_UNQUOTED([SYDBOX_DUMP], [$SYDBOX_DUMP], [Enable dump support])
 
 dnl check for seccomp support
 AC_ARG_ENABLE([seccomp],

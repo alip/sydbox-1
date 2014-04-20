@@ -80,31 +80,6 @@ sydbox_SOURCES= \
 sydfmt_SOURCES= \
 		sydfmt.c
 
-if WANT_DUMP
-sydbox_SOURCES+= dump.c
-sydbox_LDFLAGS= \
-	  -Wl,--wrap=pink_trace_resume \
-	  -Wl,--wrap=pink_trace_kill \
-	  -Wl,--wrap=pink_trace_singlestep \
-	  -Wl,--wrap=pink_trace_syscall \
-	  -Wl,--wrap=pink_trace_geteventmsg \
-	  -Wl,--wrap=pink_trace_get_regs \
-	  -Wl,--wrap=pink_trace_get_regset \
-	  -Wl,--wrap=pink_trace_set_regs \
-	  -Wl,--wrap=pink_trace_set_regset \
-	  -Wl,--wrap=pink_trace_get_siginfo \
-	  -Wl,--wrap=pink_trace_setup \
-	  -Wl,--wrap=pink_trace_sysemu \
-	  -Wl,--wrap=pink_trace_sysemu_singlestep \
-	  -Wl,--wrap=pink_trace_attach \
-	  -Wl,--wrap=pink_trace_detach \
-	  -Wl,--wrap=pink_trace_seize \
-	  -Wl,--wrap=pink_trace_interrupt \
-	  -Wl,--wrap=pink_trace_listen
-else
-sydbox_LDFLAGS=
-endif
-
 # http://troydhanson.github.io/uthash/ v1.9.8.p3
 noinst_HEADERS+= \
 		 uthash.h
@@ -134,6 +109,44 @@ noinst_HEADERS+= \
 		 sys-queue.h
 
 sydbox_LDADD= $(pinktrace_LIBS)
+
+DUMP_SRCS= $(sydbox_SOURCES) dump.c
+DUMP_COMPILER_FLAGS= $(AM_CFLAGS) -O0 -g -ggdb3
+DUMP_PREPROCESSOR_FLAGS= -DSYDBOX_DUMP
+DUMP_LINKER_ADD= $(sydbox_LDADD)
+DUMP_LINKER_FLAGS= \
+	  -Wl,--wrap=pink_trace_resume \
+	  -Wl,--wrap=pink_trace_kill \
+	  -Wl,--wrap=pink_trace_singlestep \
+	  -Wl,--wrap=pink_trace_syscall \
+	  -Wl,--wrap=pink_trace_geteventmsg \
+	  -Wl,--wrap=pink_trace_get_regs \
+	  -Wl,--wrap=pink_trace_get_regset \
+	  -Wl,--wrap=pink_trace_set_regs \
+	  -Wl,--wrap=pink_trace_set_regset \
+	  -Wl,--wrap=pink_trace_get_siginfo \
+	  -Wl,--wrap=pink_trace_setup \
+	  -Wl,--wrap=pink_trace_sysemu \
+	  -Wl,--wrap=pink_trace_sysemu_singlestep \
+	  -Wl,--wrap=pink_trace_attach \
+	  -Wl,--wrap=pink_trace_detach \
+	  -Wl,--wrap=pink_trace_seize \
+	  -Wl,--wrap=pink_trace_interrupt \
+	  -Wl,--wrap=pink_trace_listen
+
+libexec_PROGRAMS= sydbox-dump
+sydbox_dump_SOURCES= $(DUMP_SRCS)
+sydbox_dump_CFLAGS= $(DUMP_COMPILER_FLAGS)
+sydbox_dump_CPPFLAGS= $(DUMP_PREPROCESSOR_FLAGS)
+sydbox_dump_LDADD= $(DUMP_LINKER_ADD)
+sydbox_dump_LDFLAGS= $(DUMP_LINKER_FLAGS)
+
+#libexec_PROGRAMS+= sydbox-dump-gcov
+#sydbox_dump_gcov_SOURCES= $(DUMP_SRCS)
+#sydbox_dump_gcov_CFLAGS= $(DUMP_COMPILER_FLAGS) -fprofile-arcs -ftest-coverage
+#sydbox_dump_gcov_CPPFLAGS= $(DUMP_PREPROCESSOR_FLAGS)
+#sydbox_dump_gcov_LDADD= $(DUMP_LINKER_ADD)
+#sydbox_dump_gcov_LDFLAGS= $(DUMP_LINKER_FLAGS)
 
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \

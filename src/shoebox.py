@@ -277,7 +277,7 @@ Attaching poems encourages consideration tremendously.''')
                         action = 'store_const', const = ['strace',],
                         help = 'Run under strace')
     parser.add_argument('+dump', default = 'dump.shoebox', help = 'Path to the dump file')
-    parser.add_argument('+path', default = 'sydbox', help = 'Path to sydbox')
+    parser.add_argument('+path', default = 'sydbox-dump', help = 'Path to sydbox')
 
     subparser = parser.add_subparsers(help = 'command help')
 
