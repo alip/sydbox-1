@@ -239,7 +239,7 @@ void reset_process(syd_process_t *p)
 
 void free_process(syd_process_t *p)
 {
-	static pid_t pid;
+	pid_t pid;
 
 	if (!p)
 		return;
@@ -262,6 +262,17 @@ void free_process(syd_process_t *p)
 
 	log_context(NULL);
 	log_trace("process %u removed", pid);
+}
+
+void kill_process(syd_process_t *p)
+{
+	if (!p)
+		return;
+
+	if (p->new_clone_flags == 0)
+		free_process(p);
+	else
+		p->flags |= SYD_FREE_AFTER_CLONE;
 }
 
 static void interrupt(int sig)
@@ -343,7 +354,7 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 		r = 1;
 	}
 	if (current->flags & SYD_STARTUP) {
-		fprintf(stderr, "STARTUP");
+		fprintf(stderr, "%sSTARTUP", (r == 1) ? "|" : "");
 		r = 1;
 	}
 	if (current->flags & SYD_IGNORE_ONE_SIGSTOP) {
@@ -360,6 +371,10 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 	}
 	if (current->flags & SYD_DENY_SYSCALL) {
 		fprintf(stderr, "%sDENY_SYSCALL", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	if (current->flags & SYD_FREE_AFTER_CLONE) {
+		fprintf(stderr, "%sFREE_AFTER_CLONE", (r == 1) ? "|" : "");
 		r = 1;
 	}
 	if (current->flags & SYD_STOP_AT_SYSEXIT) {
@@ -768,7 +783,10 @@ static int event_clone(syd_process_t *parent, syd_process_t *child)
 
 	child->ppid = ppid;
 	init_process_data(child, parent); /* expects ->ppid to be valid. */
+
 	parent->new_clone_flags = 0;
+	if (parent->flags & SYD_FREE_AFTER_CLONE)
+		free_process(parent);
 
 	return 0;
 }
@@ -1084,7 +1102,7 @@ static int trace(void)
 		}
 
 		if (WIFSIGNALED(status) || WIFEXITED(status)) {
-			free_process(current);
+			kill_process(current);
 			continue;
 		}
 
@@ -1315,10 +1333,6 @@ static void startup_child(char **argv)
 #endif
 	child = new_process_or_kill(pid, SYD_SYDBOX_CHILD | post_attach_sigstop);
 	init_process_data(child, NULL);
-	if ((r = event_startup(child)) < 0) {
-		kill_save_errno(pid, SIGKILL);
-		die_errno("Can't set options of %u", pid);
-	}
 	sydbox->wait_execve = true;
 }
 

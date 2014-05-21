@@ -16,7 +16,7 @@
 static int syd_check(syd_process_t *current, int retval, const char *func_name, size_t line_count)
 {
 	if (retval == -ESRCH) {
-		free_process(current);
+		kill_process(current);
 	} else if (retval < 0) {
 		err_fatal(-retval, "pink: %s:%zu failed for pid:%u", func_name, line_count, current->pid);
 		return panic(current);
@@ -77,7 +77,7 @@ int syd_trace_detach(syd_process_t *current, int sig)
 
 	r = SYD_CHECK(current, r);
 	if (r >= 0)
-		free_process(current);
+		kill_process(current);
 	return r;
 }
 
@@ -91,7 +91,7 @@ int syd_trace_kill(syd_process_t *current, int sig)
 
 	r = SYD_CHECK(current, r);
 	if (r >= 0)
-		free_process(current);
+		kill_process(current);
 	return r;
 }
 

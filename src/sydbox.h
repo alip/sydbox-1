@@ -46,8 +46,9 @@
 #define SYD_READY		00004 /* process' sandbox is initialised */
 #define SYD_IN_SYSCALL		00010 /* process is in system call */
 #define SYD_DENY_SYSCALL	00020 /* system call is to be denied */
-#define SYD_STOP_AT_SYSEXIT	00040 /* seccomp: stop at system call exit */
-#define SYD_SYDBOX_CHILD	00100 /* process is the child exec()'ed by sydbox */
+#define SYD_FREE_AFTER_CLONE	00040 /* free() this process after child clone() */
+#define SYD_STOP_AT_SYSEXIT	00100 /* seccomp: stop at system call exit */
+#define SYD_SYDBOX_CHILD	00200 /* process is the child exec()'ed by sydbox */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
 #define SYD_PPID_ORPHAN		-0xbad /* special parent process id for orphans */
@@ -634,8 +635,9 @@ int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
 			    unsigned arg_index, int *fd,
 			    struct pink_sockaddr *sockaddr);
 
-void free_process(syd_process_t *p);
 void reset_process(syd_process_t *p);
+void free_process(syd_process_t *p);
+void kill_process(syd_process_t *p);
 
 static inline syd_process_t *lookup_process(pid_t pid)
 {
