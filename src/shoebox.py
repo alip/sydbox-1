@@ -1,12 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # coding: utf-8
-
-from __future__ import with_statement
 
 import os, sys, signal
 import argparse, bz2, json, re, tempfile
 
-SIGNAME = dict((k, v) for v, k in signal.__dict__.iteritems() if v.startswith('SIG'))
 sydbox_pid = -1
 
 def match_event(event, pattern = None, match_format = None):
@@ -41,12 +38,16 @@ class ShoeBox:
             return False # Raise the exception
         return True
 
+    @staticmethod
+    def load_line(line):
+        return json.loads(line.decode())
+
     def abspath(self):
         return os.path.abspath(self.dump)
 
     def check_format(self):
         line = self.fp.readline()
-        obj  = json.loads(line)
+        obj  = ShoeBox.load_line(line)
 
         if 'id' not in obj:
             self.fp.close()
@@ -88,7 +89,7 @@ class ShoeBox:
     def read_events(self, limit = 0):
         for json_line in self.readlines(limit):
             try:
-                obj = json.loads(json_line)
+                obj = ShoeBox.load_line(json_line)
             except TypeError as err:
                 sys.stderr.write("WTF? %r\n" % json_line)
                 raise
@@ -138,33 +139,13 @@ class ShoeBox:
         if quick:
             return events
 
-        events_out = filter(lambda event: match_event(event, pattern, match_format), events)
+        events_out = [event for event in events if match_event(event, pattern, match_format)]
         return sorted(events_out, key = lambda event: event['id'])
-
-def sydbox(argv0, argv, fifo):
-    os.environ['SHOEBOX'] = fifo
-    os.execvp(argv0, argv)
-    os._exit(127)
-
-def wait_for_the_worms(dump):
-    pid, status = os.waitpid(sydbox_pid, os.WUNTRACED)
-
-    exit_code = 0
-    if os.WIFEXITED(status):
-        exit_code = os.WEXITSTATUS(status)
-        sys.stderr.write('sydbox exited with code %d\n' % exit_code)
-    elif os.WIFSIGNALED(status):
-        term_sig = os.WTERMSIG(status)
-        sys.stderr.write('sydbox was terminated by signal %d %s\n' % (term_sig, SIGNAME[term_sig]))
-        exit_code = 128 + term_sig
-
-    sys.stderr.write('no poems? send dump: %s\n' % os.path.abspath(dump))
-    sys.exit(exit_code)
 
 def command_sydbox(args, rest):
     tmpdir = tempfile.mkdtemp()
     fifo   = os.path.join(tmpdir, 'shoebox.fifo')
-    os.mkfifo(fifo, 0600)
+    os.mkfifo(fifo, 0o600)
 
     if args.gdb:
         argv0 = args.gdb[0]
@@ -178,24 +159,30 @@ def command_sydbox(args, rest):
 
     pid = os.fork()
     if pid == 0:
-        sydbox(argv0, argv, fifo)
-    else:
-        global sydbox_pid
-        sydbox_pid = pid
+        os.setsid()
 
-        global dump_in
-        dump_in = file(fifo, 'r')
-
-        global dump_out
+        dump_in = open(fifo, 'rb')
         dump_out = bz2.BZ2File(args.dump, 'w')
+
+        dump = os.path.abspath(args.dump)
+        sys.stderr.write('pink: dump:%s\n' % dump)
 
         with dump_in, dump_out:
             for json_line in dump_in:
                 dump_out.write(json_line)
-        wait_for_the_worms(args.dump)
+
+        sys.stderr.write('\nno poems? send dump: %s\n' % dump)
+        os._exit(0)
+    else:
+        sys.stderr.write('syd: %r %r\n' % (argv0, argv))
+        sys.stderr.write('syd: fifo:%r\n' % fifo)
+
+        os.environ['SHOEBOX'] = fifo
+        os.execvp(argv0, argv)
+        os._exit(127)
 
 def check_format(f):
-    obj = json.loads(f.readline())
+    obj = ShoeBox.load_line(f.readline())
     if 'id' in obj and obj['id'] == 0 and 'shoebox' in obj and obj['shoebox'] == 1:
            return True
     raise IOError("Invalid format")

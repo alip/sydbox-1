@@ -1035,8 +1035,11 @@ static int trace(void)
 		if ((r = check_interrupt()) != 0)
 			return r;
 
+		sigprocmask(SIG_SETMASK, &empty_set, NULL);
 		pid = waitpid(-1, &status, __WALL);
 		wait_errno = errno;
+		sigprocmask(SIG_SETMASK, &blocked_set, NULL);
+
 		dump(DUMP_WAIT, pid, status, wait_errno);
 
 		if (pid < 0) {
