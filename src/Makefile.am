@@ -18,6 +18,9 @@ AM_CFLAGS= \
 	   -I$(top_srcdir) \
 	   $(pinktrace_CFLAGS) \
 	   @SYDBOX_CFLAGS@
+if WANT_DEBUG
+AM_CFLAGS+= $(libunwind_CFLAGS)
+endif
 
 bin_PROGRAMS= sydbox sydfmt
 sydbox_CPPFLAGS= -DSYDBOX
@@ -109,6 +112,9 @@ noinst_HEADERS+= \
 		 sys-queue.h
 
 sydbox_LDADD= $(pinktrace_LIBS)
+if WANT_DEBUG
+sydbox_LDADD+= $(libunwind_LIBS)
+endif
 
 DUMP_SRCS= $(sydbox_SOURCES) dump.c
 DUMP_COMPILER_FLAGS= $(AM_CFLAGS) -O0 -g -ggdb3

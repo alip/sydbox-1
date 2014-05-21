@@ -166,6 +166,36 @@ PKG_PROG_PKG_CONFIG([0.20.0])
 PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],,
 		  AC_MSG_ERROR([sydbox requires pinktrace-$PINKTRACE_REQUIRED or newer]))
 
+AC_MSG_CHECKING([whether pinktrace supports PTRACE_SEIZE])
+PINKTRACE_HAVE_SEIZE=`pkg-config --variable=PINK_HAVE_SEIZE pinktrace`
+if test x"$PINKTRACE_HAVE_SEIZE" = x"1"; then
+	AC_MSG_RESULT([yes])
+else
+	PINKTRACE_HAVE_SEIZE=0
+	AC_MSG_RESULT([no])
+fi
+AC_SUBST([PINKTRACE_HAVE_SEIZE])
+
+dnl check for debugging support (requires libunwind)
+LIBUNWIND_REQUIRED=1.1
+
+AC_MSG_CHECKING([for debug support])
+AC_ARG_ENABLE([debug],
+	      [AS_HELP_STRING([--enable-debug], ['Enable debug support (requires: libunwind)'])],
+	      [WANT_DEBUG="$enableval"],
+	      [WANT_DEBUG="no"])
+AC_MSG_RESULT([$WANT_DEBUG])
+if test x"$WANT_DEBUG" = x"yes"; then
+	PKG_CHECK_MODULES([libunwind], [libunwind >= $LIBUNWIND_REQUIRED],,
+			  AC_MSG_ERROR([sydbox requires libunwind-$LIBUNWIND_REQUIRED or newer for --enable-debug]))
+	SYDBOX_DEBUG=1
+else
+	SYDBOX_DEBUG=0
+fi
+AM_CONDITIONAL([WANT_DEBUG], test x"$WANT_DEBUG" = x"yes")
+AC_DEFINE_UNQUOTED([SYDBOX_DEBUG], [$SYDBOX_DEBUG], ['Enable debug support (requires: libunwind)'])
+AC_SUBST([SYDBOX_DEBUG])
+
 dnl check for seccomp support
 AC_ARG_ENABLE([seccomp],
 	      [AS_HELP_STRING([--enable-seccomp], [enable seccomp support])],

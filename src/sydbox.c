@@ -37,6 +37,11 @@
 #include "seccomp.h"
 #endif
 
+#if SYDBOX_DEBUG
+# define UNW_LOCAL_ONLY
+# include <libunwind.h>
+#endif
+
 #if PINK_HAVE_SEIZE
 static int post_attach_sigstop = SYD_IGNORE_ONE_SIGSTOP;
 # define syd_use_seize (post_attach_sigstop == 0)
@@ -466,6 +471,47 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 	return true;
 }
 
+#if SYDBOX_DEBUG
+static void print_addr_info(FILE *f, unw_word_t ip)
+{
+	char cmd[256];
+	char buf[LINE_MAX];
+	FILE *p;
+
+	snprintf(cmd, 256, "addr2line -pfasiC -e /proc/%u/exe %lx", getpid(), ip);
+	p = popen(cmd, "r");
+
+	if (p == NULL) {
+		fprintf(f, "%s: errno:%d %s\n", cmd, errno, strerror(errno));
+		return;
+	}
+
+	while (fgets(buf, LINE_MAX, p) != NULL) {
+		if (buf[0] == '\0')
+			fputs("?\n", f);
+		else
+			fprintf(f, "\t%s", buf);
+	}
+
+	pclose(p);
+}
+
+static void print_backtrace(FILE *f)
+{
+	unw_word_t ip;
+	unw_cursor_t cursor;
+	unw_context_t uc;
+
+	unw_getcontext(&uc);
+	unw_init_local(&cursor, &uc);
+
+	do {
+		unw_get_reg(&cursor, UNW_REG_IP, &ip);
+		print_addr_info(f, ip);
+	} while (unw_step(&cursor) > 0);
+}
+#endif
+
 static void sig_usr(int signo)
 {
 	bool complete_dump;
@@ -486,6 +532,14 @@ static void sig_usr(int signo)
 		count++;
 	}
 	fprintf(stderr, "Tracing %u process%s\n", count, count > 1 ? "es" : "");
+
+	if (!complete_dump)
+		return;
+
+#if SYDBOX_DEBUG
+	fprintf(stderr, "\nsydbox: Debug enabled, printing backtrace\n");
+	print_backtrace(stderr);
+#endif
 }
 
 static void init_early(void)
