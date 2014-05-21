@@ -118,16 +118,3 @@ int magic_set_trace_magic_lock(const void *val, syd_process_t *current)
 	box->magic_lock = (enum lock_state)l;
 	return MAGIC_RET_OK;
 }
-
-int magic_set_trace_interrupt(const void *val, syd_process_t *current)
-{
-	int intr;
-	const char *str = val;
-
-	intr = trace_interrupt_from_string(str);
-	if (intr < 0)
-		return MAGIC_RET_INVALID_VALUE;
-
-	sydbox->config.trace_interrupt = (enum trace_interrupt)intr;
-	return MAGIC_RET_OK;
-}

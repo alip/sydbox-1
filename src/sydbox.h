@@ -118,24 +118,6 @@ static const char *const violation_decision_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(violation_decision, int)
 
-enum trace_interrupt {
-	/* don't block ignore any signals */
-	TRACE_INTR_ANYWHERE        = 1,
-	/* block fatal signals while decoding syscall (default) */
-	TRACE_INTR_WHILE_WAIT      = 2,
-	/* block fatal signals */
-	TRACE_INTR_NEVER           = 3,
-	/* block fatal signals and SIGTSTP (^Z) */
-	TRACE_INTR_BLOCK_TSTP_TOO  = 4,
-};
-static const char *const trace_interrupt_table[] = {
-	[TRACE_INTR_ANYWHERE] = "anywhere",
-	[TRACE_INTR_WHILE_WAIT] = "while_wait",
-	[TRACE_INTR_NEVER] = "never",
-	[TRACE_INTR_BLOCK_TSTP_TOO] = "block_tstp_too",
-};
-DEFINE_STRING_TABLE_LOOKUP(trace_interrupt, int)
-
 enum magic_op {
 	MAGIC_OP_SET,
 	MAGIC_OP_APPEND,
@@ -478,7 +460,6 @@ typedef struct {
 	bool follow_fork;
 	bool exit_kill;
 	bool exit_wait_all;
-	enum trace_interrupt trace_interrupt;
 	bool use_seccomp;
 	bool use_seize;
 	bool use_toolong_hack;
@@ -776,7 +757,6 @@ int magic_set_trace_exit_kill(const void *val, syd_process_t *current);
 int magic_query_trace_exit_kill(syd_process_t *current);
 int magic_set_trace_exit_wait_all(const void *val, syd_process_t *current);
 int magic_query_trace_exit_wait_all(syd_process_t *current);
-int magic_set_trace_interrupt(const void *val, syd_process_t *current);
 int magic_set_trace_use_seccomp(const void *val, syd_process_t *current);
 int magic_query_trace_use_seccomp(syd_process_t *current);
 int magic_set_trace_use_seize(const void *val, syd_process_t *current);

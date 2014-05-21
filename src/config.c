@@ -41,7 +41,6 @@ void config_init(void)
 	sydbox->config.follow_fork = true;
 	sydbox->config.exit_kill = false;
 	sydbox->config.exit_wait_all = true;
-	sydbox->config.trace_interrupt = TRACE_INTR_WHILE_WAIT;
 	sydbox->config.use_seccomp = false;
 	sydbox->config.use_seize = false;
 	sydbox->config.use_toolong_hack = false;

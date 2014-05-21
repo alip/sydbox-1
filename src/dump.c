@@ -592,16 +592,10 @@ static void dump_process(pid_t pid)
 	fprintf(fp, "}}");
 }
 
-static void dump_intr(int sig)
-{
-	fclose(fp);
-}
-
 static int dump_init(void)
 {
-	int r, fd;
+	int fd;
 	const char *pathname;
-	struct sigaction sa;
 
 	if (!nodump)
 		return -EINVAL;
@@ -620,23 +614,6 @@ static int dump_init(void)
 	if (!fp)
 		die_errno("fdopen_dump");
 	nodump = 1;
-
-	sa.sa_handler = dump_intr;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;
-#define x_sigaction(sig, act, oldact) \
-	do { \
-		r = sigaction((sig), (act), (oldact)); \
-		if (r < 0) \
-			die_errno("sigaction"); \
-	} while (0)
-
-	x_sigaction(SIGABRT, &sa, NULL);
-	x_sigaction(SIGHUP, &sa, NULL);
-	x_sigaction(SIGINT, &sa, NULL);
-	x_sigaction(SIGQUIT, &sa, NULL);
-	x_sigaction(SIGPIPE, &sa, NULL);
-	x_sigaction(SIGTERM, &sa, NULL);
 
 	dump_format();
 	dump_cycle();
@@ -664,7 +641,28 @@ void dump(enum dump what, ...)
 	time(&now);
 	va_start(ap, what);
 
-	if (what == DUMP_WAIT) {
+	if (what == DUMP_INTERRUPT) {
+		int sig = va_arg(ap, int);
+		const char *name;
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(time)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\","
+			J(signal)"%d",
+			id++, (unsigned long long)now,
+			DUMP_INTERRUPT, "interrupt", sig);
+
+		fprintf(fp, ","J(signal_name));
+		name = pink_name_signal(sig, 0);
+		if (name == NULL)
+			dump_null();
+		else
+			fprintf(fp, "\"%s\"", name);
+
+		fprintf(fp, "}");
+	} else if (what == DUMP_WAIT) {
 		pid_t pid = va_arg(ap, pid_t);
 		int status = va_arg(ap, int);
 		int wait_errno = va_arg(ap, int);

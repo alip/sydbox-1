@@ -57,10 +57,9 @@ static int post_attach_sigstop = SYD_IGNORE_ONE_SIGSTOP;
 sydbox_t *sydbox;
 static unsigned os_release;
 static volatile sig_atomic_t interrupted;
-static bool interactive;
 static sigset_t empty_set, blocked_set;
 
-static void sig_usr(int signo);
+static void sig_usr(int sig);
 
 static void about(void)
 {
@@ -527,7 +526,7 @@ static void print_backtrace(FILE *f)
 }
 #endif
 
-static void sig_usr(int signo)
+static void sig_usr(int sig)
 {
 	bool complete_dump;
 	unsigned count;
@@ -536,7 +535,7 @@ static void sig_usr(int signo)
 	if (!sydbox)
 		return;
 
-	complete_dump= !!(signo == SIGUSR2);
+	complete_dump= !!(sig == SIGUSR2);
 
 	fprintf(stderr, "\nsydbox: Received SIGUSR%s, dumping %sprocess tree\n",
 		complete_dump ? "2" : "1",
@@ -585,7 +584,6 @@ static void init_signals(void)
 	sa.sa_flags = 0;
 
 	int r;
-	enum trace_interrupt intr = sydbox->config.trace_interrupt;
 #define x_sigaction(sig, act, oldact) \
 	do { \
 		r = sigaction((sig), (act), (oldact)); \
@@ -595,31 +593,28 @@ static void init_signals(void)
 
 	x_sigaction(SIGTTOU, &sa, NULL); /* SIG_IGN */
 	x_sigaction(SIGTTIN, &sa, NULL); /* SIG_IGN */
+	x_sigaction(SIGTSTP, &sa, NULL); /* SIG_IGN */
 
-	if (intr != TRACE_INTR_ANYWHERE) {
-		if (intr == TRACE_INTR_BLOCK_TSTP_TOO)
-			x_sigaction(SIGTSTP, &sa, NULL); /* SIG_IGN */
+	sigaddset(&blocked_set, SIGHUP);
+	sigaddset(&blocked_set, SIGINT);
+	sigaddset(&blocked_set, SIGQUIT);
+	sigaddset(&blocked_set, SIGPIPE);
+	sigaddset(&blocked_set, SIGTERM);
+	sigaddset(&blocked_set, SIGABRT);
+	sigaddset(&blocked_set, SIGUSR1);
+	sigaddset(&blocked_set, SIGUSR2);
 
-		if (intr == TRACE_INTR_WHILE_WAIT) {
-			sigaddset(&blocked_set, SIGHUP);
-			sigaddset(&blocked_set, SIGINT);
-			sigaddset(&blocked_set, SIGQUIT);
-			sigaddset(&blocked_set, SIGPIPE);
-			sigaddset(&blocked_set, SIGTERM);
-			sa.sa_handler = interrupt;
-			interactive = true;
-		}
-		/* SIG_IGN, or set handler for these */
-		x_sigaction(SIGHUP, &sa, NULL);
-		x_sigaction(SIGINT, &sa, NULL);
-		x_sigaction(SIGQUIT, &sa, NULL);
-		x_sigaction(SIGPIPE, &sa, NULL);
-		x_sigaction(SIGTERM, &sa, NULL);
-	}
+	sa.sa_handler = interrupt;
+	x_sigaction(SIGHUP, &sa, NULL);
+	x_sigaction(SIGINT, &sa, NULL);
+	x_sigaction(SIGQUIT, &sa, NULL);
+	x_sigaction(SIGPIPE, &sa, NULL);
+	x_sigaction(SIGTERM, &sa, NULL);
+	x_sigaction(SIGABRT, &sa, NULL);
+	x_sigaction(SIGUSR1, &sa, NULL);
+	x_sigaction(SIGUSR2, &sa, NULL);
+
 #undef x_sigaction
-	signal(SIGABRT, abort_all);
-	signal(SIGUSR1, sig_usr);
-	signal(SIGUSR2, sig_usr);
 }
 
 static void cleanup(void)
@@ -646,13 +641,33 @@ static void cleanup(void)
 	log_close();
 }
 
-static int handle_interrupt(int fatal_sig)
+static int handle_interrupt(int sig)
 {
-	if (!fatal_sig)
-		fatal_sig = SIGTERM;
+	switch (sig) {
+	case SIGUSR1:
+	case SIGUSR2:
+		sig_usr(sig);
+		return 0;
+	default:
+		dump(DUMP_INTERRUPT, sig);
+		abort_all(sig);
+		dump(DUMP_CLOSE);
+		return 128 + sig;
+	}
+}
 
-	abort_all(fatal_sig);
-	return 128 + fatal_sig;
+static int check_interrupt(void)
+{
+	int r = 0;
+
+	sigprocmask(SIG_SETMASK, &empty_set, NULL);
+	if (interrupted) {
+		int sig = interrupted;
+		r = handle_interrupt(sig);
+	}
+	sigprocmask(SIG_BLOCK, &blocked_set, NULL);
+
+	return r;
 }
 
 static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
@@ -1017,18 +1032,12 @@ static int trace(void)
 	while (1) {
 		log_context(NULL);
 
-		if (interrupted) {
-			sig = interrupted;
-			return handle_interrupt(sig);
-		}
+		if ((r = check_interrupt()) != 0)
+			return r;
 
-		if (interactive)
-			sigprocmask(SIG_SETMASK, &empty_set, NULL);
 		pid = waitpid(-1, &status, __WALL);
 		wait_errno = errno;
 		dump(DUMP_WAIT, pid, status, wait_errno);
-		if (interactive)
-			sigprocmask(SIG_SETMASK, &blocked_set, NULL);
 
 		if (pid < 0) {
 			switch (wait_errno) {
@@ -1217,10 +1226,8 @@ handle_stopsig:
 		}
 
 		/* We handled quick cases, we are permitted to interrupt now. */
-		if (interrupted) {
-			sig = interrupted;
-			return handle_interrupt(sig);
-		}
+		if ((r = check_interrupt()) != 0)
+			return r;
 
 		/* This should be syscall entry or exit.
 		 * (Or it still can be that pesky post-execve SIGTRAP!)

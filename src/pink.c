@@ -63,8 +63,6 @@ int syd_trace_detach(syd_process_t *current, int sig)
 {
 	int r;
 
-	assert(current);
-
 	if (sydbox->config.use_seccomp) {
 		/*
 		 * Careful! Detaching here would cause the untraced
@@ -84,8 +82,6 @@ int syd_trace_detach(syd_process_t *current, int sig)
 int syd_trace_kill(syd_process_t *current, int sig)
 {
 	int r;
-
-	assert(current);
 
 	r = pink_trace_kill(current->pid, -1, sig);
 

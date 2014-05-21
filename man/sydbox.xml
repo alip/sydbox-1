@@ -641,22 +641,6 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-trace-interrupt">core/trace/interrupt</option></term>
-          <listitem>
-            <para>type: <type>string</type></para>
-            <para>default: <varname>while_wait</varname></para>
-            <para>
-              A string specifying how to handle interrupts. Possible values are
-              <varname>anywhere</varname> (don't block/ignore any signals),
-              <varname>while_wait</varname> (block fatal signals while decoding syscall),
-              <varname>never</varname> (block fatal signals),
-              <varname>block_tstp_too</varname> (block fatal signals and SIGTSTP (^Z)).
-              Default is <varname>while_wait</varname>.
-            </para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
           <term><option id="core-trace-use_seccomp">core/trace/use_seccomp</option></term>
           <listitem>
             <para>type: <type>boolean</type></para>

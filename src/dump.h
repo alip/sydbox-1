@@ -29,6 +29,7 @@ enum dump {
 	DUMP_INIT,
 	DUMP_CLOSE,
 	DUMP_FLUSH,
+	DUMP_INTERRUPT, /* interrupted */
 	DUMP_WAIT, /* waitpid(2) */
 	DUMP_PINK, /* calls to pinktrace */
 	DUMP_THREAD_NEW, /* new_thread() */
