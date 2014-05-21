@@ -21,6 +21,7 @@
 *.patch
 *.gcno
 *.shoebox
+core*
 
 #
 # git files that we don't want to ignore even it they are dot-files
