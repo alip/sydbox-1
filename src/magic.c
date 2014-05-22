@@ -71,18 +71,6 @@ static const struct key key_table[] = {
 		.parent = MAGIC_KEY_CORE,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
-	[MAGIC_KEY_CORE_ABORT] = {
-		.name   = "abort",
-		.lname  = "core.abort",
-		.parent = MAGIC_KEY_CORE,
-		.type   = MAGIC_TYPE_OBJECT,
-	},
-	[MAGIC_KEY_CORE_PANIC] = {
-		.name   = "panic",
-		.lname  = "core.panic",
-		.parent = MAGIC_KEY_CORE,
-		.type   = MAGIC_TYPE_OBJECT,
-	},
 	[MAGIC_KEY_CORE_VIOLATION] = {
 		.name   = "violation",
 		.lname  = "core.violation",
@@ -239,29 +227,6 @@ static const struct key key_table[] = {
 		.type   = MAGIC_TYPE_BOOLEAN,
 		.set    = magic_set_whitelist_usf,
 		.query  = magic_query_whitelist_usf,
-	},
-
-	[MAGIC_KEY_CORE_ABORT_DECISION] = {
-		.name   = "decision",
-		.lname  = "core.abort.decision",
-		.parent = MAGIC_KEY_CORE_ABORT,
-		.type   = MAGIC_TYPE_STRING,
-		.set    = magic_set_abort_decision,
-	},
-
-	[MAGIC_KEY_CORE_PANIC_DECISION] = {
-		.name   = "decision",
-		.lname  = "core.panic.decision",
-		.parent = MAGIC_KEY_CORE_PANIC,
-		.type   = MAGIC_TYPE_STRING,
-		.set    = magic_set_panic_decision,
-	},
-	[MAGIC_KEY_CORE_PANIC_EXIT_CODE] = {
-		.name   = "exit_code",
-		.lname  = "core.panic.exit_code",
-		.parent = MAGIC_KEY_CORE_PANIC,
-		.type   = MAGIC_TYPE_INTEGER,
-		.set    = magic_set_panic_exit_code,
 	},
 
 	[MAGIC_KEY_CORE_VIOLATION_DECISION] = {

@@ -486,54 +486,13 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-abort-decision">core/abort/decision</option></term>
-          <listitem>
-            <para>type: <type>string</type></para>
-            <para>default: <varname>contall</varname></para>
-            <para>
-              A string specifying the decision to take when tracing is aborted (i.e via <varname>SIGINT</varname>
-              signal). Possible values are <varname>contall</varname> and <varname>killall</varname>.
-              The former is to resume all traced processes whereas the latter is to kill all traced processes.
-              Default is <varname>contall</varname>.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="core-panic-decision">core/panic/decision</option></term>
-          <listitem>
-            <para>type: <type>string</type></para>
-            <para>default: <varname>kill</varname></para>
-            <para>
-              A string specifying the decision to take when a panic condition like an unknown error occurs.
-              Possible values are <varname>cont</varname>, <varname>kill</varname>, <varname>contall</varname> and
-              <varname>killall</varname>. The first two operates on the guilty process responsible for the panic whereas
-              the other two works on all processes
-              Default is <varname>kill</varname>.
-            </para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="core-panic-exit_code">core/panic/exit_code</option></term>
-          <listitem>
-            <para>type: <type>integer</type></para>
-            <para>default: <varname>-1</varname></para>
-            <para>
-              This setting specifies the exit code if <option>core/panic/decision</option>
-              is one of <varname>contall</varname> or <varname>killall</varname>.
-            </para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
           <term><option id="core-violation-decision">core/violation/decision</option></term>
           <listitem>
             <para>type: <type>string</type></para>
             <para>default: <varname>deny</varname></para>
             <para>
               A string specifying the decision to take when an access violation occurs. Possible values are
-              <varname>cont</varname>, <varname>kill</varname>, <varname>contall</varname>,
-              <varname>killall</varname> and <varname>deny</varname>.
+              <varname>kill</varname>, <varname>killall</varname> and <varname>deny</varname>.
               Default is <varname>deny</varname> which means to deny the system call and resume execution.</para>
           </listitem>
         </varlistentry>
@@ -544,11 +503,11 @@
             <para>type: <type>integer</type></para>
             <para>default: <varname>-1</varname></para>
             <para>
-              An integer specifying the exit code in case <option>core/violation/decision</option> is one of
-              <varname>contall</varname> or <varname>killall</varname>.
-              As a special case, if this integer is equal to zero, sydbox exits with <varname>128</varname> added to
-              the eldest process' exit value in case an access violation has occured. This special case is meant for
-              program tests to check whether an access violation has occured using the exit code.
+              An integer specifying the exit code in case <option>core/violation/decision</option> is
+              <varname>killall</varname>.  As a special case, if this integer is equal to zero, sydbox exits with
+              <varname>128</varname> added to the eldest process' exit value in case an access violation has occured.
+              This special case is meant for program tests to check whether an access violation has occured using the
+              exit code.
             </para>
           </listitem>
         </varlistentry>

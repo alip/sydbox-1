@@ -9,9 +9,6 @@ core/whitelist/per_process_directories:true
 core/whitelist/successful_bind:true
 core/whitelist/unsupported_socket_families:true
 
-core/abort/decision:contall
-core/panic/decision:kill
-core/panic/exit_code:-1
 core/violation/decision:deny
 core/violation/exit_code:-1
 core/violation/raise_fail:false

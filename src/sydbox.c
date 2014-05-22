@@ -716,7 +716,7 @@ static void init_early(void)
 	config_init();
 	dump(DUMP_INIT);
 	log_init(NULL);
-	log_abort_func(abort_all);
+	log_abort_func(kill_all);
 }
 
 static void init_signals(void)
@@ -764,30 +764,6 @@ static void init_signals(void)
 #undef x_sigaction
 }
 
-static void cleanup(void)
-{
-	struct acl_node *node;
-
-	assert(sydbox);
-
-	reset_sandbox(&sydbox->config.box_static);
-
-	ACLQ_FREE(node, &sydbox->config.exec_kill_if_match, free);
-	ACLQ_FREE(node, &sydbox->config.exec_resume_if_match, free);
-
-	ACLQ_FREE(node, &sydbox->config.filter_exec, free);
-	ACLQ_FREE(node, &sydbox->config.filter_read, free);
-	ACLQ_FREE(node, &sydbox->config.filter_write, free);
-	ACLQ_FREE(node, &sydbox->config.filter_network, free_sockmatch);
-
-	free(sydbox->program_invocation_name);
-	free(sydbox);
-	sydbox = NULL;
-
-	systable_free();
-	log_close();
-}
-
 static int handle_interrupt(int sig)
 {
 	switch (sig) {
@@ -797,7 +773,7 @@ static int handle_interrupt(int sig)
 		return 0;
 	default:
 		dump(DUMP_INTERRUPT, sig);
-		abort_all(sig);
+		kill_all(sig);
 		dump(DUMP_CLOSE);
 		return 128 + sig;
 	}
@@ -1223,6 +1199,10 @@ static int trace(void)
 		if (!current)
 			current = lookup_process(pid);
 
+		if (process_count() > 60) {
+			kill_all(SIGTERM);
+		}
+
 		if (WIFSIGNALED(status) || WIFEXITED(status)) {
 			if (current) {
 				if (sydchild(current))
@@ -1500,6 +1480,30 @@ static void startup_child(char **argv)
 	child = new_process_or_kill(pid, SYD_SYDBOX_CHILD | post_attach_sigstop);
 	init_process_data(child, NULL);
 	sydbox->wait_execve = true;
+}
+
+void cleanup(void)
+{
+	struct acl_node *node;
+
+	assert(sydbox);
+
+	reset_sandbox(&sydbox->config.box_static);
+
+	ACLQ_FREE(node, &sydbox->config.exec_kill_if_match, free);
+	ACLQ_FREE(node, &sydbox->config.exec_resume_if_match, free);
+
+	ACLQ_FREE(node, &sydbox->config.filter_exec, free);
+	ACLQ_FREE(node, &sydbox->config.filter_read, free);
+	ACLQ_FREE(node, &sydbox->config.filter_write, free);
+	ACLQ_FREE(node, &sydbox->config.filter_network, free_sockmatch);
+
+	free(sydbox->program_invocation_name);
+	free(sydbox);
+	sydbox = NULL;
+
+	systable_free();
+	log_close();
 }
 
 int main(int argc, char **argv)

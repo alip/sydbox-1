@@ -8,10 +8,12 @@
 #include "sydbox.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include "pink.h"
 #include "log.h"
 #include "proc.h"
@@ -41,43 +43,65 @@ static inline int errno2retval(int err_no)
 	return -err_no;
 }
 
-void cont_all(void)
+static int wait_one(syd_process_t *node)
 {
-	syd_process_t *node, *tmp;
+	int status;
 
-	process_iter(node, tmp) {
-		syd_trace_detach(node, 0);
-	}
+	errno = 0;
+	waitpid(node->pid, &status, __WALL|WNOHANG);
+
+	if (errno == ECHILD ||
+	    (errno == 0 && (WIFSIGNALED(status) || WIFEXITED(status))))
+		return -ESRCH;
+	return 0;
 }
 
-void kill_all(void)
+int kill_one(syd_process_t *node, int fatal_sig)
 {
-	syd_process_t *node, *tmp;
+	int i, r;
+	const char *name, *comm;
 
-	process_iter(node, tmp) {
-		syd_trace_kill(node, SIGKILL);
+	name = pink_name_signal(fatal_sig, 0);
+	comm = node->shm.clone_thread ? node->shm.clone_thread->comm : NULL;
+
+	if ((r = wait_one(node)) == -ESRCH)
+		return r;
+
+	fprintf(stderr, "sydbox: %s -> %d <%s> ", name, node->pid, comm);
+	r = pink_trace_kill(node->pid, 0, fatal_sig);
+
+	for (i = 0; i < 3; i++) {
+		usleep(10000);
+
+		r = wait_one(node);
+		if (r == -ESRCH) {
+			fputc('X', stderr);
+			fprintf(stderr, " = %s",
+				(fatal_sig == SIGKILL) ? "killed" : "terminated");
+			break;
+		}
+		fputc('.', stderr);
 	}
+
+	fputc('\n', stderr);
+	if (r != -ESRCH && fatal_sig != SIGKILL)
+		return kill_one(node, SIGKILL);
+	return r;
 }
 
-void abort_all(int fatal_sig)
+void kill_all(int fatal_sig)
 {
 	syd_process_t *node, *tmp;
 
 	if (!sydbox)
 		return;
 
-	switch (sydbox->config.abort_decision) {
-	case ABORT_CONTALL:
-		process_iter(node, tmp) {
-			syd_trace_detach(node, 0);
-		}
-		break;
-	case ABORT_KILLALL:
-		process_iter(node, tmp) {
-			syd_trace_kill(node, SIGKILL);
-		}
-		break;
+	process_iter(node, tmp) {
+		if (kill_one(node, fatal_sig) == -ESRCH)
+			free_process(node);
 	}
+	cleanup();
+	exit(fatal_sig);
 }
 
 PINK_GCC_ATTR((format (printf, 2, 0)))
@@ -138,31 +162,11 @@ int restore(syd_process_t *current)
 
 int panic(syd_process_t *current)
 {
-	switch (sydbox->config.panic_decision) {
-	case PANIC_KILL:
-		log_warning("PANIC_KILL");
-		syd_trace_kill(current, SIGKILL);
-		return -ESRCH;
-	case PANIC_CONT:
-		log_warning("PANIC_CONT");
-		syd_trace_detach(current, 0);
-		return -ESRCH;
-	case PANIC_CONTALL:
-		log_warning("PANIC_CONTALL");
-		cont_all();
-		break;
-	case PANIC_KILLALL:
-		log_warning("PANIC_KILLALL");
-		kill_all();
-		break;
-	default:
-		assert_not_reached();
-	}
+	int r;
 
-	/* exit */
-	exit(sydbox->config.panic_exit_code > 0
-	     ? sydbox->config.panic_exit_code
-	     : sydbox->exit_code);
+	r = kill_one(current, SIGTERM);
+	free_process(current);
+	return r;
 }
 
 int violation(syd_process_t *current, const char *fmt, ...)
@@ -180,19 +184,11 @@ int violation(syd_process_t *current, const char *fmt, ...)
 		return 0; /* Let the caller handle this */
 	case VIOLATION_KILL:
 		log_warning("VIOLATION_KILL");
-		syd_trace_kill(current, SIGKILL);
+		kill_one(current, SIGTERM);
 		return -ESRCH;
-	case VIOLATION_CONT:
-		log_warning("VIOLATION_CONT");
-		syd_trace_detach(current, 0); /* FIXME: detach+seccomp fails! */
-		return -ESRCH;
-	case VIOLATION_CONTALL:
-		log_warning("VIOLATION_CONTALL");
-		cont_all();
-		break;
 	case VIOLATION_KILLALL:
 		log_warning("VIOLATION_KILLALL");
-		kill_all();
+		kill_all(SIGTERM);
 		break;
 	default:
 		assert_not_reached();

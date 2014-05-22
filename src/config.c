@@ -46,9 +46,6 @@ void config_init(void)
 	sydbox->config.whitelist_per_process_directories = true;
 	sydbox->config.whitelist_successful_bind = true;
 	sydbox->config.whitelist_unsupported_socket_families = true;
-	sydbox->config.abort_decision = ABORT_CONTALL;
-	sydbox->config.panic_decision = PANIC_KILL;
-	sydbox->config.panic_exit_code = -1;
 	sydbox->config.violation_decision = VIOLATION_DENY;
 	sydbox->config.violation_exit_code = -1;
 	sydbox->config.box_static.magic_lock = LOCK_UNSET;

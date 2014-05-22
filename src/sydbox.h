@@ -79,43 +79,15 @@ static const char *const lock_state_table[] = {
 };
 DEFINE_STRING_TABLE_LOOKUP(lock_state, int)
 
-enum abort_decision {
-	ABORT_KILLALL,
-	ABORT_CONTALL,
-};
-static const char *const abort_decision_table[] = {
-	[ABORT_KILLALL] = "killall",
-	[ABORT_CONTALL] = "contall",
-};
-DEFINE_STRING_TABLE_LOOKUP(abort_decision, int)
-
-enum panic_decision {
-	PANIC_KILL,
-	PANIC_CONT,
-	PANIC_CONTALL,
-	PANIC_KILLALL,
-};
-static const char *const panic_decision_table[] = {
-	[PANIC_KILL] = "kill",
-	[PANIC_CONT] = "cont",
-	[PANIC_CONTALL] = "contall",
-	[PANIC_KILLALL] = "killall",
-};
-DEFINE_STRING_TABLE_LOOKUP(panic_decision, int)
-
 enum violation_decision {
 	VIOLATION_DENY,
 	VIOLATION_KILL,
 	VIOLATION_KILLALL,
-	VIOLATION_CONT,
-	VIOLATION_CONTALL,
 };
 static const char *const violation_decision_table[] = {
 	[VIOLATION_DENY] = "deny",
 	[VIOLATION_KILL] = "kill",
 	[VIOLATION_KILLALL] = "killall",
-	[VIOLATION_CONT] = "cont",
-	[VIOLATION_CONTALL] = "contall",
 };
 DEFINE_STRING_TABLE_LOOKUP(violation_decision, int)
 
@@ -165,13 +137,6 @@ enum magic_key {
 	MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES,
 	MAGIC_KEY_CORE_WHITELIST_SUCCESSFUL_BIND,
 	MAGIC_KEY_CORE_WHITELIST_UNSUPPORTED_SOCKET_FAMILIES,
-
-	MAGIC_KEY_CORE_ABORT,
-	MAGIC_KEY_CORE_ABORT_DECISION,
-
-	MAGIC_KEY_CORE_PANIC,
-	MAGIC_KEY_CORE_PANIC_DECISION,
-	MAGIC_KEY_CORE_PANIC_EXIT_CODE,
 
 	MAGIC_KEY_CORE_VIOLATION,
 	MAGIC_KEY_CORE_VIOLATION_DECISION,
@@ -357,16 +322,18 @@ typedef struct syd_process {
 #define			P_CLONE_THREAD_RETAIN(p) ((p)->shm.clone_thread->refcnt++)
 #define			P_CLONE_THREAD_RELEASE(p) \
 			do { \
-				(p)->shm.clone_thread->refcnt--; \
-				if ((p)->shm.clone_thread->refcnt == 0) { \
-					if ((p)->shm.clone_thread->comm) { \
-						free((p)->shm.clone_thread->comm); \
+				if ((p)->shm.clone_thread != NULL) { \
+					(p)->shm.clone_thread->refcnt--; \
+					if ((p)->shm.clone_thread->refcnt == 0) { \
+						if ((p)->shm.clone_thread->comm) { \
+							free((p)->shm.clone_thread->comm); \
+						} \
+						if ((p)->shm.clone_thread->box) { \
+							free_sandbox((p)->shm.clone_thread->box); \
+						} \
+						free((p)->shm.clone_thread); \
+						(p)->shm.clone_thread = NULL; \
 					} \
-					if ((p)->shm.clone_thread->box) { \
-						free_sandbox((p)->shm.clone_thread->box); \
-					} \
-					free((p)->shm.clone_thread); \
-					(p)->shm.clone_thread = NULL; \
 				} \
 			} while (0)
 		} *clone_thread;
@@ -383,13 +350,15 @@ typedef struct syd_process {
 #define			P_CLONE_FS_RETAIN(p) ((p)->shm.clone_fs->refcnt++)
 #define			P_CLONE_FS_RELEASE(p) \
 			do { \
-				(p)->shm.clone_fs->refcnt--; \
-				if ((p)->shm.clone_fs->refcnt == 0) { \
-					if ((p)->shm.clone_fs->cwd) { \
-						free((p)->shm.clone_fs->cwd); \
+				if ((p)->shm.clone_fs != NULL) { \
+					(p)->shm.clone_fs->refcnt--; \
+					if ((p)->shm.clone_fs->refcnt == 0) { \
+						if ((p)->shm.clone_fs->cwd) { \
+							free((p)->shm.clone_fs->cwd); \
+						} \
+						free((p)->shm.clone_fs); \
+						(p)->shm.clone_fs = NULL; \
 					} \
-					free((p)->shm.clone_fs); \
-					(p)->shm.clone_fs = NULL; \
 				} \
 			} while (0)
 		} *clone_fs;
@@ -414,17 +383,19 @@ typedef struct syd_process {
 #define			P_CLONE_FILES_RETAIN(p) ((p)->shm.clone_files->refcnt++)
 #define			P_CLONE_FILES_RELEASE(p) \
 			do { \
-				(p)->shm.clone_files->refcnt--; \
-				if ((p)->shm.clone_files->refcnt == 0) { \
-					if ((p)->shm.clone_files->savebind) { \
-						free_sockinfo((p)->shm.clone_files->savebind); \
+				if ((p)->shm.clone_files != NULL) { \
+					(p)->shm.clone_files->refcnt--; \
+					if ((p)->shm.clone_files->refcnt == 0) { \
+						if ((p)->shm.clone_files->savebind) { \
+							free_sockinfo((p)->shm.clone_files->savebind); \
+						} \
+						if ((p)->shm.clone_files->sockmap) { \
+							sockmap_destroy(&(p)->shm.clone_files->sockmap); \
+							free((p)->shm.clone_files->sockmap); \
+						} \
+						free((p)->shm.clone_files); \
+						(p)->shm.clone_files = NULL; \
 					} \
-					if ((p)->shm.clone_files->sockmap) { \
-						sockmap_destroy(&(p)->shm.clone_files->sockmap); \
-						free((p)->shm.clone_files->sockmap); \
-					} \
-					free((p)->shm.clone_files); \
-					(p)->shm.clone_files = NULL; \
 				} \
 			} while (0)
 		} *clone_files;
@@ -448,11 +419,6 @@ typedef struct {
 	bool whitelist_per_process_directories;
 	bool whitelist_successful_bind;
 	bool whitelist_unsupported_socket_families;
-
-	enum abort_decision abort_decision;
-
-	enum panic_decision panic_decision;
-	int panic_exit_code;
 
 	enum violation_decision violation_decision;
 	int violation_exit_code;
@@ -631,8 +597,10 @@ static inline syd_process_t *lookup_process(pid_t pid)
 	return process;
 }
 
-void cont_all(void);
-void abort_all(int fatal_sig);
+void cleanup(void);
+
+void kill_all(int fatal_sig);
+int kill_one(syd_process_t *current, int fatal_sig);
 int deny(syd_process_t *current, int err_no);
 int restore(syd_process_t *current);
 int panic(syd_process_t *current);
@@ -802,8 +770,6 @@ int magic_append_blacklist_network_connect(const void *val, syd_process_t *curre
 int magic_remove_blacklist_network_connect(const void *val, syd_process_t *current);
 int magic_append_filter_network(const void *val, syd_process_t *current);
 int magic_remove_filter_network(const void *val, syd_process_t *current);
-int magic_set_abort_decision(const void *val, syd_process_t *current);
-int magic_set_panic_decision(const void *val, syd_process_t *current);
 int magic_set_violation_decision(const void *val, syd_process_t *current);
 int magic_set_trace_magic_lock(const void *val, syd_process_t *current);
 int magic_set_log_file(const void *val, syd_process_t *current);
