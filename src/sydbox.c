@@ -269,8 +269,16 @@ void remove_process(syd_process_t *p)
 	if (!p)
 		return;
 
-	if (!(p->flags & (SYD_WAIT_FOR_CHILD|SYD_WAIT_FOR_PARENT)))
-		free_process(p);
+	if (p->flags & SYD_WAIT_FOR_CHILD && p->cpid > 0)
+		return;
+	if (p->flags & SYD_WAIT_FOR_PARENT) {
+		syd_process_t *parent = lookup_process(p->ppid);
+		if (parent && parent->cpid > 0)
+			return;
+	}
+
+	p->flags &= ~(SYD_WAIT_FOR_CHILD|SYD_WAIT_FOR_PARENT);
+	free_process(p);
 }
 
 static void interrupt(int sig)
@@ -814,7 +822,6 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 	bool share_thread, share_fs, share_files;
 
 	if (!parent) {
-		new_shared_memory(current);
 		if (sydchild(current))
 			P_COMM(current) = xstrdup(sydbox->program_invocation_name);
 		P_CWD(current) = xgetcwd(); /* FIXME: toolong hack changes
