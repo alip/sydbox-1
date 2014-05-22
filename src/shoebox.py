@@ -109,10 +109,20 @@ class ShoeBox:
 
     def tree(self, pid, pattern, match_format, quick = False):
         events = []
+        def find_eldest_pid(event):
+            if 'process' not in event:
+                return -1
+            if 'syd' not in event['process']:
+                return -1
+            if not event['process']['syd']['flag_SYDBOX_CHILD']:
+                return -1
+            return event['pid']
 
         for event in self.read_events():
             if 'pid' not in event:
                 continue
+            if pid < 0:
+                pid = find_eldest_pid(event)
             if event['pid'] != pid:
                 continue
             events.append(event)
@@ -206,7 +216,7 @@ def command_tree(args, rest):
         pattern = None
         match_format = None
     else:
-        pattern = re.compile(args.pattern, re.UNICODE)
+        pattern = re.compile(args.pattern, re.I|re.U)
         match_format = args.match
 
     with ShoeBox(args.dump) as sb:
@@ -219,7 +229,7 @@ def command_show(args, rest):
         pattern = None
         match_format = None
     else:
-        pattern = re.compile(args.pattern, re.UNICODE)
+        pattern = re.compile(args.pattern, re.I|re.U)
         match_format = args.match
 
     limit  = args.limit_match
@@ -264,7 +274,7 @@ Attaching poems encourages consideration tremendously.''')
                         action = 'store_const', const = ['strace',],
                         help = 'Run under strace')
     parser.add_argument('+dump', default = 'dump.shoebox', help = 'Path to the dump file')
-    parser.add_argument('+path', default = 'sydbox-dump', help = 'Path to sydbox')
+    parser.add_argument('+path', default = 'sydbox-dump', help = 'Path to sydbox-dump')
 
     subparser = parser.add_subparsers(help = 'command help')
 
@@ -290,7 +300,9 @@ Attaching poems encourages consideration tremendously.''')
 #                             help = 'Filter code, default: "%(default)s"')
     parser_tree.add_argument('-m', '--match', default = '{event_name}', help = 'Match format')
     parser_tree.add_argument('-p', '--pattern', help = 'Match pattern (regex)')
-    parser_tree.add_argument('pid', type = int, metavar = 'PID', help = 'PID to match')
+    parser_tree.add_argument('pid', type = int, metavar = 'PID',
+                             default = -1, nargs = '?',
+                             help = 'PID to match, default: detect eldest child')
     parser_tree.set_defaults(func = command_tree)
 
     args, rest = parser.parse_known_args()

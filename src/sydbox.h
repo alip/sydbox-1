@@ -46,9 +46,10 @@
 #define SYD_READY		00004 /* process' sandbox is initialised */
 #define SYD_IN_SYSCALL		00010 /* process is in system call */
 #define SYD_DENY_SYSCALL	00020 /* system call is to be denied */
-#define SYD_FREE_AFTER_CLONE	00040 /* free() this process after child clone() */
-#define SYD_STOP_AT_SYSEXIT	00100 /* seccomp: stop at system call exit */
-#define SYD_SYDBOX_CHILD	00200 /* process is the child exec()'ed by sydbox */
+#define SYD_STOP_AT_SYSEXIT	00040 /* seccomp: stop at system call exit */
+#define SYD_WAIT_FOR_CHILD	00100 /* parent waiting for child notification */
+#define SYD_WAIT_FOR_PARENT	00200 /* child waiting for parent notification */
+#define SYD_SYDBOX_CHILD	00400 /* process is the child exec()'ed by sydbox */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
 #define SYD_PPID_ORPHAN		-0xbad /* special parent process id for orphans */
@@ -298,6 +299,9 @@ typedef struct syd_process {
 	/* Parent process ID */
 	pid_t ppid;
 
+	/* Clone process ID */
+	pid_t cpid;
+
 	/* Process registry set */
 	struct pink_regset *regset;
 
@@ -427,9 +431,8 @@ typedef struct syd_process {
 		} *clone_files;
 	} shm;
 
-	/* hash table entries */
-	UT_hash_handle hh; /* for process table lookup */
-	UT_hash_handle hht; /* for thread table lookup */
+	/* Process hash table via sydbox->proctab */
+	UT_hash_handle hh;
 } syd_process_t;
 
 typedef struct {
@@ -479,6 +482,8 @@ typedef struct {
 
 typedef struct {
 	syd_process_t *proctab;
+
+	syd_process_t *current_clone_proc;
 
 	int trace_options;
 	enum syd_step trace_step;
@@ -618,7 +623,7 @@ int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
 
 void reset_process(syd_process_t *p);
 void free_process(syd_process_t *p);
-void kill_process(syd_process_t *p);
+void remove_process(syd_process_t *p);
 
 static inline syd_process_t *lookup_process(pid_t pid)
 {

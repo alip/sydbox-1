@@ -490,12 +490,80 @@ static void dump_process(pid_t pid)
 		J(ref_CLONE_THREAD)"%d,"
 		J(ref_CLONE_FS)"%d,"
 		J(ref_CLONE_FILES)"%d,"
+#ifdef CLONE_VM
+		J(new_flag_CLONE_VM)"%s,"
+#endif
+#ifdef CLONE_FS
+		J(new_flag_CLONE_FS)"%s,"
+#endif
+#ifdef CLONE_FILES
+		J(new_flag_CLONE_FILES)"%s,"
+#endif
+#ifdef CLONE_SIGHAND
+		J(new_flag_CLONE_SIGHAND)"%s,"
+#endif
+#ifdef CLONE_PTRACE
+		J(new_flag_CLONE_PTRACE)"%s,"
+#endif
+#ifdef CLONE_VFORK
+		J(new_flag_CLONE_VFORK)"%s,"
+#endif
+#ifdef CLONE_PARENT
+		J(new_flag_CLONE_PARENT)"%s,"
+#endif
+#ifdef CLONE_THREAD
+		J(new_flag_CLONE_THREAD)"%s,"
+#endif
+#ifdef CLONE_NEWNS
+		J(new_flag_CLONE_NEWNS)"%s,"
+#endif
+#ifdef CLONE_SYSVSEM
+		J(new_flag_CLONE_SYSVSEM)"%s,"
+#endif
+#ifdef CLONE_SETTLS
+		J(new_flag_CLONE_SETTLS)"%s,"
+#endif
+#ifdef CLONE_PARENT_SETTID
+		J(new_flag_CLONE_PARENT_SETTID)"%s,"
+#endif
+#ifdef CLONE_CHILD_CLEARTID
+		J(new_flag_CLONE_CHILD_CLEARTID)"%s,"
+#endif
+#ifdef CLONE_DETACHED
+		J(new_flag_CLONE_DETACHED)"%s,"
+#endif
+#ifdef CLONE_UNTRACED
+		J(new_flag_CLONE_UNTRACED)"%s,"
+#endif
+#ifdef CLONE_CHILD_SETTID
+		J(new_flag_CLONE_CHILD_SETTID)"%s,"
+#endif
+#ifdef CLONE_NEWUTS
+		J(new_flag_CLONE_NEWUTS)"%s,"
+#endif
+#ifdef CLONE_NEWIPC
+		J(new_flag_CLONE_NEWIPC)"%s,"
+#endif
+#ifdef CLONE_NEWUSER
+		J(new_flag_CLONE_NEWUSER)"%s,"
+#endif
+#ifdef CLONE_NEWPID
+		J(new_flag_CLONE_NEWPID)"%s,"
+#endif
+#ifdef CLONE_NEWNET
+		J(new_flag_CLONE_NEWNET)"%s,"
+#endif
+#ifdef CLONE_IO
+		J(new_flag_CLONE_IO)"%s,"
+#endif
 		J(ppid)"%d,"
 		J(comm)"\"%s\","
 		J(cwd)"\"%s\"," /*"J(FIXME)"quote */
 		J(syscall_no)"%lu,"
 		J(syscall_abi)"%d,"
-		J(syscall_name)"\"%s\"",
+		J(syscall_name)"\"%s\","
+		J(clone_flags)"%ld,"
+		J(new_clone_flags)"%ld",
 		J_BOOL(p->flags & SYD_SYDBOX_CHILD),
 		J_BOOL(p->flags & SYD_STARTUP),
 		J_BOOL(p->flags & SYD_IGNORE_ONE_SIGSTOP),
@@ -572,12 +640,80 @@ static void dump_process(pid_t pid)
 		p->shm.clone_thread ? p->shm.clone_thread->refcnt : 0,
 		p->shm.clone_fs ? p->shm.clone_fs->refcnt : 0,
 		p->shm.clone_files ? p->shm.clone_files->refcnt : 0,
+#ifdef CLONE_VM
+		J_BOOL(p->new_clone_flags & CLONE_VM),
+#endif
+#ifdef CLONE_FS
+		J_BOOL(p->new_clone_flags & CLONE_FS),
+#endif
+#ifdef CLONE_FILES
+		J_BOOL(p->new_clone_flags & CLONE_FILES),
+#endif
+#ifdef CLONE_SIGHAND
+		J_BOOL(p->new_clone_flags & CLONE_SIGHAND),
+#endif
+#ifdef CLONE_PTRACE
+		J_BOOL(p->new_clone_flags & CLONE_PTRACE),
+#endif
+#ifdef CLONE_VFORK
+		J_BOOL(p->new_clone_flags & CLONE_VFORK),
+#endif
+#ifdef CLONE_PARENT
+		J_BOOL(p->new_clone_flags & CLONE_PARENT),
+#endif
+#ifdef CLONE_THREAD
+		J_BOOL(p->new_clone_flags & CLONE_THREAD),
+#endif
+#ifdef CLONE_NEWNS
+		J_BOOL(p->new_clone_flags & CLONE_NEWNS),
+#endif
+#ifdef CLONE_SYSVSEM
+		J_BOOL(p->new_clone_flags & CLONE_SYSVSEM),
+#endif
+#ifdef CLONE_SETTLS
+		J_BOOL(p->new_clone_flags & CLONE_SETTLS),
+#endif
+#ifdef CLONE_PARENT_SETTID
+		J_BOOL(p->new_clone_flags & CLONE_PARENT_SETTID),
+#endif
+#ifdef CLONE_CHILD_CLEARTID
+		J_BOOL(p->new_clone_flags & CLONE_CHILD_CLEARTID),
+#endif
+#ifdef CLONE_DETACHED
+		J_BOOL(p->new_clone_flags & CLONE_DETACHED),
+#endif
+#ifdef CLONE_UNTRACED
+		J_BOOL(p->new_clone_flags & CLONE_UNTRACED),
+#endif
+#ifdef CLONE_CHILD_SETTID
+		J_BOOL(p->new_clone_flags & CLONE_CHILD_SETTID),
+#endif
+#ifdef CLONE_NEWUTS
+		J_BOOL(p->new_clone_flags & CLONE_NEWUTS),
+#endif
+#ifdef CLONE_NEWIPC
+		J_BOOL(p->new_clone_flags & CLONE_NEWIPC),
+#endif
+#ifdef CLONE_NEWUSER
+		J_BOOL(p->new_clone_flags & CLONE_NEWUSER),
+#endif
+#ifdef CLONE_NEWPID
+		J_BOOL(p->new_clone_flags & CLONE_NEWPID),
+#endif
+#ifdef CLONE_NEWNET
+		J_BOOL(p->new_clone_flags & CLONE_NEWNET),
+#endif
+#ifdef CLONE_IO
+		J_BOOL(p->new_clone_flags & CLONE_IO),
+#endif
 		p->ppid,
-		p->shm.clone_thread ? p->shm.clone_thread->comm : "nil",
-		p->shm.clone_fs ? p->shm.clone_fs->cwd : "nil",
+		p->shm.clone_thread ? p->shm.clone_thread->comm : "null",
+		p->shm.clone_fs ? p->shm.clone_fs->cwd : "null",
 		p->sysnum,
 		p->abi,
-		p->sysname);
+		p->sysname,
+		p->clone_flags,
+		p->new_clone_flags);
 
 	fprintf(fp, ","J(regset)"");
 	/* TODO: if (flags & DUMP_PTRACE_REGSET) */

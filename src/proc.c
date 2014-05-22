@@ -12,6 +12,9 @@
 #include "sydconf.h"
 #include "proc.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/user.h>
 #include <limits.h>
 #include <errno.h>
 #include <ctype.h>
@@ -20,9 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/user.h>
+#include <dirent.h>
 
 #include "file.h"
 #include "macro.h"
@@ -207,17 +208,52 @@ int proc_comm(pid_t pid, char **name)
 	return 0;
 }
 
-/* read PPID from /proc/$pid/stat */
-int proc_ppid(pid_t pid, pid_t *ppid)
+#if 0
+bool proc_has_task(pid_t pid, pid_t task)
 {
-	char *p;
+	bool r = false;
+	DIR *dir;
+	char procdir[sizeof("/proc/%d/task") + sizeof(int) * 3];
+
+	sprintf(procdir, "/proc/%d/task", pid);
+	dir = opendir(procdir);
+
+	if (dir == NULL)
+		return r;
+
+	struct dirent *de;
+	while ((de = readdir(dir)) != NULL) {
+		int tid;
+
+		if (de->d_fileno == 0)
+			continue;
+
+		tid = atoi(de->d_name);
+		if (tid <= 0)
+			continue;
+
+		if (tid == task) {
+			r = true;
+			goto out;
+		}
+	}
+
+out:
+	closedir(dir);
+	return r;
+}
+
+/* read Tgid: and PPid: from /proc/$pid/status */
+int proc_parents(pid_t pid, pid_t *tgid, pid_t *ppid)
+{
+	char buf[LINE_MAX], *p;
 	FILE *f;
-	pid_t pp;
 
 	assert(pid >= 1);
+	assert(tgid);
 	assert(ppid);
 
-	if (asprintf(&p, "/proc/%u/stat", pid) < 0)
+	if (asprintf(&p, "/proc/%u/status", pid) < 0)
 		return -ENOMEM;
 
 	f = fopen(p, "r");
@@ -226,19 +262,28 @@ int proc_ppid(pid_t pid, pid_t *ppid)
 	if (!f)
 		return -errno;
 
-	if (fscanf(f,
-		"%*d"		/* pid */
-		" %*s"	/* comm */
-		" %*c"		/* state */
-		" %d",		/* ppid */
-		&pp) != 1) {
-		fclose(f);
-		return -EINVAL;
+	pid_t ret_tgid = -1, ret_ppid = -1;
+	buf[0] = '\0';
+	while (fgets(buf, LINE_MAX, f) != NULL) {
+		if ((ret_tgid == -1 && startswith(buf, "Tgid:") &&
+		     sscanf(buf, "Tgid: %d", &ret_tgid) != 1) ||
+		    (ret_ppid == -1 && startswith(buf, "PPid:") &&
+		     sscanf(buf, "PPid: %d", &ret_ppid) != 1)) {
+			fclose(f);
+			return -EINVAL;
+		}
+		buf[0] = '\0';
 	}
 
-	*ppid = pp;
+	fclose(f);
+	if (ret_tgid == -1 || ret_ppid == -1)
+		return -EINVAL;
+
+	*tgid = ret_tgid;
+	*ppid = ret_ppid;
 	return 0;
 }
+#endif
 
 /*
  * read /proc/$pid/stat

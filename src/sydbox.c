@@ -162,6 +162,7 @@ static syd_process_t *new_thread(pid_t pid, short flags)
 		return NULL;
 
 	thread->pid = pid;
+	thread->ppid = SYD_PPID_ORPHAN;
 
 	if ((r = pink_regset_alloc(&thread->regset)) < 0) {
 		free(thread);
@@ -263,15 +264,13 @@ void free_process(syd_process_t *p)
 	log_trace("process %u removed", pid);
 }
 
-void kill_process(syd_process_t *p)
+void remove_process(syd_process_t *p)
 {
 	if (!p)
 		return;
 
-	if (p->new_clone_flags == 0)
+	if (!(p->flags & (SYD_WAIT_FOR_CHILD|SYD_WAIT_FOR_PARENT)))
 		free_process(p);
-	else
-		p->flags |= SYD_FREE_AFTER_CLONE;
 }
 
 static void interrupt(int sig)
@@ -313,7 +312,145 @@ static unsigned get_os_release(void)
 	return rel;
 }
 
-static bool dump_one_process(syd_process_t *current, bool verbose)
+static void dump_clone_flags(int flags)
+{
+	int r = 0;
+
+#ifdef CLONE_CHILD_CLEARTID
+	if (flags & CLONE_CHILD_CLEARTID) {
+		fprintf(stderr, "%sCLONE_CHILD_CLEARTID", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_CHILD_CLEARTID */
+#ifdef CLONE_CHILD_SETTID
+	if (flags & CLONE_CHILD_SETTID) {
+		fprintf(stderr, "%sCLONE_CHILD_SETTID", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_CHILD_SETTID */
+#ifdef CLONE_FILES
+	if (flags & CLONE_FILES) {
+		fprintf(stderr, "%sCLONE_FILES", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_FILES */
+#ifdef CLONE_FS
+	if (flags & CLONE_FS) {
+		fprintf(stderr, "%sCLONE_FS", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_FS */
+#ifdef CLONE_IO
+	if (flags & CLONE_IO) {
+		fprintf(stderr, "%sCLONE_IO", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_IO */
+#ifdef CLONE_NEWIPC
+	if (flags & CLONE_NEWIPC) {
+		fprintf(stderr, "%sCLONE_NEWIPC", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_NEWIPC */
+#ifdef CLONE_NEWNET
+	if (flags & CLONE_NEWNET) {
+		fprintf(stderr, "%sCLONE_NEWNET", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_NEWNET */
+#ifdef CLONE_NEWNS
+	if (flags & CLONE_NEWNS) {
+		fprintf(stderr, "%sCLONE_NEWNS", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_NEWNS */
+#ifdef CLONE_NEWPID
+	if (flags & CLONE_NEWPID) {
+		fprintf(stderr, "%sCLONE_NEWPID", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_NEWPID */
+#ifdef CLONE_NEWUTS
+	if (flags & CLONE_NEWUTS) {
+		fprintf(stderr, "%sCLONE_NEWUTS", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_NEWUTS */
+#ifdef CLONE_PARENT
+	if (flags & CLONE_PARENT) {
+		fprintf(stderr, "%sCLONE_PARENT", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_PARENT */
+#ifdef CLONE_PARENT_SETTID
+	if (flags & CLONE_PARENT_SETTID) {
+		fprintf(stderr, "%sCLONE_PARENT_SETTID", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_PARENT_SETTID */
+#ifdef CLONE_PID
+	if (flags & CLONE_PID) {
+		fprintf(stderr, "%sCLONE_PID", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_PID */
+#ifdef CLONE_PTRACE
+	if (flags & CLONE_PTRACE) {
+		fprintf(stderr, "%sCLONE_PTRACE", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_PTRACE */
+#ifdef CLONE_SETTLS
+	if (flags & CLONE_SETTLS) {
+		fprintf(stderr, "%sCLONE_SETTLS", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_SETTLS */
+#ifdef CLONE_SIGHAND
+	if (flags & CLONE_SIGHAND) {
+		fprintf(stderr, "%sCLONE_SIGHAND", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_SIGHAND */
+#ifdef CLONE_STOPPED
+	if (flags & CLONE_STOPPED) {
+		fprintf(stderr, "%sCLONE_STOPPED", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_STOPPED */
+#ifdef CLONE_SYSVSEM
+	if (flags & CLONE_SYSVSEM) {
+		fprintf(stderr, "%sCLONE_SYSVSEM", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_SYSVSEM */
+#ifdef CLONE_THREAD
+	if (flags & CLONE_THREAD) {
+		fprintf(stderr, "%sCLONE_THREAD", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_THREAD */
+#ifdef CLONE_UNTRACED
+	if (flags & CLONE_UNTRACED) {
+		fprintf(stderr, "%sCLONE_UNTRACED", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_UNTRACED */
+#ifdef CLONE_VFORK
+	if (flags & CLONE_VFORK) {
+		fprintf(stderr, "%sCLONE_VFORK", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_VFORK */
+#ifdef CLONE_VM
+	if (flags & CLONE_VM) {
+		fprintf(stderr, "%sCLONE_VM", (r == 1) ? "|" : "");
+		r = 1;
+	}
+#endif /* CLONE_VM */
+}
+
+static void dump_one_process(syd_process_t *current, bool verbose)
 {
 	int r;
 	const char *CG, *CB, *CN, *CI, *CE; /* good, bad, important, normal end */
@@ -342,8 +479,10 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "\t%sParent ID: %u%s\n", CN, ppid > 0 ? ppid : 0, CE);
 	else
 		fprintf(stderr, "\t%sParent ID: ? (Orphan)%s\n", CN, CE);
-	fprintf(stderr, "\t%sComm: `%s'%s\n", CN, P_COMM(current), CE);
-	fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, P_CWD(current), CE);
+	if (current->shm.clone_thread)
+		fprintf(stderr, "\t%sComm: `%s'%s\n", CN, P_COMM(current), CE);
+	if (current->shm.clone_fs)
+		fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, P_CWD(current), CE);
 	fprintf(stderr, "\t%sSyscall: {no:%lu abi:%d name:%s}%s\n", CN,
 			current->sysnum, abi, current->sysname, CE);
 	fprintf(stderr, "\t%sFlags: ", CN);
@@ -372,8 +511,12 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "%sDENY_SYSCALL", (r == 1) ? "|" : "");
 		r = 1;
 	}
-	if (current->flags & SYD_FREE_AFTER_CLONE) {
-		fprintf(stderr, "%sFREE_AFTER_CLONE", (r == 1) ? "|" : "");
+	if (current->flags & SYD_WAIT_FOR_CHILD) {
+		fprintf(stderr, "%sWAIT_FOR_CHILD", (r == 1) ? "|" : "");
+		r = 1;
+	}
+	if (current->flags & SYD_WAIT_FOR_PARENT) {
+		fprintf(stderr, "%sWAIT_FOR_PARENT", (r == 1) ? "|" : "");
 		r = 1;
 	}
 	if (current->flags & SYD_STOP_AT_SYSEXIT) {
@@ -381,13 +524,12 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 		r = 1;
 	}
 	fprintf(stderr, "%s\n", CN);
-#if 0
 	if (current->clone_flags) {
-		name = dump_clone_flags(current->clone_flags);
-		fprintf(stderr, "\t%sClone flags: %s%s\n", CN, name, CE);
-		free(name);
+		fprintf(stderr, "\t%sClone flags: ", CN);
+		dump_clone_flags(current->clone_flags);
+		fprintf(stderr, "%s\n", CE);
 	}
-#endif
+
 	if (current->clone_flags & (CLONE_THREAD|CLONE_FS|CLONE_FILES)) {
 		fprintf(stderr, "\t%sClone flag refs: ", CN);
 		r = 0;
@@ -413,13 +555,14 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 		}
 		fprintf(stderr, "%s\n", CN);
 	}
-#if 0
 	if (current->new_clone_flags) {
-		name = dump_clone_flags(current->new_clone_flags);
-		fprintf(stderr, "\t%sNew clone flags: %s%s\n", CN, name, CE);
-		free(name);
+		fprintf(stderr, "\t%sNew clone flags: ", CN);
+		dump_clone_flags(current->new_clone_flags);
+		fprintf(stderr, "%s\n", CE);
 	}
-#endif
+
+	if (!verbose)
+		return;
 
 	if ((r = proc_stat(pid, &info)) < 0) {
 		fprintf(stderr, "%sproc_stat failed (errno:%d %s)%s\n",
@@ -443,8 +586,8 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 			CE);
 	}
 
-	if (!verbose)
-		return true;
+	if (!verbose || !current->shm.clone_thread || !current->shm.clone_thread->box)
+		return;
 
 	fprintf(stderr, "\t%sSandbox: {exec:%s read:%s write:%s sock:%s}%s\n",
 		CN,
@@ -481,8 +624,6 @@ static bool dump_one_process(syd_process_t *current, bool verbose)
 			fprintf(stderr, "\t\t%s((%p))%s\n", CN, (void *)match, CE);
 		}
 	}
-
-	return true;
 }
 
 #if SYDBOX_DEBUG
@@ -537,23 +678,20 @@ static void sig_usr(int sig)
 
 	complete_dump= !!(sig == SIGUSR2);
 
-	fprintf(stderr, "\nsydbox: Received SIGUSR%s, dumping %sprocess tree\n",
-		complete_dump ? "2" : "1",
-		complete_dump ? "complete " : "");
+	fprintf(stderr, "\nsydbox: Received SIGUSR%s\n", complete_dump ? "2" : "1");
+
+#if SYDBOX_DEBUG
+	fprintf(stderr, "sydbox: Debug enabled, printing backtrace\n");
+	print_backtrace(stderr);
+#endif
+
+	fprintf(stderr, "sydbox: Dumping process tree:\n");
 	count = 0;
 	process_iter(node, tmp) {
 		dump_one_process(node, complete_dump);
 		count++;
 	}
 	fprintf(stderr, "Tracing %u process%s\n", count, count > 1 ? "es" : "");
-
-	if (!complete_dump)
-		return;
-
-#if SYDBOX_DEBUG
-	fprintf(stderr, "\nsydbox: Debug enabled, printing backtrace\n");
-	print_backtrace(stderr);
-#endif
 }
 
 static void init_early(void)
@@ -563,6 +701,7 @@ static void init_early(void)
 	os_release = get_os_release();
 	sydbox = xmalloc(sizeof(sydbox_t));
 	sydbox->proctab = NULL;
+	sydbox->current_clone_proc = NULL;
 	sydbox->violation = false;
 	sydbox->wait_execve = false;
 	sydbox->exit_code = EXIT_SUCCESS;
@@ -731,17 +870,7 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 
 	if (sydchild(current))
 		parent = NULL;
-	else if (!parent) {
-		if (!hasparent(current)) {
-			log_warning("no parent, refusing to set up");
-			return;
-		}
-
-		parent = lookup_process(current->ppid);
-		if (!parent) {
-			log_warning("invalid parent process %d", current->ppid);
-			log_warning("inheriting global sandbox");
-		}
+	else {
 	}
 
 	init_shareable_data(current, parent);
@@ -755,53 +884,50 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 	}
 
 	current->flags |= SYD_READY;
-	log_trace("process %u is ready for access control", current->pid);
 }
 
 static int event_startup(syd_process_t *current)
 {
+	syd_process_t *parent;
+
 	if (!(current->flags & SYD_STARTUP))
 		return 0;
 
 	syd_trace_setup(current);
 
 	current->flags &= ~SYD_STARTUP;
+
+	if (sydchild(current)) {
+		parent = NULL;
+		init_process_data(current, parent);
+	} else {
+		parent = lookup_process(current->ppid);
+		init_process_data(current, parent);
+		parent->new_clone_flags = 0;
+		parent->cpid = 0;
+		parent->flags &= ~SYD_WAIT_FOR_CHILD;
+	}
+
 	return 0;
 }
 
-static int event_clone(syd_process_t *parent, syd_process_t *child)
+static int event_clone(syd_process_t *current)
 {
 	int r = 0;
-	pid_t pid, ppid = -1;
+	long cpid_l = -1;
+	syd_process_t *child;
 
-	assert(parent || child);
+	assert(current);
 
-	if (!child) {
-		ppid = parent->pid;
-		long cpid_l = -1;
-
-		r = pink_trace_geteventmsg(ppid, (unsigned long *)&cpid_l);
-		if (r < 0 || cpid_l <= 0)
-			err_fatal(-r, "child pid not available after clone for pid:%u", ppid);
-
-		child = lookup_process(cpid_l);
-		if (child)
-			return 0;
-		child = new_thread_or_kill(cpid_l, post_attach_sigstop);
-	} else if (!parent) {
-		pid = child->pid;
-
-		r = proc_ppid(pid, &ppid);
-		if (r < 0 || ppid <= 0 || !(parent = lookup_process(ppid)))
-			err_fatal(EINVAL, "parent pid not available after clone for pid:%u", pid);
+	r = pink_trace_geteventmsg(current->pid, (unsigned long *)&cpid_l);
+	if (r < 0 || cpid_l <= 0) {
+		remove_process(current);
+		return (r < 0) ? r : -EINVAL;
 	}
 
-	child->ppid = ppid;
-	init_process_data(child, parent); /* expects ->ppid to be valid. */
-
-	parent->new_clone_flags = 0;
-	if (parent->flags & SYD_FREE_AFTER_CLONE)
-		free_process(parent);
+	child = new_thread_or_kill(cpid_l, SYD_WAIT_FOR_PARENT | post_attach_sigstop);
+	child->ppid = current->pid;
+	current->cpid = child->pid;
 
 	return 0;
 }
@@ -979,32 +1105,43 @@ static int event_seccomp(syd_process_t *current)
 }
 #endif
 
-static int event_exit(syd_process_t *current)
+static void set_exit_code(int status)
 {
-	int code = EXIT_FAILURE;
-	int r, status;
+	sydbox->exit_code = WIFEXITED(status) ? WEXITSTATUS(status)
+					      : (WIFSIGNALED(status) ? 128 + WTERMSIG(status)
+								     : EXIT_FAILURE);
+}
 
-	if ((r = syd_trace_geteventmsg(current, (unsigned long *)&status)) < 0)
-		return r; /* process dead */
+static void handle_sydbox_exit(syd_process_t *current, int status)
+{
+	set_exit_code(status);
+	if (!sydbox->config.exit_wait_all) {
+		cont_all();
+		exit(sydbox->exit_code);
+	}
+}
 
-	if (WIFEXITED(status)) {
-		code = WEXITSTATUS(status);
-		log_trace("exiting with code:%d (status:0x%04x)", code, status);
-	} else {
-		code = 128 + WTERMSIG(status);
-		log_trace("terminating with signal:%d (status:0x%04x)",
-			  WTERMSIG(status), status);
+static int event_exit(pid_t pid, syd_process_t *current)
+{
+	int r, flag, status;
+
+	if (current) {
+		flag = current->flags & (SYD_WAIT_FOR_PARENT|SYD_WAIT_FOR_CHILD);
+		if (flag)
+			current->flags &= ~flag;
 	}
 
-	if (sydchild(current)) {
-		sydbox->exit_code = code;
-		if (!sydbox->config.exit_wait_all) {
-			log_trace("aborting loop (wait_all not set)");
-			cont_all();
-			exit(sydbox->exit_code);
-		}
+	if ((r = pink_trace_geteventmsg(pid, (unsigned long *)&status)) < 0)
+		return r; /* Sigh... Let's wait for WIFEXITED. */
+	pink_trace_resume(pid, 0);
+
+	if (current) {
+		if (sydchild(current))
+			handle_sydbox_exit(current, status);
+		remove_process(current);
 	}
-	return 0;
+
+	return -ESRCH;
 }
 
 static int trace(void)
@@ -1014,7 +1151,7 @@ static int trace(void)
 	int r;
 	int status, sig;
 	unsigned event;
-	syd_process_t *current;
+	syd_process_t *current, *parent;
 	int syscall_trap_sig;
 
 	syscall_trap_sig = sydbox->trace_options & PINK_TRACE_OPTION_SYSGOOD
@@ -1035,8 +1172,23 @@ static int trace(void)
 		if ((r = check_interrupt()) != 0)
 			return r;
 
+		current = parent = NULL;
+		if (sydbox->current_clone_proc) {
+			/* Step 1: Wait for EVENT_CLONE */
+			current = sydbox->current_clone_proc;
+			/* Step 2: Wait for child's SIGSTOP/EVENT_STOP */
+			if (current->cpid > 0) {
+				parent = current;
+				current = lookup_process(current->cpid);
+			}
+		}
+
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
-		pid = waitpid(-1, &status, __WALL);
+		if (current) {
+			pid = waitpid(current->pid, &status, __WALL);
+		} else {
+			pid = waitpid(-1, &status, __WALL);
+		}
 		wait_errno = errno;
 		sigprocmask(SIG_SETMASK, &blocked_set, NULL);
 
@@ -1049,6 +1201,10 @@ static int trace(void)
 			case ECHILD:
 				if (process_count() == 0)
 					goto cleanup;
+				if (parent || current) {
+					sydbox->current_clone_proc = NULL;
+					continue;
+				}
 				/* If process count > 0, ECHILD is not expected,
 				 * treat it as any other error here.
 				 * fall through...
@@ -1059,16 +1215,39 @@ static int trace(void)
 			}
 		}
 
-		event = pink_event_decide(status);
-		current = lookup_process(pid);
-		log_context(NULL);
-		if (!current) {
-			current = new_thread_or_kill(pid, post_attach_sigstop);
-			r = event_clone(NULL, current);
-			if (r < 0)
-				continue; /* process dead */
-			log_context(current);
+		if (parent && parent->cpid > 0) {
+			/* Step 3: All done, back to normal wait()ing */
+			sydbox->current_clone_proc = NULL;
 		}
+
+
+		/* Step 4: Check if parent or current died somewhere in-between. */
+		if (!current)
+			current = lookup_process(pid);
+
+		if (WIFSIGNALED(status) || WIFEXITED(status)) {
+			if (current) {
+				if (sydchild(current))
+					handle_sydbox_exit(current, status);
+				remove_process(current);
+			}
+			continue;
+		} else if (!WIFSTOPPED(status)) {
+			log_fatal("PANIC: not stopped (status:0x%04x)", status);
+			panic(current);
+			continue;
+		}
+
+		event = pink_event_decide(status);
+
+		if (event == PINK_EVENT_EXIT) {
+			event_exit(pid, current);
+			continue;
+		}
+
+		/* Step 5: If we are here we *must* have a process entry, assert. */
+		assert(current);
+		log_context(current);
 
 		/* Under Linux, execve changes pid to thread leader's pid,
 		 * and we see this changed pid on EVENT_EXEC and later,
@@ -1113,19 +1292,7 @@ static int trace(void)
 				continue;
 		}
 
-		if (WIFSIGNALED(status) || WIFEXITED(status)) {
-			kill_process(current);
-			continue;
-		}
-
-		if (!WIFSTOPPED(status)) {
-			log_fatal("PANIC: not stopped (status:0x%04x)", status);
-			panic(current);
-			continue;
-		}
-
 		if (current->flags & SYD_STARTUP) {
-			log_trace("SYD_STARTUP set, initialising");
 			if ((r = event_startup(current)) < 0)
 				continue; /* process dead */
 		}
@@ -1138,7 +1305,7 @@ static int trace(void)
 		case PINK_EVENT_FORK:
 		case PINK_EVENT_VFORK:
 		case PINK_EVENT_CLONE:
-			r = event_clone(current, NULL);
+			r = event_clone(current);
 			if (r < 0)
 				continue; /* process dead */
 			goto restart_tracee_with_sig_0;
@@ -1169,20 +1336,11 @@ static int trace(void)
 				continue; /* process dead */
 			goto restart_tracee_with_sig_0;
 #endif
-		case PINK_EVENT_EXIT:
-			r = event_exit(current);
-			if (r < 0)
-				continue; /* process dead, huh? */
-			/* fall through */
 		default:
 			goto restart_tracee_with_sig_0;
 		}
 
-		if (!(current->flags & SYD_READY)) {
-			fprintf(stderr, "%u not ready\n", current->pid);
-			dump(DUMP_CLOSE);
-			exit(3);
-		}
+		assert(current->flags & SYD_READY);
 
 		/* Is this post-attach SIGSTOP?
 		 * Interestingly, the process may stop
