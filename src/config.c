@@ -51,6 +51,8 @@ void config_init(void)
 	sydbox->config.box_static.magic_lock = LOCK_UNSET;
 
 	/* initialize access control lists */
+	sydbox->config.hh_proc_pid_auto = NULL;
+
 	ACLQ_INIT(&sydbox->config.exec_kill_if_match);
 	ACLQ_INIT(&sydbox->config.exec_resume_if_match);
 	ACLQ_INIT(&sydbox->config.filter_exec);

@@ -27,6 +27,7 @@
 #include <sched.h>
 #include "pink.h"
 #include "acl-queue.h"
+#include "procmatch.h"
 #include "sockmatch.h"
 #include "sockmap.h"
 #include "util.h"
@@ -441,6 +442,7 @@ typedef struct {
 	aclq_t filter_write;
 	aclq_t filter_network;
 
+	proc_pid_t *hh_proc_pid_auto;
 	aclq_t acl_network_connect_auto;
 } config_t;
 

@@ -39,6 +39,7 @@ noinst_HEADERS+= \
 		 seccomp.h \
 		 pathdecode.h \
 		 pathmatch.h \
+		 procmatch.h \
 		 sockmatch.h \
 		 sockmap.h \
 		 util.h \
@@ -56,6 +57,7 @@ sydbox_SOURCES= \
 		 seccomp.c \
 		 pathdecode.c \
 		 pathmatch.c \
+		 procmatch.c \
 		 sockmatch.c \
 		 acl-queue.c \
 		 util.c \

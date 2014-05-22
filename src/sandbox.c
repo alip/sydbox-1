@@ -197,6 +197,7 @@ static bool box_check_access(enum sys_access_mode mode,
 			     const void *needle)
 {
 	size_t i;
+	unsigned r;
 	enum acl_action acl_mode;
 
 	assert(match_func);
@@ -214,8 +215,6 @@ static bool box_check_access(enum sys_access_mode mode,
 	}
 
 	for (i = 0; i < aclq_list_len; i++) {
-		unsigned r;
-
 		r = match_func(acl_mode, aclq_list[i], needle, NULL);
 		if (r & ACL_MATCH) {
 			r &= ~ACL_MATCH_MASK;
@@ -233,7 +232,12 @@ static bool box_check_access(enum sys_access_mode mode,
 	/* No match */
 	switch (mode) {
 	case ACCESS_WHITELIST:
-		return false; /* access denied (default) */
+		if (!sydbox->config.whitelist_per_process_directories)
+			return false; /* access denied (default) */
+		else if (procmatch(&sydbox->config.hh_proc_pid_auto, needle))
+			return true; /* access granted (/proc whitelist) */
+		else
+			return false; /* access denied (/proc did not match) */
 	case ACCESS_BLACKLIST:
 		return true; /* access granted (default) */
 	default:

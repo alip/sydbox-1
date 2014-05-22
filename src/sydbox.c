@@ -260,6 +260,9 @@ void free_process(syd_process_t *p)
 
 	free(p);
 
+	if (sydbox->config.whitelist_per_process_directories)
+		procdrop(&sydbox->config.hh_proc_pid_auto, pid);
+
 	log_context(NULL);
 	log_trace("process %u removed", pid);
 }
@@ -860,10 +863,7 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 
 	if (sydbox->config.whitelist_per_process_directories &&
 	    (!parent || current->pid != parent->pid)) {
-		char magic[sizeof("/proc/%u/***") + sizeof(int)*3 + /*paranoia:*/16];
-		sprintf(magic, "/proc/%u/***", current->pid);
-		magic_append_whitelist_read(magic, current);
-		magic_append_whitelist_write(magic, current);
+		procadd(&sydbox->config.hh_proc_pid_auto, current->pid);
 	}
 
 	current->flags |= SYD_READY;
@@ -1198,10 +1198,6 @@ static int trace(void)
 		/* Step 4: Check if parent or current died somewhere in-between. */
 		if (!current)
 			current = lookup_process(pid);
-
-		if (process_count() > 60) {
-			kill_all(SIGTERM);
-		}
 
 		if (WIFSIGNALED(status) || WIFEXITED(status)) {
 			if (current) {
