@@ -1119,15 +1119,6 @@ static void set_exit_code(int status)
 								     : EXIT_FAILURE);
 }
 
-static void handle_sydbox_exit(syd_process_t *current, int status)
-{
-	set_exit_code(status);
-	if (!sydbox->config.exit_wait_all) {
-		cont_all();
-		exit(sydbox->exit_code);
-	}
-}
-
 static int event_exit(pid_t pid, syd_process_t *current)
 {
 	int r, flag, status;
@@ -1144,7 +1135,7 @@ static int event_exit(pid_t pid, syd_process_t *current)
 
 	if (current) {
 		if (sydchild(current))
-			handle_sydbox_exit(current, status);
+			set_exit_code(status);
 		remove_process(current);
 	}
 
@@ -1235,7 +1226,7 @@ static int trace(void)
 		if (WIFSIGNALED(status) || WIFEXITED(status)) {
 			if (current) {
 				if (sydchild(current))
-					handle_sydbox_exit(current, status);
+					set_exit_code(status);
 				remove_process(current);
 			}
 			continue;

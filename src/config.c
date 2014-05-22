@@ -40,7 +40,6 @@ void config_init(void)
 	/* set sane defaults for configuration */
 	sydbox->config.follow_fork = true;
 	sydbox->config.exit_kill = false;
-	sydbox->config.exit_wait_all = true;
 	sydbox->config.use_seccomp = false;
 	sydbox->config.use_seize = false;
 	sydbox->config.use_toolong_hack = false;

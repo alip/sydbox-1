@@ -40,22 +40,6 @@ int magic_query_trace_exit_kill(syd_process_t *current)
 	return MAGIC_BOOL(sydbox->config.exit_kill);
 }
 
-int magic_set_trace_exit_wait_all(const void *val, syd_process_t *current)
-{
-#if SYDBOX_HAVE_SECCOMP
-	log_magic("seccomp support enabled, force exit_wait_all to true");
-	sydbox->config.exit_wait_all = true;
-#else
-	sydbox->config.exit_wait_all = PTR_TO_BOOL(val);
-#endif
-	return MAGIC_RET_OK;
-}
-
-int magic_query_trace_exit_wait_all(syd_process_t *current)
-{
-	return MAGIC_BOOL(sydbox->config.exit_wait_all);
-}
-
 int magic_set_trace_use_seccomp(const void *val, syd_process_t *current)
 {
 #if SYDBOX_HAVE_SECCOMP

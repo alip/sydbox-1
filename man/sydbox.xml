@@ -614,19 +614,6 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="core-trace-exit_wait_all">core/trace/exit_wait_all</option></term>
-          <listitem>
-            <para>type: <type>boolean</type></para>
-            <para>default: <varname>true</varname></para>
-            <para>
-              A boolean specifying whether all traced processes should be waited to exit before Sydbox exits.
-              If this is <varname>false</varname>, Sydbox resumes all the traced processes and exits when the eldest
-              process exits.
-            </para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
           <term><option id="core-trace-magic_lock">core/trace/magic_lock</option></term>
           <listitem>
             <para>type: <type>string</type></para>

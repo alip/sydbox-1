@@ -182,7 +182,6 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE,
 	MAGIC_KEY_CORE_TRACE_FOLLOW_FORK,
 	MAGIC_KEY_CORE_TRACE_EXIT_KILL,
-	MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
 	MAGIC_KEY_CORE_TRACE_INTERRUPT,
 	MAGIC_KEY_CORE_TRACE_USE_SECCOMP,
@@ -462,7 +461,6 @@ typedef struct {
 
 	bool follow_fork;
 	bool exit_kill;
-	bool exit_wait_all;
 	bool use_seccomp;
 	bool use_seize;
 	bool use_toolong_hack;
@@ -760,8 +758,6 @@ int magic_set_trace_follow_fork(const void *val, syd_process_t *current);
 int magic_query_trace_follow_fork(syd_process_t *current);
 int magic_set_trace_exit_kill(const void *val, syd_process_t *current);
 int magic_query_trace_exit_kill(syd_process_t *current);
-int magic_set_trace_exit_wait_all(const void *val, syd_process_t *current);
-int magic_query_trace_exit_wait_all(syd_process_t *current);
 int magic_set_trace_use_seccomp(const void *val, syd_process_t *current);
 int magic_query_trace_use_seccomp(syd_process_t *current);
 int magic_set_trace_use_seize(const void *val, syd_process_t *current);
