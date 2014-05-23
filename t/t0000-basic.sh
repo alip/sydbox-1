@@ -11,14 +11,17 @@ test_description='Test the very basics'
 test_expect_success 'success is reported like this' '
 	:
 '
-test_expect_failure 'pretend we have a known breakage' '
-	false
-'
 
 run_sub_test_lib_test () {
 	name="$1" descr="$2" # stdin is the body of the test code
+	shift 2
 	mkdir "$name" &&
 	(
+		# Pretend we're not running under a test harness, whether we
+		# are or not. The test-lib output depends on the setting of
+		# this variable, so we need a stable setting under which to run
+		# the sub-test.
+		sane_unset HARNESS_ACTIVE &&
 		cd "$name" &&
 		cat >"$name.sh" <<-EOF &&
 		#!$SHELL_PATH
@@ -35,7 +38,9 @@ run_sub_test_lib_test () {
 		cat >>"$name.sh" &&
 		chmod +x "$name.sh" &&
 		export TEST_DIRECTORY &&
-		./"$name.sh" >out 2>err
+		TEST_OUTPUT_DIRECTORY=$(pwd) &&
+		export TEST_OUTPUT_DIRECTORY &&
+		./"$name.sh" "$@" >out 2>err
 	)
 }
 
@@ -49,6 +54,22 @@ check_sub_test_lib_test () {
 	)
 }
 
+test_expect_success 'pretend we have a fully passing test suite' "
+	run_sub_test_lib_test full-pass '3 passing tests' <<-\\EOF &&
+	for i in 1 2 3
+	do
+		test_expect_success \"passing test #\$i\" 'true'
+	done
+	test_done
+	EOF
+	check_sub_test_lib_test full-pass <<-\\EOF
+	> ok 1 - passing test #1
+	> ok 2 - passing test #2
+	> ok 3 - passing test #3
+	> # passed all 3 test(s)
+	> 1..3
+	EOF
+"
 test_expect_success 'pretend we have a partially passing test suite' "
 	test_must_fail run_sub_test_lib_test \
 		partial-pass '2/3 tests passing' <<-\\EOF &&
@@ -167,6 +188,56 @@ test_expect_success 'pretend we have a mix of all possible results' "
 	> 1..10
 	EOF
 "
+
+test_expect_success 'test --verbose' '
+	test_must_fail run_sub_test_lib_test \
+		test-verbose "test verbose" --verbose <<-\EOF &&
+	test_expect_success "passing test" true
+	test_expect_success "test with output" "echo foo"
+	test_expect_success "failing test" false
+	test_done
+	EOF
+	mv test-verbose/out test-verbose/out+
+	grep -v "^Initialized empty" test-verbose/out+ >test-verbose/out &&
+	check_sub_test_lib_test test-verbose <<-\EOF
+	> expecting success: true
+	> ok 1 - passing test
+	> Z
+	> expecting success: echo foo
+	> foo
+	> ok 2 - test with output
+	> Z
+	> expecting success: false
+	> not ok 3 - failing test
+	> #	false
+	> Z
+	> # failed 1 among 3 test(s)
+	> 1..3
+	EOF
+'
+
+test_expect_success 'test --verbose-only' '
+	test_must_fail run_sub_test_lib_test \
+		test-verbose-only-2 "test verbose-only=2" \
+		--verbose-only=2 <<-\EOF &&
+	test_expect_success "passing test" true
+	test_expect_success "test with output" "echo foo"
+	test_expect_success "failing test" false
+	test_done
+	EOF
+	check_sub_test_lib_test test-verbose-only-2 <<-\EOF
+	> ok 1 - passing test
+	> Z
+	> expecting success: echo foo
+	> foo
+	> ok 2 - test with output
+	> Z
+	> not ok 3 - failing test
+	> #	false
+	> # failed 1 among 3 test(s)
+	> 1..3
+	EOF
+'
 
 test_set_prereq HAVEIT
 haveit=no

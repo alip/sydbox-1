@@ -37,10 +37,6 @@ then
 	# elsewhere
 	TEST_OUTPUT_DIRECTORY=$TEST_DIRECTORY
 fi
-DIFF="diff"
-SHELL_PATH="/bin/sh"
-PERL_PATH="perl"
-export DIFF PERL_PATH SHELL_PATH
 
 ################################################################
 # It appears that people try to run tests without building...
@@ -55,6 +51,11 @@ then
 	fi
 fi
 
+DIFF="${DIFF:-/usr/bin/env diff}"
+SHELL_PATH="${SHELL_PATH:-/bin/sh}"
+PERL_PATH="${PERL_PATH:-perl}"
+export PERL_PATH SHELL_PATH
+
 # if --tee was passed, write the output not only to the terminal, but
 # additionally to the file test-results/$BASENAME.out, too.
 case "$SYDBOX_TEST_TEE_STARTED, $* " in
@@ -62,8 +63,8 @@ done,*)
 	# do not redirect again
 	;;
 *' --tee '*|*' --va'*)
-	mkdir -p test-results
-	BASE=test-results/$(basename "$0" .sh)
+	mkdir -p "$TEST_OUTPUT_DIRECTORY/test-results"
+	BASE="$TEST_OUTPUT_DIRECTORY/test-results/$(basename "$0" .sh)"
 	(SYDBOX_TEST_TEE_STARTED=done ${SHELL_PATH} "$0" "$@" 2>&1;
 	 echo $? > $BASE.exit) | tee $BASE.out
 	test "$(cat $BASE.exit)" = 0
@@ -83,21 +84,21 @@ EDITOR=:
 # /usr/xpg4/bin/sh and /bin/ksh to bail out.  So keep the unsets
 # deriving from the command substitution clustered with the other
 # ones.
-unset VISUAL EMAIL LANGUAGE COLUMNS SYDBOX_CONFIG $("$PERL_PATH" -e '
+unset VISUAL EMAIL LANGUAGE COLUMNS $("$PERL_PATH" -e '
 	my @env = keys %ENV;
 	my $ok = join("|", qw(
 		TRACE
+		CONFIG
 		DEBUG
-		USE_LOOKUP
 		TEST
 		.*_TEST
 		PROVE
 		VALGRIND
-		UNZIP
 	));
 	my @vars = grep(/^SYDBOX_/ && !/^SYDBOX_($ok)/o, @env);
 	print join("\n", @vars);
 ')
+unset XDG_CONFIG_HOME
 export EDITOR
 
 # Add libc MALLOC and MALLOC_PERTURB test
@@ -172,6 +173,9 @@ do
 		help=t; shift ;;
 	-v|--v|--ve|--ver|--verb|--verbo|--verbos|--verbose)
 		verbose=t; shift ;;
+	--verbose-only=*)
+		verbose_only=$(expr "z$1" : 'z[^=]*=\(.*\)')
+		shift ;;
 	-q|--q|--qu|--qui|--quie|--quiet)
 		# Ignore --quiet under a TAP::Harness. Saying how many tests
 		# passed without the ok/not ok details is always an error.
@@ -181,7 +185,14 @@ do
 	--no-color)
 		color=; shift ;;
 	--va|--val|--valg|--valgr|--valgri|--valgrin|--valgrind)
-		valgrind=t; verbose=t; shift ;;
+		valgrind=memcheck
+		shift ;;
+	--valgrind=*)
+		valgrind=$(expr "z$1" : 'z[^=]*=\(.*\)')
+		shift ;;
+	--valgrind-only=*)
+		valgrind_only=$(expr "z$1" : 'z[^=]*=\(.*\)')
+		shift ;;
 	--tee)
 		shift ;; # was handled already
 	--root=*)
@@ -191,6 +202,15 @@ do
 		echo "error: unknown test option '$1'" >&2; exit 1 ;;
 	esac
 done
+
+if test -n "$valgrind_only"
+then
+	test -z "$valgrind" && valgrind=memcheck
+	test -z "$verbose" && verbose_only="$valgrind_only"
+elif test -n "$valgrind"
+then
+	verbose=t
+fi
 
 if test -n "$color"
 then
@@ -241,7 +261,7 @@ error "Test script did not set test_description."
 
 if test "$help" = "t"
 then
-	echo "$test_description"
+	printf '%s\n' "$test_description"
 	exit 0
 fi
 
@@ -282,7 +302,7 @@ trap 'die' EXIT
 . "$TEST_DIRECTORY/test-lib-sydbox.sh"
 
 # You are not expected to call test_ok_ and test_failure_ directly, use
-# the text_expect_* functions instead.
+# the test_expect_* functions instead.
 
 test_ok_ () {
 	test_success=$(($test_success + 1))
@@ -293,7 +313,7 @@ test_failure_ () {
 	test_failure=$(($test_failure + 1))
 	say_color error "not ok $test_count - $1"
 	shift
-	echo "$@" | sed -e 's/^/#	/'
+	printf '%s\n' "$*" | sed -e 's/^/#	/'
 	test "$immediate" = "" || { SYDBOX_EXIT_OK=t; exit 1; }
 }
 
@@ -309,6 +329,65 @@ test_known_broken_failure_ () {
 
 test_debug () {
 	test "$debug" = "" || eval "$1"
+}
+
+match_pattern_list () {
+	arg="$1"
+	shift
+	test -z "$*" && return 1
+	for pattern_
+	do
+		case "$arg" in
+		$pattern_)
+			return 0
+		esac
+	done
+	return 1
+}
+
+maybe_teardown_verbose () {
+	test -z "$verbose_only" && return
+	exec 4>/dev/null 3>/dev/null
+	verbose=
+}
+
+last_verbose=t
+maybe_setup_verbose () {
+	test -z "$verbose_only" && return
+	if match_pattern_list $test_count $verbose_only
+	then
+		exec 4>&2 3>&1
+		# Emit a delimiting blank line when going from
+		# non-verbose to verbose.  Within verbose mode the
+		# delimiter is printed by test_expect_*.  The choice
+		# of the initial $last_verbose is such that before
+		# test 1, we do not print it.
+		test -z "$last_verbose" && echo >&3 ""
+		verbose=t
+	else
+		exec 4>/dev/null 3>/dev/null
+		verbose=
+	fi
+	last_verbose=$verbose
+}
+
+maybe_teardown_valgrind () {
+	test -z "$SYDBOX_VALGRIND" && return
+	SYDBOX_VALGRIND_ENABLED=
+}
+
+maybe_setup_valgrind () {
+	test -z "$SYDBOX_VALGRIND" && return
+	if test -z "$valgrind_only"
+	then
+		SYDBOX_VALGRIND_ENABLED=t
+		return
+	fi
+	SYDBOX_VALGRIND_ENABLED=
+	if match_pattern_list $test_count $valgrind_only
+	then
+		SYDBOX_VALGRIND_ENABLED=t
+	fi
 }
 
 test_eval_ () {
@@ -334,8 +413,10 @@ test_run_ () {
 
 	test_cleanup=:
 	expecting_failure=$2
+	setup_malloc_check
 	test_eval_ "$1"
 	eval_ret=$?
+	teardown_malloc_check
 
 	if test -z "$immediate" || test $eval_ret = 0 || test -n "$expecting_failure"
 	then
@@ -356,17 +437,24 @@ test_run_ () {
 	return "$eval_ret"
 }
 
-test_skip () {
+test_start_ () {
 	test_count=$(($test_count+1))
+	maybe_setup_verbose
+	maybe_setup_valgrind
+}
+
+test_finish_ () {
+	echo >&3 ""
+	maybe_teardown_valgrind
+	maybe_teardown_verbose
+}
+
+test_skip () {
 	to_skip=
-	for skp in $SYDBOX_SKIP_TESTS
-	do
-		case $this_test.$test_count in
-		$skp)
-			to_skip=t
-			break
-		esac
-	done
+	if match_pattern_list $this_test.$test_count $SYDBOX_SKIP_TESTS
+	then
+		to_skip=t
+	fi
 	if test -z "$to_skip" && test -n "$test_prereq" &&
 	   ! test_have_prereq "$test_prereq"
 	then
@@ -474,16 +562,10 @@ if test -n "$valgrind"
 then
 	SYDBOX_VALGRIND="$TEST_DIRECTORY"/valgrind
 	export SYDBOX_VALGRIND
-	PATH=$TEST_DIRECTORY/valgrind/bin:$PATH
+	PATH="$TEST_DIRECTORY/valgrind/bin:$PATH"
 fi
 export PATH
 
-#SYDBOX_TEST_OPTIONS=
-#if test -n "$verbose" -o -n "$valgrind"
-#then
-#	SYDBOX_TEST_OPTIONS="-m log/console_level:2559 $SYDBOX_TEST_OPTIONS"
-#fi
-#export SYDBOX_TEST_OPTIONS
 
 if test -z "$SYDBOX_TEST_CMP"
 then
@@ -495,41 +577,37 @@ then
 	fi
 fi
 
-# Test repository
-test="trash directory.$(basename "$0" .sh)"
-test -n "$root" && test="$root/$test"
-case "$test" in
-/*) TRASH_DIRECTORY="$test" ;;
- *) TRASH_DIRECTORY="$TEST_OUTPUT_DIRECTORY/$test" ;;
+# Test directory
+TRASH_DIRECTORY="trash directory.$(basename "$0" .sh)"
+test -n "$root" && TRASH_DIRECTORY="$root/$TRASH_DIRECTORY"
+case "$TRASH_DIRECTORY" in
+/*) ;; # absolute path is good
+ *) TRASH_DIRECTORY="$TEST_OUTPUT_DIRECTORY/$TRASH_DIRECTORY" ;;
 esac
 test ! -z "$debug" || remove_trash=$TRASH_DIRECTORY
-rm -fr "$test" || {
+rm -fr "$TRASH_DIRECTORY" || {
 	SYDBOX_EXIT_OK=t
 	echo >&5 "FATAL: Cannot prepare test area"
 	exit 1
 }
 
 HOME="$TRASH_DIRECTORY"
-HOME_RESOLVED=$(readlink -f "$HOME")
 SHOEBOX="$HOME/sydcore"
-export HOME HOME_RESOLVED SHOEBOX
+export HOME SHOEBOX
 
-mkdir -p "$test"
+mkdir -p "$TRASH_DIRECTORY"
 # Use -P to resolve symlinks in our working directory so that the cwd
 # in subprocesses like sydbox equals our $PWD (for pathname comparisons).
-cd -P "$test" || exit 1
+cd -P "$TRASH_DIRECTORY" || exit 1
 
 this_test=${0##*/}
 this_test=${this_test%%-*}
-for skp in $SYDBOX_SKIP_TESTS
-do
-	case "$this_test" in
-	$skp)
-		say_color info >&3 "skipping test $this_test altogether"
-		skip_all="skip all tests in $this_test"
-		test_done
-	esac
-done
+if match_pattern_list "$this_test" $GIT_SKIP_TESTS
+then
+	say_color info >&3 "skipping test $this_test altogether"
+	skip_all="skip all tests in $this_test"
+	test_done
+fi
 
 # Provide an implementation of the 'yes' utility
 yes () {
@@ -559,6 +637,25 @@ test_lazy_prereq SYMLINKS '
 test_lazy_prereq PYTHON '
         # test whether we have a recent enough python for shoebox (>= 3.2)
         python3 --version | sed "s/^[Pp]ython //" | grep -qE "(3.[2-9]|[4-9].)"
+'
+
+test_lazy_prereq CASE_INSENSITIVE_FS '
+	echo good >CamelCase &&
+	echo bad >camelcase &&
+	test "$(cat CamelCase)" != good
+'
+
+test_lazy_prereq UTF8_NFD_TO_NFC '
+	# check whether FS converts nfd unicode to nfc
+	auml=$(printf "\303\244")
+	aumlcdiar=$(printf "\141\314\210")
+	>"$auml" &&
+	case "$(echo *)" in
+	"$aumlcdiar")
+		true ;;
+	*)
+		false ;;
+	esac
 '
 
 # When the tests are run as root, permission tests will report that

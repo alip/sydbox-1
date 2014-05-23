@@ -1,4 +1,5 @@
-#!/bin/sh
+# Library of functions shared by all tests scripts, included by
+# test-lib.sh.
 #
 # Copyright (c) 2005 Junio C Hamano
 #
@@ -76,11 +77,11 @@ test_decode_color () {
 }
 
 nul_to_q () {
-	"$PERL_PATH" -pe 'y/\000/Q/'
+	perl -pe 'y/\000/Q/'
 }
 
 q_to_nul () {
-	"$PERL_PATH" -pe 'y/Q/\000/'
+	perl -pe 'y/Q/\000/'
 }
 
 q_to_cr () {
@@ -89,6 +90,10 @@ q_to_cr () {
 
 q_to_tab () {
 	tr Q '\011'
+}
+
+qz_to_tab_space () {
+	tr QZ '\011\040'
 }
 
 append_cr () {
@@ -250,6 +255,7 @@ test_declared_prereq () {
 }
 
 test_expect_failure () {
+	test_start_
 	test "$#" = 3 && { test_prereq=$1; shift; } || test_prereq=
 	test "$#" = 2 ||
 	error "bug in the test script: not 2 or 3 parameters to test-expect-failure"
@@ -268,6 +274,7 @@ test_expect_failure () {
 }
 
 test_expect_success () {
+	test_start_
 	test "$#" = 3 && { test_prereq=$1; shift; } || test_prereq=
 	test "$#" = 2 ||
 	error "bug in the test script: not 2 or 3 parameters to test-expect-success"
@@ -282,7 +289,7 @@ test_expect_success () {
 			test_failure_ "$@"
 		fi
 	fi
-	echo >&3 ""
+	test_finish_
 }
 
 # test_external runs external test scripts that provide continuous
@@ -447,6 +454,9 @@ test_must_fail () {
 	elif test $exit_code = 127; then
 		echo >&2 "test_must_fail: command not found: $*"
 		return 1
+	elif test $exit_code = 126; then
+		echo >&2 "test_must_fail: valgrind error: $*"
+		return 1
 	fi
 	return 0
 }
@@ -513,6 +523,18 @@ test_cmp() {
 	$SYDBOX_TEST_CMP "$@"
 }
 
+# Check if the file expected to be empty is indeed empty, and barfs
+# otherwise.
+
+test_must_be_empty () {
+	if test -s "$1"
+	then
+		echo "'$1' is not empty, it contains:"
+		cat "$1"
+		return 1
+	fi
+}
+
 # Print a sequence of numbers or letters in increasing order.  This is
 # similar to GNU seq(1), but the latter might not be available
 # everywhere (and does not do letters).  It may be used like:
@@ -531,7 +553,7 @@ test_seq () {
 	2)	;;
 	*)	error "bug in the test script: not 1 or 2 parameters to test_seq" ;;
 	esac
-	"$PERL_PATH" -le 'print for $ARGV[0]..$ARGV[1]' -- "$@"
+	perl -le 'print for $ARGV[0]..$ARGV[1]' -- "$@"
 }
 
 # This function can be used to schedule some commands to be run
@@ -560,4 +582,8 @@ test_seq () {
 test_when_finished () {
 	test_cleanup="{ $*
 		} && (exit \"\$eval_ret\"); eval_ret=\$?; $test_cleanup"
+}
+
+perl () {
+	command "$PERL_PATH" "$@"
 }
