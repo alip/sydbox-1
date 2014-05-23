@@ -68,11 +68,11 @@ test_expect_success_foreach_option 'return success if initial tracee returns suc
 '
 
 test_expect_success 'return success if initial tracee returns success (PTHREAD)' '
-    sydbox -- syd_true_pthread 256
+    sydbox -- syd_true_pthread 32
 '
 
 test_expect_success_foreach_option 'return success if initial tracee returns success (PTHREAD)' '
-    sydbox -- syd_true_pthread 256
+    sydbox -- syd_true_pthread 32
 '
 
 test_expect_success 'return failure if initial tracee returns failure (FORK)' '
@@ -92,11 +92,11 @@ test_expect_success_foreach_option 'return failure if initial tracee returns fai
 '
 
 test_expect_success 'return failure if initial tracee returns failure (PTHREAD)' '
-    test_expect_code 1 sydbox -- syd_false_pthread 256
+    test_expect_code 1 sydbox -- syd_false_pthread 32
 '
 
 test_expect_success_foreach_option 'return failure if initial tracee returns failure (PTHREAD)' '
-    test_expect_code 1 sydbox -- syd_false_pthread 256
+    test_expect_code 1 sydbox -- syd_false_pthread 32
 '
 
 #test_expect_success_foreach_option 'return success if initial tracee returns success' '
