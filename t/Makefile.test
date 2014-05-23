@@ -15,9 +15,9 @@ PROVE ?= prove
 DEFAULT_TEST_TARGET ?= test
 
 ifdef TMPDIR
-TEST_OUTPUT_DIRECTORY ?= $(TMPDIR)/sydbox-tests
+TEST_OUTPUT_DIRECTORY ?= $(TMPDIR)/sydbox-tests-$(shell id -u)
 else
-TEST_OUTPUT_DIRECTORY ?= /tmp/sydbox-tests
+TEST_OUTPUT_DIRECTORY ?= /tmp/sydbox-tests-$(shell id -u)
 endif
 export TEST_OUTPUT_DIRECTORY
 TEST_RESULTS_DIRECTORY = $(TEST_OUTPUT_DIRECTORY)/test-results
