@@ -1,3 +1,4 @@
+BUILT_SOURCES=
 CLEANFILES= \
 	    gmon.out \
 	    *.gcda \
@@ -142,8 +143,19 @@ DUMP_LINKER_FLAGS= \
 	  -Wl,--wrap=pink_trace_interrupt \
 	  -Wl,--wrap=pink_trace_listen
 
-libexec_SCRIPTS= shoebox
-libexec_PROGRAMS= sydbox-dump
+syddir=$(libexecdir)/$(PACKAGE)
+syd_SCRIPTS= shoebox
+syd_PROGRAMS= sydbox-dump
+
+shoebox: shoebox.in
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) \
+		-e "s:@SHOEBOX_VERSION@:$(VERSION)$(GITVERSION):g" \
+		$< > $@
+	$(AM_V_at)chmod +x $@
+BUILT_SOURCES+= shoebox
+CLEANFILES+= shoebox
+
 sydbox_dump_SOURCES= $(DUMP_SRCS)
 sydbox_dump_CFLAGS= $(DUMP_COMPILER_FLAGS)
 sydbox_dump_CPPFLAGS= $(DUMP_PREPROCESSOR_FLAGS)

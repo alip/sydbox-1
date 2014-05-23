@@ -1,4 +1,4 @@
-SUBDIRS= bin-wrappers sb .
+SUBDIRS= bin-wrappers sb valgrind .
 CLEANFILES= \
 	    gmon.out \
 	    *.gcda \
@@ -6,19 +6,13 @@ CLEANFILES= \
 	    *.gcov \
 	    *.log \
 	    *.trs
-EXTRA_DIST= \
-	    README
-noinst_DATA=
-noinst_HEADERS=
-noinst_SCRIPTS=
 check_SCRIPTS=
 BUILT_SOURCES=
 
 check_SCRIPTS+= \
 		test-lib-functions.sh \
 		test-lib-sydbox.sh \
-		test-runner.sh \
-		valgrind/analyze.sh
+		test-runner.sh
 
 test-lib.sh: test-lib.sh.in
 	$(AM_V_GEN)
@@ -28,8 +22,7 @@ test-lib.sh: test-lib.sh.in
 		-e "s:@PTRACE_SECCOMP@:$(SYDBOX_HAVE_SECCOMP):g" \
 		$< > $@
 BUILT_SOURCES+= test-lib.sh
-EXTRA_DIST+= test-lib.sh.in
-CLEANFILES+= test-lib.sh
+check_SCRIPTS+= test-lib.sh
 
 TEST_EXTENSIONS= .sh
 SH_LOG_COMPILER= $(srcdir)/test-runner.sh
@@ -37,4 +30,11 @@ TESTS= \
        t0000-basic.sh \
        t0001-sydbox.sh
 check_SCRIPTS+= $(TESTS)
-EXTRA_DIST+= $(check_SCRIPTS)
+
+syddir=$(libexecdir)/$(PACKAGE)/t
+syd_SCRIPTS= $(check_SCRIPTS)
+syd_DATA= README
+
+EXTRA_DIST= Makefile.test
+install-data-local:
+	cp Makefile.test $(DESTDIR)$(syddir)/Makefile

@@ -59,3 +59,6 @@ check_PROGRAMS= \
 		syd_false_fork \
 		syd_false_fork_static \
 		syd_false_pthread
+
+syddir=$(libexecdir)/$(PACKAGE)/t/sb
+syd_PROGRAMS= $(check_PROGRAMS)

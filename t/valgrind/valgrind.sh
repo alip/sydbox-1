@@ -2,31 +2,21 @@
 
 base=$(basename "$0")
 
-TOOL_OPTIONS='--leak-check=no'
+TRACK_ORIGINS=
 
-test -z "$SYD_VALGRIND_ENABLED" &&
-exec "$SYD_VALGRIND"/../../"$base" "$@"
-
-case "$SYD_VALGRIND_MODE" in
-memcheck-fast)
-	;;
-memcheck)
-	VALGRIND_VERSION=$(valgrind --version)
-	VALGRIND_MAJOR=$(expr "$VALGRIND_VERSION" : '[^0-9]*\([0-9]*\)')
-	VALGRIND_MINOR=$(expr "$VALGRIND_VERSION" : '[^0-9]*[0-9]*\.\([0-9]*\)')
-	test 3 -gt "$VALGRIND_MAJOR" ||
-	test 3 -eq "$VALGRIND_MAJOR" -a 4 -gt "$VALGRIND_MINOR" ||
-	TOOL_OPTIONS="$TOOL_OPTIONS --track-origins=yes"
-	;;
-*)
-	TOOL_OPTIONS="--tool=$SYD_VALGRIND_MODE"
-esac
+VALGRIND_VERSION=$(valgrind --version)
+VALGRIND_MAJOR=$(expr "$VALGRIND_VERSION" : '[^0-9]*\([0-9]*\)')
+VALGRIND_MINOR=$(expr "$VALGRIND_VERSION" : '[^0-9]*[0-9]*\.\([0-9]*\)')
+test 3 -gt "$VALGRIND_MAJOR" ||
+test 3 -eq "$VALGRIND_MAJOR" -a 4 -gt "$VALGRIND_MINOR" ||
+TRACK_ORIGINS=--track-origins=yes
 
 exec valgrind -q --error-exitcode=126 \
+	--leak-check=full \
+	--suppressions="$SYDBOX_VALGRIND/default.supp" \
 	--gen-suppressions=all \
-	--suppressions="$SYD_VALGRIND/default.supp" \
-	$TOOL_OPTIONS \
+	$TRACK_ORIGINS \
 	--log-fd=4 \
 	--input-fd=4 \
-	$SYD_VALGRIND_OPTIONS \
-	"$SYD_VALGRIND"/../../"$base" "$@"
+	$SYDBOX_VALGRIND_OPTIONS \
+	"$SYDBOX_VALGRIND"/../bin/"$base" "$@"

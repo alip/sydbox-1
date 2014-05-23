@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec "$@" $SYD_CHECK_OPTIONS
+exec "$@" $SYDBOX_CHECK_OPTIONS

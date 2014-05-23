@@ -71,7 +71,9 @@ if test x"$ac_cv_prog_cc_c99" = x"no"; then
 fi
 AC_PROG_LD
 AC_PROG_INSTALL
+AC_PROG_LN_S
 AC_PROG_MAKE_SET
+AC_PROG_MKDIR_P
 AC_PROG_SED
 LT_INIT
 
@@ -358,5 +360,6 @@ AC_CONFIG_FILES([Makefile
 		 man/Makefile
 		 t/Makefile
 		 t/bin-wrappers/Makefile
-		 t/sb/Makefile])
+		 t/sb/Makefile
+		 t/valgrind/Makefile])
 AC_OUTPUT

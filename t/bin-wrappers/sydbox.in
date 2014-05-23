@@ -3,9 +3,6 @@
 if test -z "$TEST_SYDBOX_INSTALLED"
 then
 	exec "@TOP_BUILDDIR@"/src/sydbox $SYDBOX_TEST_OPTIONS "$@"
-elif test -d "$TEST_SYDBOX_BINDIR"
-then
-	exec "$TEST_SYDBOX_BINDIR"/sydbox $SYDBOX_TEST_OPTIONS "$@"
 else
 	exec "@BINDIR@"/sydbox $SYDBOX_TEST_OPTIONS "$@"
 fi

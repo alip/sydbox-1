@@ -95,7 +95,7 @@ Makefile
 /src/sydbox
 /src/sydfmt
 /src/sydbox-dump
-/src/sydbox-dump-gcov
+/src/shoebox
 
 tests/test-lib.sh
 tests/test-results
@@ -122,3 +122,4 @@ tests/t[0-9][0-9][0-9]*
 /t/sb/*-0
 /t/sb/syd_*
 !/t/sb/syd_*.c
+/t/valgrind/bin/*
