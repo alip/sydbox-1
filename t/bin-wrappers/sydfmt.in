@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if test -z "$TEST_SYDBOX_INSTALLED"
+if test -z "$SYDBOX_TEST_INSTALLED"
 then
 	exec "@TOP_BUILDDIR@"/src/sydfmt "$@"
 elif test -d "$TEST_SYDBOX_BINDIR"

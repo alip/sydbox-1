@@ -1,10 +1,11 @@
-# Run tests
+# Run installed sydbox tests
 #
 # Copyright (c) 2005 Junio C Hamano
+# Copyright (c) 2014 Ali Polatel
 #
 
-TEST_SYDBOX_INSTALLED=1
-export TEST_SYDBOX_INSTALLED
+SYDBOX_TEST_INSTALLED=1
+export SYDBOX_TEST_INSTALLED
 
 SHELL_PATH ?= $(SHELL)
 PERL_PATH ?= /usr/bin/perl
