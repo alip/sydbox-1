@@ -15,3 +15,7 @@ if [[ ! -e /etc/exherbo-release ]]; then
     PKG_CONFIG_PATH="$HOME/pink/lib/pkgconfig:$PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
 fi
+
+MALLOC_CHECK_=3
+MALLOC_PERTURB_=$(($RANDOM % 255 + 1))
+export MALLOC_CHECK_ MALLOC_PERTURB_
