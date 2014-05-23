@@ -1,5 +1,5 @@
 AM_MAKEFLAGS= --no-print-directory
-SUBDIRS= bin-wrappers sb valgrind .
+SUBDIRS= bin-wrappers test-bin test-data sb valgrind .
 CLEANFILES= \
 	    gmon.out \
 	    *.gcda \
@@ -29,7 +29,8 @@ TEST_EXTENSIONS= .sh
 SH_LOG_COMPILER= $(srcdir)/test-runner.sh
 TESTS= \
        t0000-basic.sh \
-       t0001-sydbox.sh
+       t0001-core-basic.sh \
+       t0002-path-wildmatch.sh
 check_SCRIPTS+= $(TESTS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t

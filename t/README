@@ -172,11 +172,6 @@ where N is a decimal digit.
 First digit tells the family:
 
 	0 - the absolute basics and global stuff
-	1 - configuration file via config file and magic stat()
-	2 - core stuff like wildmatching, filename canonicalisation
-	3 - sandboxing filesystem-related system calls
-	4 - sandboxing execve(2)
-	5 - sandboxing network calls
 
 Second digit tells the particular test subject we are testing.
 

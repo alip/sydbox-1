@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2013 Ali Polatel <alip@exherbo.org>
+# Copyright 2013, 2014 Ali Polatel <alip@exherbo.org>
 # Released under the terms of the GNU General Public License v2
 
 test_description='test the very basics of sydbox'

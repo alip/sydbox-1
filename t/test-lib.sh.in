@@ -557,7 +557,7 @@ test_done () {
 	esac
 }
 
-PATH=$TEST_DIRECTORY/sb:$TEST_DIRECTORY/bin-wrappers:$PATH
+PATH="$TEST_DIRECTORY/sb:$TEST_DIRECTORY/bin-wrappers:$TEST_DIRECTORY/test-bin:$PATH"
 if test -n "$valgrind"
 then
 	SYDBOX_VALGRIND="$TEST_DIRECTORY"/valgrind
