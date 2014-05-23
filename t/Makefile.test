@@ -9,15 +9,18 @@ export SYDBOX_TEST_INSTALLED
 
 SHELL_PATH ?= $(SHELL)
 PERL_PATH ?= /usr/bin/perl
+MKDIR_P ?= mkdir -p
 RM ?= rm -f
 PROVE ?= prove
 DEFAULT_TEST_TARGET ?= test
 
-ifdef TEST_OUTPUT_DIRECTORY
-TEST_RESULTS_DIRECTORY = $(TEST_OUTPUT_DIRECTORY)/test-results
+ifdef TMPDIR
+TEST_OUTPUT_DIRECTORY ?= $(TMPDIR)/sydbox-tests
 else
-TEST_RESULTS_DIRECTORY = test-results
+TEST_OUTPUT_DIRECTORY ?= /tmp/sydbox-tests
 endif
+export TEST_OUTPUT_DIRECTORY
+TEST_RESULTS_DIRECTORY = $(TEST_OUTPUT_DIRECTORY)/test-results
 
 # Shell quote;
 SHELL_PATH_SQ = $(subst ','\'',$(SHELL_PATH))
@@ -39,6 +42,7 @@ $(T):
 	@echo "*** $@ ***"; '$(SHELL_PATH_SQ)' $@ $(SYDBOX_TEST_OPTS)
 
 pre-clean:
+	$(MKDIR_P) -m 700 $(TEST_OUTPUT_DIRECTORY)
 	$(RM) -r '$(TEST_RESULTS_DIRECTORY_SQ)'
 
 clean-except-prove-cache:

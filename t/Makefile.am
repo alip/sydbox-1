@@ -33,7 +33,7 @@ TESTS= \
 check_SCRIPTS+= $(TESTS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t
-syd_SCRIPTS= $(check_SCRIPTS)
+syd_SCRIPTS= check-non-portable-shell.pl $(check_SCRIPTS)
 syd_DATA= README
 
 EXTRA_DIST= Makefile.test

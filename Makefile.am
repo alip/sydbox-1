@@ -54,18 +54,17 @@ jenkins:
 
 install-data-hook:
 	@echo
-	@echo "NOTE ABOUT TESTS:"
+	@echo 'NOTE ABOUT RUNNING INSTALLED TESTS:'
 	@echo
-	@echo "sydbox tests have been installed under $(libexecdir)/$(PACKAGE)/t"
-	@echo "To run use _one_ of the commands below:"
+	@echo 'sydbox tests have been installed under $(libexecdir)/$(PACKAGE)/t'
+	@echo 'To run use _one_ of the commands below:'
 	@echo
-	@echo "make -C $(libexecdir)/$(PACKAGE)/t test"
-	@echo "make -C $(libexecdir)/$(PACKAGE)/t prove"
+	@echo 'make -C $(libexecdir)/$(PACKAGE)/t test'
+	@echo 'make -C $(libexecdir)/$(PACKAGE)/t prove'
 	@echo
-	@echo "The second command uses prove(1) to run tests."
+	@echo 'The second command uses prove(1) to run tests.'
 	@echo
-	@echo "NOTE: the check output logs will be generated in the current directory!"
-	@echo "Pass TEST_OUTPUT_DIRECTORY=/path/to/output/dir to the make command above if this is not wanted."
-	@echo
+	@echo 'NOTE: the check output logs will be generated under $${TMPDIR:-/tmp}/sydbox-tests'
+	@echo 'Pass TEST_OUTPUT_DIRECTORY=/path/to/output/dir to the make command above if this is not wanted.'
 
 SUBDIRS= src data man t .
