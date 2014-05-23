@@ -217,6 +217,7 @@ static void dump_ptrace(pid_t pid, int status)
 	fprintf(fp, ","J(msg));
 	switch (pink_event) {
 	case PINK_EVENT_EXEC:
+	case PINK_EVENT_EXIT:
 	case PINK_EVENT_FORK:
 	case PINK_EVENT_VFORK:
 	case PINK_EVENT_CLONE:
@@ -422,139 +423,139 @@ static void dump_process(pid_t pid)
 		J(flag_DENY_SYSCALL)"%s,"
 		J(flag_STOP_AT_SYSEXIT)"%s,"
 #ifdef CLONE_VM
-		J(flag_CLONE_VM)"%s,"
+		J(clone_flag_CLONE_VM)"%s,"
 #endif
 #ifdef CLONE_FS
-		J(flag_CLONE_FS)"%s,"
+		J(clone_flag_CLONE_FS)"%s,"
 #endif
 #ifdef CLONE_FILES
-		J(flag_CLONE_FILES)"%s,"
+		J(clone_flag_CLONE_FILES)"%s,"
 #endif
 #ifdef CLONE_SIGHAND
-		J(flag_CLONE_SIGHAND)"%s,"
+		J(clone_flag_CLONE_SIGHAND)"%s,"
 #endif
 #ifdef CLONE_PTRACE
-		J(flag_CLONE_PTRACE)"%s,"
+		J(clone_flag_CLONE_PTRACE)"%s,"
 #endif
 #ifdef CLONE_VFORK
-		J(flag_CLONE_VFORK)"%s,"
+		J(clone_flag_CLONE_VFORK)"%s,"
 #endif
 #ifdef CLONE_PARENT
-		J(flag_CLONE_PARENT)"%s,"
+		J(clone_flag_CLONE_PARENT)"%s,"
 #endif
 #ifdef CLONE_THREAD
-		J(flag_CLONE_THREAD)"%s,"
+		J(clone_flag_CLONE_THREAD)"%s,"
 #endif
 #ifdef CLONE_NEWNS
-		J(flag_CLONE_NEWNS)"%s,"
+		J(clone_flag_CLONE_NEWNS)"%s,"
 #endif
 #ifdef CLONE_SYSVSEM
-		J(flag_CLONE_SYSVSEM)"%s,"
+		J(clone_flag_CLONE_SYSVSEM)"%s,"
 #endif
 #ifdef CLONE_SETTLS
-		J(flag_CLONE_SETTLS)"%s,"
+		J(clone_flag_CLONE_SETTLS)"%s,"
 #endif
 #ifdef CLONE_PARENT_SETTID
-		J(flag_CLONE_PARENT_SETTID)"%s,"
+		J(clone_flag_CLONE_PARENT_SETTID)"%s,"
 #endif
 #ifdef CLONE_CHILD_CLEARTID
-		J(flag_CLONE_CHILD_CLEARTID)"%s,"
+		J(clone_flag_CLONE_CHILD_CLEARTID)"%s,"
 #endif
 #ifdef CLONE_DETACHED
-		J(flag_CLONE_DETACHED)"%s,"
+		J(clone_flag_CLONE_DETACHED)"%s,"
 #endif
 #ifdef CLONE_UNTRACED
-		J(flag_CLONE_UNTRACED)"%s,"
+		J(clone_flag_CLONE_UNTRACED)"%s,"
 #endif
 #ifdef CLONE_CHILD_SETTID
-		J(flag_CLONE_CHILD_SETTID)"%s,"
+		J(clone_flag_CLONE_CHILD_SETTID)"%s,"
 #endif
 #ifdef CLONE_NEWUTS
-		J(flag_CLONE_NEWUTS)"%s,"
+		J(clone_flag_CLONE_NEWUTS)"%s,"
 #endif
 #ifdef CLONE_NEWIPC
-		J(flag_CLONE_NEWIPC)"%s,"
+		J(clone_flag_CLONE_NEWIPC)"%s,"
 #endif
 #ifdef CLONE_NEWUSER
-		J(flag_CLONE_NEWUSER)"%s,"
+		J(clone_flag_CLONE_NEWUSER)"%s,"
 #endif
 #ifdef CLONE_NEWPID
-		J(flag_CLONE_NEWPID)"%s,"
+		J(clone_flag_CLONE_NEWPID)"%s,"
 #endif
 #ifdef CLONE_NEWNET
-		J(flag_CLONE_NEWNET)"%s,"
+		J(clone_flag_CLONE_NEWNET)"%s,"
 #endif
 #ifdef CLONE_IO
-		J(flag_CLONE_IO)"%s,"
+		J(clone_flag_CLONE_IO)"%s,"
 #endif
 		J(ref_CLONE_THREAD)"%d,"
 		J(ref_CLONE_FS)"%d,"
 		J(ref_CLONE_FILES)"%d,"
 #ifdef CLONE_VM
-		J(new_flag_CLONE_VM)"%s,"
+		J(new_clone_flag_CLONE_VM)"%s,"
 #endif
 #ifdef CLONE_FS
-		J(new_flag_CLONE_FS)"%s,"
+		J(new_clone_flag_CLONE_FS)"%s,"
 #endif
 #ifdef CLONE_FILES
-		J(new_flag_CLONE_FILES)"%s,"
+		J(new_clone_flag_CLONE_FILES)"%s,"
 #endif
 #ifdef CLONE_SIGHAND
-		J(new_flag_CLONE_SIGHAND)"%s,"
+		J(new_clone_flag_CLONE_SIGHAND)"%s,"
 #endif
 #ifdef CLONE_PTRACE
-		J(new_flag_CLONE_PTRACE)"%s,"
+		J(new_clone_flag_CLONE_PTRACE)"%s,"
 #endif
 #ifdef CLONE_VFORK
-		J(new_flag_CLONE_VFORK)"%s,"
+		J(new_clone_flag_CLONE_VFORK)"%s,"
 #endif
 #ifdef CLONE_PARENT
-		J(new_flag_CLONE_PARENT)"%s,"
+		J(new_clone_flag_CLONE_PARENT)"%s,"
 #endif
 #ifdef CLONE_THREAD
-		J(new_flag_CLONE_THREAD)"%s,"
+		J(new_clone_flag_CLONE_THREAD)"%s,"
 #endif
 #ifdef CLONE_NEWNS
-		J(new_flag_CLONE_NEWNS)"%s,"
+		J(new_clone_flag_CLONE_NEWNS)"%s,"
 #endif
 #ifdef CLONE_SYSVSEM
-		J(new_flag_CLONE_SYSVSEM)"%s,"
+		J(new_clone_flag_CLONE_SYSVSEM)"%s,"
 #endif
 #ifdef CLONE_SETTLS
-		J(new_flag_CLONE_SETTLS)"%s,"
+		J(new_clone_flag_CLONE_SETTLS)"%s,"
 #endif
 #ifdef CLONE_PARENT_SETTID
-		J(new_flag_CLONE_PARENT_SETTID)"%s,"
+		J(new_clone_flag_CLONE_PARENT_SETTID)"%s,"
 #endif
 #ifdef CLONE_CHILD_CLEARTID
-		J(new_flag_CLONE_CHILD_CLEARTID)"%s,"
+		J(new_clone_flag_CLONE_CHILD_CLEARTID)"%s,"
 #endif
 #ifdef CLONE_DETACHED
-		J(new_flag_CLONE_DETACHED)"%s,"
+		J(new_clone_flag_CLONE_DETACHED)"%s,"
 #endif
 #ifdef CLONE_UNTRACED
-		J(new_flag_CLONE_UNTRACED)"%s,"
+		J(new_clone_flag_CLONE_UNTRACED)"%s,"
 #endif
 #ifdef CLONE_CHILD_SETTID
-		J(new_flag_CLONE_CHILD_SETTID)"%s,"
+		J(new_clone_flag_CLONE_CHILD_SETTID)"%s,"
 #endif
 #ifdef CLONE_NEWUTS
-		J(new_flag_CLONE_NEWUTS)"%s,"
+		J(new_clone_flag_CLONE_NEWUTS)"%s,"
 #endif
 #ifdef CLONE_NEWIPC
-		J(new_flag_CLONE_NEWIPC)"%s,"
+		J(new_clone_flag_CLONE_NEWIPC)"%s,"
 #endif
 #ifdef CLONE_NEWUSER
-		J(new_flag_CLONE_NEWUSER)"%s,"
+		J(new_clone_flag_CLONE_NEWUSER)"%s,"
 #endif
 #ifdef CLONE_NEWPID
-		J(new_flag_CLONE_NEWPID)"%s,"
+		J(new_clone_flag_CLONE_NEWPID)"%s,"
 #endif
 #ifdef CLONE_NEWNET
-		J(new_flag_CLONE_NEWNET)"%s,"
+		J(new_clone_flag_CLONE_NEWNET)"%s,"
 #endif
 #ifdef CLONE_IO
-		J(new_flag_CLONE_IO)"%s,"
+		J(new_clone_flag_CLONE_IO)"%s,"
 #endif
 		J(ppid)"%d,"
 		J(comm)"\"%s\","
@@ -739,11 +740,9 @@ static int dump_init(void)
 		return 0;
 
 	pathname = getenv(DUMP_ENV);
-	if (!pathname) {
-		nodump = 0;
-		return -EINVAL;
-	}
-	fd = open(pathname, O_WRONLY);
+	if (!pathname)
+		pathname = DUMP_NAME;
+	fd = open(pathname, O_CREAT|O_TRUNC|O_WRONLY|O_NOFOLLOW, 0600);
 	if (fd < 0)
 		die_errno("open_dump");
 	fp = fdopen(fd, "w");

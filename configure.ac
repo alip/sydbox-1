@@ -111,10 +111,6 @@ linux*)
 	;;
 esac
 
-dnl check for types
-AC_TYPE_PID_T
-AC_TYPE_SIZE_T
-
 dnl check for sizes
 AC_CHECK_SIZEOF([int])
 AC_CHECK_SIZEOF([long])
@@ -128,15 +124,6 @@ AC_CHECK_SIZEOF([int64_t])
 AC_CHECK_SIZEOF([off_t])
 AC_CHECK_SIZEOF([off64_t])
 
-dnl check for pinktrace headers
-AC_CHECK_HEADER([sys/types.h],  [], AC_MSG_ERROR([I need sys/types.h]))
-AC_CHECK_HEADER([sys/wait.h],   [], AC_MSG_ERROR([I need sys/wait.h]))
-AC_CHECK_HEADER([sys/ptrace.h], [], AC_MSG_ERROR([I need sys/ptrace.h]))
-AC_CHECK_HEADER([sys/socket.h], [], AC_MSG_ERROR([I need sys/socket.h]))
-AC_CHECK_HEADER([netinet/in.h], [], AC_MSG_ERROR([I need netinet/in.h]))
-AC_CHECK_HEADER([sys/un.h],     [], AC_MSG_ERROR([I need sys/un.h]))
-AC_CHECK_HEADERS([sys/reg.h sys/uio.h], [], [])
-
 dnl check for sydbox headers
 AC_CHECK_HEADER([limits.h],      [], AC_MSG_ERROR([I need limits.h]))
 AC_CHECK_HEADER([signal.h],      [], AC_MSG_ERROR([I need signal.h]))
@@ -146,7 +133,74 @@ AC_CHECK_HEADER([ctype.h],       [], AC_MSG_ERROR([I need ctype.h]))
 AC_CHECK_HEADER([arpa/inet.h],   [], AC_MSG_ERROR([I need arpa/inet.h]))
 AC_CHECK_HEADER([netdb.h],       [], AC_MSG_ERROR([I need netdb.h]))
 AC_CHECK_HEADER([sched.h],       [], AC_MSG_ERROR([I need sched.h]))
-AC_CHECK_TYPE([sig_atomic_t],    [], AC_MSG_ERROR([I need sigatomic_t]), [#include <signal.h>])
+
+dnl check for everything (for tests)
+AC_FUNC_ALLOCA
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS_ONCE(m4_flatten([
+	dirent.h
+	dlfcn.h
+	elf.h
+	errno.h
+	execinfo.h
+	fcntl.h
+	grp.h
+	inttypes.h
+	libgen.h
+	limits.h
+	memory.h
+	pthread.h
+	pwd.h
+	siginfo.h
+	signal.h
+	sigsegv.h
+	stdarg.h
+	stdbool.h
+	stddef.h
+	stdint.h
+	stdio.h
+	stdlib.h
+	string.h
+	strings.h
+	syscall.h
+	unistd.h
+	utime.h
+	sys/file.h
+	sys/mman.h
+	sys/param.h
+	sys/ptrace.h
+	sys/reg.h
+	sys/stat.h
+	sys/syscall.h
+	sys/time.h
+	sys/types.h
+	sys/uio.h
+	sys/user.h
+	sys/wait.h
+	asm/ptrace.h
+	linux/ptrace.h
+]))
+
+dnl check for types
+AC_C_CONST
+AC_TYPE_UID_T
+AC_TYPE_PID_T
+AC_TYPE_MODE_T
+AC_TYPE_SIZE_T
+AC_CHECK_DECLS_ONCE([environ])
+AC_CHECK_TYPES([ptrdiff_t])
+AC_CHECK_TYPES([struct pt_all_user_regs, struct ia64_fpreg, struct ptrace_peeksiginfo_args],,,[#include <sys/ptrace.h>])
+AC_CHECK_TYPES([sig_atomic_t], [], AC_MSG_ERROR([I need sigatomic_t]), [#include <signal.h>])
+AC_CHECK_TYPES([sighandler_t, sig_t, __sighandler_t],,,[#include <signal.h>])
+
+save_CPPFLAGS=$CPPFLAGS
+CPPFLAGS="-I$srcdir/t $CPPFLAGS"
+AC_CHECK_TYPES([struct user_regs_struct, struct pt_regs],,,[#include "headers.h"])
+AC_CHECK_SIZEOF([struct user_regs_struct],,[#include "headers.h"])
+AC_CHECK_SIZEOF([struct pt_regs],,[#include "headers.h"])
+CPPFLAGS=$save_CPPFLAGS
 
 dnl check for functions
 AC_CHECK_FUNCS([asprintf],      [], [AC_MSG_ERROR([I need asprintf])])
@@ -155,6 +209,46 @@ AC_CHECK_FUNCS([ntohs],         [], [AC_MSG_ERROR([I need ntohs])])
 AC_CHECK_FUNCS([getservbyname], [], [AC_MSG_ERROR([I need getservbyname])])
 AC_CHECK_FUNCS([pipe2])
 AC_CHECK_FUNCS([fchdir])
+
+dnl check for library functions.
+AC_FUNC_CHOWN
+AC_FUNC_FORK
+AC_FUNC_LSTAT
+AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
+AC_TYPE_SIGNAL
+AC_FUNC_STAT
+AC_CHECK_FUNCS_ONCE(m4_flatten([
+	clone
+	__clone2
+	creat64
+	faccessat
+	fchmodat
+	fchownat
+	fopen64
+	ftruncate
+	futimesat
+	lchown
+	linkat
+	lutimes
+	mkdir
+	mkdirat
+	mkdtemp
+	mkfifoat
+	mknodat
+	open64
+	openat
+	openat64
+	ptrace
+	remove
+	renameat
+	rmdir
+	symlinkat
+	truncate64
+	unlinkat
+	utime
+	utimensat
+	utimes
+]))
 
 dnl check for large file support
 AC_SYS_LARGEFILE
@@ -260,8 +354,9 @@ AC_SUBST_FILE([GENERATED_FILE])
 dnl output
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
-		 tests/Makefile
-		 tests/bin/Makefile
 		 data/Makefile
-		 man/Makefile])
+		 man/Makefile
+		 t/Makefile
+		 t/bin-wrappers/Makefile
+		 t/sb/Makefile])
 AC_OUTPUT

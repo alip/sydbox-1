@@ -142,19 +142,13 @@ DUMP_LINKER_FLAGS= \
 	  -Wl,--wrap=pink_trace_interrupt \
 	  -Wl,--wrap=pink_trace_listen
 
+libexec_SCRIPTS= shoebox
 libexec_PROGRAMS= sydbox-dump
 sydbox_dump_SOURCES= $(DUMP_SRCS)
 sydbox_dump_CFLAGS= $(DUMP_COMPILER_FLAGS)
 sydbox_dump_CPPFLAGS= $(DUMP_PREPROCESSOR_FLAGS)
 sydbox_dump_LDADD= $(DUMP_LINKER_ADD)
 sydbox_dump_LDFLAGS= $(DUMP_LINKER_FLAGS)
-
-#libexec_PROGRAMS+= sydbox-dump-gcov
-#sydbox_dump_gcov_SOURCES= $(DUMP_SRCS)
-#sydbox_dump_gcov_CFLAGS= $(DUMP_COMPILER_FLAGS) -fprofile-arcs -ftest-coverage
-#sydbox_dump_gcov_CPPFLAGS= $(DUMP_PREPROCESSOR_FLAGS)
-#sydbox_dump_gcov_LDADD= $(DUMP_LINKER_ADD)
-#sydbox_dump_gcov_LDFLAGS= $(DUMP_LINKER_FLAGS)
 
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \

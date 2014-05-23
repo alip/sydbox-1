@@ -1,33 +1,57 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-import os, sys, signal
-import argparse, bz2, json, re, tempfile
+import os, sys, re, json, argparse
 
-sydbox_pid = -1
+def dump_path(args):
+    path = getattr(args, 'core', None)
+    if path is not None:
+        return path
+
+    path = os.getenv('SHOEBOX')
+    if path is not None:
+        return path
+
+    return './sydcore'
+
+def dump_json(obj, fmt = None):
+    if fmt is not None:
+        try:
+            formatted = fmt.format(**obj)
+        except (KeyError, AttributeError, TypeError):
+            formatted = ''
+        sys.stdout.write(formatted + "\n")
+    else:
+        json.dump(obj, sys.stdout, sort_keys = True,
+                  indent = 4, separators = (',', ': '))
+        sys.stdout.write('\n')
 
 def match_event(event, pattern = None, match_format = None):
     if pattern is None:
         return True
     try:
         return pattern.match(match_format.format(**event))
-    except KeyError:
+    except (KeyError, AttributeError, TypeError):
         return False
-    except AttributeError:
-        return False
+
+def match_any(patterns, string, flags = 0):
+    for p in patterns:
+        if p.match(string) is not None:
+            return True
+    return False
 
 class ShoeBox:
     FORMATS_SUPPORTED = (1,)
 
-    def __init__(self, dump = 'dump.shoebox', flags = 'r'):
+    def __init__(self, dump = 'sydcore'):
         self.dump  = dump
-        self.flags = flags
 
         self.fmt  = None
         self.head = None
 
     def __enter__(self):
-        self.fp = bz2.BZ2File(self.dump, self.flags)
+        self.fd = os.open(self.dump, os.O_RDONLY|os.O_NOFOLLOW|os.O_NOATIME)
+        self.fp = os.fdopen(self.fd, 'r')
         self.check_format()
 
         return self
@@ -38,16 +62,12 @@ class ShoeBox:
             return False # Raise the exception
         return True
 
-    @staticmethod
-    def load_line(line):
-        return json.loads(line.decode())
-
     def abspath(self):
         return os.path.abspath(self.dump)
 
     def check_format(self):
         line = self.fp.readline()
-        obj  = ShoeBox.load_line(line)
+        obj  = json.loads(line)
 
         if 'id' not in obj:
             self.fp.close()
@@ -89,7 +109,7 @@ class ShoeBox:
     def read_events(self, limit = 0):
         for json_line in self.readlines(limit):
             try:
-                obj = ShoeBox.load_line(json_line)
+                obj = json.loads(json_line)
             except TypeError as err:
                 sys.stderr.write("WTF? %r\n" % json_line)
                 raise
@@ -152,79 +172,58 @@ class ShoeBox:
         events_out = [event for event in events if match_event(event, pattern, match_format)]
         return sorted(events_out, key = lambda event: event['id'])
 
-def command_sydbox(args, rest):
-    tmpdir = tempfile.mkdtemp()
-    fifo   = os.path.join(tmpdir, 'shoebox.fifo')
-    os.mkfifo(fifo, 0o600)
+class syd:
+    class match:
+        def first(events, pattern, match_format):
+            p = re.compile(pattern, re.I|re.U)
 
-    if args.gdb:
-        argv0 = args.gdb[0]
-        argv  = args.gdb + [args.path] + rest
-    elif args.strace:
-        argv0 = args.strace[0]
-        argv  = args.strace + [args.path] + rest
+            for event in events:
+                try:
+                    m = p.match(match_format.format(**event))
+                except (KeyError, AttributeError, TypeError):
+                    continue
+                if m:
+                    return event
+
+            return None
+
+    class process:
+        def count(events):
+            p = set()
+            for e in events:
+                if 'pid' in e:
+                    p.add(e['pid'])
+            return len(p)
+
+        def exit_status(events, pid):
+            event = syd.match.first(events, "%d:wait:EXIT:[0-9]+" % pid, '{pid}:{event_name}:{ptrace[name]}:{ptrace[msg]}')
+            if event is None:
+                return -1
+            return event['ptrace']['msg']
+
+        def sydbox_child(events):
+            event = syd.match.first(events, 'true:[0-9]+', '{process[syd][flag_SYDBOX_CHILD]}:{pid}')
+            if event is None:
+                return -1
+            return event['pid']
+
+def command_exec(args):
+    code = sys.stdin.read()
+
+    print(dump_path(args))
+    print(os.getenv("SHOEBOX"))
+    if args.scope == 'line':
+        with ShoeBox(dump_path(args)) as sb:
+            for event in sb.read_events():
+                exec(code, {}, {'event': event, 'syd': syd})
     else:
-        argv0 = args.path
-        argv = [args.path] + rest
+        events = []
+        with ShoeBox(dump_path(args)) as sb:
+            for event in sb.read_events():
+                events.append(event)
+        exec(code, {}, {'events': events, 'syd': syd})
 
-    pid = os.fork()
-    if pid == 0:
-        os.setsid()
-
-        dump_in = open(fifo, 'rb')
-        dump_out = bz2.BZ2File(args.dump, 'w')
-
-        dump = os.path.abspath(args.dump)
-        sys.stderr.write('pink: dump:%s\n' % dump)
-
-        with dump_in, dump_out:
-            for json_line in dump_in:
-                dump_out.write(json_line)
-
-        sys.stderr.write('\nno poems? send dump: %s\n' % dump)
-        os._exit(0)
-    else:
-        sys.stderr.write('syd: %r %r\n' % (argv0, argv))
-        sys.stderr.write('syd: fifo:%r\n' % fifo)
-
-        os.environ['SHOEBOX'] = fifo
-        os.execvp(argv0, argv)
-        os._exit(127)
-
-def check_format(f):
-    obj = ShoeBox.load_line(f.readline())
-    if 'id' in obj and obj['id'] == 0 and 'shoebox' in obj and obj['shoebox'] == 1:
-           return True
-    raise IOError("Invalid format")
-
-def dump_json(obj, fmt = None):
-    if fmt is not None:
-        sys.stdout.write(fmt.format(**obj) + "\n")
-    else:
-        json.dump(obj, sys.stdout, sort_keys = True,
-                  indent = 4, separators = (',', ': '))
-        sys.stdout.write('\n')
-
-def match_any(patterns, string, flags = 0):
-    for p in patterns:
-        if p.match(string) is not None:
-            return True
-    return False
-
-def command_tree(args, rest):
-    if args.pattern is None:
-        pattern = None
-        match_format = None
-    else:
-        pattern = re.compile(args.pattern, re.I|re.U)
-        match_format = args.match
-
-    with ShoeBox(args.dump) as sb:
-        events = sb.tree(args.pid, pattern, match_format)
-        for event in events:
-            dump_json(event, args.format)
-
-def command_show(args, rest):
+def command_show(args):
     if args.pattern is None:
         pattern = None
         match_format = None
@@ -235,7 +234,7 @@ def command_show(args, rest):
     limit  = args.limit_match
     events = []
     events_size = 0
-    with ShoeBox(args.dump) as sb:
+    with ShoeBox(dump_path(args)) as sb:
         for event in sb.read_events(args.limit_event):
             if match_event(event, pattern, match_format):
                 if limit == 0:
@@ -254,10 +253,22 @@ def command_show(args, rest):
         for event in events:
             dump_json(event, args.format)
 
+def command_tree(args):
+    if args.pattern is None:
+        pattern = None
+        match_format = None
+    else:
+        pattern = re.compile(args.pattern, re.I|re.U)
+        match_format = args.match
+
+    with ShoeBox(dump_path(args)) as sb:
+        events = sb.tree(args.pid, pattern, match_format)
+        for event in events:
+            dump_json(event, args.format)
+
 def main():
     parser = argparse.ArgumentParser(prog='shoebox',
                                      description='Pink hiding in a shoe box',
-                                     prefix_chars='+',
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      # usage='%(prog)s [options] {command [arg...]}',
                                      epilog='''
@@ -267,19 +278,14 @@ Can you help me?
 
 Send bug reports to "alip@exherbo.org"
 Attaching poems encourages consideration tremendously.''')
-    parser.add_argument('+gdb',
-                        action = 'store_const', const = ['gdb', '--args'],
-                        help = 'Run under gdb')
-    parser.add_argument('+strace',
-                        action = 'store_const', const = ['strace',],
-                        help = 'Run under strace')
-    parser.add_argument('+dump', default = 'dump.shoebox', help = 'Path to the dump file')
-    parser.add_argument('+path', default = 'sydbox-dump', help = 'Path to sydbox-dump')
+    parser.add_argument('-c', '--core', default = None, metavar = 'SYDCORE', help = 'Path to sydbox core dump')
 
     subparser = parser.add_subparsers(help = 'command help')
 
-    parser_sydbox = subparser.add_parser('sydbox', add_help = False, help = 'Run command under Shoe Box')
-    parser_sydbox.set_defaults(func = command_sydbox)
+    parser_exec = subparser.add_parser('exec', help = 'Execute python code on standart input')
+    parser_exec.add_argument('-s', '--scope', default = 'line',
+        help = 'Scope: "line" execute code for each "event" (default), "all" execuate code once for all "events"')
+    parser_exec.set_defaults(func = command_exec)
 
     parser_show = subparser.add_parser('show', help = 'Show dump')
     parser_show.add_argument('-m', '--match', default = '{pid}', help = 'Match format')
@@ -290,23 +296,19 @@ Attaching poems encourages consideration tremendously.''')
     parser_show.set_defaults(func = command_show)
 
     parser_tree = subparser.add_parser('tree', help = 'Show process tree')
-    parser_tree.add_argument('-f', '--format',
-                             metavar = 'FORMAT',
-                             default = None,
-                             help = 'Format string, default: "%(default)s"')
-#    parser_tree.add_argument('-F', '--filter',
-#                             type = eval, metavar = 'CODE',
-#                             default = 'lambda event: True',
-#                             help = 'Filter code, default: "%(default)s"')
     parser_tree.add_argument('-m', '--match', default = '{event_name}', help = 'Match format')
     parser_tree.add_argument('-p', '--pattern', help = 'Match pattern (regex)')
+    parser_tree.add_argument('-f', '--format', default = None, help = 'Format string')
     parser_tree.add_argument('pid', type = int, metavar = 'PID',
                              default = -1, nargs = '?',
                              help = 'PID to match, default: detect eldest child')
     parser_tree.set_defaults(func = command_tree)
 
-    args, rest = parser.parse_known_args()
-    return args.func(args, rest)
+    args = parser.parse_args()
+    if getattr(args, 'func', None):
+        return args.func(args)
+    else:
+        parser.print_help()
 
 if __name__ == '__main__':
     sys.exit(main())

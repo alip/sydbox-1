@@ -22,6 +22,7 @@
 *.gcno
 *.shoebox
 core*
+sydcore*
 
 #
 # git files that we don't want to ignore even it they are dot-files
@@ -85,16 +86,16 @@ Makefile
 /m4/lt*.m4
 
 # Specific ignores
-man/sydbox.1
-man/sydbox.html
-man/sydfmt.1
-man/sydfmt.html
-man/sydbox.ent
+/man/sydbox.1
+/man/sydbox.html
+/man/sydfmt.1
+/man/sydfmt.html
+/man/sydbox.ent
 
-src/sydbox
-src/sydfmt
-src/sydbox-dump
-src/sydbox-dump-gcov
+/src/sydbox
+/src/sydfmt
+/src/sydbox-dump
+/src/sydbox-dump-gcov
 
 tests/test-lib.sh
 tests/test-results
@@ -109,3 +110,15 @@ tests/bin/wildtest
 tests/t[0-9][0-9][0-9]*
 !tests/t[0-9][0-9][0-9]*.c
 !tests/t[0-9][0-9][0-9]*.sh
+
+/t/test-lib.sh
+/t/test-results
+/t/temporary*
+/t/trash*
+/t/bin-wrappers/sydbox
+/t/bin-wrappers/sydbox-dump
+/t/bin-wrappers/sydfmt
+/t/bin-wrappers/shoebox
+/t/sb/*-0
+/t/sb/syd_*
+!/t/sb/syd_*.c
