@@ -1,3 +1,4 @@
+AM_MAKEFLAGS= --no-print-directory
 SUBDIRS= bin-wrappers sb valgrind .
 CLEANFILES= \
 	    gmon.out \

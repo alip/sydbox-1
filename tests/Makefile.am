@@ -1,3 +1,4 @@
+AM_MAKEFLAGS= --no-print-directory
 SUBDIRS= bin .
 CLEANFILES= \
 	    gmon.out \

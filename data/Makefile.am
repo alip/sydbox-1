@@ -1,3 +1,4 @@
+AM_MAKEFLAGS= --no-print-directory
 EXTRA_DIST=
 
 sydboxsharedir= $(datadir)/$(PACKAGE)

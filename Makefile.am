@@ -1,6 +1,6 @@
+AM_MAKEFLAGS= --no-print-directory
 ACLOCAL_AMFLAGS= -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS= dist-bzip2 no-dist-gzip std-options subdir-objects foreign
-AM_MAKEFLAGS= --no-print-directory
 
 CLEANFILES= *~
 MAINTAINERCLEANFILES= \
@@ -20,8 +20,8 @@ dist_doc_DATA= \
 	       man/ptrace-ntpl.txt
 
 DISTCHECK_CONFIGURE_FLAGS= \
-			   --enable-doxygen \
-			   --enable-ipv6
+			   --enable-seccomp \
+			   --enable-debug
 
 TAR_FILE= $(PACKAGE)-$(VERSION).tar.bz2
 SHA1_FILE= $(TAR_FILE).sha1sum

@@ -1,3 +1,4 @@
+AM_MAKEFLAGS= --no-print-directory
 CLEANFILES= \
 	    sydbox.1 \
 	    sydfmt.1 \

@@ -1,3 +1,4 @@
+AM_MAKEFLAGS= --no-print-directory
 EXTRA_DIST = test-skel-0.c tests.h headers.s localdecls.h
 
 AM_CPPFLAGS = -I$(top_srcdir)

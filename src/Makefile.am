@@ -1,3 +1,4 @@
+AM_MAKEFLAGS= --no-print-directory
 BUILT_SOURCES=
 CLEANFILES= \
 	    gmon.out \
