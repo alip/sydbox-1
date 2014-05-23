@@ -36,6 +36,15 @@ syddir=$(libexecdir)/$(PACKAGE)/t
 syd_SCRIPTS= aggregate-results.sh check-non-portable-shell.pl $(check_SCRIPTS)
 syd_DATA= README
 
+bin_SCRIPTS= sydtest
+sydtest: sydtest.sh.in
+	$(AM_V_GEN)
+	$(AM_V_at)$(SED) \
+		-e "s:@SYDBOX_MAKE@:$(MAKE):g" \
+		-e "s:@SYDBOX_TEST_DIRECTORY@:$(syddir):g" \
+		$< > $@
+	$(AM_V_at)chmod +x $@
+
 EXTRA_DIST= Makefile.test
 install-data-local:
 	cp Makefile.test $(DESTDIR)$(syddir)/Makefile
