@@ -2,4 +2,9 @@
 # Copyright 2014 Ali Polatel <alip@exherbo.org>
 # Released under the terms of the GNU General Public License v2
 
-exec '@SYDBOX_MAKE@' -C '@SYDBOX_TEST_DIRECTORY@' "$@"
+if [ x"$1" = x"prove" ]; then
+    shift
+    exec '@SYDBOX_MAKE@' -C '@SYDBOX_TEST_DIRECTORY@' DEFAULT_TEST_TARGET=prove SYDBOX_TEST_OPTS="$@"
+else
+    exec '@SYDBOX_MAKE@' -C '@SYDBOX_TEST_DIRECTORY@' DEFAULT_TEST_TARGET=test SYDBOX_TEST_OPTS="$@"
+fi
