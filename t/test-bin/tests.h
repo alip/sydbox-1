@@ -1,10 +1,10 @@
 #include "headers.h"
 
-#define _msg(std, fmt, args...) fprintf(std, "%s:%s():%i: " fmt "\n", __FILE__, __func__, __LINE__, ##args)
-#define _stderr_msg(fmt, args...) _msg(stderr, fmt, ##args)
-#define _stderr_pmsg(fmt, args...) _msg(stderr, fmt ": %s", ##args, strerror(errno))
-#define err(fmt, args...) ({ _stderr_msg(fmt, ##args); exit(1); })
-#define errp(fmt, args...) ({ _stderr_pmsg(fmt, ##args); exit(1); })
+#define _msg(std, fmt, ...) fprintf(std, "%s:%s():%i: " fmt "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+#define _stderr_msg(fmt, ...) _msg(stderr, fmt, ##__VA_ARGS__)
+#define _stderr_pmsg(fmt, ...) _msg(stderr, fmt ": %s", ##__VA_ARGS__, strerror(errno))
+#define err(fmt, ...) do { _stderr_msg(fmt, ##__VA_ARGS__); exit(1); } while (0)
+#define errp(fmt, ...) do { _stderr_pmsg(fmt, ##__VA_ARGS__); exit(1); } while (0)
 
 typedef struct {
 	const char *name;
@@ -43,7 +43,7 @@ const char *lookup_str(const value_pair *tbl, int val)
 }
 
 #define make_lookups(section) \
-int lookup_##section(const char *str) { return atoi(str) ? : lookup_val(tbl_##section, str); } \
+int lookup_##section(const char *str) { return atoi(str) ? (-1) : lookup_val(tbl_##section, str); } \
 const char *rev_lookup_##section(int val) { return lookup_str(tbl_##section, val); }
 
 const value_pair tbl_errno[] = {
@@ -84,7 +84,7 @@ const value_pair tbl_errno[] = {
 	PAIR(ESRCH)
 	PAIR(ESTALE)
 	PAIR(ETXTBSY)
-	{ }
+	{NULL, -1}
 };
 make_lookups(errno)
 
@@ -106,6 +106,6 @@ const value_pair tbl_signal[] = {
 	PAIR(SIGTERM)
 	PAIR(SIGUSR1)
 	PAIR(SIGUSR2)
-	{ }
+	{NULL, -1}
 };
 make_lookups(signal)

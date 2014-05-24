@@ -51,7 +51,7 @@ int f_get_flags(const char *str_flags)
 		PAIR(O_RDWR)
 		PAIR(O_TRUNC)
 		PAIR(O_WRONLY)
-		{ }
+		{NULL, -1}
 	};
 	if (!str_flags)
 		return O_CREAT | O_RDWR;
@@ -75,7 +75,7 @@ int at_get_flags(const char *str_flags)
 		PAIR(AT_REMOVEDIR)
 		PAIR(AT_SYMLINK_FOLLOW)
 		PAIR(AT_EACCESS)
-		{ }
+		{NULL, -1}
 	};
 	return _get_flags(str_flags, flags);
 }
@@ -146,7 +146,8 @@ int access_mode(const char *s)
 int main(int argc, char *argv[])
 {
 #if CONFIG
-	int i, test_ret;
+	unsigned i;
+	int test_ret;
 
 	if ((argc - 1) % (ARG_CNT + 1) || argc == 1) {
 #define _ARG_USE "<ret> " ARG_USE
@@ -180,7 +181,7 @@ int main(int argc, char *argv[])
 
 	test_ret = 0;
 	i = 1;
-	while (i < argc) {
+	while (i < (unsigned)argc) {
 		char *s;
 
 		s = argv[i++];

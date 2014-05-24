@@ -578,8 +578,8 @@ then
 fi
 
 # Test directory
-TRASH_DIRECTORY="trash directory.$(basename "$0" .sh)"
-test -n "$root" && TRASH_DIRECTORY="$root/$TRASH_DIRECTORY"
+TRASH_BASE="trash directory.$(basename "$0" .sh)"
+test -n "$root" && TRASH_DIRECTORY="$root/$TRASH_BASE" || TRASH_DIRECTORY="$TRASH_BASE"
 case "$TRASH_DIRECTORY" in
 /*) ;; # absolute path is good
  *) TRASH_DIRECTORY="$TEST_OUTPUT_DIRECTORY/$TRASH_DIRECTORY" ;;
@@ -594,6 +594,12 @@ rm -fr "$TRASH_DIRECTORY" || {
 HOME="$TRASH_DIRECTORY"
 SHOEBOX="$HOME/sydcore"
 export HOME SHOEBOX
+
+# FIXME: Homer will require a beer for the line below, in case someone starts caring about BSD in some distant future.
+HOMER=$(readlink -f "$HOME")
+HOMER="${HOMER%/}"
+HOME_BASE="${TRASH_BASE%/}"
+export HOMER HOME_BASE
 
 mkdir -p "$TRASH_DIRECTORY"
 # Use -P to resolve symlinks in our working directory so that the cwd

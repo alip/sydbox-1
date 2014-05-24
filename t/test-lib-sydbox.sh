@@ -1,11 +1,15 @@
 #!/bin/sh
 # vim: set noet ts=8 sts=8 sw=8 tw=80 :
-# Copyright 2013 Ali Polatel <alip@exherbo.org>
-# Released under the terms of the 3-clause BSD license
+# Copyright 2013, 2014 Ali Polatel <alip@exherbo.org>
+# Released under the terms of the GNU General Public License v2
 
 #
 # Additions to test-lib-functions.sh
 #
+
+NAMETOOLONG=$(printf '%4096s' ' ' | tr ' ' x)
+export NAMETOOLONG
+
 stat_mtime() {
 	case "$(uname -s)" in
 	Linux)

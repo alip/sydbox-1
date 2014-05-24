@@ -20,109 +20,85 @@ SYDBOX_TEST_OPTIONS="$save_SYDBOX_TEST_OPTIONS"
 export SYDBOX_TEST_OPTIONS
 
 test_expect_success 'return success if tracee returns success' '
-    sydbox -- syd_true
+    sydbox -- syd-true
 '
 
 test_expect_success 'return success if tracee returns success (STATIC)' '
-    sydbox -- syd_true_static
+    sydbox -- syd-true-static
 '
 
 test_expect_success_foreach_option 'return success if tracee returns success' '
-    sydbox -- syd_true
+    sydbox -- syd-true
 '
 
 test_expect_success_foreach_option 'return success if tracee returns success (STATIC)' '
-    sydbox -- syd_true_static
+    sydbox -- syd-true-static
 '
 
 test_expect_success 'return failure if tracee returns failure' '
-    test_expect_code 1 sydbox -- syd_false
+    test_expect_code 1 sydbox -- syd-false
 '
 
 test_expect_success 'return failure if tracee returns failure (STATIC)' '
-    test_expect_code 1 sydbox -- syd_false_static
+    test_expect_code 1 sydbox -- syd-false-static
 '
 
 test_expect_success_foreach_option 'return failure if tracee returns failure' '
-    test_expect_code 1 sydbox -- syd_false
+    test_expect_code 1 sydbox -- syd-false
 '
 
 test_expect_success_foreach_option 'return failure if tracee returns failure (STATIC)' '
-    test_expect_code 1 sydbox -- syd_false_static
+    test_expect_code 1 sydbox -- syd-false-static
 '
 
 test_expect_success 'return success if initial tracee returns success (FORK)' '
-    sydbox -- syd_true_fork 256
+    sydbox -- syd-true-fork 256
 '
 
 test_expect_success 'return success if initial tracee returns success (STATIC|FORK)' '
-    sydbox -- syd_true_fork_static 256
+    sydbox -- syd-true-fork-static 256
 '
 
 test_expect_success_foreach_option 'return success if initial tracee returns success (FORK)' '
-    sydbox -- syd_true_fork 256
+    sydbox -- syd-true-fork 256
 '
 
 test_expect_success_foreach_option 'return success if initial tracee returns success (STATIC|FORK)' '
-    sydbox -- syd_true_fork_static 256
+    sydbox -- syd-true-fork-static 256
 '
 
 test_expect_success 'return success if initial tracee returns success (PTHREAD)' '
-    sydbox -- syd_true_pthread 32
+    sydbox -- syd-true-pthread 32
 '
 
 test_expect_success_foreach_option 'return success if initial tracee returns success (PTHREAD)' '
-    sydbox -- syd_true_pthread 32
+    sydbox -- syd-true-pthread 32
 '
 
 test_expect_success 'return failure if initial tracee returns failure (FORK)' '
-    test_expect_code 1 sydbox -- syd_false_fork 256
+    test_expect_code 1 sydbox -- syd-false-fork 256
 '
 
 test_expect_success 'return failure if initial tracee returns failure (STATIC|FORK)' '
-    test_expect_code 1 sydbox -- syd_false_fork_static 256
+    test_expect_code 1 sydbox -- syd-false-fork-static 256
 '
 
 test_expect_success_foreach_option 'return failure if initial tracee returns failure (FORK)' '
-    test_expect_code 1 sydbox -- syd_false_fork 256
+    test_expect_code 1 sydbox -- syd-false-fork 256
 '
 
 test_expect_success_foreach_option 'return failure if initial tracee returns failure (STATIC|FORK)' '
-    test_expect_code 1 sydbox -- syd_false_fork_static 256
+    test_expect_code 1 sydbox -- syd-false-fork-static 256
 '
 
 test_expect_success 'return failure if initial tracee returns failure (PTHREAD)' '
-    test_expect_code 1 sydbox -- syd_false_pthread 32
+    test_expect_code 1 sydbox -- syd-false-pthread 32
 '
 
 test_expect_success_foreach_option 'return failure if initial tracee returns failure (PTHREAD)' '
-    test_expect_code 1 sydbox -- syd_false_pthread 32
+    test_expect_code 1 sydbox -- syd-false-pthread 32
 '
 
-#test_expect_success_foreach_option 'return success if initial tracee returns success' '
-#    sydbox -- "$SHELL_PATH" <<EOF
-#for i in 1 2 3 4 5 6 7
-#do
-#    ( sleep 1 ; exit $i ) &
-#done
-#    exit 0
-#EOF
-#'
-#
-#test_expect_success_foreach_option 'return error if tracee returns error' '
-#    test_expect_code 7 sydbox -- "$SHELL_PATH" -c "exit 7"
-#'
-#
-#test_expect_success_foreach_option 'return success if initial tracee returns error' '
-#    test_expect_code 7 sydbox -- "$SHELL_PATH" <<EOF
-#for i in 1 2 3 4 5 6 7
-#do
-#    ( sleep 1 ; exit 0 ) &
-#done
-#    exit 7
-#EOF
-#'
-#
 #test_expect_success_foreach_option 'return 128 + $SIGNUM if tracee is terminated' '
 #    sigint=2 &&
 #    retval=$(expr 128 + $sigint) &&

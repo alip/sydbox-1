@@ -120,8 +120,10 @@ tests/t[0-9][0-9][0-9]*
 /t/bin-wrappers/sydbox-dump
 /t/bin-wrappers/sydfmt
 /t/bin-wrappers/shoebox
+/t/test-bin/*-[0-9]
+/t/test-bin/syd-*
+!/t/test-bin/syd-*.[ch]
 /t/test-bin/wildtest
-/t/sb/*-0
-/t/sb/syd_*
-!/t/sb/syd_*.c
 /t/valgrind/bin/*
+
+/t/sb/*-0
