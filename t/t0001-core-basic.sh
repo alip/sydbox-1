@@ -131,35 +131,35 @@ test_expect_success_foreach_option 'return 128 + $SIGNUM if tracee is terminated
     test_expect_code 143 sydbox -- syd-abort-pthread-static 8 15 # SIGTERM
 '
 
-#test_expect_success_foreach_option 'magic /dev/sydbox API is 1' '
-#    sydbox -- "$SHELL_PATH" -c "test -e /dev/sydbox" &&
-#    sydbox -- "$SHELL_PATH" -c "test -e /dev/sydbox/1" &&
-#    test_expect_code 1 sydbox -- "$SHELL_PATH" -c "test -e /dev/sydbox/0"
-#'
-#
-#test_expect_success_foreach_option 'magic /dev/sydbox boolean checking works' '
-#    sydbox -- "$SHELL_PATH" && <<EOF
-#test -e /dev/sydbox/core/sandbox/write"?"
-#test $? -eq 1 && exit 0
-#EOF
-#    sydbox -- "$SHELL_PATH" <<EOF
-#test -e /dev/sydbox/core/sandbox/write:deny &&
-#test -e /dev/sydbox/core/sandbox/write"?"
-#EOF
-#'
-#
-#test_expect_success_foreach_option 'magic /dev/sydbox boolean checking works with -m switch' '
-#    sydbox -m core/sandbox/write:deny -- "$SHELL_PATH" <<EOF
-#test -e /dev/sydbox/core/sandbox/write"?"
-#EOF
-#'
-#
+test_expect_success_foreach_option 'magic /dev/sydbox API is 1' '
+    sydbox -- sh -c "test -e /dev/sydbox" &&
+    sydbox -- sh -c "test -e /dev/sydbox/1" &&
+    test_expect_code 1 sydbox -- sh -c "test -e /dev/sydbox/0"
+'
+
+test_expect_success_foreach_option 'magic /dev/sydbox boolean checking works' '
+    sydbox -- sh <<-\EOF
+test -e /dev/sydbox/core/sandbox/write"?"
+test $? -eq 1 && exit 0
+\EOF &&
+    sydbox -- sh <<-\EOF
+test -e /dev/sydbox/core/sandbox/write:deny &&
+test -e /dev/sydbox/core/sandbox/write"?"
+\EOF
+'
+
+test_expect_success_foreach_option 'magic /dev/sydbox boolean checking works with -m switch' '
+    sydbox -m core/sandbox/write:deny -- sh <<-\EOF
+test -e /dev/sydbox/core/sandbox/write"?"
+\EOF
+'
+
 #test_expect_success_foreach_option 'magic core/violation/exit_code:0 works' '
 #    f="no-$(unique_file)" &&
 #    rm -f "$f" &&
 #    test_must_violate sydbox \
 #        -m core/sandbox/write:deny \
-#        -- "$SHELL_PATH" && <<EOF
+#        -- sh && <<EOF
 #: > "$f"
 #EOF
 #    test_path_is_missing "$f"
@@ -172,7 +172,7 @@ test_expect_success_foreach_option 'return 128 + $SIGNUM if tracee is terminated
 #    test_must_violate sydbox \
 #        -m core/violation/raise_fail:1 \
 #        -m core/sandbox/write:deny \
-#        -- "$SHELL_PATH" && <<EOF
+#        -- sh && <<EOF
 #: > "$d"/"$f"
 #EOF
 #    test_path_is_missing "$d"/"$f"
