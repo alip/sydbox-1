@@ -415,7 +415,6 @@ static void dump_process(pid_t pid)
 	}
 
 	fprintf(fp, "{"
-		J(flag_SYDBOX_CHILD)"%s,"
 		J(flag_STARTUP)"%s,"
 		J(flag_IGNORE_ONE_SIGSTOP)"%s,"
 		J(flag_READY)"%s,"
@@ -565,7 +564,6 @@ static void dump_process(pid_t pid)
 		J(syscall_name)"\"%s\","
 		J(clone_flags)"%ld,"
 		J(new_clone_flags)"%ld",
-		J_BOOL(p->flags & SYD_SYDBOX_CHILD),
 		J_BOOL(p->flags & SYD_STARTUP),
 		J_BOOL(p->flags & SYD_IGNORE_ONE_SIGSTOP),
 		J_BOOL(p->flags & SYD_READY),

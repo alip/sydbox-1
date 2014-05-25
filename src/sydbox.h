@@ -50,7 +50,6 @@
 #define SYD_STOP_AT_SYSEXIT	00040 /* seccomp: stop at system call exit */
 #define SYD_WAIT_FOR_CHILD	00100 /* parent waiting for child notification */
 #define SYD_WAIT_FOR_PARENT	00200 /* child waiting for parent notification */
-#define SYD_SYDBOX_CHILD	00400 /* process is the child exec()'ed by sydbox */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
 #define SYD_PPID_ORPHAN		-0xbad /* special parent process id for orphans */
@@ -454,7 +453,8 @@ typedef struct {
 	int trace_options;
 	enum syd_step trace_step;
 
-	bool wait_execve;
+	bool execve_wait;
+	pid_t execve_pid;
 	int exit_code;
 
 	/* This is true if an access violation has occured, false otherwise. */
@@ -534,7 +534,6 @@ extern sydbox_t *sydbox;
 #define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
 #define exiting(p) ((p)->flags & SYD_IN_SYSCALL)
 #define sysdeny(p) ((p)->flags & SYD_DENY_SYSCALL)
-#define sydchild(p) ((p)->flags & SYD_SYDBOX_CHILD)
 #define hasparent(p) ((p)->ppid >= 0)
 
 #define sandbox_allow(p, box) (!!(P_BOX(p)->sandbox_ ## box == SANDBOX_ALLOW))

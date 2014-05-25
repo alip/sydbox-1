@@ -1,7 +1,7 @@
 /*
  * sydbox/util.c
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2014 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  * Based in part upon courier which is:
@@ -257,4 +257,41 @@ int waitpid_nointr(pid_t pid, int *status, int options)
 			return r;
 	}
 	/* never reached */
+}
+
+inline int term_sig(int signum)
+{
+	switch (signum) {
+	case SIGHUP:  case SIGINT:  case SIGQUIT: case SIGILL:
+	case SIGABRT: case SIGFPE:  case SIGSEGV: case SIGPIPE:
+	case SIGALRM: case SIGTERM: case SIGUSR1: case SIGUSR2:
+	case SIGSYS:  case SIGTRAP: case SIGBUS:  case SIGIO:
+#ifdef SIGPROF
+	case SIGPROF:
+#endif
+#ifdef SIGVTALRM
+	case SIGVTALRM:
+#endif
+#ifdef SIGXCPU
+	case SIGXCPU:
+#endif
+#ifdef SIGXFSZ
+	case SIGXFSZ:
+#endif
+#ifdef SIGEMT
+	case SIGEMT:
+#endif
+#ifdef SIGSTKFLT
+	case SIGSTKFLT:
+#endif
+#ifdef SIGPWR
+	case SIGPWR:
+#endif
+#ifdef SIGLOST
+	case SIGLOST:
+#endif
+		return signum;
+	default:
+		return SIGKILL;
+	}
 }

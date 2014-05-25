@@ -13,6 +13,7 @@
 #include "sydbox.h"
 #include "dump.h"
 
+#include <time.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -284,6 +285,43 @@ void remove_process(syd_process_t *p)
 	free_process(p);
 }
 
+static inline void save_exit_code(int exit_code)
+{
+	sydbox->exit_code = exit_code;
+}
+
+static inline void save_exit_signal(int signum)
+{
+	sydbox->exit_code = 128 + signum;
+}
+
+static inline void save_exit_status(int status)
+{
+	if (WIFEXITED(status))
+		save_exit_code(WEXITSTATUS(status));
+	else if (WIFSIGNALED(status))
+		save_exit_signal(WTERMSIG(status));
+	else
+		save_exit_signal(SIGKILL); /* Assume SIGKILL */
+}
+
+static void bury_process(pid_t pid, int status)
+{
+	int flag;
+	syd_process_t *p;
+
+	p = lookup_process(pid);
+	if (p) {
+		flag = p->flags & (SYD_WAIT_FOR_PARENT|SYD_WAIT_FOR_CHILD);
+		if (flag)
+			p->flags &= ~flag;
+		remove_process(p);
+	}
+
+	if (pid == sydbox->execve_pid)
+		save_exit_status(status);
+}
+
 static void interrupt(int sig)
 {
 	interrupted = sig;
@@ -484,7 +522,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	}
 
 	fprintf(stderr, "%s-- Information on Process ID: %u%s\n", CG, pid, CE);
-	if (sydchild(current))
+	if (current->pid == sydbox->execve_pid)
 		fprintf(stderr, "\t%sParent ID: SYDBOX%s\n", CN, CE);
 	else if (current->ppid > 0)
 		fprintf(stderr, "\t%sParent ID: %u%s\n", CN, ppid > 0 ? ppid : 0, CE);
@@ -498,10 +536,6 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 			current->sysnum, abi, current->sysname, CE);
 	fprintf(stderr, "\t%sFlags: ", CN);
 	r = 0;
-	if (current->flags & SYD_SYDBOX_CHILD) {
-		fprintf(stderr, "%sSYDBOX_CHILD", (r == 1) ? "|" : "");
-		r = 1;
-	}
 	if (current->flags & SYD_STARTUP) {
 		fprintf(stderr, "%sSTARTUP", (r == 1) ? "|" : "");
 		r = 1;
@@ -714,7 +748,7 @@ static void init_early(void)
 	sydbox->proctab = NULL;
 	sydbox->current_clone_proc = NULL;
 	sydbox->violation = false;
-	sydbox->wait_execve = false;
+	sydbox->execve_wait = false;
 	sydbox->exit_code = EXIT_SUCCESS;
 	config_init();
 	dump(DUMP_INIT);
@@ -801,7 +835,7 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 	bool share_thread, share_fs, share_files;
 
 	if (!parent) {
-		if (sydchild(current))
+		if (current->pid == sydbox->execve_pid)
 			P_COMM(current) = xstrdup(sydbox->program_invocation_name);
 		P_CWD(current) = xgetcwd(); /* FIXME: toolong hack changes
 					       directories, this may not work! */
@@ -854,11 +888,6 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 	if (current->flags & SYD_READY)
 		return;
 
-	if (sydchild(current))
-		parent = NULL;
-	else {
-	}
-
 	init_shareable_data(current, parent);
 
 	if (sydbox->config.whitelist_per_process_directories &&
@@ -880,7 +909,7 @@ static int event_startup(syd_process_t *current)
 
 	current->flags &= ~SYD_STARTUP;
 
-	if (sydchild(current)) {
+	if (current->pid == sydbox->execve_pid) {
 		parent = NULL;
 		init_process_data(current, parent);
 	} else {
@@ -920,12 +949,12 @@ static int event_exec(syd_process_t *current)
 	int e, r;
 	const char *match;
 
-	if (sydbox->wait_execve) {
+	if (sydbox->execve_wait) {
 		log_info("[wait_execve]: execve() ptrace trap");
 #if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp) {
 			log_info("[wait_execve]: sandboxing started");
-			sydbox->wait_execve = false;
+			sydbox->execve_wait = false;
 		}
 #endif
 		return 0;
@@ -1020,7 +1049,7 @@ static int event_syscall(syd_process_t *current)
 {
 	int r = 0;
 
-	if (sydbox->wait_execve) {
+	if (sydbox->execve_wait) {
 #if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp)
 			return 0;
@@ -1031,7 +1060,7 @@ static int event_syscall(syd_process_t *current)
 		} else {
 			log_info("[wait_execve]: exiting execve(), sandboxing started");
 			current->flags &= ~SYD_IN_SYSCALL;
-			sydbox->wait_execve = false;
+			sydbox->execve_wait = false;
 		}
 		return 0;
 	}
@@ -1071,7 +1100,7 @@ static int event_seccomp(syd_process_t *current)
 {
 	int r;
 
-	if (sydbox->wait_execve) {
+	if (sydbox->execve_wait) {
 		log_info("[wait_execve]: execve() seccomp trap");
 		return 0;
 	}
@@ -1087,36 +1116,6 @@ static int event_seccomp(syd_process_t *current)
 	return r;
 }
 #endif
-
-static void set_exit_code(int status)
-{
-	sydbox->exit_code = WIFEXITED(status) ? WEXITSTATUS(status)
-					      : (WIFSIGNALED(status) ? 128 + WTERMSIG(status)
-								     : EXIT_FAILURE);
-}
-
-static int event_exit(pid_t pid, syd_process_t *current)
-{
-	int r, flag, status;
-
-	if (current) {
-		flag = current->flags & (SYD_WAIT_FOR_PARENT|SYD_WAIT_FOR_CHILD);
-		if (flag)
-			current->flags &= ~flag;
-	}
-
-	if ((r = pink_trace_geteventmsg(pid, (unsigned long *)&status)) < 0)
-		return r; /* Sigh... Let's wait for WIFEXITED. */
-	pink_trace_resume(pid, 0);
-
-	if (current) {
-		if (sydchild(current))
-			set_exit_code(status);
-		remove_process(current);
-	}
-
-	return -ESRCH;
-}
 
 static int trace(void)
 {
@@ -1153,16 +1152,12 @@ static int trace(void)
 			/* Step 2: Wait for child's SIGSTOP/EVENT_STOP */
 			if (current->cpid > 0) {
 				parent = current;
-				current = lookup_process(current->cpid);
+				current = lookup_process(parent->cpid);
 			}
 		}
 
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
-		if (current) {
-			pid = waitpid(current->pid, &status, __WALL);
-		} else {
-			pid = waitpid(-1, &status, __WALL);
-		}
+		pid = waitpid(current ? current->pid : -1, &status, __WALL);
 		wait_errno = errno;
 		sigprocmask(SIG_SETMASK, &blocked_set, NULL);
 
@@ -1173,12 +1168,17 @@ static int trace(void)
 			case EINTR:
 				continue;
 			case ECHILD:
-				if (process_count() == 0)
-					goto cleanup;
-				if (parent || current) {
+				if (parent) {
+					bury_process(parent->pid, -1);
+					sydbox->current_clone_proc = NULL;
+					continue;
+				} else if (current) {
+					bury_process(current->pid, -1);
 					sydbox->current_clone_proc = NULL;
 					continue;
 				}
+				if (process_count() == 0)
+					goto cleanup;
 				/* If process count > 0, ECHILD is not expected,
 				 * treat it as any other error here.
 				 * fall through...
@@ -1196,15 +1196,8 @@ static int trace(void)
 
 
 		/* Step 4: Check if parent or current died somewhere in-between. */
-		if (!current)
-			current = lookup_process(pid);
-
 		if (WIFSIGNALED(status) || WIFEXITED(status)) {
-			if (current) {
-				if (sydchild(current))
-					set_exit_code(status);
-				remove_process(current);
-			}
+			bury_process(pid, status);
 			continue;
 		} else if (!WIFSTOPPED(status)) {
 			log_fatal("PANIC: not stopped (status:0x%04x)", status);
@@ -1214,12 +1207,8 @@ static int trace(void)
 
 		event = pink_event_decide(status);
 
-		if (event == PINK_EVENT_EXIT) {
-			event_exit(pid, current);
-			continue;
-		}
-
 		/* Step 5: If we are here we *must* have a process entry, assert. */
+		current = lookup_process(pid);
 		assert(current);
 		log_context(current);
 
@@ -1383,6 +1372,8 @@ handle_stopsig:
 restart_tracee_with_sig_0:
 		sig = 0;
 restart_tracee:
+		if (sig && current->pid == sydbox->execve_pid)
+			save_exit_signal(term_sig(sig));
 		syd_trace_step(current, sig);
 	}
 cleanup:
@@ -1473,9 +1464,10 @@ static void startup_child(char **argv)
 		kill(pid, SIGCONT);
 	}
 #endif
-	child = new_process_or_kill(pid, SYD_SYDBOX_CHILD | post_attach_sigstop);
+	child = new_process_or_kill(pid, post_attach_sigstop);
+	sydbox->execve_pid = pid;
+	sydbox->execve_wait = true;
 	init_process_data(child, NULL);
-	sydbox->wait_execve = true;
 }
 
 void cleanup(void)
@@ -1578,9 +1570,7 @@ int main(int argc, char **argv)
 	systable_init();
 	sysinit();
 
-	ptrace_options = PINK_TRACE_OPTION_SYSGOOD |
-			 PINK_TRACE_OPTION_EXEC |
-			 PINK_TRACE_OPTION_EXIT;
+	ptrace_options = PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC;
 	ptrace_default_step = SYD_STEP_SYSCALL;
 	if (sydbox->config.follow_fork)
 		ptrace_options |= (PINK_TRACE_OPTION_FORK |

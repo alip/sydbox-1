@@ -42,6 +42,7 @@ extern int parse_netmask_ip(const char *addr, unsigned *ret_netmask);
 extern int parse_netmask_ipv6(const char *addr, unsigned *ret_netmask);
 
 extern int waitpid_nointr(pid_t pid, int *status, int options);
+extern int term_sig(int signum);
 
 #define streq(a,b) (strcmp((a),(b)) == 0)
 #define streqcase(a,b) (strcasecmp((a),(b)) == 0)
