@@ -27,7 +27,9 @@ realpath_mode_1_SOURCES= realpath_mode-1.c \
 syddir=$(libexecdir)/$(PACKAGE)/t/test-bin
 syd_PROGRAMS= wildtest realpath_mode-1 \
 	      syd-true syd-true-static syd-true-fork syd-true-fork-static syd-true-pthread \
-	      syd-false syd-false-static syd-false-fork syd-false-fork-static syd-false-pthread
+	      syd-false syd-false-static syd-false-fork syd-false-fork-static syd-false-pthread \
+	      syd-abort syd-abort-static syd-abort-fork syd-abort-fork-static \
+	      syd-abort-pthread syd-abort-pthread-static
 
 
 check_PROGRAMS= $(syd_PROGRAMS)
