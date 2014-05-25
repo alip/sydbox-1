@@ -23,8 +23,7 @@
 # define DUMP_NAME "./sydcore"  /* Default dump name */
 
 # define DUMPF_PROCFS	0x00000100 /* read /proc/$pid/stat */
-# define DUMPF_SYSARGV	0x00000200 /* decode system call arguments */
-# define DUMPF_SANDBOX	0x00000400 /* dump process sandbox */
+# define DUMPF_SANDBOX	0x00000200 /* dump process sandbox */
 
 enum dump {
 	DUMP_INIT,
@@ -35,6 +34,7 @@ enum dump {
 	DUMP_PINK, /* calls to pinktrace */
 	DUMP_THREAD_NEW, /* new_thread() */
 	DUMP_THREAD_FREE, /* free_process() */
+	DUMP_SYSCALL, /* system call information */
 };
 
 void dump(enum dump what, ...);

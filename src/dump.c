@@ -32,18 +32,8 @@
 
 static FILE *fp;
 static int nodump = -1;
-static unsigned long flags = DUMPF_PROCFS|DUMPF_SYSARGV;
+static unsigned long flags = DUMPF_PROCFS;
 static unsigned long long id;
-
-struct sysdump {
-	const char *name;
-	int argf[PINK_MAX_ARGS];
-};
-
-#if 0
-static const struct sysdump syscall_dump[] = {
-};
-#endif
 
 /* I know, I am so damn lazy... */
 #define pink_wrap(prototype, func, rtype, ...) \
@@ -150,6 +140,50 @@ static void dump_errno(int err_no)
 		err_no, pink_name_errno(err_no, 0));
 }
 
+static void dump_signal(int signum)
+{
+	fprintf(fp, "{"
+		J(num)"%d,"
+		J(name)"\"%s\""
+		"}",
+		signum, pink_name_signal(signum, 0));
+}
+
+static void dump_siginfo(const siginfo_t *info)
+{
+	fprintf(fp, "{"J(si_signo));
+	dump_signal(info->si_signo);
+
+	fprintf(fp, ","J(si_code));
+
+	switch (info->si_code) {
+	case CLD_EXITED:
+		fprintf(fp, "\"%s\"", "CLD_EXITED");
+		break;
+	case CLD_KILLED:
+		fprintf(fp, "\"%s\"", "CLD_KILLED");
+		break;
+	case CLD_DUMPED:
+		fprintf(fp, "\"%s\"", "CLD_DUMPED");
+		break;
+	case CLD_TRAPPED:
+		fprintf(fp, "\"%s\"", "CLD_TRAPPED");
+		break;
+	case CLD_STOPPED:
+		fprintf(fp, "\"%s\"", "CLD_STOPPED");
+		break;
+#ifdef CLD_CONTINUED
+	case CLD_CONTINUED:
+		fprintf(fp, "\"%s\"", "CLD_CONTINUED");
+		break;
+#endif
+	default:
+		dump_null();
+	}
+
+	fprintf(fp, "}");
+}
+
 static void dump_wait_status(int status)
 {
 	const char *name;
@@ -199,12 +233,33 @@ static void dump_wait_status(int status)
 	fprintf(fp, "}");
 }
 
+static void dump_ptrace_options(int options)
+{
+	fprintf(fp,
+		"{"J(SYSGOOD)"%s"
+		","J(FORK)"%s"
+		","J(VFORK)"%s"
+		","J(CLONE)"%s"
+		","J(EXEC)"%s"
+		","J(VFORK_DONE)"%s"
+		","J(EXIT)"%s"
+		","J(SECCOMP)"%s"
+		","J(EXITKILL)"%s }",
+		J_BOOL(options & PINK_TRACE_OPTION_SYSGOOD),
+		J_BOOL(options & PINK_TRACE_OPTION_FORK),
+		J_BOOL(options & PINK_TRACE_OPTION_VFORK),
+		J_BOOL(options & PINK_TRACE_OPTION_CLONE),
+		J_BOOL(options & PINK_TRACE_OPTION_EXEC),
+		J_BOOL(options & PINK_TRACE_OPTION_VFORK_DONE),
+		J_BOOL(options & PINK_TRACE_OPTION_EXIT),
+		J_BOOL(options & PINK_TRACE_OPTION_SECCOMP),
+		J_BOOL(options & PINK_TRACE_OPTION_EXITKILL));
+}
+
 static void dump_ptrace(pid_t pid, int status)
 {
 	enum pink_event pink_event = pink_event_decide(status);
 	const char *name = pink_name_event(pink_event);
-	int r = 0;
-	unsigned long msg;
 
 	fprintf(fp, "{"J(value)"%u", pink_event);
 
@@ -214,26 +269,7 @@ static void dump_ptrace(pid_t pid, int status)
 	else
 		dump_null();
 
-	fprintf(fp, ","J(msg));
-	switch (pink_event) {
-	case PINK_EVENT_EXEC:
-	case PINK_EVENT_EXIT:
-	case PINK_EVENT_FORK:
-	case PINK_EVENT_VFORK:
-	case PINK_EVENT_CLONE:
-	case PINK_EVENT_VFORK_DONE:
-	case PINK_EVENT_SECCOMP:
-		r = __real_pink_trace_geteventmsg(pid, &msg);
-		if (r < 0)
-			dump_errno(-r);
-		else
-			fprintf(fp, "%lu", msg);
-		break;
-	default:
-		dump_null();
-		break;
-	}
-
+#if 0
 	fprintf(fp, ","J(syscall));
 	if (WIFSTOPPED(status) && WSTOPSIG(status) == (SIGTRAP|0x80)) {
 		struct pink_regset *regset = NULL;
@@ -299,6 +335,7 @@ out:
 	} else {
 		dump_null();
 	}
+#endif
 
 	fprintf(fp, "}");
 }
@@ -332,6 +369,39 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 		J(errno)"%d,"
 		J(pid)"%d",
 		name, retval, save_errno, pid);
+
+	if (streq(name, "trace_kill")) {
+		pid_t tgid = va_arg(ap, pid_t);
+		fprintf(fp, ","J(tgid)"%d", tgid);
+	}
+
+	if (streq(name, "trace_resume") ||
+	    streq(name, "trace_syscall") ||
+	    streq(name, "trace_kill") ||
+	    streq(name, "trace_singlestep")) {
+		int signum = va_arg(ap, int);
+		fprintf(fp, ","J(signal));
+		dump_signal(signum);
+	} else if (streq(name, "trace_geteventmsg")) {
+		unsigned long *msg = va_arg(ap, unsigned long *);
+
+		fprintf(fp, ","J(msg));
+		if (retval == 0)
+			fprintf(fp, "%lu", *msg);
+		else
+			dump_null();
+	} else if (streq(name, "trace_get_siginfo")) {
+		siginfo_t *si = va_arg(ap, siginfo_t *);
+
+		fprintf(fp, ","J(siginfo));
+		dump_siginfo(si);
+	} else if (streq(name, "trace_setup") ||
+		   streq(name, "trace_seize")) {
+		int options = va_arg(ap, int);
+
+		fprintf(fp, ","J(options));
+		dump_ptrace_options(options);
+	}
 
 	fprintf(fp, "}");
 }

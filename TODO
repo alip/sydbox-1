@@ -1,1 +1,2 @@
 Do not call ptrace() from dump.c under any circumstances.
+Avoid unnecessary printf usage in dump.c

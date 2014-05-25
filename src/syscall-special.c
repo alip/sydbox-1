@@ -71,17 +71,16 @@ int sysx_chdir(syd_process_t *current)
 		return r;
 
 	if (retval < 0) {
-		log_trace("ignoring failed system call");
+		/* TODO: dump(DUMP_SYSCALL, current, "chdir", retval, "ignore"); */
 		return 0;
 	}
 
 	if ((r = proc_cwd(current->pid, sydbox->config.use_toolong_hack, &newcwd)) < 0) {
-		err_warning(-r, "proc_cwd failed");
+		/* TODO: dump(DUMP_SYSCALL, current, "chdir", retval, "panic"); */
 		return panic(current);
 	}
 
-	if (!streq(curcwd, newcwd))
-		log_check("dir change old=`%s' new=`%s'", curcwd, newcwd);
+	/* TODO: dump(DUMP_SYSCALL, current, "chdir", retval, "success", curcwd, newcwd); */
 
 	if (P_CWD(current))
 		free(P_CWD(current));
