@@ -65,7 +65,6 @@ int sysx_chdir(syd_process_t *current)
 	int r;
 	long retval;
 	char *newcwd;
-	char *curcwd = P_CWD(current);
 
 	if ((r = syd_read_retval(current, &retval, NULL)) < 0)
 		return r;
@@ -80,7 +79,7 @@ int sysx_chdir(syd_process_t *current)
 		return panic(current);
 	}
 
-	/* TODO: dump(DUMP_SYSCALL, current, "chdir", retval, "success", curcwd, newcwd); */
+	/* TODO: dump(DUMP_SYSCALL, current, "chdir", retval, "success", P_CWD(current), newcwd); */
 
 	if (P_CWD(current))
 		free(P_CWD(current));
@@ -101,7 +100,7 @@ int sys_execve(syd_process_t *current)
 
 	r = box_resolve_path(path, P_CWD(current), current->pid, RPATH_EXIST, &abspath);
 	if (r < 0) {
-		err_access(-r, "resolve_path(`%s')", path);
+		/* resolve_path failed, deny */
 		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s(`%s')", current->sysname, path);
@@ -254,7 +253,7 @@ int sys_stat(syd_process_t *current)
 #if !PINK_ARCH_X86_64
 skip_write:
 #endif
-		log_magic("accepted magic=`%s'", path);
+		/* magic command accepted */
 		if (r < 0)
 			errno = -r;
 		else if (r == MAGIC_RET_FALSE)
@@ -305,17 +304,17 @@ int sysx_dup(syd_process_t *current)
 		return r;
 
 	if (retval < 0) {
-		log_trace("ignoring failed system call");
+		/* ignore failed system call */
 		return 0;
 	}
 
 	if (!(oldinfo = sockmap_find(&P_SOCKMAP(current), current->args[0]))) {
-		log_check("duplicated unknown fd:%ld to fd:%ld", current->args[0], retval);
+		/* duplicated unknown file descriptor, ignore */
 		return 0;
 	}
 
+	/* file descriptor duplicated */
 	sockmap_add(&P_SOCKMAP(current), retval, sockinfo_xdup(oldinfo));
-	log_check("duplicated fd:%ld to fd:%ld", current->args[0], retval);
 	return 0;
 }
 
@@ -396,17 +395,17 @@ int sysx_fcntl(syd_process_t *current)
 		return r;
 
 	if (retval < 0) {
-		log_trace("ignore failed system call");
+		/* ignore failed system call */
 		return 0;
 	}
 
 	if (!(oldinfo = sockmap_find(&P_SOCKMAP(current), current->args[0]))) {
-		log_check("duplicated unknown fd:%ld to fd:%ld", current->args[0], retval);
+		/* unknown file descriptor duplicated, ignore */
 		return 0;
 	}
 
+	/* file descriptor duplicated */
 	sockmap_add(&P_SOCKMAP(current), retval, sockinfo_xdup(oldinfo));
-	log_check("duplicated fd:%ld to fd:%ld", current->args[0], retval);
 	return 0;
 }
 

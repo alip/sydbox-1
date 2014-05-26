@@ -66,7 +66,6 @@ int path_prefix(syd_process_t *current, unsigned arg_index, char **buf)
 	if (fd == AT_FDCWD) {
 		*buf = NULL;
 	} else if (fd < 0) {
-		log_check("invalid fd=%d, skip /proc read", fd);
 		*buf = NULL;
 		r = -EBADF;
 	} else {
@@ -79,10 +78,6 @@ int path_prefix(syd_process_t *current, unsigned arg_index, char **buf)
 			*buf = prefix;
 		}
 	}
-
-	if (r == 0)
-		log_check("fd=%d maps to prefix=`%s'", fd,
-			  fd == AT_FDCWD ? "AT_FDCWD" : prefix);
 
 	return r;
 }

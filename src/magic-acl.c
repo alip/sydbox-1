@@ -24,7 +24,7 @@ static int magic_edit_acl(int (*edit_func)(enum acl_action, const char *, aclq_t
 
 	r = magic_check_call(edit_func(action, (const char *)val, acl));
 	if (r == MAGIC_RET_NOT_SUPPORTED) {
-		log_magic("ignore unsupported magic value `%s'", val);
+		log_warning("ignore unsupported magic value `%s'", val);
 		r = MAGIC_RET_OK;
 	}
 	return r;

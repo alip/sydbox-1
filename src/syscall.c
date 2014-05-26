@@ -459,17 +459,10 @@ int sysenter(syd_process_t *current)
 	if (entry) {
 		current->sysnum = sysnum;
 		current->sysname = entry->name;
-		log_syscall("entering system call");
 		if (entry->enter)
 			return entry->enter(current);
 		else if (entry->exit)
 			current->flags |= SYD_STOP_AT_SYSEXIT;
-	} else {
-		if (log_has_level(LOG_LEVEL_SYS_ALL)) {
-			const char *sysname;
-			sysname = pink_name_syscall(sysnum, current->abi);
-			log_sys_all("entering system call %s", sysname);
-		}
 	}
 
 	return 0;

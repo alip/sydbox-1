@@ -55,11 +55,10 @@ int pathmatch_expand(const char *pattern, char ***buf)
 	if (match_no_wild == NO_WILDCARD_PREFIX && !strpbrk(p, "*?")) {
 		cp = xmalloc(sizeof(char) * (strlen(p) + sizeof(WILD3_SUFFIX)));
 
+		/* append WILD3_SUFFIX to p, no wildcard is prefix */
 		strcpy(cp, p);
 		strcat(cp, WILD3_SUFFIX);
 
-		log_match("append `%s' to pattern=`%s' (no_wildcard is prefix)",
-			  WILD3_SUFFIX, p);
 		free(p);
 
 		p = cp;
@@ -98,11 +97,6 @@ bool pathmatch(const char *pattern, const char *text)
 		r = wildmatch(pattern, text);
 	else
 		r = iwildmatch(pattern, text);
-
-	log_match("%smatch%s: pattern=`%s' text=`%s'",
-		  r == 0 ? "no" : "",
-		  match_case_sensitive ? "" : "case",
-		  pattern, text);
 
 	return r;
 }

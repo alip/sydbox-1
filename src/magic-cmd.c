@@ -96,7 +96,7 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 	childpid = fork();
 	if (childpid < 0) {
 		err_no = execve_errno(errno);
-		log_magic("fork failed (errno:%d %s)", errno, strerror(errno));
+		log_warning("fork failed (errno:%d %s)", errno, strerror(errno));
 		r = deny(current, err_no);
 		return r;
 	} else if (childpid == 0) {
@@ -114,33 +114,26 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 
 	if (waitpid_nointr(childpid, &status, 0) < 0) {
 		err_no = execve_errno(errno);
-		log_magic("exec(`%s'): waitpid(%u) failed (errno:%d %s)",
-			  argv[0], childpid, errno, strerror(errno));
+		log_warning("exec(`%s'): waitpid(%u) failed (errno:%d %s)",
+			    argv[0], childpid, errno, strerror(errno));
 		r = -err_no;
 		goto out;
 	}
 	if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
-		log_magic("exec(`%s') successful, detaching from pid:%u",
-			  argv[0], childpid);
+		/* execve successful, detach from pid */
 		if (pink_trace_detach(childpid, 0) < 0)
-			log_magic("detach from pid:%u failed (errno:%d %s)",
-				  childpid, errno, strerror(errno));
+			log_warning("detach from pid:%u failed (errno:%d %s)",
+				    childpid, errno, strerror(errno));
 		r = 0;
 	} else if (WIFEXITED(status)) {
+		/* execve() failed */
 		err_no = WEXITSTATUS(status);
-		log_magic("exec(`%s') failed (errno:%d %s)", argv[0],
-			  err_no, strerror(err_no));
 		r = -err_no;
 	} else if (WIFSIGNALED(status)) {
-		log_magic("exec(`%s') terminated (signal:%d)", argv[0],
-			  WTERMSIG(status));
-		log_magic("sending signal:%d to %s[%u]", WTERMSIG(status),
-			  P_COMM(current), current->pid);
+		/* execve() process terminated, inject the signal */
 		pink_trace_kill(current->pid, current->ppid, WTERMSIG(status));
 		r = MAGIC_RET_PROCESS_TERMINATED;
 	} else {
-		log_magic("exec(`%s') unknown status:0x%04x pid:%u", argv[0],
-			  status, childpid);
 		r = -ENOEXEC;
 	}
 

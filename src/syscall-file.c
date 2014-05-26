@@ -50,7 +50,6 @@ static bool check_access_mode(syd_process_t *current, int mode)
 	else
 		r = false;
 
-	log_trace("check_mode(0x%x) = %d|%s|", mode, r, strbool(r));
 	return r;
 }
 
@@ -204,10 +203,6 @@ static void init_open_info(syd_process_t *current, int flags, struct open_info *
 	default:
 		info->may_read = info->may_write = false;
 	}
-
-	log_trace("check_flags(0x%x) = read:%s write:%s rmode:0x%x syd_mode:0x%x",
-		  flags, strbool(info->may_read), strbool(info->may_write),
-		  info->rmode, info->syd_mode);
 }
 
 static int check_open(syd_process_t *current, sysinfo_t *info,
@@ -446,12 +441,11 @@ int sysx_close(syd_process_t *current)
 		return r;
 
 	if (retval == -1) {
-		log_trace("ignoring failed close");
+		/* ignore failed close */
 		return 0;
 	}
 
 	sockmap_remove(&P_SOCKMAP(current), current->args[0]);
-	log_trace("closed fd: %ld", current->args[0]);
 	return 0;
 }
 

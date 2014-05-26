@@ -265,7 +265,6 @@ void free_process(syd_process_t *p)
 		procdrop(&sydbox->config.hh_proc_pid_auto, pid);
 
 	log_context(NULL);
-	log_trace("process %u removed", pid);
 }
 
 void remove_process(syd_process_t *p)
@@ -964,7 +963,7 @@ static int event_exec(syd_process_t *current)
 	assert(current);
 
 	if (P_BOX(current)->magic_lock == LOCK_PENDING) {
-		log_magic("locked magic commands");
+		/* magic commands are locked */
 		P_BOX(current)->magic_lock = LOCK_SET;
 	}
 
@@ -987,10 +986,8 @@ static int event_exec(syd_process_t *current)
 		log_warning("detaching from process");
 		syd_trace_detach(current, 0);
 		return -ESRCH;
-	} else {
-		log_match("execve path=`%s' does not match if_match patterns",
-			  current->abspath);
 	}
+	/* execve path does not match if_match patterns */
 
 	char *new_comm, *new_cwd;
 
@@ -1070,7 +1067,7 @@ static int event_syscall(syd_process_t *current)
 #if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp &&
 		    (current->flags & SYD_STOP_AT_SYSEXIT)) {
-			log_trace("seccomp: skipping sysenter");
+			/* seccomp: skipping sysenter */
 			current->flags |= SYD_IN_SYSCALL;
 			return 0;
 		}
@@ -1081,7 +1078,7 @@ static int event_syscall(syd_process_t *current)
 #if SYDBOX_HAVE_SECCOMP
 		if (sydbox->config.use_seccomp &&
 		    !(current->flags & SYD_STOP_AT_SYSEXIT)) {
-			log_trace("seccomp: skipping sysexit, resuming");
+			/* seccomp: skipping sysexit, resuming */
 			current->trace_step = SYD_STEP_RESUME;
 			return r;
 		}
@@ -1314,7 +1311,7 @@ static int trace(void)
 		 * just before the process takes a signal.
 		 */
 		if (sig == SIGSTOP && current->flags & SYD_IGNORE_ONE_SIGSTOP) {
-			log_trace("ignored SIGSTOP");
+			/* ignore SIGSTOP */
 			current->flags &= ~SYD_IGNORE_ONE_SIGSTOP;
 			goto restart_tracee_with_sig_0;
 		}

@@ -99,7 +99,7 @@ int sysx_bind(syd_process_t *current)
 		return r;
 
 	if (retval < 0) {
-		log_trace("ignoring failed system call");
+		/* ignore failed system call */
 		free_sockinfo(P_SAVEBIND(current));
 		P_SAVEBIND(current) = NULL;
 		return 0;
@@ -115,7 +115,7 @@ int sysx_bind(syd_process_t *current)
 		goto zero;
 #endif
 
-	log_trace("whitelisting socket address");
+	/* whitelist socket address */
 	node = xcalloc(1, sizeof(struct acl_node));
 	match = sockmatch_new(P_SAVEBIND(current));
 	node->action = ACL_ACTION_WHITELIST;
@@ -123,7 +123,7 @@ int sysx_bind(syd_process_t *current)
 	ACLQ_INSERT_TAIL(&sydbox->config.acl_network_connect_auto, node);
 	return 0;
 zero:
-	log_check("saving sockfd:%ld with port zero for whitelisting", current->args[0]);
+	/* save sockfd with port 0 for whitelisting */
 	sockmap_add(&P_SOCKMAP(current), current->args[0], P_SAVEBIND(current));
 	P_SAVEBIND(current) = NULL;
 	return 0;
@@ -211,7 +211,7 @@ int sysx_getsockname(syd_process_t *current)
 		return r;
 
 	if (retval < 0) {
-		log_trace("ignoring failed system call");
+		/* ignore failed system call */
 		return 0;
 	}
 
@@ -242,7 +242,7 @@ int sysx_getsockname(syd_process_t *current)
 		assert_not_reached();
 	}
 
-	log_trace("whitelisting bind(port:0->%u) for connect()", port);
+	/* whitelist bind(0 -> port) for connect() */
 	node = xcalloc(1, sizeof(struct acl_node));
 	node->action = ACL_ACTION_WHITELIST;
 	node->match = match;

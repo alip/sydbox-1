@@ -139,8 +139,6 @@ static char *box_resolve_path_special(const char *abspath, pid_t tid)
 		xasprintf(&p, "/proc/%u%s", tid, tail);
 	}
 
-	if (p)
-		log_check("special symlink `%s' changed to `%s'", abspath, p);
 	return p;
 }
 
@@ -151,15 +149,7 @@ static int box_resolve_path_helper(const char *abspath, pid_t tid,
 	char *p;
 
 	p = box_resolve_path_special(abspath, tid);
-
 	r = realpath_mode(p ? p : abspath, rmode, res);
-	if (r == 0)
-		log_check("realpath(`%s') = `%s'", p ? p : abspath, *res);
-	else
-		log_check("realpath(`%s') = NULL rmode=%d errno:%d|%s| (%s)",
-			  p ? p : abspath, rmode,
-			  -r, pink_name_errno(-r, 0), strerror(-r));
-
 	if (p)
 		free(p);
 
@@ -257,7 +247,7 @@ static int box_check_ftype(const char *path, sysinfo_t *info)
 		return 0;
 
 	if (info->cache_statbuf) {
-		log_check("using cached status information");
+		/* use cached status information */
 		memcpy(&buf, info->cache_statbuf, 0);
 		stat_ret = 0;
 	} else {
@@ -307,8 +297,6 @@ static int box_check_ftype(const char *path, sysinfo_t *info)
 			deny_errno = ENOTEMPTY;
 	}
 
-	if (deny_errno != 0)
-		err_access(deny_errno, "check_filetype(`%s')", path);
 	return deny_errno;
 }
 
@@ -326,21 +314,11 @@ int box_check_path(syd_process_t *current, sysinfo_t *info)
 	prefix = path = abspath = NULL;
 	deny_errno = info->deny_errno ? info->deny_errno : EPERM;
 
-	log_check("arg_index=%u cwd:`%s'", info->arg_index, P_CWD(current));
-	log_check("at_func=%s null_ok=%s rmode=%u syd_mode=0x%x",
-		  info->at_func ? "yes" : "no",
-		  info->null_ok ? "yes" : "no",
-		  info->rmode, info->syd_mode);
-	log_check("safe=%s deny-errno=%d|%s| access_mode=%s",
-		  strbool(info->safe),
-		  deny_errno, pink_name_errno(deny_errno, 0),
-		  sys_access_mode_to_string(info->access_mode));
-
 	/* Step 0: check for cached abspath from a previous check */
 	if (info->cache_abspath) {
+		/* use cached abspath */
 		prefix = path = NULL;
 		abspath = (char *)info->cache_abspath;
-		log_check("using cached resolved path `%s'", abspath);
 		goto check_access;
 	}
 
@@ -392,8 +370,6 @@ int box_check_path(syd_process_t *current, sysinfo_t *info)
 	/* Step 3: resolve path */
 	if ((r = box_resolve_path(path, prefix ? prefix : P_CWD(current),
 				  pid, info->rmode, &abspath)) < 0) {
-		err_access(-r, "resolve_path(`%s', `%s')",
-			   prefix ? prefix : P_CWD(current), path);
 		r = deny(current, -r);
 		if (sydbox->config.violation_raise_fail)
 			violation(current, "%s()", current->sysname);
@@ -420,15 +396,12 @@ check_access:
 	access_lists[1] = info->access_list_global;
 
 	if (box_check_access(access_mode, acl_pathmatch, access_lists, 2, abspath)) {
-		log_access("allowing access to `%s'", abspath);
 		r = 0;
 		goto out;
-	} else {
-		log_access("denying access to `%s'", abspath);
 	}
 
 	if (info->safe && !sydbox->config.violation_raise_safe) {
-		log_access("ignoring safe system call");
+		/* ignore safe system call */
 		r = deny(current, deny_errno);
 		goto out;
 	}
@@ -442,7 +415,7 @@ check_access:
 	if ((stat_errno = box_check_ftype(abspath, info)) != 0) {
 		deny_errno = stat_errno;
 		if (!sydbox->config.violation_raise_safe) {
-			log_access("ignoring safe system call");
+			/* ignore safe system call */
 			r = deny(current, deny_errno);
 			goto out;
 		}
@@ -497,13 +470,6 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 	assert(info->access_list);
 	assert(info->access_filter);
 
-	log_check("arg_index=%u decode=%s", info->arg_index,
-		  strbool(info->decode_socketcall));
-	log_check("safe=%s deny-errno=%d|%s| access_mode=%s",
-		  strbool(info->safe),
-		  info->deny_errno, pink_name_errno(info->deny_errno, 0),
-		  sys_access_mode_to_string(info->access_mode));
-
 	r = 0;
 	pid = current->pid;
 	abspath = NULL;
@@ -537,9 +503,7 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 		goto out;
 	default:
 		if (sydbox->config.whitelist_unsupported_socket_families) {
-			log_access("allowing unsupported socket family %d|%s|",
-				   psa->family,
-				   pink_name_socket_family(psa->family));
+			/* allow unsupported socket family */
 			goto out;
 		}
 		r = deny(current, EAFNOSUPPORT);
@@ -556,8 +520,6 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 				     P_CWD(current), pid,
 				     info->rmode, &abspath);
 		if (r < 0) {
-			err_access(-r, "resolve_path(`%s', `%s')",
-				   P_CWD(current), psa->u.sa_un.sun_path);
 			r = deny(current, -r);
 			if (sydbox->config.violation_raise_fail)
 				violation(current, "%s()", current->sysname);
@@ -566,21 +528,19 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 
 		if (box_check_access(info->access_mode, acl_sockmatch_saun,
 				     access_lists, 2, abspath)) {
-			log_access("access to sun_path `%s' granted", abspath);
+			/* access granted */
 			r = 0;
 			goto out;
-		} else {
-			log_access("access to sun_path `%s' denied", abspath);
 		}
+		/* access denied */
 	} else {
 		if (box_check_access(info->access_mode, acl_sockmatch,
 				     access_lists, 2, psa)) {
-			log_access("access to sockaddr `%p' granted", (void *)psa);
+			/* access granted */
 			r = 0;
 			goto out;
-		} else {
-			log_access("access to sockaddr `%p' denied", (void *)psa);
 		}
+		/* access denied */
 	}
 
 	r = deny(current, info->deny_errno);
@@ -588,14 +548,12 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
 		if (acl_match_saun(ACL_ACTION_NONE, info->access_filter, abspath, NULL)) {
-			log_access("sun_path=`%s' matches a filter pattern, violation filtered",
-				   abspath);
+			/* access violation filtered */
 			goto out;
 		}
 	} else {
 		if (acl_match_sock(ACL_ACTION_NONE, info->access_filter, psa, NULL)) {
-			log_access("sockaddr=%p matches a filter pattern, violation filtered",
-				   (void *)psa);
+			/* access violation filtered */
 			goto out;
 		}
 	}

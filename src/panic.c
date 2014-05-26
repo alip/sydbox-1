@@ -131,9 +131,6 @@ int deny(syd_process_t *current, int err_no)
 	current->flags |= SYD_DENY_SYSCALL | SYD_STOP_AT_SYSEXIT;
 	current->retval = errno2retval(err_no);
 
-	log_access("DENY retval:%ld errno:%d|%s|", current->retval,
-		   err_no, pink_name_errno(err_no, 0));
-
 	return syd_write_syscall(current, PINK_SYSCALL_INVALID);
 }
 
@@ -141,8 +138,6 @@ int restore(syd_process_t *current)
 {
 	int r;
 	int retval, error;
-
-	log_trace("RESTORE");
 
 	/* restore system call number */
 	if ((r = syd_write_syscall(current, current->sysnum)) < 0)
