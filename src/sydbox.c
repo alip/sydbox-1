@@ -287,12 +287,13 @@ void remove_process(syd_process_t *p)
 
 static inline void save_exit_code(int exit_code)
 {
+	dump(DUMP_EXIT, exit_code);
 	sydbox->exit_code = exit_code;
 }
 
 static inline void save_exit_signal(int signum)
 {
-	sydbox->exit_code = 128 + signum;
+	save_exit_code(128 + signum);
 }
 
 static inline void save_exit_status(int status)
@@ -1157,6 +1158,7 @@ static int trace(void)
 		}
 
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
+		errno = 0;
 		pid = waitpid(current ? current->pid : -1, &status, __WALL);
 		wait_errno = errno;
 		sigprocmask(SIG_SETMASK, &blocked_set, NULL);
@@ -1468,6 +1470,7 @@ static void startup_child(char **argv)
 	sydbox->execve_pid = pid;
 	sydbox->execve_wait = true;
 	init_process_data(child, NULL);
+	dump(DUMP_STARTUP, pid);
 }
 
 void cleanup(void)

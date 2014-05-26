@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import os, sys, re, json, argparse
+import collections, itertools
 
 def dump_path(args):
     path = getattr(args, 'core', None)
@@ -25,6 +26,19 @@ def dump_json(obj, fmt = None):
         json.dump(obj, sys.stdout, sort_keys = True,
                   indent = 4, separators = (',', ': '))
         sys.stdout.write('\n')
+
+def format_json(objs, fmt = None):
+    if fmt is None:
+        return objs
+    p = []
+    for obj in objs:
+        try:
+            formatted = fmt.format(**obj)
+        except (KeyError, AttributeError, TypeError):
+            formatted = "{id}".format(**obj)
+        p.append(formatted)
+
+    return p
 
 def match_event(event, pattern = None, match_format = None):
     if pattern is None:
@@ -62,8 +76,88 @@ class ShoeBox:
             return False # Raise the exception
         return True
 
-    def abspath(self):
+    @property
+    def path(self):
         return os.path.abspath(self.dump)
+
+    @property
+    def events(self):
+        return self.read_events()
+
+    @property
+    def child(self):
+        return self.match("startup:[0-9]+", "{event_name}:{pid}", 1)
+
+    @property
+    def exit(self):
+        return self.match("exit", "{event_name}")
+
+    @property
+    def child_pid(self):
+        c = self.child
+        if c:
+            return c['pid']
+
+    def last(self, limit = 1, fmt = None):
+        if limit > 0:
+            limit = -limit
+        self.rewind()
+        return list(format_json(self.read_events(limit = limit), fmt))
+
+    def _parse_pid(self, pid):
+        if pid == 'child':
+            return self.child_pid
+        else:
+            return int(pid)
+
+    def search(self, **kwargs):
+        self.rewind()
+        events = list(self.events)
+
+        if 'pid' in kwargs:
+            pids = kwargs['pid']
+
+            if isinstance(pids, str):
+                pids = [pids,]
+
+            pids = set(map(self._parse_pid, pids))
+
+            def _filter_pid(event):
+                if 'pid' not in event:
+                    return False
+                if event['pid'] not in pids:
+                    return False
+                return True
+            events = filter(_filter_pid, events)
+        if kwargs.get('sort', True):
+            events = sorted(events, key = lambda event: event['id'])
+
+        return tuple(events)
+
+    def oops(self):
+        return self.match("assert", "{event_name}")
+
+    def match(self, pattern, match_format, limit = 0):
+        self.rewind()
+
+        p = re.compile(pattern, re.I|re.U)
+        events = []
+
+        for event in list(self.events):
+            try:
+                m = p.match(match_format.format(**event))
+            except (KeyError, AttributeError, TypeError):
+                continue
+            if m:
+                events.append(event)
+            if limit > 0 and len(events) >= limit:
+                break
+
+        if not events:
+            return None
+        if limit == 1:
+            return events.pop(0)
+        return events
 
     def check_format(self):
         line = self.fp.readline()
@@ -128,17 +222,10 @@ class ShoeBox:
             yield obj
 
     def tree(self, pid, pattern, match_format, quick = False):
-        events = []
-        def find_eldest_pid(event):
-            if 'process' not in event:
-                return -1
-            if 'syd' not in event['process']:
-                return -1
-            if not event['process']['syd']['flag_SYDBOX_CHILD']:
-                return -1
-            return event['pid']
+        child_pid = self.child_pid
+        events = list(self.events)
 
-        for event in self.read_events():
+        for event in events:
             if 'pid' not in event:
                 continue
             if pid < 0:
@@ -173,20 +260,6 @@ class ShoeBox:
         return sorted(events_out, key = lambda event: event['id'])
 
 class syd:
-    class match:
-        def first(events, pattern, match_format):
-            p = re.compile(pattern, re.I|re.U)
-
-            for event in events:
-                try:
-                    m = p.match(match_format.format(**event))
-                except (KeyError, AttributeError, TypeError):
-                    continue
-                if m:
-                    return event
-
-            return None
-
     class process:
         def count(events):
             p = set()
@@ -206,6 +279,37 @@ class syd:
             if event is None:
                 return -1
             return event['pid']
+
+def command_debug(args):
+    from IPython.config.loader import Config
+    try:
+        get_ipython
+    except NameError:
+        nested = 0
+        cfg = Config()
+        prompt_config = cfg.PromptManager
+        prompt_config.in_template = 'In <\\#>: '
+        prompt_config.in2_template = '   .\\D.: '
+        prompt_config.out_template = 'Out<\\#>: '
+    else:
+        print("Running nested copies of IPython.")
+        print("The prompts for the nested copy have been modified")
+        cfg = Config()
+        nested = 1
+
+    from IPython.terminal.embed import InteractiveShellEmbed
+
+    ipshell = InteractiveShellEmbed(config=cfg,
+                                    banner1 = 'Where else would you hide your money?',
+                                    exit_msg = 'Leaving debugger, back to occupying the world.')
+
+    sydcore = dump_path(args)
+    if not os.path.exists(sydcore):
+        print("'%s' does not exist (specify path with shoebox --core /path/to/sydcore debug)" % sydcore);
+        sys.exit(1)
+
+    with ShoeBox(sydcore) as shoebox:
+        ipshell()
 
 def command_exec(args):
     code = sys.stdin.read()
@@ -282,6 +386,9 @@ Attaching poems encourages consideration tremendously.''')
     parser.add_argument('-c', '--core', default = None, metavar = 'SYDCORE', help = 'Path to sydbox core dump')
 
     subparser = parser.add_subparsers(help = 'command help')
+
+    parser_debug = subparser.add_parser('debug', help = 'Fire debug shell (requires IPython-2)')
+    parser_debug.set_defaults(func = command_debug)
 
     parser_exec = subparser.add_parser('exec', help = 'Execute python code on standart input')
     parser_exec.add_argument('-s', '--scope', default = 'line',

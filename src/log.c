@@ -261,6 +261,7 @@ void assert_(const char *expr, const char *func,
 	log_msg(LOG_LEVEL_ASSERT,
 		"Assertion '%s' failed at %s:%zu, function %s()",
 		expr, file, line, func);
+	dump(DUMP_ASSERT, expr, file, line, func);
 	dump(DUMP_CLOSE);
 
 	if (abort_func)

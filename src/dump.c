@@ -233,6 +233,144 @@ static void dump_wait_status(int status)
 	fprintf(fp, "}");
 }
 
+static void dump_clone_flags(int clone_flags)
+{
+	fprintf(fp, "{"
+#ifdef CLONE_VM
+		J(CLONE_VM)"%s,"
+#endif
+#ifdef CLONE_FS
+		J(CLONE_FS)"%s,"
+#endif
+#ifdef CLONE_FILES
+		J(CLONE_FILES)"%s,"
+#endif
+#ifdef CLONE_SIGHAND
+		J(CLONE_SIGHAND)"%s,"
+#endif
+#ifdef CLONE_PTRACE
+		J(CLONE_PTRACE)"%s,"
+#endif
+#ifdef CLONE_VFORK
+		J(CLONE_VFORK)"%s,"
+#endif
+#ifdef CLONE_PARENT
+		J(CLONE_PARENT)"%s,"
+#endif
+#ifdef CLONE_THREAD
+		J(CLONE_THREAD)"%s,"
+#endif
+#ifdef CLONE_NEWNS
+		J(CLONE_NEWNS)"%s,"
+#endif
+#ifdef CLONE_SYSVSEM
+		J(CLONE_SYSVSEM)"%s,"
+#endif
+#ifdef CLONE_SETTLS
+		J(CLONE_SETTLS)"%s,"
+#endif
+#ifdef CLONE_PARENT_SETTID
+		J(CLONE_PARENT_SETTID)"%s,"
+#endif
+#ifdef CLONE_CHILD_CLEARTID
+		J(CLONE_CHILD_CLEARTID)"%s,"
+#endif
+#ifdef CLONE_DETACHED
+		J(CLONE_DETACHED)"%s,"
+#endif
+#ifdef CLONE_UNTRACED
+		J(CLONE_UNTRACED)"%s,"
+#endif
+#ifdef CLONE_CHILD_SETTID
+		J(CLONE_CHILD_SETTID)"%s,"
+#endif
+#ifdef CLONE_NEWUTS
+		J(CLONE_NEWUTS)"%s,"
+#endif
+#ifdef CLONE_NEWIPC
+		J(CLONE_NEWIPC)"%s,"
+#endif
+#ifdef CLONE_NEWUSER
+		J(CLONE_NEWUSER)"%s,"
+#endif
+#ifdef CLONE_NEWPID
+		J(CLONE_NEWPID)"%s,"
+#endif
+#ifdef CLONE_NEWNET
+		J(CLONE_NEWNET)"%s,"
+#endif
+#ifdef CLONE_IO
+		J(CLONE_IO)"%s}"
+#endif
+#ifdef CLONE_VM
+		,J_BOOL(clone_flags & CLONE_VM)
+#endif
+#ifdef CLONE_FS
+		,J_BOOL(clone_flags & CLONE_FS)
+#endif
+#ifdef CLONE_FILES
+		,J_BOOL(clone_flags & CLONE_FILES)
+#endif
+#ifdef CLONE_SIGHAND
+		,J_BOOL(clone_flags & CLONE_SIGHAND)
+#endif
+#ifdef CLONE_PTRACE
+		,J_BOOL(clone_flags & CLONE_PTRACE)
+#endif
+#ifdef CLONE_VFORK
+		,J_BOOL(clone_flags & CLONE_VFORK)
+#endif
+#ifdef CLONE_PARENT
+		,J_BOOL(clone_flags & CLONE_PARENT)
+#endif
+#ifdef CLONE_THREAD
+		,J_BOOL(clone_flags & CLONE_THREAD)
+#endif
+#ifdef CLONE_NEWNS
+		,J_BOOL(clone_flags & CLONE_NEWNS)
+#endif
+#ifdef CLONE_SYSVSEM
+		,J_BOOL(clone_flags & CLONE_SYSVSEM)
+#endif
+#ifdef CLONE_SETTLS
+		,J_BOOL(clone_flags & CLONE_SETTLS)
+#endif
+#ifdef CLONE_PARENT_SETTID
+		,J_BOOL(clone_flags & CLONE_PARENT_SETTID)
+#endif
+#ifdef CLONE_CHILD_CLEARTID
+		,J_BOOL(clone_flags & CLONE_CHILD_CLEARTID)
+#endif
+#ifdef CLONE_DETACHED
+		,J_BOOL(clone_flags & CLONE_DETACHED)
+#endif
+#ifdef CLONE_UNTRACED
+		,J_BOOL(clone_flags & CLONE_UNTRACED)
+#endif
+#ifdef CLONE_CHILD_SETTID
+		,J_BOOL(clone_flags & CLONE_CHILD_SETTID)
+#endif
+#ifdef CLONE_NEWUTS
+		,J_BOOL(clone_flags & CLONE_NEWUTS)
+#endif
+#ifdef CLONE_NEWIPC
+		,J_BOOL(clone_flags & CLONE_NEWIPC)
+#endif
+#ifdef CLONE_NEWUSER
+		,J_BOOL(clone_flags & CLONE_NEWUSER)
+#endif
+#ifdef CLONE_NEWPID
+		,J_BOOL(clone_flags & CLONE_NEWPID)
+#endif
+#ifdef CLONE_NEWNET
+		,J_BOOL(clone_flags & CLONE_NEWNET)
+#endif
+#ifdef CLONE_IO
+		,J_BOOL(clone_flags & CLONE_IO)
+#endif
+		);
+}
+
 static void dump_ptrace_options(int options)
 {
 	fprintf(fp,
@@ -491,302 +629,35 @@ static void dump_process(pid_t pid)
 		J(flag_IN_SYSCALL)"%s,"
 		J(flag_DENY_SYSCALL)"%s,"
 		J(flag_STOP_AT_SYSEXIT)"%s,"
-#ifdef CLONE_VM
-		J(clone_flag_CLONE_VM)"%s,"
-#endif
-#ifdef CLONE_FS
-		J(clone_flag_CLONE_FS)"%s,"
-#endif
-#ifdef CLONE_FILES
-		J(clone_flag_CLONE_FILES)"%s,"
-#endif
-#ifdef CLONE_SIGHAND
-		J(clone_flag_CLONE_SIGHAND)"%s,"
-#endif
-#ifdef CLONE_PTRACE
-		J(clone_flag_CLONE_PTRACE)"%s,"
-#endif
-#ifdef CLONE_VFORK
-		J(clone_flag_CLONE_VFORK)"%s,"
-#endif
-#ifdef CLONE_PARENT
-		J(clone_flag_CLONE_PARENT)"%s,"
-#endif
-#ifdef CLONE_THREAD
-		J(clone_flag_CLONE_THREAD)"%s,"
-#endif
-#ifdef CLONE_NEWNS
-		J(clone_flag_CLONE_NEWNS)"%s,"
-#endif
-#ifdef CLONE_SYSVSEM
-		J(clone_flag_CLONE_SYSVSEM)"%s,"
-#endif
-#ifdef CLONE_SETTLS
-		J(clone_flag_CLONE_SETTLS)"%s,"
-#endif
-#ifdef CLONE_PARENT_SETTID
-		J(clone_flag_CLONE_PARENT_SETTID)"%s,"
-#endif
-#ifdef CLONE_CHILD_CLEARTID
-		J(clone_flag_CLONE_CHILD_CLEARTID)"%s,"
-#endif
-#ifdef CLONE_DETACHED
-		J(clone_flag_CLONE_DETACHED)"%s,"
-#endif
-#ifdef CLONE_UNTRACED
-		J(clone_flag_CLONE_UNTRACED)"%s,"
-#endif
-#ifdef CLONE_CHILD_SETTID
-		J(clone_flag_CLONE_CHILD_SETTID)"%s,"
-#endif
-#ifdef CLONE_NEWUTS
-		J(clone_flag_CLONE_NEWUTS)"%s,"
-#endif
-#ifdef CLONE_NEWIPC
-		J(clone_flag_CLONE_NEWIPC)"%s,"
-#endif
-#ifdef CLONE_NEWUSER
-		J(clone_flag_CLONE_NEWUSER)"%s,"
-#endif
-#ifdef CLONE_NEWPID
-		J(clone_flag_CLONE_NEWPID)"%s,"
-#endif
-#ifdef CLONE_NEWNET
-		J(clone_flag_CLONE_NEWNET)"%s,"
-#endif
-#ifdef CLONE_IO
-		J(clone_flag_CLONE_IO)"%s,"
-#endif
 		J(ref_CLONE_THREAD)"%d,"
 		J(ref_CLONE_FS)"%d,"
 		J(ref_CLONE_FILES)"%d,"
-#ifdef CLONE_VM
-		J(new_clone_flag_CLONE_VM)"%s,"
-#endif
-#ifdef CLONE_FS
-		J(new_clone_flag_CLONE_FS)"%s,"
-#endif
-#ifdef CLONE_FILES
-		J(new_clone_flag_CLONE_FILES)"%s,"
-#endif
-#ifdef CLONE_SIGHAND
-		J(new_clone_flag_CLONE_SIGHAND)"%s,"
-#endif
-#ifdef CLONE_PTRACE
-		J(new_clone_flag_CLONE_PTRACE)"%s,"
-#endif
-#ifdef CLONE_VFORK
-		J(new_clone_flag_CLONE_VFORK)"%s,"
-#endif
-#ifdef CLONE_PARENT
-		J(new_clone_flag_CLONE_PARENT)"%s,"
-#endif
-#ifdef CLONE_THREAD
-		J(new_clone_flag_CLONE_THREAD)"%s,"
-#endif
-#ifdef CLONE_NEWNS
-		J(new_clone_flag_CLONE_NEWNS)"%s,"
-#endif
-#ifdef CLONE_SYSVSEM
-		J(new_clone_flag_CLONE_SYSVSEM)"%s,"
-#endif
-#ifdef CLONE_SETTLS
-		J(new_clone_flag_CLONE_SETTLS)"%s,"
-#endif
-#ifdef CLONE_PARENT_SETTID
-		J(new_clone_flag_CLONE_PARENT_SETTID)"%s,"
-#endif
-#ifdef CLONE_CHILD_CLEARTID
-		J(new_clone_flag_CLONE_CHILD_CLEARTID)"%s,"
-#endif
-#ifdef CLONE_DETACHED
-		J(new_clone_flag_CLONE_DETACHED)"%s,"
-#endif
-#ifdef CLONE_UNTRACED
-		J(new_clone_flag_CLONE_UNTRACED)"%s,"
-#endif
-#ifdef CLONE_CHILD_SETTID
-		J(new_clone_flag_CLONE_CHILD_SETTID)"%s,"
-#endif
-#ifdef CLONE_NEWUTS
-		J(new_clone_flag_CLONE_NEWUTS)"%s,"
-#endif
-#ifdef CLONE_NEWIPC
-		J(new_clone_flag_CLONE_NEWIPC)"%s,"
-#endif
-#ifdef CLONE_NEWUSER
-		J(new_clone_flag_CLONE_NEWUSER)"%s,"
-#endif
-#ifdef CLONE_NEWPID
-		J(new_clone_flag_CLONE_NEWPID)"%s,"
-#endif
-#ifdef CLONE_NEWNET
-		J(new_clone_flag_CLONE_NEWNET)"%s,"
-#endif
-#ifdef CLONE_IO
-		J(new_clone_flag_CLONE_IO)"%s,"
-#endif
 		J(ppid)"%d,"
 		J(comm)"\"%s\","
 		J(cwd)"\"%s\"," /*"J(FIXME)"quote */
 		J(syscall_no)"%lu,"
 		J(syscall_abi)"%d,"
-		J(syscall_name)"\"%s\","
-		J(clone_flags)"%ld,"
-		J(new_clone_flags)"%ld",
+		J(syscall_name)"\"%s\"",
 		J_BOOL(p->flags & SYD_STARTUP),
 		J_BOOL(p->flags & SYD_IGNORE_ONE_SIGSTOP),
 		J_BOOL(p->flags & SYD_READY),
 		J_BOOL(p->flags & SYD_IN_SYSCALL),
 		J_BOOL(p->flags & SYD_DENY_SYSCALL),
 		J_BOOL(p->flags & SYD_STOP_AT_SYSEXIT),
-#ifdef CLONE_VM
-		J_BOOL(p->clone_flags & CLONE_VM),
-#endif
-#ifdef CLONE_FS
-		J_BOOL(p->clone_flags & CLONE_FS),
-#endif
-#ifdef CLONE_FILES
-		J_BOOL(p->clone_flags & CLONE_FILES),
-#endif
-#ifdef CLONE_SIGHAND
-		J_BOOL(p->clone_flags & CLONE_SIGHAND),
-#endif
-#ifdef CLONE_PTRACE
-		J_BOOL(p->clone_flags & CLONE_PTRACE),
-#endif
-#ifdef CLONE_VFORK
-		J_BOOL(p->clone_flags & CLONE_VFORK),
-#endif
-#ifdef CLONE_PARENT
-		J_BOOL(p->clone_flags & CLONE_PARENT),
-#endif
-#ifdef CLONE_THREAD
-		J_BOOL(p->clone_flags & CLONE_THREAD),
-#endif
-#ifdef CLONE_NEWNS
-		J_BOOL(p->clone_flags & CLONE_NEWNS),
-#endif
-#ifdef CLONE_SYSVSEM
-		J_BOOL(p->clone_flags & CLONE_SYSVSEM),
-#endif
-#ifdef CLONE_SETTLS
-		J_BOOL(p->clone_flags & CLONE_SETTLS),
-#endif
-#ifdef CLONE_PARENT_SETTID
-		J_BOOL(p->clone_flags & CLONE_PARENT_SETTID),
-#endif
-#ifdef CLONE_CHILD_CLEARTID
-		J_BOOL(p->clone_flags & CLONE_CHILD_CLEARTID),
-#endif
-#ifdef CLONE_DETACHED
-		J_BOOL(p->clone_flags & CLONE_DETACHED),
-#endif
-#ifdef CLONE_UNTRACED
-		J_BOOL(p->clone_flags & CLONE_UNTRACED),
-#endif
-#ifdef CLONE_CHILD_SETTID
-		J_BOOL(p->clone_flags & CLONE_CHILD_SETTID),
-#endif
-#ifdef CLONE_NEWUTS
-		J_BOOL(p->clone_flags & CLONE_NEWUTS),
-#endif
-#ifdef CLONE_NEWIPC
-		J_BOOL(p->clone_flags & CLONE_NEWIPC),
-#endif
-#ifdef CLONE_NEWUSER
-		J_BOOL(p->clone_flags & CLONE_NEWUSER),
-#endif
-#ifdef CLONE_NEWPID
-		J_BOOL(p->clone_flags & CLONE_NEWPID),
-#endif
-#ifdef CLONE_NEWNET
-		J_BOOL(p->clone_flags & CLONE_NEWNET),
-#endif
-#ifdef CLONE_IO
-		J_BOOL(p->clone_flags & CLONE_IO),
-#endif
 		p->shm.clone_thread ? p->shm.clone_thread->refcnt : 0,
 		p->shm.clone_fs ? p->shm.clone_fs->refcnt : 0,
 		p->shm.clone_files ? p->shm.clone_files->refcnt : 0,
-#ifdef CLONE_VM
-		J_BOOL(p->new_clone_flags & CLONE_VM),
-#endif
-#ifdef CLONE_FS
-		J_BOOL(p->new_clone_flags & CLONE_FS),
-#endif
-#ifdef CLONE_FILES
-		J_BOOL(p->new_clone_flags & CLONE_FILES),
-#endif
-#ifdef CLONE_SIGHAND
-		J_BOOL(p->new_clone_flags & CLONE_SIGHAND),
-#endif
-#ifdef CLONE_PTRACE
-		J_BOOL(p->new_clone_flags & CLONE_PTRACE),
-#endif
-#ifdef CLONE_VFORK
-		J_BOOL(p->new_clone_flags & CLONE_VFORK),
-#endif
-#ifdef CLONE_PARENT
-		J_BOOL(p->new_clone_flags & CLONE_PARENT),
-#endif
-#ifdef CLONE_THREAD
-		J_BOOL(p->new_clone_flags & CLONE_THREAD),
-#endif
-#ifdef CLONE_NEWNS
-		J_BOOL(p->new_clone_flags & CLONE_NEWNS),
-#endif
-#ifdef CLONE_SYSVSEM
-		J_BOOL(p->new_clone_flags & CLONE_SYSVSEM),
-#endif
-#ifdef CLONE_SETTLS
-		J_BOOL(p->new_clone_flags & CLONE_SETTLS),
-#endif
-#ifdef CLONE_PARENT_SETTID
-		J_BOOL(p->new_clone_flags & CLONE_PARENT_SETTID),
-#endif
-#ifdef CLONE_CHILD_CLEARTID
-		J_BOOL(p->new_clone_flags & CLONE_CHILD_CLEARTID),
-#endif
-#ifdef CLONE_DETACHED
-		J_BOOL(p->new_clone_flags & CLONE_DETACHED),
-#endif
-#ifdef CLONE_UNTRACED
-		J_BOOL(p->new_clone_flags & CLONE_UNTRACED),
-#endif
-#ifdef CLONE_CHILD_SETTID
-		J_BOOL(p->new_clone_flags & CLONE_CHILD_SETTID),
-#endif
-#ifdef CLONE_NEWUTS
-		J_BOOL(p->new_clone_flags & CLONE_NEWUTS),
-#endif
-#ifdef CLONE_NEWIPC
-		J_BOOL(p->new_clone_flags & CLONE_NEWIPC),
-#endif
-#ifdef CLONE_NEWUSER
-		J_BOOL(p->new_clone_flags & CLONE_NEWUSER),
-#endif
-#ifdef CLONE_NEWPID
-		J_BOOL(p->new_clone_flags & CLONE_NEWPID),
-#endif
-#ifdef CLONE_NEWNET
-		J_BOOL(p->new_clone_flags & CLONE_NEWNET),
-#endif
-#ifdef CLONE_IO
-		J_BOOL(p->new_clone_flags & CLONE_IO),
-#endif
 		p->ppid,
 		p->shm.clone_thread ? p->shm.clone_thread->comm : "null",
 		p->shm.clone_fs ? p->shm.clone_fs->cwd : "null",
 		p->sysnum,
 		p->abi,
-		p->sysname,
-		p->clone_flags,
-		p->new_clone_flags);
+		p->sysname);
 
-	fprintf(fp, ","J(regset)"");
-	/* TODO: if (flags & DUMP_PTRACE_REGSET) */
-	dump_null();
+	fprintf(fp, ","J(clone_flags));
+	dump_clone_flags(p->clone_flags);
+	fprintf(fp, ","J(new_clone_flags));
+	dump_clone_flags(p->new_clone_flags);
 
 	fprintf(fp, ","J(sandbox)"");
 	if (!(flags & DUMPF_SANDBOX) || !p->shm.clone_thread)
@@ -844,7 +715,27 @@ void dump(enum dump what, ...)
 	time(&now);
 	va_start(ap, what);
 
-	if (what == DUMP_INTERRUPT) {
+	if (what == DUMP_ASSERT) {
+		const char *expr = va_arg(ap, const char *);
+		const char *file = va_arg(ap, const char *);
+		const char *line = va_arg(ap, const char *);
+		const char *func = va_arg(ap, const char *);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(time)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\"",
+			id++, (unsigned long long)now,
+			DUMP_ASSERT, "assert");
+
+		fprintf(fp, ","J(assert)"{"
+			J(expr)"\"%s\","
+			J(file)"\"%s\","
+			J(line)"\"%s\","
+			J(func)"\"%s\"}}",
+			expr, file, line, func);
+	} else if (what == DUMP_INTERRUPT) {
 		int sig = va_arg(ap, int);
 		const char *name;
 
@@ -1005,6 +896,31 @@ void dump(enum dump what, ...)
 		fprintf(fp, ","J(process));
 		dump_process(pid);
 		fprintf(fp, "}");
+	} else if (what == DUMP_STARTUP) {
+		pid_t pid = va_arg(ap, pid_t);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(time)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\","
+			J(pid)"%d",
+			id++, (unsigned long long)now,
+			what, "startup", pid);
+		fprintf(fp, ","J(process));
+		dump_process(pid);
+		fprintf(fp, "}");
+	} else if (what == DUMP_EXIT) {
+		int code = va_arg(ap, int);
+
+		fprintf(fp, "{"
+			J(id)"%llu,"
+			J(time)"%llu,"
+			J(event)"%u,"
+			J(event_name)"\"%s\","
+			J(exit_code)"%d}",
+			id++, (unsigned long long)now,
+			what, "exit", code);
 	} else {
 		abort();
 	}

@@ -29,12 +29,15 @@ enum dump {
 	DUMP_INIT,
 	DUMP_CLOSE,
 	DUMP_FLUSH,
+	DUMP_ASSERT, /* assertion failed */
 	DUMP_INTERRUPT, /* interrupted */
 	DUMP_WAIT, /* waitpid(2) */
 	DUMP_PINK, /* calls to pinktrace */
 	DUMP_THREAD_NEW, /* new_thread() */
 	DUMP_THREAD_FREE, /* free_process() */
 	DUMP_SYSCALL, /* system call information */
+	DUMP_STARTUP, /* attached to initial process */
+	DUMP_EXIT, /* sydbox->exit_code was set */
 };
 
 void dump(enum dump what, ...);
