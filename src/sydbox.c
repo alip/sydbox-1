@@ -123,7 +123,6 @@ static void new_shared_memory_clone_thread(struct syd_process *p)
 
 	p->shm.clone_thread = xmalloc(sizeof(struct syd_process_shared_clone_thread));
 	p->shm.clone_thread->refcnt = 1;
-	p->shm.clone_thread->comm = NULL;
 	if ((r = new_sandbox(&p->shm.clone_thread->box)) < 0) {
 		free(p->shm.clone_thread);
 		errno = -r;
@@ -502,6 +501,7 @@ static void dump_clone_flags(int flags)
 static void dump_one_process(syd_process_t *current, bool verbose)
 {
 	int r;
+	char *comm = NULL;
 	const char *CG, *CB, *CN, *CI, *CE; /* good, bad, important, normal end */
 	struct proc_statinfo info;
 
@@ -528,8 +528,12 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "\t%sParent ID: %u%s\n", CN, ppid > 0 ? ppid : 0, CE);
 	else
 		fprintf(stderr, "\t%sParent ID: ? (Orphan)%s\n", CN, CE);
-	if (current->shm.clone_thread)
-		fprintf(stderr, "\t%sComm: `%s'%s\n", CN, P_COMM(current), CE);
+	if (proc_comm(current->pid, &comm) == 0) {
+		fprintf(stderr, "\t%sComm: `%s'%s\n", CN, comm, CE);
+		free(comm);
+	} else {
+		fprintf(stderr, "\t%sComm: `?'%s\n", CN, CE);
+	}
 	if (current->shm.clone_fs)
 		fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, P_CWD(current), CE);
 	fprintf(stderr, "\t%sSyscall: {no:%lu abi:%d name:%s}%s\n", CN,
@@ -835,8 +839,6 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 	bool share_thread, share_fs, share_files;
 
 	if (!parent) {
-		if (current->pid == sydbox->execve_pid)
-			P_COMM(current) = xstrdup(sydbox->program_invocation_name);
 		P_CWD(current) = xgetcwd(); /* FIXME: toolong hack changes
 					       directories, this may not work! */
 		copy_sandbox(P_BOX(current), box_current(NULL));
@@ -863,7 +865,6 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 		P_CLONE_THREAD_RETAIN(current);
 	} else {
 		new_shared_memory_clone_thread(current);
-		P_COMM(current) = xstrdup(P_COMM(parent));
 		copy_sandbox(P_BOX(current), box_current(parent));
 	}
 
@@ -946,7 +947,7 @@ static int event_clone(syd_process_t *current)
 
 static int event_exec(syd_process_t *current)
 {
-	int e, r;
+	int r;
 	const char *match;
 
 	if (sydbox->execve_wait) {
@@ -989,15 +990,7 @@ static int event_exec(syd_process_t *current)
 	}
 	/* execve path does not match if_match patterns */
 
-	char *new_comm, *new_cwd;
-
-	/* Update process memory */
-	if ((e = basename_alloc(current->abspath, &new_comm))) {
-		err_warning(-e, "updating process name failed");
-		new_comm = xstrdup("???");
-	} else if (strcmp(new_comm, P_COMM(current))) {
-		log_info("updating process name to `%s' due to execve()", new_comm);
-	}
+	char *new_cwd;
 
 	if (P_CLONE_THREAD_REFCNT(current) > 1) {
 		struct syd_process_shared_clone_thread *old = current->shm.clone_thread;
@@ -1006,14 +999,10 @@ static int event_exec(syd_process_t *current)
 		/* XXX: This is way too ugly. */
 		new_shared_memory_clone_thread(current);
 		new = current->shm.clone_thread;
-		P_COMM(current) = new_comm;
 		copy_sandbox(P_BOX(current), old->box);
 		current->shm.clone_thread = old;
 		P_CLONE_THREAD_RELEASE(current);
 		current->shm.clone_thread = new;
-	} else {
-		free(P_COMM(current));
-		P_COMM(current) = new_comm;
 	}
 
 	if (P_CLONE_FS_REFCNT(current) > 1) {

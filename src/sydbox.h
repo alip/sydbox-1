@@ -305,13 +305,6 @@ typedef struct syd_process {
 	/* Per-thread shared data */
 	struct syd_process_shared {
 		struct syd_process_shared_clone_thread {
-			/* Process name:
-			 * - Read from /proc/$pid/comm for initial process
-			 * - Updated after successful execve()
-			 */
-			char *comm;
-#define			P_COMM(p) ((p)->shm.clone_thread->comm)
-
 			/* Per-process sandbox */
 			sandbox_t *box;
 #define			P_BOX(p) ((p)->shm.clone_thread->box)
@@ -325,9 +318,6 @@ typedef struct syd_process {
 				if ((p)->shm.clone_thread != NULL) { \
 					(p)->shm.clone_thread->refcnt--; \
 					if ((p)->shm.clone_thread->refcnt == 0) { \
-						if ((p)->shm.clone_thread->comm) { \
-							free((p)->shm.clone_thread->comm); \
-						} \
 						if ((p)->shm.clone_thread->box) { \
 							free_sandbox((p)->shm.clone_thread->box); \
 						} \

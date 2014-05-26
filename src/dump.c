@@ -633,7 +633,6 @@ static void dump_process(pid_t pid)
 		J(ref_CLONE_FS)"%d,"
 		J(ref_CLONE_FILES)"%d,"
 		J(ppid)"%d,"
-		J(comm)"\"%s\","
 		J(cwd)"\"%s\"," /*"J(FIXME)"quote */
 		J(syscall_no)"%lu,"
 		J(syscall_abi)"%d,"
@@ -648,7 +647,6 @@ static void dump_process(pid_t pid)
 		p->shm.clone_fs ? p->shm.clone_fs->refcnt : 0,
 		p->shm.clone_files ? p->shm.clone_files->refcnt : 0,
 		p->ppid,
-		p->shm.clone_thread ? p->shm.clone_thread->comm : "null",
 		p->shm.clone_fs ? p->shm.clone_fs->cwd : "null",
 		p->sysnum,
 		p->abi,

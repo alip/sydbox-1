@@ -59,15 +59,22 @@ static int wait_one(syd_process_t *node)
 int kill_one(syd_process_t *node, int fatal_sig)
 {
 	int i, r;
-	const char *name, *comm;
-
-	name = pink_name_signal(fatal_sig, 0);
-	comm = node->shm.clone_thread ? node->shm.clone_thread->comm : NULL;
 
 	if ((r = wait_one(node)) == -ESRCH)
 		return r;
 
-	fprintf(stderr, "sydbox: %s -> %d <%s> ", name, node->pid, comm);
+	const char *name;
+	char *comm = NULL;
+
+	name = pink_name_signal(fatal_sig, 0);
+	proc_comm(node->pid, &comm);
+
+	fprintf(stderr, "sydbox: %s -> %d <%s> ", name,
+		node->pid, comm ? comm : "?");
+
+	if (comm)
+		free(comm);
+
 	r = pink_trace_kill(node->pid, 0, fatal_sig);
 
 	for (i = 0; i < 3; i++) {
@@ -107,14 +114,19 @@ void kill_all(int fatal_sig)
 PINK_GCC_ATTR((format (printf, 2, 0)))
 static void report(syd_process_t *current, const char *fmt, va_list ap)
 {
-	char *cmdline;
+	char *cmdline, *comm = NULL;
 
 	log_context(NULL);
 
+	proc_comm(current->pid, &comm);
+
 	log_access_v("-- Access Violation! --");
-	log_access_v("proc: %s[%u] (parent:%u)",
-		     P_COMM(current), current->pid, current->ppid);
+	log_access_v("proc: %s[%u] (parent:%u)", comm ? comm : "?",
+		     current->pid, current->ppid);
 	log_access_v("cwd: `%s'", P_CWD(current));
+
+	if (comm)
+		free(comm);
 
 	if (proc_cmdline(current->pid, 128, &cmdline) == 0) {
 		log_access_v("cmdline: `%s'", cmdline);

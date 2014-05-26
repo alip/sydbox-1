@@ -3,7 +3,7 @@
  *
  * Simple debug logging
  *
- * Copyright 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
  * Based in part upon privoxy which is:
  *   Copyright (c) 2001-2010 the Privoxy team. http://www.privoxy.org/
  * Distributed under the terms of the GNU General Public License v2
@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <time.h>
 #include "log.h"
+#include "proc.h"
 #include "util.h"
 
 /* fatal can't be turned off! */
@@ -76,13 +77,15 @@ static void log_me(FILE *fp, unsigned level, const char *fmt, va_list ap)
 		break;
 	}
 
+
 	fprintf(fp, "%s", p);
 	if (prefix) {
 		fprintf(fp, "%s@%lu:", prefix, time(NULL));
-		if (current_proc && current_proc->shm.clone_thread) {
-			fprintf(fp, " %s[%u.%d:%u]",
-				P_COMM(current_proc) ? P_COMM(current_proc)
-						     : sydbox->program_invocation_name,
+		if (current_proc) {
+			char *comm = NULL;
+			proc_comm(current_proc->pid, &comm);
+
+			fprintf(fp, " %s[%u.%d:%u]", comm ? comm : "?",
 				current_proc->pid,
 				current_proc->abi,
 				current_proc->ppid);
@@ -91,6 +94,9 @@ static void log_me(FILE *fp, unsigned level, const char *fmt, va_list ap)
 					current_proc->sysnum,
 					current_proc->sysname ? current_proc->sysname : "?");
 			}
+
+			if (comm)
+				free(comm);
 		}
 		fputc(' ', fp);
 	}
