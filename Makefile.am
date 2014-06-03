@@ -52,4 +52,4 @@ upload-release: upload $(SHA1_FILE) $(GPG_FILE)
 jenkins:
 	misc/jenkins-build.sh
 
-SUBDIRS= src data man t .
+SUBDIRS= syd src data man t .

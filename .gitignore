@@ -97,6 +97,9 @@ Makefile
 /src/sydbox-dump
 /src/shoebox
 
+/syd/syd-check
+/syd/check-pause
+
 tests/test-lib.sh
 tests/test-results
 tests/temporary*

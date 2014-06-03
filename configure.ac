@@ -12,6 +12,8 @@ m4_define([sydbox_version_micro],  [0])
 m4_define([sydbox_version_suffix], [_beta])
 m4_define([sydbox_version_full],   [sydbox_version_major.sydbox_version_minor.sydbox_version_micro[]sydbox_version_suffix])
 m4_define([sydbox_version],        [sydbox_version_full])
+m4_define([libsyd_pc_version],     [sydbox_version_full])
+m4_define([libsyd_pc_slot],        [sydbox_version_major.sydbox_version_minor[]sydbox_version_suffix])
 
 m4_define([sydbox_api_version],    [sydbox_version_major])
 m4_define([sydbox_fname_ext],      [syd-])
@@ -57,6 +59,11 @@ AC_DEFINE_UNQUOTED([SYDBOX_API_VERSION], [$SYDBOX_API_VERSION], [Sydbox magic AP
 AC_SUBST([SYDBOX_API_VERSION])
 AC_DEFINE_UNQUOTED([SYDBOX_FNAME_EXT], ["$SYDBOX_FNAME_EXT"], [Sydbox filename extension])
 AC_SUBST([SYDBOX_FNAME_EXT])
+
+LIBSYD_PC_VERSION="libsyd_pc_version"
+LIBSYD_PC_SLOT="libsyd_pc_slot"
+AC_SUBST([LIBSYD_PC_VERSION])
+AC_SUBST([LIBSYD_PC_SLOT])
 
 dnl remove the check for c++ and fortran compiler
 m4_defun([_LT_AC_LANG_CXX_CONFIG], [:])
@@ -356,6 +363,7 @@ AC_SUBST_FILE([GENERATED_FILE])
 dnl output
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
+		 syd/Makefile
 		 data/Makefile
 		 man/Makefile
 		 t/Makefile
