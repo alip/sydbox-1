@@ -9,6 +9,16 @@
 
 #include "check.h"
 
+static void test_setup(void)
+{
+	system("mkdir -p -m 700 ./tmp");
+}
+
+static void test_teardown(void)
+{
+	system("rm -fr ./tmp");
+}
+
 static void test_proc_comm(void)
 {
 	pid_t pid;
@@ -116,12 +126,132 @@ static void test_proc_cmdline(void)
 		kill(cpid, SIGKILL);
 	}
 }
+
+static void test_proc_fd_path(void)
+{
+	pid_t pid;
+	char cwd[PATH_MAX], fd_path[] = "tmp/fd-path.tmp", fd_long[257];
+	int pfd[2];
+
+	syd_strlcpy(fd_long, "tmp/", sizeof("tmp/"));
+	for (unsigned i = 4; i < 256; i++)
+		fd_long[i] = 'x';
+	fd_long[256] = '\0';
+
+	if (!getcwd(cwd, PATH_MAX)) {
+		fail_msg("getcwd failed: errno:%d %s", errno, strerror(errno));
+		return;
+	}
+
+	if (pipe(pfd) < 0) {
+		fail_msg("pipe failed: errno:%d %s", errno, strerror(errno));
+		return;
+	}
+
+	pid = fork();
+	if (pid < 0) {
+		fail_msg("fork failed: errno:%d %s", errno, strerror(errno));
+		return;
+	} else if (pid == 0) {
+		int fdp, fdl;
+
+		close(pfd[0]);
+
+		fdp = creat(fd_path, 0600);
+		if (fdp < 0) {
+			perror("creat(path)");
+			_exit(2);
+		}
+
+		fdl = creat(fd_long, 0600);
+		if (fdl < 0) {
+			perror("creat(long)");
+			_exit(3);
+		}
+
+		write(pfd[1], &fdp, sizeof(fdp));
+		write(pfd[1], &fdl, sizeof(fdl));
+
+		kill(getpid(), SIGSTOP);
+		_exit(1);
+	} else {
+		pid_t cpid = -1;
+		int fdp, fdl, status;
+		int proc, r;
+		char *path;
+
+		close(pfd[1]);
+
+		cpid = waitpid(pid, &status, WUNTRACED);
+		if (cpid < 0) {
+			fail_msg("waitpid failed: errno:%d %s", errno, strerror(errno));
+			return;
+		} else if (!WIFSTOPPED(status)) {
+			fail_msg("process didn't stop: %#x", status);
+			return;
+		}
+
+		read(pfd[0], &fdp, sizeof(fdp));
+		read(pfd[0], &fdl, sizeof(fdl));
+
+		close(pfd[0]);
+
+		proc = syd_proc_fd_open(cpid);
+		if (proc < 0) {
+			fail_msg("syd_proc_fd_open failed: errno:%d %s", errno, strerror(errno));
+			goto out;
+		}
+
+		r = syd_proc_fd_path(proc, fdp, &path);
+		if (r < 0) {
+			fail_msg("fdp: syd_proc_fd_path failed: errno:%d %s", -r, strerror(-r));
+			goto out;
+		}
+		if (strncmp(path, cwd, strlen(cwd))) {
+			fail_msg("fd_path: path:%s doesn't start with cwd:%s (len:%zu)", path, cwd, strlen(cwd));
+			free(path);
+			goto out;
+		}
+		if (strncmp(path + strlen(cwd) + 1, fd_path, sizeof(fd_path))) {
+			fail_msg("fd_path: path:%s doesn't end with `%s'", path, fd_path);
+			free(path);
+			goto out;
+		}
+		free(path);
+
+		r = syd_proc_fd_path(proc, fdl, &path);
+		if (r < 0) {
+			fail_msg("fdl: syd_proc_fd_path failed: errno:%d %s", -r, strerror(-r));
+			goto out;
+		}
+		if (strncmp(path, cwd, strlen(cwd))) {
+			fail_msg("fd_long: path:%s doesn't start with cwd:%s (len:%zu)", path, cwd, strlen(cwd));
+			free(path);
+			goto out;
+		}
+		if (strncmp(path + strlen(cwd) + 1, fd_long, sizeof(fd_long))) {
+			fail_msg("fd_long: path:%s doesn't end with `%s'", path, fd_long);
+			free(path);
+			goto out;
+		}
+		free(path);
+
+out:
+		kill(cpid, SIGKILL);
+	}
+}
+
+
 static void test_fixture_proc(void)
 {
 	test_fixture_start();
 
+	fixture_setup(test_setup);
+	fixture_teardown(test_teardown);
+
 	run_test(test_proc_comm);
 	run_test(test_proc_cmdline);
+	run_test(test_proc_fd_path);
 
 	test_fixture_end();
 }

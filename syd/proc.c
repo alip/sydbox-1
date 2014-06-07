@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -24,9 +25,10 @@
  * 16 is sufficient since the largest number we will ever convert
  * will be 2^32-1, which is 10 digits.
  */
-#define SYD_PID_MAX 16
+#define SYD_INT_MAX 16
+#define SYD_PID_MAX SYD_INT_MAX
 #define SYD_PROC_MAX (sizeof("/proc/%u") + SYD_PID_MAX)
-#define SYD_PROC_MAX_FD (SYD_PROC_MAX + sizeof("/fd/") + SYD_PID_MAX)
+#define SYD_PROC_FD_MAX (SYD_PROC_MAX + sizeof("/fd") + SYD_PID_MAX)
 
 static void chomp(char *str)
 {
@@ -60,6 +62,22 @@ int syd_proc_open(pid_t pid)
 		return -EINVAL;
 
 	r = snprintf(p, sizeof(p), "/proc/%u", pid);
+	if (r < 0 || (size_t)r >= sizeof(p))
+		return -EINVAL;
+
+	fd = open(p, O_PATH|O_DIRECTORY|O_NOFOLLOW);
+	return (fd < 0) ? -errno : fd;
+}
+
+int syd_proc_fd_open(pid_t pid)
+{
+	int r, fd;
+	char p[SYD_PROC_FD_MAX];
+
+	if (pid <= 0)
+		return -EINVAL;
+
+	r = snprintf(p, sizeof(p), "/proc/%u/fd", pid);
 	if (r < 0 || (size_t)r >= sizeof(p))
 		return -EINVAL;
 
@@ -141,19 +159,20 @@ int syd_proc_cmdline(int pfd, char *dst, size_t siz)
 	return 0;
 }
 
-int syd_proc_fd(pid_t pid, int fd, char **dst)
+int syd_proc_fd_path(int pfd, int fd, char **dst)
 {
 	int r;
-	char proc[SYD_PROC_MAX_FD];
+	char sfd[SYD_INT_MAX];
 
-	if (pid <= 0 || fd < 0 || dst == NULL)
-		return -EINVAL;
-	r = snprintf(proc, sizeof(proc), "/proc/%u/fd/%u", pid, fd);
-	if (r < 0 || (size_t)r >= sizeof(proc))
+	if (pfd < 0 || fd < 0)
 		return -EINVAL;
 
-	size_t len = 128; /* most paths are short */
+	r = snprintf(sfd, sizeof(sfd), "%u", fd);
+	if (r < 0 || (size_t)r >= sizeof(sfd))
+		return -EINVAL;
+
 	char *path = NULL;
+	size_t len = 128; /* most paths are short */
 
 	for (;;) {
 		char *p;
@@ -167,9 +186,9 @@ int syd_proc_fd(pid_t pid, int fd, char **dst)
 		}
 		path = p;
 
-		/* Careful here, readlink(2) does not append '\0' */
+		/* Careful here, readlinkat(2) does not append '\0' */
 		s = (len - 1) * sizeof(char);
-		n = readlink(proc, path, s);
+		n = readlinkat(pfd, sfd, path, s);
 		if (n < s) {
 			path[n] = '\0';
 			*dst = path;
@@ -177,6 +196,11 @@ int syd_proc_fd(pid_t pid, int fd, char **dst)
 		}
 
 		/* Truncated, try again with a larger buffer */
+		if (len > (SIZE_MAX - len)) {
+			/* There is a limit for everything */
+			free(p);
+			return -ENAMETOOLONG;
+		}
 		len *= 2;
 	}
 	/* never reached */

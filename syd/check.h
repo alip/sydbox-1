@@ -13,9 +13,12 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <limits.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
 
 extern char syd_fail_message[128];
 #define fail_msg(...) \
