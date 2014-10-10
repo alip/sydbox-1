@@ -23,10 +23,8 @@ static int magic_edit_acl(int (*edit_func)(enum acl_action, const char *, aclq_t
 	enum magic_ret r;
 
 	r = magic_check_call(edit_func(action, (const char *)val, acl));
-	if (r == MAGIC_RET_NOT_SUPPORTED) {
-		log_warning("ignore unsupported magic value `%s'", val);
-		r = MAGIC_RET_OK;
-	}
+	if (r == MAGIC_RET_NOT_SUPPORTED)
+		r = MAGIC_RET_OK; /* e.g.: IPV6 support missing */
 	return r;
 }
 
