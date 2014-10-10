@@ -144,7 +144,7 @@ DUMP_LINKER_FLAGS= \
 	  -Wl,--wrap=pink_trace_interrupt \
 	  -Wl,--wrap=pink_trace_listen
 
-syddir=$(libexecdir)/$(PACKAGE)
+syddir=$(libexecdir)/$(PACKAGE)/dump
 syd_SCRIPTS= shoebox
 syd_PROGRAMS= sydbox-dump
 
@@ -162,6 +162,13 @@ sydbox_dump_CFLAGS= $(DUMP_COMPILER_FLAGS)
 sydbox_dump_CPPFLAGS= $(DUMP_PREPROCESSOR_FLAGS)
 sydbox_dump_LDADD= $(DUMP_LINKER_ADD)
 sydbox_dump_LDFLAGS= $(DUMP_LINKER_FLAGS)
+
+# Convenience for users, more ugliness for meself...
+# PATH=${syddir} cave resolve ...
+# to use sydbox-dump
+install-data-hook:
+	cd $(DESTDIR)$(syddir) && \
+		$(LN_S) sydbox-dump sydbox
 
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \
