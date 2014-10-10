@@ -392,7 +392,7 @@ Attaching poems encourages consideration tremendously.''')
 
     parser_exec = subparser.add_parser('exec', help = 'Execute python code on standart input')
     parser_exec.add_argument('-s', '--scope', default = 'line',
-        help = 'Scope: "line" execute code for each "event" (default), "all" execuate code once for all "events"')
+        help = 'Scope: "line" execute code for each "event" (default), "all" execute code once for all "events"')
     parser_exec.set_defaults(func = command_exec)
 
     parser_show = subparser.add_parser('show', help = 'Show dump')
