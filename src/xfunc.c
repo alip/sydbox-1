@@ -44,7 +44,7 @@ void syd_abort_func(void (*func)(int))
 void assert_(const char *expr, const char *func,
 	     const char *file, size_t line)
 {
-	fprintf(stderr, "Assertion '%s' failed at %s:%zu, function %s()",
+	fprintf(stderr, PACKAGE": Assertion '%s' failed at %s:%zu, function %s()",
 		expr, file, line, func);
 
 	dump(DUMP_ASSERT, expr, file, line, func);
@@ -55,7 +55,7 @@ void assert_(const char *expr, const char *func,
 
 void assert_not_reached_(const char *func, const char *file, size_t line)
 {
-	fprintf(stderr, "Code must not be reached at %s:%zu, function %s()",
+	fprintf(stderr, PACKAGE": Code must not be reached at %s:%zu, function %s()",
 		file, line, func);
 
 	dump(DUMP_CLOSE);
@@ -67,6 +67,7 @@ void die(const char *fmt, ...)
 {
 	va_list ap;
 
+	fputs(PACKAGE": ", stderr);
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
@@ -79,6 +80,7 @@ void die_errno(const char *fmt, ...)
 {
 	va_list ap;
 
+	fputs(PACKAGE": ", stderr);
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
