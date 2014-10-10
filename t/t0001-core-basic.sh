@@ -141,17 +141,17 @@ test_expect_success_foreach_option 'magic /dev/sydbox boolean checking works' '
     sydbox -- sh <<-\EOF
 test -e /dev/sydbox/core/sandbox/write"?"
 test $? -eq 1 && exit 0
-\EOF &&
+EOF &&
     sydbox -- sh <<-\EOF
 test -e /dev/sydbox/core/sandbox/write:deny &&
 test -e /dev/sydbox/core/sandbox/write"?"
-\EOF
+EOF
 '
 
 test_expect_success_foreach_option 'magic /dev/sydbox boolean checking works with -m switch' '
     sydbox -m core/sandbox/write:deny -- sh <<-\EOF
 test -e /dev/sydbox/core/sandbox/write"?"
-\EOF
+EOF
 '
 
 #test_expect_success_foreach_option 'magic core/violation/exit_code:0 works' '
