@@ -1,12 +1,13 @@
 /*
  * sydbox/xfunc.c
  *
- * Copyright (c) 2010, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2012, 2014 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
 #include "sydconf.h"
 #include "xfunc.h"
+#include "dump.h"
 
 #include <signal.h>
 #include <stdarg.h>
@@ -16,14 +17,76 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "log.h"
+#include <pinktrace/pink.h>
 
-#if 0
-void die_errno(const char *msg)
+/* abort function. */
+static void (*abort_func)(int sig);
+
+PINK_GCC_ATTR((noreturn))
+static void syd_abort(int how) /* SIGTERM == exit(1), SIGABRT == abort() */
 {
-	fprintf(stderr, "%s (errno:%d %s)\n", msg, errno, strerror(errno));
+	if (abort_func)
+		abort_func(SIGTERM);
+	switch (how) {
+	case SIGABRT:
+		abort();
+	case SIGTERM:
+	default:
+		exit(1);
+	}
 }
-#endif
+
+void syd_abort_func(void (*func)(int))
+{
+	abort_func = func;
+}
+
+void assert_(const char *expr, const char *func,
+	     const char *file, size_t line)
+{
+	fprintf(stderr, "Assertion '%s' failed at %s:%zu, function %s()",
+		expr, file, line, func);
+
+	dump(DUMP_ASSERT, expr, file, line, func);
+	dump(DUMP_CLOSE);
+
+	syd_abort(SIGABRT);
+}
+
+void assert_not_reached_(const char *func, const char *file, size_t line)
+{
+	fprintf(stderr, "Code must not be reached at %s:%zu, function %s()",
+		file, line, func);
+
+	dump(DUMP_CLOSE);
+
+	syd_abort(SIGABRT);
+}
+
+void die(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fputc('\n', stderr);
+
+	syd_abort(SIGTERM);
+}
+
+void die_errno(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fprintf(stderr, " (errno:%d|%s| %s)\n",
+		errno, pink_name_errno(errno, 0), strerror(errno));
+
+	syd_abort(SIGTERM);
+}
 
 void *xmalloc(size_t size)
 {

@@ -756,8 +756,8 @@ static void init_early(void)
 	sydbox->exit_code = EXIT_SUCCESS;
 	config_init();
 	dump(DUMP_INIT);
+	syd_abort_func(kill_all);
 	log_init(NULL);
-	log_abort_func(kill_all);
 }
 
 static void init_signals(void)

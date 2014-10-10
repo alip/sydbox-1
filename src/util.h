@@ -1,7 +1,7 @@
 /*
  * sydbox/util.h
  *
- * Copyright (c) 2010, 2011, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2014 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  * Based in part upon courier which is:
@@ -17,7 +17,7 @@
 #include <limits.h>
 #include <sys/types.h>
 #include "macro.h"
-#include "log.h"
+#include "xfunc.h"
 
 extern bool endswith(const char *s, const char *postfix);
 extern bool startswith(const char *s, const char *prefix);

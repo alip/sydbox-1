@@ -45,7 +45,6 @@
 int log_init(const char *filename);
 void log_close(void);
 
-void log_abort_func(void (*func)(int));
 int log_console_fd(int fd);
 bool log_has_level(int level);
 void log_debug_level(int debug_level);
@@ -60,30 +59,6 @@ void log_msg(unsigned level, const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 2, 3)));
 void log_msg_errno(unsigned level, int err_no, const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 3, 4)));
-
-void die(const char *fmt, ...)
-	PINK_GCC_ATTR((noreturn, format (printf, 1, 2)));
-void die_errno(const char *fmt, ...)
-	PINK_GCC_ATTR((noreturn, format (printf, 1, 2)));
-
-void assert_(const char *expr, const char *func, const char *file, size_t line)
-	PINK_GCC_ATTR((noreturn));
-void assert_not_reached_(const char *func, const char *file, size_t line)
-	PINK_GCC_ATTR((noreturn));
-
-#define assert_not_reached() assert_not_reached_(__func__, __FILE__, __LINE__)
-/* Override assert() from assert.h */
-#undef assert
-#ifdef NDEBUG
-#define assert(expr) do {} while (0)
-#else
-#define assert(expr) \
-	do { \
-		if (!(expr)) \
-			assert_(#expr, __func__, __FILE__, __LINE__); \
-	} \
-	while (0)
-#endif
 
 /* Short hand notations */
 #define log_fatal(...)		log_msg(LOG_LEVEL_FATAL, __VA_ARGS__)

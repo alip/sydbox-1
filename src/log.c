@@ -42,9 +42,6 @@ static const char *suffix = LOG_DEFAULT_SUFFIX;
 
 static const syd_process_t *current_proc;
 
-/* abort function. */
-static void (*abort_func)(int sig);
-
 PINK_GCC_ATTR((format (printf, 3, 0)))
 static void log_me(FILE *fp, unsigned level, const char *fmt, va_list ap)
 {
@@ -136,11 +133,6 @@ void log_close(void)
 	logfp = NULL;
 }
 
-void log_abort_func(void (*func)(int))
-{
-	abort_func = func;
-}
-
 int log_console_fd(int fd)
 {
 	if (logcfp != stderr)
@@ -228,61 +220,4 @@ void log_msg_errno(unsigned level, int err_no, const char *fmt, ...)
 	log_prefix(LOG_DEFAULT_PREFIX);
 }
 
-void die(const char *fmt, ...)
-{
-	va_list ap;
 
-	va_start(ap, fmt);
-	log_msg_va(LOG_LEVEL_FATAL, fmt, ap);
-	va_end(ap);
-
-	if (abort_func)
-		abort_func(SIGTERM);
-	exit(1);
-}
-
-void die_errno(const char *fmt, ...)
-{
-	va_list ap;
-
-	log_suffix(NULL);
-	va_start(ap, fmt);
-	log_msg_va(LOG_LEVEL_FATAL, fmt, ap);
-	va_end(ap);
-
-	log_prefix(NULL);
-	log_suffix(LOG_DEFAULT_SUFFIX);
-	log_msg(LOG_LEVEL_FATAL, " (errno:%d|%s| %s)", errno,
-		pink_name_errno(errno, 0), strerror(errno));
-	log_prefix(LOG_DEFAULT_PREFIX);
-
-	if (abort_func)
-		abort_func(SIGTERM);
-	exit(1);
-}
-
-void assert_(const char *expr, const char *func,
-		 const char *file, size_t line)
-{
-	log_msg(LOG_LEVEL_ASSERT,
-		"Assertion '%s' failed at %s:%zu, function %s()",
-		expr, file, line, func);
-	dump(DUMP_ASSERT, expr, file, line, func);
-	dump(DUMP_CLOSE);
-
-	if (abort_func)
-		abort_func(SIGTERM);
-	abort();
-}
-
-void assert_not_reached_(const char *func, const char *file, size_t line)
-{
-	log_msg(LOG_LEVEL_ASSERT,
-		"Code must not be reached at %s:%zu, function %s()",
-		file, line, func);
-	dump(DUMP_CLOSE);
-
-	if (abort_func)
-		abort_func(SIGTERM);
-	abort();
-}
