@@ -25,6 +25,7 @@
 #include <time.h>
 
 #include "dump.h"
+#include "path.h"
 #include "proc.h"
 
 #define J(s)		"\""#s"\":"
@@ -679,9 +680,14 @@ static int dump_init(void)
 	pathname = getenv(DUMP_ENV);
 	if (!pathname)
 		pathname = DUMP_NAME;
-	fd = open(pathname, O_CREAT|O_TRUNC|O_WRONLY|O_NOFOLLOW, 0600);
-	if (fd < 0)
-		die_errno("open_dump");
+	fd = open(pathname, O_CREAT|O_EXCL|O_WRONLY|O_NOFOLLOW, 0600);
+	if (fd < 0) {
+		char cwd[PATH_MAX];
+		if (!path_is_absolute(pathname) && getcwd(cwd, PATH_MAX))
+			die_errno("open_dump(`%s/%s')", cwd, pathname);
+		else
+			die_errno("open_dump(`%s')", pathname);
+	}
 	fp = fdopen(fd, "w");
 	if (!fp)
 		die_errno("fdopen_dump");
