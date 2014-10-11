@@ -1,0 +1,43 @@
+BUGS
+====
+
+1. How do I submit bugs?
+
+As long as the bug report is prepared according to the steps below, it may be
+submitted through any medium you feel is convenient.
+
+The steps are:
+
+    1. Explain in full detail how to reproduce the bug if possible.
+    2. State the type of architecture (amd64, x32, i386 etc.) and `sydbox --version`.
+    3. Provide a compressed `shoebox file`. (See below for more information.)
+    4. Provide a compressed build log in case the bug appeared under the `cave` of `paludis`.
+
+I am alip on Freenode. Feel free to ping me.
+Send an e-mail to alip☮exherbo.org.
+
+2. How do I debug sydbox?
+
+Use the `sydbox-dump` binary located under `$libexec/sydbox/dump` where
+`$libexec` is usually `/usr/libexec`.
+
+This binary has the same functionality and usage as the original `sydbox` binary
+installed under `$bindir`, which is usually `/usr/bin` apart from the
+functionality to produce a `dump file` a.k.a. a `shoebox file` which includes
+extensive information on the internal events of `sydbox` during execution.
+
+`sydbox-dump` creates the file under the current directory by default with the
+name `sydcore` and exits if the file can not be created (due to e.g. permission
+errors) or if the file already exists.
+
+The contents of this file is invaluable both to understand the inner working of
+the sandboxed program and to aid in debugging potential `sydbox` issues.
+
+The format is simple. Every line is a separate JSON object a.k.a. JSON lines.
+The lines are separated with the newline character `\n` (Octal:012 Decimal:10
+Hex:0x0A) The script `shoebox` may be used to query the events.
+
+The file compresses pretty well and it is of utmost importance to attach it to
+bug reports along with the build log.
+
+<!-- vim: set tw=80 ft=markdown spell spelllang=en sw=4 sts=4 et : -->
