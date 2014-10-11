@@ -72,12 +72,6 @@ pink_wrap(trace_seize(pid_t pid, int options), trace_seize, int, pid, options)
 pink_wrap(trace_interrupt(pid_t pid), trace_interrupt, int, pid)
 pink_wrap(trace_listen(pid_t pid), trace_listen, int, pid)
 
-static void dump_close(void)
-{
-	fclose(fp);
-	fp = NULL;
-}
-
 static void dump_flush(void)
 {
 	fflush(fp);
@@ -87,6 +81,13 @@ static void dump_cycle(void)
 {
 	fputs("\n", fp);
 	dump_flush();
+}
+
+static void dump_close(void)
+{
+	dump_cycle();
+	fclose(fp);
+	fp = NULL;
 }
 
 static void dump_null(void)
@@ -680,7 +681,7 @@ static int dump_init(void)
 	pathname = getenv(DUMP_ENV);
 	if (!pathname)
 		pathname = DUMP_NAME;
-	fd = open(pathname, O_CREAT|O_EXCL|O_WRONLY|O_NOFOLLOW, 0600);
+	fd = open(pathname, O_CREAT|O_APPEND|O_WRONLY|O_NOFOLLOW, 0600);
 	if (fd < 0) {
 		char cwd[PATH_MAX];
 		if (!path_is_absolute(pathname) && getcwd(cwd, PATH_MAX))
@@ -688,7 +689,7 @@ static int dump_init(void)
 		else
 			die_errno("open_dump(`%s')", pathname);
 	}
-	fp = fdopen(fd, "w");
+	fp = fdopen(fd, "a");
 	if (!fp)
 		die_errno("fdopen_dump");
 	nodump = 1;
