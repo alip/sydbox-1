@@ -41,4 +41,9 @@ Hex:0x0A) The script `shoebox` may be used to query the events.
 The file compresses pretty well and it is of utmost importance to attach it to
 bug reports along with the build log.
 
+3. How do I create a sydbox dump under cave?
+
+- `export PATH=/usr/libexec/sydbox/dump:$PATH && cave resolve ...`
+- `env PATH=/usr/libexec/sydbox/dump:$PATH cave resolve ...`
+
 <!-- vim: set tw=80 ft=markdown spell spelllang=en sw=4 sts=4 et : -->
