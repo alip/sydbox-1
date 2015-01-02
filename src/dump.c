@@ -771,9 +771,11 @@ void dump(enum dump what, ...)
 			J(time)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
-			J(pid)"%d",
+			J(pid)"%d,"
+			J(process_count)"%d",
 			id++, (unsigned long long)now,
-			DUMP_WAIT, "wait", pid);
+			DUMP_WAIT, "wait",
+			pid, process_count());
 
 		fprintf(fp, ","J(status));
 		if (wait_errno == 0)
@@ -923,9 +925,13 @@ void dump(enum dump what, ...)
 			J(time)"%llu,"
 			J(event)"%u,"
 			J(event_name)"\"%s\","
-			J(exit_code)"%d}",
+			J(pid)"%d,"
+			J(exit_code)"%d",
 			id++, (unsigned long long)now,
-			what, "exit", code);
+			what, "exit", sydbox->execve_pid, code);
+		fprintf(fp, ","J(process));
+		dump_process(sydbox->execve_pid);
+		fprintf(fp, "}");
 	} else {
 		abort();
 	}
