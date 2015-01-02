@@ -1,7 +1,7 @@
 /*
  * sydbox/panic.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -116,20 +116,17 @@ static void report(syd_process_t *current, const char *fmt, va_list ap)
 {
 	char *cmdline, *comm = NULL;
 
-	log_context(NULL);
-
 	proc_comm(current->pid, &comm);
 
-	log_access_v("-- Access Violation! --");
-	log_access_v("proc: %s[%u] (parent:%u)", comm ? comm : "?",
-		     current->pid, current->ppid);
-	log_access_v("cwd: `%s'", P_CWD(current));
+	say("-- Access Violation! --");
+	say("proc: %s[%u] (parent:%u)", comm ? comm : "?", current->pid, current->ppid);
+	say("cwd: `%s'", P_CWD(current));
 
 	if (comm)
 		free(comm);
 
 	if (proc_cmdline(current->pid, 128, &cmdline) == 0) {
-		log_access_v("cmdline: `%s'", cmdline);
+		say("cmdline: `%s'", cmdline);
 		free(cmdline);
 	}
 

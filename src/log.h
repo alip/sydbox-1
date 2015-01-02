@@ -3,7 +3,7 @@
  *
  * Simple debug logging for sydbox.
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Based in part upon privoxy which is:
  *   Copyright (c) 2001-2010 the Privoxy team. http://www.privoxy.org/
  * Distributed under the terms of the GNU General Public License v2
@@ -61,11 +61,11 @@ void log_msg_errno(unsigned level, int err_no, const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 3, 4)));
 
 /* Short hand notations */
-#define log_fatal(...)		log_msg(LOG_LEVEL_FATAL, __VA_ARGS__)
-#define log_warning(...)	log_msg(LOG_LEVEL_WARNING, __VA_ARGS__)
-#define log_access_v(...)	log_msg(LOG_LEVEL_ACCESS_V, __VA_ARGS__)
-#define log_info(...)		log_msg(LOG_LEVEL_INFO, __VA_ARGS__)
-#define err_fatal(e,...)	log_msg_errno(LOG_LEVEL_FATAL, (e), __VA_ARGS__)
-#define err_warning(e,...)	log_msg_errno(LOG_LEVEL_WARNING, (e), __VA_ARGS__)
+#define log_fatal(...)		/* nothing: log_msg(LOG_LEVEL_FATAL, __VA_ARGS__) */
+#define log_warning(...)	/* nothing: log_msg(LOG_LEVEL_WARNING, __VA_ARGS__) */
+#define log_access_v(...)	/* nothing: log_msg(LOG_LEVEL_ACCESS_V, __VA_ARGS__) */
+#define log_info(...)		/* nothing: log_msg(LOG_LEVEL_INFO, __VA_ARGS__) */
+#define err_fatal(e,...)	/* nothing: log_msg_errno(LOG_LEVEL_FATAL, (e), __VA_ARGS__) */
+#define err_warning(e,...)	/* nothing: log_msg_errno(LOG_LEVEL_WARNING, (e), __VA_ARGS__) */
 
 #endif

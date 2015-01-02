@@ -1,7 +1,7 @@
 /*
  * sydbox/xfunc.h
  *
- * Copyright (c) 2010, 2012 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2012, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -9,6 +9,7 @@
 #define XFUNC_H 1
 
 #include <stddef.h>
+#include <stdarg.h>
 #include <pinktrace/compiler.h>
 
 extern void syd_abort_func(void (*func)(int));
@@ -26,6 +27,11 @@ extern void syd_abort_func(void (*func)(int));
 	} \
 	while (0)
 #endif
+
+extern void vsay(const char *fmt, va_list ap)
+	PINK_GCC_ATTR((format (printf, 1, 0)));
+extern void say(const char *fmt, ...)
+	PINK_GCC_ATTR((format (printf, 1, 2)));
 
 extern void assert_(const char *expr, const char *func, const char *file, size_t line)
 	PINK_GCC_ATTR((noreturn));

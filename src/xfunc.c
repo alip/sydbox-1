@@ -1,7 +1,7 @@
 /*
  * sydbox/xfunc.c
  *
- * Copyright (c) 2010, 2012, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2012, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -18,6 +18,14 @@
 #include <errno.h>
 
 #include <pinktrace/pink.h>
+
+/* ANSI colour codes */
+#define ANSI_NORMAL		"[00;00m"
+#define ANSI_MAGENTA		"[00;35m"
+#define ANSI_DARK_MAGENTA	"[01;35m"
+#define ANSI_GREEN		"[00;32m"
+#define ANSI_YELLOW		"[00;33m"
+#define ANSI_CYAN		"[00;36m"
 
 /* abort function. */
 static void (*abort_func)(int sig);
@@ -39,6 +47,35 @@ static void syd_abort(int how) /* SIGTERM == exit(1), SIGABRT == abort() */
 void syd_abort_func(void (*func)(int))
 {
 	abort_func = func;
+}
+
+void vsay(const char *fmt, va_list ap)
+{
+	static int tty = -1;
+
+	if (tty < 0)
+		tty = isatty(STDERR_FILENO) == 1 ? 1 : 0;
+
+	if (tty)
+		fputs(ANSI_DARK_MAGENTA, stderr);
+	if (fmt[0] != ' ')
+		fputs(PACKAGE": ", stderr);
+
+	vfprintf(stderr, fmt, ap);
+
+	if (tty)
+		fputs(ANSI_NORMAL, stderr);
+}
+
+void say(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsay(fmt, ap);
+	va_end(ap);
+
+	fputc('\n', stderr);
 }
 
 void assert_(const char *expr, const char *func,
@@ -67,9 +104,8 @@ void die(const char *fmt, ...)
 {
 	va_list ap;
 
-	fputs(PACKAGE": ", stderr);
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vsay(fmt, ap);
 	va_end(ap);
 	fputc('\n', stderr);
 
@@ -80,12 +116,10 @@ void die_errno(const char *fmt, ...)
 {
 	va_list ap;
 
-	fputs(PACKAGE": ", stderr);
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vsay(fmt, ap);
 	va_end(ap);
-	fprintf(stderr, " (errno:%d|%s| %s)\n",
-		errno, pink_name_errno(errno, 0), strerror(errno));
+	say(" (errno:%d|%s| %s)", errno, pink_name_errno(errno, 0), strerror(errno));
 
 	syd_abort(SIGTERM);
 }
