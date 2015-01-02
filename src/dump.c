@@ -27,11 +27,13 @@
 #include "dump.h"
 #include "path.h"
 #include "proc.h"
+#include "bsd-compat.h"
 
 #define J(s)		"\""#s"\":"
 #define J_BOOL(b)	(b) ? "true" : "false"
 
 static FILE *fp;
+static char pathdump[PATH_MAX];
 static int nodump = -1;
 static unsigned long flags = DUMPF_PROCFS;
 static unsigned long long id;
@@ -88,6 +90,7 @@ static void dump_close(void)
 	dump_cycle();
 	fclose(fp);
 	fp = NULL;
+	say("dumped core `%s' for inspection." % pathdump);
 }
 
 static void dump_null(void)
@@ -679,9 +682,16 @@ static int dump_init(void)
 		return 0;
 
 	pathname = getenv(DUMP_ENV);
-	if (!pathname)
-		pathname = DUMP_NAME;
-	fd = open(pathname, O_CREAT|O_APPEND|O_WRONLY|O_NOFOLLOW, 0600);
+	if (pathname) {
+		strlcpy(pathdump, pathname, sizeof(pathdump));
+	} else {
+		char template[] = "sydbox-XXXXXX";
+		if (!mkdtemp(template))
+			die_errno("mkdtemp_dump");
+		strlcpy(pathdump, template, sizeof(pathdump));
+		strlcat(pathdump, DUMP_NAME, sizeof(pathdump));
+	}
+	fd = open(pathdump, O_CREAT|O_APPEND|O_WRONLY|O_NOFOLLOW, 0600);
 	if (fd < 0) {
 		char cwd[PATH_MAX];
 		if (!path_is_absolute(pathname) && getcwd(cwd, PATH_MAX))
