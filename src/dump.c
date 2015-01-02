@@ -898,7 +898,7 @@ void dump(enum dump what, ...)
 
 		if (what == DUMP_THREAD_NEW)
 			event_name = "thread_new";
-		else if (what == DUMP_THREAD_FREE)
+		else /* if (what == DUMP_THREAD_FREE) */
 			event_name = "thread_free";
 
 		fprintf(fp, "{"
