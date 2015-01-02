@@ -1,3 +1,4 @@
 Do not call ptrace() from dump.c under any circumstances.
 Avoid unnecessary printf usage in dump.c
 Finish the rework on tests
+SIGUSR2 dumps sydcore
