@@ -335,27 +335,24 @@ def command_show(args):
         pattern = re.compile(args.pattern, re.I|re.U)
         match_format = args.match
 
-    limit  = args.limit_match
-    events = []
-    events_size = 0
+    limit  = abs(args.limit_match)
+    events = list() # TODO: use a set + frozenset(event.items())
     with ShoeBox(dump_path(args)) as sb:
         for event in sb.read_events(args.limit_event):
             if match_event(event, pattern, match_format):
-                if limit == 0:
-                    dump_json(event, args.format)
-                elif limit > 0:
-                    dump_json(event, args.format)
+                events.append(event)
+                if limit > 0: # limit == 0 means no limit!
                     limit -= 1
                     if limit == 0:
                         break
-                else:
-                    events.append(event)
-                    events_size += 1
-                    if events_size > abs(limit):
-                        events.pop(0)
-    if limit < 0:
-        for event in events:
-            dump_json(event, args.format)
+
+
+    # Only integer types are supported: {id}, {pid} etc.
+    # It's a bit "clever", though: {id}{pid} also works...
+    if args.sort: # Only integer types are supported
+        events = sorted(events, key = lambda event: int(args.sort.format(**event)), reverse = args.reverse)
+    for event in events:
+        dump_json(event, args.format)
 
 def command_tree(args):
     if args.pattern is None:
@@ -401,6 +398,8 @@ Attaching poems encourages consideration tremendously.''')
     parser_show.add_argument('-f', '--format', default = None, help = 'Format string')
     parser_show.add_argument('-l', '--limit-match', default = 0, type = int, help = 'Limit matches')
     parser_show.add_argument('-L', '--limit-event', default = 0, type = int, help = 'Limit events')
+    parser_show.add_argument('-s', '--sort', default = '{id}', help = 'Sort events by an integer value (id, pid etc.)')
+    parser_show.add_argument('-r', '--reverse', default = False, help = 'Sort in reverse')
     parser_show.set_defaults(func = command_show)
 
     parser_tree = subparser.add_parser('tree', help = 'Show process tree')
