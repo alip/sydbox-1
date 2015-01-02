@@ -26,9 +26,11 @@ installed under `$bindir`, which is usually `/usr/bin` apart from the
 functionality to produce a `dump file` a.k.a. a `shoebox file` which includes
 extensive information on the internal events of `sydbox` during execution.
 
-`sydbox-dump` creates the file under the current directory by default with the
-name `sydcore` and exits if the file can not be created (due to e.g. permission
-errors) or if the file already exists.
+`sydbox-dump` creates the dump file with the name `sydcore` under a temporary
+directory created using `mkdtemp(3)` which usually means it will be a directory
+under `/tmp` starting with the name `sydbox-`. `sydbox-dump` reports the full
+path before exit. You can set a custom path by setting the `SHOEBOX` environment
+variable.
 
 The contents of this file is invaluable both to understand the inner working of
 the sandboxed program and to aid in debugging potential `sydbox` issues.
