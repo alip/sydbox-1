@@ -107,7 +107,7 @@ test_expect_success_foreach_option 'return 128 + $SIGNUM if tracee is terminated
     test_expect_code 143 sydbox -- syd-abort-fork-static 256 15 # SIGTERM
 '
 
-test_expect_success_foreach_option 'return 128 + $SIGNUM if tracee is terminated (PTHREAD)' '
+test_expect_success_foreach_option FIXME 'return 128 + $SIGNUM if tracee is terminated (PTHREAD)' '
     test_expect_code 130 sydbox -- syd-abort-pthread 8 2 && # SIGINT
     test_expect_code 131 sydbox -- syd-abort-pthread 8 3 && # SIGQUIT
     test_expect_code 132 sydbox -- syd-abort-pthread 8 4 && # SIGILL
@@ -119,7 +119,7 @@ test_expect_success_foreach_option 'return 128 + $SIGNUM if tracee is terminated
     test_expect_code 143 sydbox -- syd-abort-pthread 8 15 # SIGTERM
 '
 
-test_expect_success_foreach_option 'return 128 + $SIGNUM if tracee is terminated (STATIC|PTHREAD)' '
+test_expect_success_foreach_option FIXME 'return 128 + $SIGNUM if tracee is terminated (STATIC|PTHREAD)' '
     test_expect_code 130 sydbox -- syd-abort-pthread-static 8 2 && # SIGINT
     test_expect_code 131 sydbox -- syd-abort-pthread-static 8 3 && # SIGQUIT
     test_expect_code 132 sydbox -- syd-abort-pthread-static 8 4 && # SIGILL
