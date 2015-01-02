@@ -27,10 +27,9 @@ functionality to produce a `dump file` a.k.a. a `shoebox file` which includes
 extensive information on the internal events of `sydbox` during execution.
 
 `sydbox-dump` creates the dump file with the name `sydcore` under a temporary
-directory created using `mkdtemp(3)` which usually means it will be a directory
-under `/tmp` starting with the name `sydbox-`. `sydbox-dump` reports the full
-path before exit. You can set a custom path by setting the `SHOEBOX` environment
-variable.
+directory starting with the name `sydbox-` under `/tmp`. `sydbox-dump` reports
+the full path before exit. You can set a custom path by setting the `SHOEBOX`
+environment variable.
 
 The contents of this file is invaluable both to understand the inner working of
 the sandboxed program and to aid in debugging potential `sydbox` issues.

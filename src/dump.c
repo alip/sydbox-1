@@ -685,7 +685,7 @@ static int dump_init(void)
 	if (pathname) {
 		strlcpy(pathdump, pathname, sizeof(pathdump));
 	} else {
-		char template[] = "sydbox-XXXXXX";
+		char template[] = "/tmp/sydbox-XXXXXX";
 		if (!mkdtemp(template))
 			die_errno("mkdtemp_dump");
 		strlcpy(pathdump, template, sizeof(pathdump));
