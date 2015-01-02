@@ -692,13 +692,8 @@ static int dump_init(void)
 		strlcat(pathdump, DUMP_NAME, sizeof(pathdump));
 	}
 	fd = open(pathdump, O_CREAT|O_APPEND|O_WRONLY|O_NOFOLLOW, 0600);
-	if (fd < 0) {
-		char cwd[PATH_MAX];
-		if (!path_is_absolute(pathname) && getcwd(cwd, PATH_MAX))
-			die_errno("open_dump(`%s/%s')", cwd, pathname);
-		else
-			die_errno("open_dump(`%s')", pathname);
-	}
+	if (fd < 0)
+		die_errno("open_dump(`%s')", pathdump);
 	fp = fdopen(fd, "a");
 	if (!fp)
 		die_errno("fdopen_dump");
