@@ -118,19 +118,21 @@ static void report(syd_process_t *current, const char *fmt, va_list ap)
 
 	proc_comm(current->pid, &comm);
 
-	say("-- Access Violation! --");
+	say("8< -- Access Violation! --");
+	vsay(fmt, ap);
+	fputc('\n', stderr);
 	say("proc: %s[%u] (parent:%u)", comm ? comm : "?", current->pid, current->ppid);
 	say("cwd: `%s'", P_CWD(current));
 
 	if (comm)
 		free(comm);
 
-	if (proc_cmdline(current->pid, 128, &cmdline) == 0) {
+	if (proc_cmdline(current->pid, 78, &cmdline) == 0) {
 		say("cmdline: `%s'", cmdline);
 		free(cmdline);
 	}
 
-	vsay(fmt, ap);
+	say(">8 --");
 }
 
 int deny(syd_process_t *current, int err_no)
