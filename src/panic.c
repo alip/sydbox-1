@@ -130,9 +130,7 @@ static void report(syd_process_t *current, const char *fmt, va_list ap)
 		free(cmdline);
 	}
 
-	log_msg_va(1, fmt, ap);
-
-	log_context(current);
+	vsay(fmt, ap);
 }
 
 int deny(syd_process_t *current, int err_no)
