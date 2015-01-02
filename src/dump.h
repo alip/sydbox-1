@@ -20,7 +20,7 @@
 
 # define DUMP_FMT  1
 # define DUMP_ENV  "SHOEBOX"    /* read pathname from environment variable */
-# define DUMP_NAME "./sydcore"  /* Default dump name */
+# define DUMP_NAME "sydcore"  /* Default dump name */
 
 # define DUMPF_PROCFS	0x00000100 /* read /proc/$pid/stat */
 # define DUMPF_SANDBOX	0x00000200 /* dump process sandbox */

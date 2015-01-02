@@ -87,6 +87,9 @@ static void dump_cycle(void)
 
 static void dump_close(void)
 {
+	if (!fp)
+		return;
+
 	dump_cycle();
 	fclose(fp);
 	fp = NULL;
@@ -689,6 +692,7 @@ static int dump_init(void)
 		if (!mkdtemp(template))
 			die_errno("mkdtemp_dump");
 		strlcpy(pathdump, template, sizeof(pathdump));
+		strlcat(pathdump, "/", sizeof(pathdump));
 		strlcat(pathdump, DUMP_NAME, sizeof(pathdump));
 	}
 	fd = open(pathdump, O_CREAT|O_APPEND|O_WRONLY|O_NOFOLLOW, 0600);
@@ -701,6 +705,7 @@ static int dump_init(void)
 
 	dump_format();
 	dump_cycle();
+	atexit(dump_close);
 	return 0;
 }
 

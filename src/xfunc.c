@@ -85,7 +85,6 @@ void assert_(const char *expr, const char *func,
 		expr, file, line, func);
 
 	dump(DUMP_ASSERT, expr, file, line, func);
-	dump(DUMP_CLOSE);
 
 	syd_abort(SIGABRT);
 }
@@ -94,8 +93,6 @@ void assert_not_reached_(const char *func, const char *file, size_t line)
 {
 	fprintf(stderr, PACKAGE": Code must not be reached at %s:%zu, function %s()",
 		file, line, func);
-
-	dump(DUMP_CLOSE);
 
 	syd_abort(SIGABRT);
 }
