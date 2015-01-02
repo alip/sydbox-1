@@ -30,7 +30,7 @@ int magic_set_trace_exit_kill(const void *val, syd_process_t *current)
 #if PINK_HAVE_OPTION_EXITKILL
 	sydbox->config.exit_kill = PTR_TO_BOOL(val);
 #else
-	log_magic("PTRACE_O_EXITKILL not supported, ignoring magic");
+	say("PTRACE_O_EXITKILL not supported, ignoring magic");
 #endif
 	return MAGIC_RET_OK;
 }
@@ -45,7 +45,7 @@ int magic_set_trace_use_seccomp(const void *val, syd_process_t *current)
 #if SYDBOX_HAVE_SECCOMP
 	sydbox->config.use_seccomp = PTR_TO_BOOL(val);
 #else
-	log_magic("seccomp support not enabled, ignoring magic");
+	say("seccomp support not enabled, ignoring magic");
 #endif
 	return MAGIC_RET_OK;
 }
@@ -64,7 +64,7 @@ int magic_set_trace_use_seize(const void *val, syd_process_t *current)
 #if PINK_HAVE_SEIZE && PINK_HAVE_INTERRUPT && PINK_HAVE_LISTEN
 	sydbox->config.use_seize = PTR_TO_BOOL(val);
 #else
-	log_magic("PTRACE_SEIZE not supported, ignoring magic");
+	say("PTRACE_SEIZE not supported, ignoring magic");
 #endif
 	return MAGIC_RET_OK;
 }
