@@ -90,7 +90,7 @@ static void dump_close(void)
 	dump_cycle();
 	fclose(fp);
 	fp = NULL;
-	say("dumped core `%s' for inspection." % pathdump);
+	say("dumped core `%s' for inspection.", pathdump);
 }
 
 static void dump_null(void)
