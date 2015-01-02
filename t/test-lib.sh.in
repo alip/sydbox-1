@@ -184,6 +184,12 @@ do
 		with_dashes=t; shift ;;
 	--no-color)
 		color=; shift ;;
+	--du|--dum|--dump)
+		dump=t;
+		shift ;;
+	--dump-only=*)
+		dump_only=$(expr "z$1" : 'z[^=]*=\(.*\)')
+		shift ;;
 	--va|--val|--valg|--valgr|--valgri|--valgrin|--valgrind)
 		valgrind=memcheck
 		shift ;;
@@ -202,6 +208,15 @@ do
 		echo "error: unknown test option '$1'" >&2; exit 1 ;;
 	esac
 done
+
+if test -n "$dump_only"
+then
+	test -z "$dump" && dump=t
+	test -z "$verbose" && verbose_only="$dump_only"
+elif test -n "$dump"
+then
+	verbose=t
+fi
 
 if test -n "$valgrind_only"
 then
@@ -371,9 +386,36 @@ maybe_setup_verbose () {
 	last_verbose=$verbose
 }
 
+maybe_teardown_dump () {
+	test -z "$SYDBOX_DUMP" && return
+	SYDBOX_DUMP_ENABLED=
+	export SYDBOX_DUMP_ENABLED
+}
+
 maybe_teardown_valgrind () {
 	test -z "$SYDBOX_VALGRIND" && return
 	SYDBOX_VALGRIND_ENABLED=
+}
+
+maybe_setup_dump () {
+	test -z "$SYDBOX_DUMP" && return
+	if test -z "$dump_only"
+	then
+		SYDBOX_DUMP_ENABLED=t
+	else
+		SYDBOX_DUMP_ENABLED=
+		if match_pattern_list $test_count $dump_only
+		then
+			SYDBOX_DUMP_ENABLED=t
+		fi
+	fi
+
+	if test -n "$SYDBOX_DUMP_ENABLED"
+	then
+		SHOEBOX="$TRASH_DIRECTORY/${this_test}.${test_count}.sydcore"
+	fi
+	export SYDBOX_DUMP_ENABLED # To used by bin-wrappers/sydbox
+	export SHOEBOX # To be used by sydbox-dump
 }
 
 maybe_setup_valgrind () {
@@ -441,10 +483,12 @@ test_start_ () {
 	test_count=$(($test_count+1))
 	maybe_setup_verbose
 	maybe_setup_valgrind
+	maybe_setup_dump
 }
 
 test_finish_ () {
 	echo >&3 ""
+	maybe_teardown_dump
 	maybe_teardown_valgrind
 	maybe_teardown_verbose
 }
@@ -558,6 +602,14 @@ test_done () {
 }
 
 PATH="$TEST_DIRECTORY/sb:$TEST_DIRECTORY/bin-wrappers:$TEST_DIRECTORY/test-bin:$PATH"
+if test -n "$dump"
+then
+	# TODO: Not good. Maybe use a valgrind like bin-wrapper for sydbox-dump
+	# under bin-wrappers/dump/sydbox and prepend PATH (?)
+	SYDBOX_DUMP=1
+	export SYDBOX_DUMP
+fi
+
 if test -n "$valgrind"
 then
 	SYDBOX_VALGRIND="$TEST_DIRECTORY"/valgrind
@@ -565,7 +617,6 @@ then
 	PATH="$TEST_DIRECTORY/valgrind/bin:$PATH"
 fi
 export PATH
-
 
 if test -z "$SYDBOX_TEST_CMP"
 then

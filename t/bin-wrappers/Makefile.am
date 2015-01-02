@@ -13,6 +13,8 @@ sydbox: sydbox.in Makefile
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
 
+# Not used any more.
+# Use sydbox wrapper with SYDBOX_DUMP=1 instead.
 sydbox-dump: sydbox-dump.in Makefile
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) -e 's:@TOP_BUILDDIR@:$(abs_top_builddir):g' \

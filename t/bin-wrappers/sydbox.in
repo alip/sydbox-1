@@ -1,8 +1,34 @@
 #!/bin/sh
 
+if test -n "$SYDBOX_DUMP_ENABLED"
+then
+	i=1
+	while true; do
+		shoe=$(printf '%s.%02d' "$SHOEBOX" "$i")
+		if test -f "$shoe"
+		then
+			i=$(expr "$i" + 1)
+		else
+			SHOEBOX="$shoe"
+			export SHOEBOX
+			break
+		fi
+	done
+fi
+
 if test -z "$SYDBOX_TEST_INSTALLED"
 then
-	exec "@TOP_BUILDDIR@"/src/sydbox $SYDBOX_TEST_OPTIONS "$@"
+	if test -z "$SYDBOX_DUMP_ENABLED"
+	then
+		exec "@TOP_BUILDDIR@"/src/sydbox $SYDBOX_TEST_OPTIONS "$@"
+	else
+		exec "@TOP_BUILDDIR@"/src/sydbox-dump $SYDBOX_TEST_OPTIONS "$@"
+	fi
 else
-	exec "@BINDIR@"/sydbox $SYDBOX_TEST_OPTIONS "$@"
+	if test -z "$SYDBOX_DUMP_ENABLED"
+	then
+		exec "@BINDIR@"/sydbox $SYDBOX_TEST_OPTIONS "$@"
+	else
+		exec "@LIBEXECDIR@"/sydbox-dump $SYDBOX_TEST_OPTIONS "$@"
+	fi
 fi
