@@ -202,6 +202,8 @@ class ShoeBox:
 
     def read_events(self, limit = 0):
         for json_line in self.readlines(limit):
+            if not json_line or not json_line.startswith('{'):
+                continue
             try:
                 obj = json.loads(json_line)
             except TypeError as err:
@@ -209,7 +211,7 @@ class ShoeBox:
                 raise
             except ValueError as err:
                 sys.stderr.write("Unable to parse JSON: %r\n" % err)
-                match = re.search('char (?P<char>[0-9]+)', err.message)
+                match = re.search('char (?P<char>[0-9]+)', ' '.join(err.args))
                 if match is not None:
                     char = int(match.group('char'))
                     bh = max([char - 10, 0])
@@ -399,7 +401,7 @@ Attaching poems encourages consideration tremendously.''')
     parser_show.add_argument('-l', '--limit-match', default = 0, type = int, help = 'Limit matches')
     parser_show.add_argument('-L', '--limit-event', default = 0, type = int, help = 'Limit events')
     parser_show.add_argument('-s', '--sort', default = '{id}', help = 'Sort events by an integer value (id, pid etc.)')
-    parser_show.add_argument('-r', '--reverse', default = False, help = 'Sort in reverse')
+    parser_show.add_argument('-r', '--reverse', action='store_true', default = False, help = 'Sort in reverse')
     parser_show.set_defaults(func = command_show)
 
     parser_tree = subparser.add_parser('tree', help = 'Show process tree')
