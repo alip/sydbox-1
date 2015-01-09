@@ -224,32 +224,30 @@ class ShoeBox:
             yield obj
 
     def tree(self, pid, pattern, match_format, quick = False):
-        child_pid = self.child_pid
-        events = list(self.events)
+        if pid < 0:
+            pid = self.child_pid
 
-        for event in events:
+        events = []
+        parents = set()
+        for event in self.events:
             if 'pid' not in event:
                 continue
-            if pid < 0:
-                pid = find_eldest_pid(event)
             if event['pid'] != pid:
                 continue
             events.append(event)
 
-        parents = set()
-
-        for event in events:
             if 'process' in event:
                 if 'stat' in event['process']:
-                    if event['process']['stat'] is None:
-                        continue
-                    if 'errno' in event['process']['stat']:
-                        continue # TODO: warn
-                    parents.add(event['process']['stat']['ppid'])
-                elif 'syd' in event['process']:
-                    if event['process']['syd'] is None:
-                        continue # TODO: warn
-                    parents.add(event['process']['syd']['ppid'])
+                    if event['process']['stat'] is not None:
+                        if 'errno' in event['process']['stat']:
+                            pass # TODO: warn
+                        else:
+                            parents.add(event['process']['stat']['ppid'])
+                    elif 'syd' in event['process']:
+                        if event['process']['syd'] is None:
+                            pass # TODO: warn
+                        else:
+                            parents.add(event['process']['syd']['ppid'])
 
         for ppid in parents:
             self.rewind()
