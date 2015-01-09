@@ -81,22 +81,27 @@ int syd_proc_fd_open(pid_t pid)
 	if (r < 0 || (size_t)r >= sizeof(p))
 		return -EINVAL;
 
-	fd = open(p, O_PATH|O_DIRECTORY|O_NOFOLLOW);
+	fd = open(p, O_PATH|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
 	return (fd < 0) ? -errno : fd;
 }
 
-int syd_proc_ppid(int pfd, pid_t *ppid)
+int syd_proc_ppid(pid_t pid, pid_t *ppid)
 {
-	int fd, save_errno;
+	int pfd, fd, save_errno;
 	pid_t ppid_r;
 	FILE *f;
 
-	if (pfd < 0 || ppid == NULL)
+	if (pid <= 0 || ppid == NULL)
 		return -EINVAL;
 
-	fd = openat(pfd, "stat", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
-	if (fd < 0)
+	pfd = syd_proc_open(pid);
+	if (pfd < 0)
 		return -errno;
+	fd = openat(pfd, "stat", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	save_errno = errno;
+	close(pfd);
+	if (fd < 0)
+		return -save_errno;
 	f = fdopen(fd, "r");
 	if (!f) {
 		save_errno = errno;
@@ -120,16 +125,21 @@ int syd_proc_ppid(int pfd, pid_t *ppid)
 	return 0;
 }
 
-int syd_proc_comm(int pfd, char *dst, size_t siz)
+int syd_proc_comm(pid_t pid, char *dst, size_t siz)
 {
-	int fd;
+	int pfd, fd, save_errno;
 
-	if (pfd < 0)
+	if (pid <= 0)
 		return -EINVAL;
 
-	fd = openat(pfd, "comm", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
-	if (fd < 0)
+	pfd = syd_proc_open(pid);
+	if (pfd < 0)
 		return -errno;
+	fd = openat(pfd, "comm", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	save_errno = errno;
+	close(pfd);
+	if (fd < 0)
+		return -save_errno;
 
 	char *s = dst;
 	size_t nleft = siz - 1;
@@ -158,16 +168,21 @@ int syd_proc_comm(int pfd, char *dst, size_t siz)
 	return 0;
 }
 
-int syd_proc_cmdline(int pfd, char *dst, size_t siz)
+int syd_proc_cmdline(pid_t pid, char *dst, size_t siz)
 {
-	int fd;
+	int pfd, fd, save_errno;
 
-	if (pfd < 0)
+	if (pid <= 0)
 		return -EINVAL;
 
-	fd = openat(pfd, "cmdline", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
-	if (fd < 0)
+	pfd = syd_proc_open(pid);
+	if (pfd < 0)
 		return -errno;
+	fd = openat(pfd, "cmdline", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	save_errno = errno;
+	close(pfd);
+	if (fd < 0)
+		return -save_errno;
 
 	char *s = dst;
 	size_t nleft = siz - 1;
@@ -194,14 +209,17 @@ int syd_proc_cmdline(int pfd, char *dst, size_t siz)
 	return 0;
 }
 
-int syd_proc_fd_path(int pfd, int fd, char **dst)
+int syd_proc_fd_path(pid_t pid, int fd, char **dst)
 {
-	int r;
+	int pfd, r;
 	char sfd[SYD_INT_MAX];
 
-	if (pfd < 0 || fd < 0)
+	if (pid <= 0 || fd < 0)
 		return -EINVAL;
 
+	pfd = syd_proc_fd_open(pid);
+	if (pfd < 0)
+		return -errno;
 	r = snprintf(sfd, sizeof(sfd), "%u", fd);
 	if (r < 0 || (size_t)r >= sizeof(sfd))
 		return -EINVAL;
@@ -217,6 +235,7 @@ int syd_proc_fd_path(int pfd, int fd, char **dst)
 		if (!p) {
 			if (path)
 				free(path);
+			close(pfd);
 			return -errno;
 		}
 		path = p;
@@ -227,6 +246,7 @@ int syd_proc_fd_path(int pfd, int fd, char **dst)
 		if (n < s) {
 			path[n] = '\0';
 			*dst = path;
+			close(pfd);
 			return n;
 		}
 
@@ -234,9 +254,53 @@ int syd_proc_fd_path(int pfd, int fd, char **dst)
 		if (len > (SIZE_MAX - len)) {
 			/* There is a limit for everything */
 			free(p);
+			close(pfd);
 			return -ENAMETOOLONG;
 		}
 		len *= 2;
 	}
 	/* never reached */
+}
+
+int syd_proc_environ(pid_t pid)
+{
+	int i, c, r, pfd, fd, save_errno;
+	FILE *f;
+	/* <linux/binfmts.h> states ARG_MAX_STRLEN is essentially random and
+	 * here (x86_64) defines it as (PAGE_SIZE * 32), I am more modest. */
+	char s[1024];
+
+	if (pid <= 0)
+		return -EINVAL;
+
+	pfd = syd_proc_open(pid);
+	if (pfd < 0)
+		return -errno;
+	fd = openat(pfd, "environ", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	save_errno = errno;
+	close(pfd);
+	if (fd < 0)
+		return -errno;
+	f = fdopen(fd, "r");
+	if (!f) {
+		save_errno = errno;
+		close(fd);
+		return -save_errno;
+	}
+
+	for (i = 0; (c = fgetc(f)) != EOF; i++) {
+		if (i >= 1024) {
+			r = -E2BIG;
+			break;
+		}
+		s[i] = c;
+
+		if (c == '\0' && putenv(s) != 0) { /* end of unit */
+			r = -ENOMEM;
+			break;
+		}
+	}
+
+	fclose(f);
+	return r;
 }
