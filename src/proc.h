@@ -29,11 +29,14 @@ struct proc_statinfo {
 };
 
 int proc_cwd(pid_t pid, bool use_toolong_hack, char **buf);
+int proc_stat(pid_t pid, struct proc_statinfo *info);
+
+#if 0
 int proc_fd(pid_t pid, int dfd, char **buf);
 int proc_cmdline(pid_t pid, size_t max_length, char **buf);
 int proc_comm(pid_t pid, char **name);
-int proc_stat(pid_t pid, struct proc_statinfo *info);
 
 int proc_environ(pid_t pid);
+#endif
 
 #endif /* !PROC_H */

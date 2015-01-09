@@ -96,6 +96,7 @@ out:
 	return r;
 }
 
+#if 0
 /*
  * resolve /proc/$pid/fd/$dirfd
  */
@@ -208,7 +209,6 @@ int proc_comm(pid_t pid, char **name)
 	return 0;
 }
 
-#if 0
 bool proc_has_task(pid_t pid, pid_t task)
 {
 	bool r = false;
@@ -338,6 +338,7 @@ int proc_stat(pid_t pid, struct proc_statinfo *info)
 	return 0;
 }
 
+#if 0
 /*
  * read /proc/$pid/environ and set the environment.
  * (call clearenv() beforehand to reset the environment.)
@@ -378,3 +379,4 @@ int proc_environ(pid_t pid)
 	errno = r;
 	return r;
 }
+#endif

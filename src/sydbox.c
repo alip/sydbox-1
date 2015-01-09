@@ -38,6 +38,7 @@
 #include "seccomp.h"
 #endif
 
+#include <syd.h>
 #if SYDBOX_DEBUG
 # define UNW_LOCAL_ONLY
 # include <libunwind.h>
@@ -479,7 +480,7 @@ static void dump_clone_flags(int flags)
 static void dump_one_process(syd_process_t *current, bool verbose)
 {
 	int r;
-	char *comm = NULL;
+	char comm[32];
 	const char *CG, *CB, *CN, *CI, *CE; /* good, bad, important, normal end */
 	struct proc_statinfo info;
 
@@ -506,12 +507,10 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "\t%sParent ID: %u%s\n", CN, ppid > 0 ? ppid : 0, CE);
 	else
 		fprintf(stderr, "\t%sParent ID: ? (Orphan)%s\n", CN, CE);
-	if (proc_comm(current->pid, &comm) == 0) {
+	if ((r = syd_proc_comm(current->pid, comm, sizeof(comm))) == 0)
 		fprintf(stderr, "\t%sComm: `%s'%s\n", CN, comm, CE);
-		free(comm);
-	} else {
+	else
 		fprintf(stderr, "\t%sComm: `?'%s\n", CN, CE);
-	}
 	if (current->shm.clone_fs)
 		fprintf(stderr, "\t%sCwd: `%s'%s\n", CN, P_CWD(current), CE);
 	fprintf(stderr, "\t%sSyscall: {no:%lu abi:%d name:%s}%s\n", CN,

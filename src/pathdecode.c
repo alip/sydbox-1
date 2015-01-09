@@ -12,7 +12,8 @@
 #include <string.h>
 #include "pink.h"
 #include "log.h"
-#include "proc.h"
+
+#include <syd.h>
 
 /* Decode the path at the given index and place it in buf.
  * Handles panic()
@@ -57,7 +58,6 @@ int path_prefix(syd_process_t *current, unsigned arg_index, char **buf)
 {
 	int r, fd;
 	char *prefix = NULL;
-	pid_t pid = current->pid;
 
 	if ((r = syd_read_argument_int(current, arg_index, &fd)) < 0)
 		return r;
@@ -69,7 +69,7 @@ int path_prefix(syd_process_t *current, unsigned arg_index, char **buf)
 		*buf = NULL;
 		r = -EBADF;
 	} else {
-		if ((r = proc_fd(pid, fd, &prefix)) < 0) {
+		if ((r = syd_proc_fd_path(current->pid, fd, &prefix)) < 0) {
 			log_warning("readlink /proc/%u/fd/%d failed (errno:%d %s)",
 				    pid, fd, -r, strerror(-r));
 			if (r == -ENOENT)

@@ -3,7 +3,7 @@
  *
  * Simple debug logging
  *
- * Copyright 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Based in part upon privoxy which is:
  *   Copyright (c) 2001-2010 the Privoxy team. http://www.privoxy.org/
  * Distributed under the terms of the GNU General Public License v2
@@ -18,8 +18,9 @@
 #include <errno.h>
 #include <time.h>
 #include "log.h"
-#include "proc.h"
 #include "util.h"
+
+#include <syd.h>
 
 /* fatal can't be turned off! */
 #define LOG_LEVEL_MINIMUM	(LOG_LEVEL_ASSERT|LOG_LEVEL_FATAL)
@@ -79,10 +80,12 @@ static void log_me(FILE *fp, unsigned level, const char *fmt, va_list ap)
 	if (prefix) {
 		fprintf(fp, "%s@%lu:", prefix, time(NULL));
 		if (current_proc) {
-			char *comm = NULL;
-			proc_comm(current_proc->pid, &comm);
+			int r;
+			char comm[32];
 
-			fprintf(fp, " %s[%u.%d:%u]", comm ? comm : "?",
+			r = syd_proc_comm(current_proc->pid, comm, sizeof(comm));
+
+			fprintf(fp, " %s[%u.%d:%u]", r == 0 ? comm : "?",
 				current_proc->pid,
 				current_proc->abi,
 				current_proc->ppid);
@@ -91,9 +94,6 @@ static void log_me(FILE *fp, unsigned level, const char *fmt, va_list ap)
 					current_proc->sysnum,
 					current_proc->sysname ? current_proc->sysname : "?");
 			}
-
-			if (comm)
-				free(comm);
 		}
 		fputc(' ', fp);
 	}

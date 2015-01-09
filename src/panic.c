@@ -16,7 +16,8 @@
 #include <stdio.h>
 #include "pink.h"
 #include "log.h"
-#include "proc.h"
+
+#include <syd.h>
 
 static inline int errno2retval(int err_no)
 {
@@ -59,21 +60,18 @@ static int wait_one(syd_process_t *node)
 int kill_one(syd_process_t *node, int fatal_sig)
 {
 	int i, r;
+	char comm[32];
 
 	if ((r = wait_one(node)) == -ESRCH)
 		return r;
 
 	const char *name;
-	char *comm = NULL;
 
 	name = pink_name_signal(fatal_sig, 0);
-	proc_comm(node->pid, &comm);
+	r = syd_proc_comm(node->pid, comm, sizeof(comm));
 
 	fprintf(stderr, "sydbox: %s -> %d <%s> ", name,
-		node->pid, comm ? comm : "?");
-
-	if (comm)
-		free(comm);
+		node->pid, r == 0 ? comm : "?");
 
 	r = pink_trace_kill(node->pid, 0, fatal_sig);
 
@@ -114,23 +112,19 @@ void kill_all(int fatal_sig)
 PINK_GCC_ATTR((format (printf, 2, 0)))
 static void report(syd_process_t *current, const char *fmt, va_list ap)
 {
-	char *cmdline, *comm = NULL;
+	int r;
+	char cmdline[80], comm[32];
 
-	proc_comm(current->pid, &comm);
+	r = syd_proc_comm(current->pid, comm, sizeof(comm));
 
 	say("8< -- Access Violation! --");
 	vsay(fmt, ap);
 	fputc('\n', stderr);
-	say("proc: %s[%u] (parent:%u)", comm ? comm : "?", current->pid, current->ppid);
+	say("proc: %s[%u] (parent:%u)", r == 0 ? comm : "?", current->pid, current->ppid);
 	say("cwd: `%s'", P_CWD(current));
 
-	if (comm)
-		free(comm);
-
-	if (proc_cmdline(current->pid, 78, &cmdline) == 0) {
+	if (syd_proc_cmdline(current->pid, cmdline, sizeof(cmdline)) == 0)
 		say("cmdline: `%s'", cmdline);
-		free(cmdline);
-	}
 
 	say(">8 --");
 }

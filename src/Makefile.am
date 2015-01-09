@@ -16,6 +16,8 @@ DEFS+= \
        -DDATADIR=\"$(datadir)\" \
        -DGITVERSION=\"$(GITVERSION)\"
 AM_CFLAGS= \
+	   -I$(top_builddir)/syd \
+	   -I$(top_srcdir)/syd \
 	   -I$(top_builddir) \
 	   -I$(top_srcdir) \
 	   $(pinktrace_CFLAGS) \
@@ -115,7 +117,8 @@ sydbox_SOURCES+= \
 noinst_HEADERS+= \
 		 sys-queue.h
 
-sydbox_LDADD= $(pinktrace_LIBS)
+sydbox_LDFLAGS= -lsyd_@LIBSYD_PC_SLOT@
+sydbox_LDADD= -L$(top_builddir)/syd/.libs -lsyd_@LIBSYD_PC_SLOT@ $(pinktrace_LIBS)
 if WANT_DEBUG
 sydbox_LDADD+= $(libunwind_LIBS)
 endif
@@ -123,6 +126,7 @@ endif
 DUMP_SRCS= $(sydbox_SOURCES) dump.c
 DUMP_COMPILER_FLAGS= $(AM_CFLAGS) -O0 -g -ggdb3
 DUMP_PREPROCESSOR_FLAGS= -DSYDBOX_DUMP
+DUMP_LINKER_LIBRARY_ADD= $(sydbox_LIBADD)
 DUMP_LINKER_ADD= $(sydbox_LDADD)
 DUMP_LINKER_FLAGS= \
 	  -Wl,--wrap=pink_trace_resume \

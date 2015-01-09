@@ -19,9 +19,10 @@
 #include "pink.h"
 
 #include "log.h"
-#include "proc.h"
 #include "util.h"
 #include "xfunc.h"
+
+#include <syd.h>
 
 /*
  * Convert errno's which execve() doesn't set to a valid errno to avoid
@@ -102,7 +103,7 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 	} else if (childpid == 0) {
 		if (clearenv() != 0)
 			_exit(ENOMEM);
-		if (proc_environ(current->pid) < 0)
+		if (syd_proc_environ(current->pid) < 0)
 			_exit(errno);
 		if (chdir(P_CWD(current)) < 0)
 			_exit(errno);
