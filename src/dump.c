@@ -633,7 +633,6 @@ static void dump_process(pid_t pid)
 	fprintf(fp, "{"
 		J(flag_STARTUP)"%s,"
 		J(flag_IGNORE_ONE_SIGSTOP)"%s,"
-		J(flag_READY)"%s,"
 		J(flag_IN_SYSCALL)"%s,"
 		J(flag_DENY_SYSCALL)"%s,"
 		J(flag_STOP_AT_SYSEXIT)"%s,"
@@ -647,7 +646,6 @@ static void dump_process(pid_t pid)
 		J(syscall_name)"\"%s\"",
 		J_BOOL(p->flags & SYD_STARTUP),
 		J_BOOL(p->flags & SYD_IGNORE_ONE_SIGSTOP),
-		J_BOOL(p->flags & SYD_READY),
 		J_BOOL(p->flags & SYD_IN_SYSCALL),
 		J_BOOL(p->flags & SYD_DENY_SYSCALL),
 		J_BOOL(p->flags & SYD_STOP_AT_SYSEXIT),
