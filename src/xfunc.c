@@ -81,7 +81,7 @@ void say(const char *fmt, ...)
 void assert_(const char *expr, const char *func,
 	     const char *file, size_t line)
 {
-	fprintf(stderr, PACKAGE": Assertion '%s' failed at %s:%zu, function %s()",
+	fprintf(stderr, PACKAGE": Assertion '%s' failed at %s:%zu, function %s()\n",
 		expr, file, line, func);
 
 	dump(DUMP_ASSERT, expr, file, line, func);

@@ -105,7 +105,7 @@ void kill_all(int fatal_sig)
 
 	process_iter(node, tmp) {
 		if (kill_one(node, fatal_sig) == -ESRCH)
-			free_process(node);
+			bury_process(node);
 	}
 	cleanup();
 	exit(fatal_sig);
@@ -169,7 +169,7 @@ int panic(syd_process_t *current)
 	int r;
 
 	r = kill_one(current, SIGTERM);
-	free_process(current);
+	bury_process(current);
 	return r;
 }
 

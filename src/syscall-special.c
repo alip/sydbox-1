@@ -417,9 +417,6 @@ int sys_clone(syd_process_t *current)
 	if ((r = syd_read_argument(current, 0, &flags)) < 0)
 		return r;
 	current->new_clone_flags = flags;
-	current->cpid = 0;
-	current->flags |= SYD_WAIT_FOR_CHILD;
-	sydbox->current_clone_proc = current;
 
 	return 0;
 }
