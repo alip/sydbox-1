@@ -1,8 +1,8 @@
 /*
  * syd.h -- Syd's utility library
  *
- * Copyright (c) 2014 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * Copyright (c) 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Released under the terms of the GNU Lesser General Public License v3 (or later)
  */
 
 #ifndef LIBSYD_SYD_H
@@ -15,6 +15,7 @@ size_t syd_strlcat(char *dst, const char *src, size_t siz);
 size_t syd_strlcpy(char *dst, const char *src, size_t siz);
 
 int syd_proc_open(pid_t pid);
+int syd_proc_ppid(int pfd, pid_t *ppid);
 int syd_proc_comm(int pfd, char *dst, size_t siz);
 int syd_proc_cmdline(int pfd, char *dst, size_t siz);
 

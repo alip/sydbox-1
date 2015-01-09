@@ -3,8 +3,8 @@
  *
  * /proc utilities
  *
- * Copyright (c) 2014 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * Copyright (c) 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Released under the terms of the GNU Lesser General Public License v3 (or later)
  */
 
 #include "syd.h"
@@ -83,6 +83,41 @@ int syd_proc_fd_open(pid_t pid)
 
 	fd = open(p, O_PATH|O_DIRECTORY|O_NOFOLLOW);
 	return (fd < 0) ? -errno : fd;
+}
+
+int syd_proc_ppid(int pfd, pid_t *ppid)
+{
+	int fd, save_errno;
+	pid_t ppid_r;
+	FILE *f;
+
+	if (pfd < 0 || ppid == NULL)
+		return -EINVAL;
+
+	fd = openat(pfd, "stat", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	if (fd < 0)
+		return -errno;
+	f = fdopen(fd, "r");
+	if (!f) {
+		save_errno = errno;
+		close(fd);
+		return -save_errno;
+	}
+
+	if (fscanf(f,
+		   "%*d" /* pid */
+		   " %*32s" /* comm */
+		   " %*c" /* state */
+		   " %d", /* ppid ! */
+		   &ppid_r) != 1) {
+		fclose(f);
+		return -EINVAL;
+	}
+
+	fclose(f);
+	*ppid = ppid_r;
+
+	return 0;
 }
 
 int syd_proc_comm(int pfd, char *dst, size_t siz)

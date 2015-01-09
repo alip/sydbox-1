@@ -3,8 +3,8 @@
  *
  * timing utilities
  *
- * Copyright (c) 2014 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the 3-clause BSD license
+ * Copyright (c) 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Released under the terms of the GNU Lesser General Public License v3 (or later)
  */
 
 #include "syd.h"
