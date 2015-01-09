@@ -884,9 +884,14 @@ static int event_clone(syd_process_t *current)
 		return (r < 0) ? r : -EINVAL;
 	}
 
-	child = new_thread_or_kill(cpid_l, post_attach_sigstop);
-	child->ppid = current->pid;
-	init_process_data(child, current);
+	child = lookup_process(cpid_l);
+	if (child) { /* Orphan finds mother! */
+		child->ppid = current->pid;
+	} else { /* Baby not yet born! */
+		child = new_thread_or_kill(cpid_l, post_attach_sigstop);
+		child->ppid = current->pid;
+		init_process_data(child, current);
+	}
 	current->new_clone_flags = 0;
 
 	return 0;
@@ -1058,7 +1063,7 @@ static int trace(void)
 	int r;
 	int status, sig;
 	unsigned event;
-	syd_process_t *current;
+	syd_process_t *current, *parent;
 	int syscall_trap_sig;
 
 	syscall_trap_sig = sydbox->trace_options & PINK_TRACE_OPTION_SYSGOOD
@@ -1115,9 +1120,27 @@ static int trace(void)
 
 		event = pink_event_decide(status);
 
-		/* If we are here we *must* have a process entry, assert. */
+		/* If we are here we *must* have a process entry! */
 		current = lookup_process(pid);
-		assert(current);
+		if (!current) {
+			/* Process arrived before EVENT_CLONE.
+			 * For practical reasons, we inherit the sandbox from ppid.
+			 * FIXME: Do we need to assert SIGSTOP, EVENT_STOP here?
+			 */
+			current = new_thread_or_kill(pid, post_attach_sigstop);
+			if ((r = syd_proc_ppid(pid, &current->ppid)) < 0) {
+				/* Assume orphan = wait for EVENT_CLONE */
+				current->ppid = SYD_PPID_ORPHAN;
+			} else {
+				parent = lookup_process(current->ppid);
+				if (!parent) /* Assume orphan */
+					current->ppid = SYD_PPID_ORPHAN;
+				else {
+					init_process_data(current, parent);
+					parent->new_clone_flags = 0;
+				}
+			}
+		}
 
 		/* Under Linux, execve changes pid to thread leader's pid,
 		 * and we see this changed pid on EVENT_EXEC and later,
