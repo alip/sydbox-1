@@ -33,7 +33,7 @@ static void test_proc_comm(void)
 		_exit(1);
 	} else {
 		pid_t cpid = -1;
-		int r, pfd, status;
+		int r, status;
 		char comm[sizeof(comm_real)];
 		char comm_trunc[sizeof(comm_real) - 2];
 		size_t comm_len = sizeof(comm_real);
@@ -48,24 +48,19 @@ static void test_proc_comm(void)
 			return;
 		}
 
-		pfd = syd_proc_open(cpid);
-		if (pfd < 0) {
-			fail_msg("syd_proc_open failed: errno:%d %s", errno, strerror(errno));
-		} else {
-			r = syd_proc_comm(pfd, comm, comm_len);
-			if (r < 0)
-				fail_msg("syd_proc_comm failed: %d %s", errno, strerror(errno));
-			else if ((r = strcmp(comm, comm_real)) != 0)
-				fail_msg("comm: strcmp('%s', '%s') = %d", comm, comm_real, r);
+		r = syd_proc_comm(pid, comm, comm_len);
+		if (r < 0)
+			fail_msg("syd_proc_comm failed: %d %s", errno, strerror(errno));
+		else if ((r = strcmp(comm, comm_real)) != 0)
+			fail_msg("comm: strcmp('%s', '%s') = %d", comm, comm_real, r);
 
-			r = syd_proc_comm(pfd, comm_trunc, comm_trunc_len);
-			if (r < 0)
-				fail_msg("syd_proc_comm failed (trunc): %d %s", errno, strerror(errno));
-			else if ((r = strncmp(comm_trunc, comm_real, comm_trunc_len - 1)) != 0)
-				fail_msg("comm: strncmp('%s', '%s', %zu) = %d", comm_trunc, comm_real, comm_trunc_len - 1, r);
-			else if (comm_trunc[comm_trunc_len - 1] != '\0')
-				fail_msg("comm: truncated '%s' not null-terminated: '%c'", comm_trunc, comm_trunc[comm_trunc_len - 1]);
-		}
+		r = syd_proc_comm(pid, comm_trunc, comm_trunc_len);
+		if (r < 0)
+			fail_msg("syd_proc_comm failed (trunc): %d %s", errno, strerror(errno));
+		else if ((r = strncmp(comm_trunc, comm_real, comm_trunc_len - 1)) != 0)
+			fail_msg("comm: strncmp('%s', '%s', %zu) = %d", comm_trunc, comm_real, comm_trunc_len - 1, r);
+		else if (comm_trunc[comm_trunc_len - 1] != '\0')
+			fail_msg("comm: truncated '%s' not null-terminated: '%c'", comm_trunc, comm_trunc[comm_trunc_len - 1]);
 		kill(cpid, SIGKILL);
 	}
 }
@@ -84,7 +79,7 @@ static void test_proc_cmdline(void)
 		_exit(1);
 	} else {
 		pid_t cpid = -1;
-		int r, pfd, status;
+		int r, status;
 		char cmdline_orig[] = "check-pause arg1 arg2 arg3";
 		char cmdline_trunc1_orig[] = "check-pause arg1 arg2 ar";
 		char cmdline_trunc2_orig[] = "check-pause arg1 arg2 a";
@@ -101,28 +96,23 @@ static void test_proc_cmdline(void)
 			return;
 		}
 
-		pfd = syd_proc_open(cpid);
-		if (pfd < 0) {
-			fail_msg("syd_proc_open failed: errno:%d %s", errno, strerror(errno));
-		} else {
-			r = syd_proc_cmdline(pfd, cmdline, sizeof(cmdline));
-			if (r < 0)
-				fail_msg("syd_proc_cmdline failed: %d %s", errno, strerror(errno));
-			else if ((r = strcmp(cmdline, cmdline_orig)) != 0)
-				fail_msg("cmdline: strcmp('%s', '%s') = %d", cmdline, cmdline_orig, r);
+		r = syd_proc_cmdline(pid, cmdline, sizeof(cmdline));
+		if (r < 0)
+			fail_msg("syd_proc_cmdline failed: %d %s", errno, strerror(errno));
+		else if ((r = strcmp(cmdline, cmdline_orig)) != 0)
+			fail_msg("cmdline: strcmp('%s', '%s') = %d", cmdline, cmdline_orig, r);
 
-			r = syd_proc_cmdline(pfd, cmdline_trunc1, sizeof(cmdline) - 2);
-			if (r < 0)
-				fail_msg("syd_proc_cmdline (trunc1) failed: %d %s", errno, strerror(errno));
-			else if ((r = strcmp(cmdline_trunc1, cmdline_trunc1_orig)) != 0)
-				fail_msg("cmdline: (trunc1) strcmp('%s', '%s') = %d", cmdline_trunc1, cmdline_trunc1_orig, r);
+		r = syd_proc_cmdline(pid, cmdline_trunc1, sizeof(cmdline) - 2);
+		if (r < 0)
+			fail_msg("syd_proc_cmdline (trunc1) failed: %d %s", errno, strerror(errno));
+		else if ((r = strcmp(cmdline_trunc1, cmdline_trunc1_orig)) != 0)
+			fail_msg("cmdline: (trunc1) strcmp('%s', '%s') = %d", cmdline_trunc1, cmdline_trunc1_orig, r);
 
-			r = syd_proc_cmdline(pfd, cmdline_trunc2, sizeof(cmdline) - 3);
-			if (r < 0)
-				fail_msg("syd_proc_cmdline (trunc2) failed: %d %s", errno, strerror(errno));
-			else if ((r = strcmp(cmdline_trunc2, cmdline_trunc2_orig)) != 0)
-				fail_msg("cmdline: (trunc2) strcmp('%s', '%s') = %d", cmdline_trunc2, cmdline_trunc2_orig, r);
-		}
+		r = syd_proc_cmdline(pid, cmdline_trunc2, sizeof(cmdline) - 3);
+		if (r < 0)
+			fail_msg("syd_proc_cmdline (trunc2) failed: %d %s", errno, strerror(errno));
+		else if ((r = strcmp(cmdline_trunc2, cmdline_trunc2_orig)) != 0)
+			fail_msg("cmdline: (trunc2) strcmp('%s', '%s') = %d", cmdline_trunc2, cmdline_trunc2_orig, r);
 		kill(cpid, SIGKILL);
 	}
 }
@@ -177,7 +167,7 @@ static void test_proc_fd_path(void)
 	} else {
 		pid_t cpid = -1;
 		int fdp, fdl, status;
-		int proc, r;
+		int r;
 		char *path;
 
 		close(pfd[1]);
@@ -196,13 +186,7 @@ static void test_proc_fd_path(void)
 
 		close(pfd[0]);
 
-		proc = syd_proc_fd_open(cpid);
-		if (proc < 0) {
-			fail_msg("syd_proc_fd_open failed: errno:%d %s", errno, strerror(errno));
-			goto out;
-		}
-
-		r = syd_proc_fd_path(proc, fdp, &path);
+		r = syd_proc_fd_path(pid, fdp, &path);
 		if (r < 0) {
 			fail_msg("fdp: syd_proc_fd_path failed: errno:%d %s", -r, strerror(-r));
 			goto out;
@@ -219,7 +203,7 @@ static void test_proc_fd_path(void)
 		}
 		free(path);
 
-		r = syd_proc_fd_path(proc, fdl, &path);
+		r = syd_proc_fd_path(pid, fdl, &path);
 		if (r < 0) {
 			fail_msg("fdl: syd_proc_fd_path failed: errno:%d %s", -r, strerror(-r));
 			goto out;
