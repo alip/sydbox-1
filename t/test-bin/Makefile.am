@@ -1,6 +1,6 @@
 AM_MAKEFLAGS= --no-print-directory
 SUBDIRS= .
-EXTRA_DIST = test-skel-0.c test-skel-1.c tests.h headers.s localdecls.h
+EXTRA_DIST = test-skel-0.c test-skel-1.c tests.h headers.h localdecls.h
 CLEANFILES= \
 	    gmon.out \
 	    *.gcda \
