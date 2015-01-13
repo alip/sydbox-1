@@ -7,6 +7,7 @@ CLEANFILES= \
 	    *.gcov \
 	    *.log \
 	    *.trs
+EXTRA_DIST=
 check_SCRIPTS=
 BUILT_SOURCES=
 
@@ -22,7 +23,8 @@ test-lib.sh: test-lib.sh.in
 		-e "s:@PTRACE_SEIZE@:$(PINKTRACE_HAVE_SEIZE):g" \
 		-e "s:@PTRACE_SECCOMP@:$(SYDBOX_HAVE_SECCOMP):g" \
 		$< > $@
-BUILT_SOURCES+= test-lib.sh
+CLEANFILES+= test-lib.sh
+EXTRA_DIST+= test-lib.sh.in
 check_SCRIPTS+= test-lib.sh
 
 TEST_EXTENSIONS= .sh
@@ -37,8 +39,10 @@ check_SCRIPTS+= $(TESTS)
 syddir=$(libexecdir)/$(PACKAGE)/t
 syd_SCRIPTS= aggregate-results.sh check-non-portable-shell.pl $(check_SCRIPTS)
 syd_DATA= README
+EXTRA_DIST+= $(syd_SCRIPTS) $(syd_DATA)
 
 bin_SCRIPTS= sydtest
+EXTRA_DIST+= sydtest.sh.in
 sydtest: sydtest.sh.in
 	$(AM_V_GEN)
 	$(AM_V_at)$(SED) \
@@ -47,6 +51,6 @@ sydtest: sydtest.sh.in
 		$< > $@
 	$(AM_V_at)chmod +x $@
 
-EXTRA_DIST= Makefile.test
+EXTRA_DIST+= Makefile.test
 install-data-local:
 	cp Makefile.test $(DESTDIR)$(syddir)/Makefile

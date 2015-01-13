@@ -11,3 +11,5 @@ install-exec-hook:
 	$(LN_S) ../valgrind.sh $(DESTDIR)$(syddir)/bin/sydbox-dump
 	$(LN_S) ../valgrind.sh $(DESTDIR)$(syddir)/bin/sydfmt
 	$(LN_S) ../valgrind.sh $(DESTDIR)$(syddir)/bin/shoebox
+
+EXTRA_DIST= $(syd_SCRIPTS) $(syd_DATA)

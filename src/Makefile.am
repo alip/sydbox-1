@@ -158,8 +158,8 @@ shoebox: shoebox.in
 		-e "s:@SHOEBOX_VERSION@:$(VERSION)$(GITVERSION):g" \
 		$< > $@
 	$(AM_V_at)chmod +x $@
-BUILT_SOURCES+= shoebox
 CLEANFILES+= shoebox
+EXTRA_DIST+= shoebox.in
 
 sydbox_dump_SOURCES= $(DUMP_SRCS)
 sydbox_dump_CFLAGS= $(DUMP_COMPILER_FLAGS)

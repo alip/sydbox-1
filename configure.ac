@@ -368,7 +368,6 @@ AC_CONFIG_FILES([Makefile
 		 man/Makefile
 		 t/Makefile
 		 t/bin-wrappers/Makefile
-		 t/sb/Makefile
 		 t/test-bin/Makefile
 		 t/test-data/Makefile
 		 t/valgrind/Makefile])

@@ -5,6 +5,7 @@ CLEANFILES= \
 	    *.gcda \
 	    *.gcno \
 	    *.gcov
+EXTRA_DIST=
 
 sydbox: sydbox.in Makefile
 	$(AM_V_GEN)
@@ -12,6 +13,7 @@ sydbox: sydbox.in Makefile
 			 -e 's:@BINDIR@:$(bindir):g' \
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
+EXTRA_DIST+= sydbox.in
 
 # Not used any more.
 # Use sydbox wrapper with SYDBOX_DUMP=1 instead.
@@ -22,6 +24,7 @@ sydbox-dump: sydbox-dump.in Makefile
 			 -e 's:@LIBEXECDIR@:$(libexecdir):g' \
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
+EXTRA_DIST+= sydbox-dump.in
 
 shoebox: shoebox.in Makefile
 	$(AM_V_GEN)
@@ -30,6 +33,7 @@ shoebox: shoebox.in Makefile
 			 -e 's:@LIBEXECDIR@:$(libexecdir)/$(PACKAGE):g' \
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
+EXTRA_DIST+= shoebox.in
 
 sydfmt: sydfmt.in Makefile
 	$(AM_V_GEN)
@@ -37,6 +41,7 @@ sydfmt: sydfmt.in Makefile
 			 -e 's:@BINDIR@:$(bindir):g' \
 			 < $< > $@
 	$(AM_V_at)chmod +x $@
+EXTRA_DIST+= sydfmt.in
 
 check_SCRIPTS= \
 	       sydbox \
