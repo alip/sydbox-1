@@ -3,8 +3,18 @@
 echo >&2 ">>> HOST ${HOSTNAME} <<<"
 set -x
 uname -a
-zgrep SECCOMP /proc/config.gz
-zgrep CONFIG_CROSS_MEMORY_ATTACH /proc/config.gz
+if [[ -e /usr/local/lib/pkgconfig/pinktrace.pc ]]; then
+    PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
+    export PKG_CONFIG_PATH
+fi
+
+if [[ -e /proc/config.gz ]]; then
+    zgrep SECCOMP /proc/config.gz
+    zgrep CONFIG_CROSS_MEMORY_ATTACH /proc/config.gz
+elif [[ -e /proc/config ]]; then
+    grep SECCOMP /proc/config.gz
+    grep CONFIG_CROSS_MEMORY_ATTACH /proc/config.gz
+fi
 
 cat ./config.log
 
