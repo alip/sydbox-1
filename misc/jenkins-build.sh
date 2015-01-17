@@ -25,13 +25,13 @@ make V=1 check
 r=$?
 r=1
 if [[ $r -ne 0 ]]; then
-    cat tests/test-suite.log
+    cat t/test-suite.log
     while read -r -d $'\0' dir; do
         bname=$(basename "$dir")
         tname="${bname##trash directory.}"
         echo >&2 ">>> FAIL $tname"
         find "${dir}" -exec stat '{}' \;
         cat tests/"${tname}".log
-    done < <(find tests -name 'trash*' -print0)
+    done < <(find t -name 'trash*' -print0)
 fi
 exit $r
