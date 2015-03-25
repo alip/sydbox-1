@@ -111,12 +111,13 @@ void die(const char *fmt, ...)
 
 void die_errno(const char *fmt, ...)
 {
+	int save_errno = errno;
 	va_list ap;
 
 	va_start(ap, fmt);
 	vsay(fmt, ap);
 	va_end(ap);
-	say(" (errno:%d|%s| %s)", errno, pink_name_errno(errno, 0), strerror(errno));
+	say(" (errno:%d|%s| %s)", save_errno, pink_name_errno(save_errno, 0), strerror(errno));
 
 	syd_abort(SIGTERM);
 }
