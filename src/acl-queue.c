@@ -238,7 +238,7 @@ int acl_append_sockmatch(enum acl_action action, const char *pattern, aclq_t *ac
 	}
 
 out:
-	for (; f > 0; f--)
+	for (; f >= 0; f--)
 		free(list[f]);
 	free(list);
 
