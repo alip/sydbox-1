@@ -280,7 +280,7 @@ int syd_proc_environ(pid_t pid)
 	save_errno = errno;
 	close(pfd);
 	if (fd < 0)
-		return -errno;
+		return -save_errno;
 	f = fdopen(fd, "r");
 	if (!f) {
 		save_errno = errno;
