@@ -61,9 +61,9 @@ static inline void sockmap_destroy(struct sockmap **map)
 		return;
 
 	HASH_ITER(hh, *map, e, t) {
-		HASH_DEL(*map, e);
 		if (e->info)
 			free_sockinfo(e->info);
+		HASH_DEL(*map, e);
 		free(e);
 	}
 	HASH_CLEAR(hh, *map);
