@@ -34,7 +34,6 @@ noinst_HEADERS+= \
 		 asyd.h \
 		 dump.h \
 		 file.h \
-		 log.h \
 		 macro.h \
 		 path.h \
 		 pathlookup.h \
@@ -53,7 +52,6 @@ noinst_HEADERS+= \
 		 sydbox.h
 sydbox_SOURCES= \
 		 file.c \
-		 log.c \
 		 path.c \
 		 pathlookup.c \
 		 pink.c \
@@ -72,7 +70,6 @@ sydbox_SOURCES= \
 		 magic-restrict.c \
 		 magic-whitelist.c \
 		 magic-acl.c \
-		 magic-log.c \
 		 magic-match.c \
 		 magic-cmd.c \
 		 magic.c \

@@ -15,7 +15,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include "pink.h"
-#include "log.h"
+#include "xfunc.h"
 
 #include <syd.h>
 
@@ -181,11 +181,11 @@ int violation(syd_process_t *current, const char *fmt, ...)
 	case VIOLATION_DENY:
 		return 0; /* Let the caller handle this */
 	case VIOLATION_KILL:
-		log_warning("VIOLATION_KILL");
+		say("VIOLATION_KILL");
 		kill_one(current, SIGTERM);
 		return -ESRCH;
 	case VIOLATION_KILLALL:
-		log_warning("VIOLATION_KILLALL");
+		say("VIOLATION_KILLALL");
 		kill_all(SIGTERM);
 		break;
 	default:

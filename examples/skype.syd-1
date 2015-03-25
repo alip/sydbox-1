@@ -32,14 +32,6 @@ core/match/case_sensitive:true
 core/match/no_wildcard:literal
 
 #
-# Logging
-#
-log/file:
-log/level:511
-log/console_fd:2
-log/console_level:3
-
-#
 # /dev
 #
 whitelist/read+/dev

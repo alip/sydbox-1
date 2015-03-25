@@ -1,7 +1,7 @@
 /*
  * sydbox/magic-cmd.c
  *
- * Copyright (c) 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -18,7 +18,6 @@
 
 #include "pink.h"
 
-#include "log.h"
 #include "util.h"
 #include "xfunc.h"
 
@@ -97,7 +96,7 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 	childpid = fork();
 	if (childpid < 0) {
 		err_no = execve_errno(errno);
-		log_warning("fork failed (errno:%d %s)", errno, strerror(errno));
+		say("fork failed (errno:%d %s)", errno, strerror(errno));
 		r = deny(current, err_no);
 		return r;
 	} else if (childpid == 0) {
@@ -115,16 +114,16 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 
 	if (waitpid_nointr(childpid, &status, 0) < 0) {
 		err_no = execve_errno(errno);
-		log_warning("exec(`%s'): waitpid(%u) failed (errno:%d %s)",
-			    argv[0], childpid, errno, strerror(errno));
+		say("exec(`%s'): waitpid(%u) failed (errno:%d %s)",
+		    argv[0], childpid, errno, strerror(errno));
 		r = -err_no;
 		goto out;
 	}
 	if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
 		/* execve successful, detach from pid */
 		if (pink_trace_detach(childpid, 0) < 0)
-			log_warning("detach from pid:%u failed (errno:%d %s)",
-				    childpid, errno, strerror(errno));
+			say("detach from pid:%u failed (errno:%d %s)",
+			    childpid, errno, strerror(errno));
 		r = 0;
 	} else if (WIFEXITED(status)) {
 		/* execve() failed */

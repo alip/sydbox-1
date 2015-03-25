@@ -1,7 +1,7 @@
 /*
  * sydbox/magic-acl.c
  *
- * Copyright (c) 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -15,7 +15,6 @@
 
 #include "acl-queue.h"
 #include "macro.h"
-#include "log.h"
 
 static int magic_edit_acl(int (*edit_func)(enum acl_action, const char *, aclq_t *),
 			  enum acl_action action, const char *val, aclq_t *acl)

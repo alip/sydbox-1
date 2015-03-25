@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox.h
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -50,6 +50,14 @@
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
 #define SYD_PPID_ORPHAN		-0xbad /* special parent process id for orphans */
+
+/* ANSI colour codes */
+#define ANSI_NORMAL		"[00;00m"
+#define ANSI_MAGENTA		"[00;35m"
+#define ANSI_DARK_MAGENTA	"[01;35m"
+#define ANSI_GREEN		"[00;32m"
+#define ANSI_YELLOW		"[00;33m"
+#define ANSI_CYAN		"[00;36m"
 
 /* Type declarations */
 enum sandbox_mode {
@@ -149,12 +157,6 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE_USE_SECCOMP,
 	MAGIC_KEY_CORE_TRACE_USE_SEIZE,
 	MAGIC_KEY_CORE_TRACE_USE_TOOLONG_HACK,
-
-	MAGIC_KEY_LOG,
-	MAGIC_KEY_LOG_FILE,
-	MAGIC_KEY_LOG_LEVEL,
-	MAGIC_KEY_LOG_CONSOLE_FD,
-	MAGIC_KEY_LOG_CONSOLE_LEVEL,
 
 	MAGIC_KEY_EXEC,
 	MAGIC_KEY_EXEC_KILL_IF_MATCH,
@@ -499,8 +501,6 @@ typedef struct {
 	bool use_seize;
 	bool use_toolong_hack;
 
-	char *log_file;
-
 	aclq_t exec_kill_if_match;
 	aclq_t exec_resume_if_match;
 
@@ -838,10 +838,6 @@ int magic_append_filter_network(const void *val, syd_process_t *current);
 int magic_remove_filter_network(const void *val, syd_process_t *current);
 int magic_set_violation_decision(const void *val, syd_process_t *current);
 int magic_set_trace_magic_lock(const void *val, syd_process_t *current);
-int magic_set_log_file(const void *val, syd_process_t *current);
-int magic_set_log_level(const void *val, syd_process_t *current);
-int magic_set_log_console_fd(const void *val, syd_process_t *current);
-int magic_set_log_console_level(const void *val, syd_process_t *current);
 int magic_query_sandbox_exec(syd_process_t *current);
 int magic_query_sandbox_read(syd_process_t *current);
 int magic_query_sandbox_write(syd_process_t *current);

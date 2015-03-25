@@ -23,11 +23,6 @@ core/trace/use_toolong_hack:true
 core/match/case_sensitive:true
 core/match/no_wildcard:prefix
 
-log/file:
-log/level:511
-log/console_fd:2
-log/console_level:3
-
 #exec/resume_if_match+
 #exec/kill_if_match+
 

@@ -3,7 +3,7 @@
  *
  * pinktrace wrapper functions
  *
- * Copyright (c) 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -11,14 +11,13 @@
 #include "pink.h"
 #include <errno.h>
 #include <string.h>
-#include "log.h"
 
 static int syd_check(syd_process_t *current, int retval, const char *func_name, size_t line_count)
 {
 	if (retval == -ESRCH) {
 		bury_process(current);
 	} else if (retval < 0) {
-		err_fatal(-retval, "pink: %s:%zu failed for pid:%u", func_name, line_count, current->pid);
+		say("pink: %s:%zu failed for pid:%u", func_name, line_count, current->pid);
 		return panic(current);
 	}
 	return retval;

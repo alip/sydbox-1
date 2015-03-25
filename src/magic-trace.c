@@ -1,7 +1,7 @@
 /*
  * sydbox/magic-trace.c
  *
- * Copyright (c) 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -12,7 +12,6 @@
 #include "pink.h"
 
 #include "macro.h"
-#include "log.h"
 
 int magic_set_trace_follow_fork(const void *val, syd_process_t *current)
 {

@@ -1,7 +1,7 @@
 /*
  * sydbox/syscall.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -14,7 +14,6 @@
 #include <string.h>
 #include "pink.h"
 #include "macro.h"
-#include "log.h"
 #include "proc.h"
 #if SYDBOX_HAVE_SECCOMP
 #include "seccomp.h"
@@ -450,7 +449,6 @@ int sysenter(syd_process_t *current)
 	const sysentry_t *entry;
 
 	assert(current);
-	log_context(current);
 
 	if ((r = syd_read_syscall(current, &sysnum)) < 0)
 		return r;
@@ -474,7 +472,6 @@ int sysexit(syd_process_t *current)
 	const sysentry_t *entry;
 
 	assert(current);
-	log_context(current);
 
 	if (sysdeny(current)) {
 		r = restore(current);

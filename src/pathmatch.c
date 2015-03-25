@@ -3,7 +3,7 @@
  *
  * Extends wildmatch for sydbox specific use cases.
  *
- * Copyright (c) 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2012, 2013, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -13,7 +13,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "log.h"
 #include "path.h"
 #include "util.h"
 #include "wildmatch.h"

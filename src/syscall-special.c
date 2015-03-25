@@ -3,7 +3,7 @@
  *
  * Special system call handlers
  *
- * Copyright (c) 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -24,7 +24,6 @@
 #include "pathdecode.h"
 #include "proc.h"
 #include "bsd-compat.h"
-#include "log.h"
 #include "sockmap.h"
 
 #include <fcntl.h>
@@ -172,7 +171,7 @@ int sys_stat(syd_process_t *current)
 		/* no magic */
 		return 0;
 	} else if (MAGIC_ERROR(r)) {
-		log_warning("failed to cast magic=`%s': %s", path, magic_strerror(r));
+		say("failed to cast magic=`%s': %s", path, magic_strerror(r));
 		if (r == MAGIC_RET_PROCESS_TERMINATED) {
 			r = -ESRCH;
 		} else {
@@ -223,8 +222,8 @@ int sys_stat(syd_process_t *current)
 		}
 #else
 		if (current->abi != PINK_ABI_DEFAULT) {
-			log_warning("don't know the size of stat buffer for ABI %d", current->abi);
-			log_warning("skipped stat() buffer write");
+			say("don't know the size of stat buffer for ABI %d", current->abi);
+			say("skipped stat() buffer write");
 			goto skip_write;
 		}
 #endif

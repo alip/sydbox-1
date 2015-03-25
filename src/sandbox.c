@@ -3,7 +3,7 @@
  *
  * Sandboxing utilities
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -20,7 +20,6 @@
 #include "macro.h"
 #include "bsd-compat.h"
 #include "file.h"
-#include "log.h"
 #include "path.h"
 #include "pathdecode.h"
 #include "pathmatch.h"

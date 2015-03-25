@@ -1,7 +1,7 @@
 /*
  * sydbox/magic.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -81,13 +81,6 @@ static const struct key key_table[] = {
 		.name   = "trace",
 		.lname  = "core.trace",
 		.parent = MAGIC_KEY_CORE,
-		.type   = MAGIC_TYPE_OBJECT,
-	},
-
-	[MAGIC_KEY_LOG] = {
-		.name   = "log",
-		.lname  = "log",
-		.parent = MAGIC_KEY_NONE,
 		.type   = MAGIC_TYPE_OBJECT,
 	},
 
@@ -306,35 +299,6 @@ static const struct key key_table[] = {
 		.type   = MAGIC_TYPE_BOOLEAN,
 		.set    = magic_set_trace_use_toolong_hack,
 		.query  = magic_query_trace_use_toolong_hack,
-	},
-
-	[MAGIC_KEY_LOG_FILE] = {
-		.name   = "file",
-		.lname  = "log.file",
-		.parent = MAGIC_KEY_LOG,
-		.type   = MAGIC_TYPE_STRING,
-		.set    = magic_set_log_file,
-	},
-	[MAGIC_KEY_LOG_LEVEL] = {
-		.name   = "level",
-		.lname  = "log.level",
-		.parent = MAGIC_KEY_LOG,
-		.type   = MAGIC_TYPE_INTEGER,
-		.set    = magic_set_log_level,
-	},
-	[MAGIC_KEY_LOG_CONSOLE_FD] = {
-		.name   = "console_fd",
-		.lname  = "log.console_fd",
-		.parent = MAGIC_KEY_LOG,
-		.type   = MAGIC_TYPE_INTEGER,
-		.set    = magic_set_log_console_fd,
-	},
-	[MAGIC_KEY_LOG_CONSOLE_LEVEL] = {
-		.name   = "console_level",
-		.lname  = "log.console_level",
-		.parent = MAGIC_KEY_LOG,
-		.type   = MAGIC_TYPE_INTEGER,
-		.set    = magic_set_log_console_level,
 	},
 
 	[MAGIC_KEY_EXEC_KILL_IF_MATCH] = {

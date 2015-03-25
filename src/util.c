@@ -1,7 +1,7 @@
 /*
  * sydbox/util.c
  *
- * Copyright (c) 2010, 2011, 2012, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  * Based in part upon courier which is:
@@ -22,7 +22,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#include "log.h"
 #include "util.h"
 
 int safe_atoi(const char *s, int *ret_i)

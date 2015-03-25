@@ -3,7 +3,7 @@
  *
  * Match socket information
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -17,7 +17,6 @@
 #include <arpa/inet.h> /* inet_pton() */
 #include "pathmatch.h"
 #include "wildmatch.h"
-#include "log.h"
 #include "util.h"
 #include "xfunc.h"
 

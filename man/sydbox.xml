@@ -6,7 +6,7 @@
 ]>
 
 <!--
-   Copyright (c) 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+   Copyright (c) 2011, 2012, 2013, 2015 Ali Polatel <alip@exherbo.org>
    Distributed under the terms of the 3-clause BSD license.
 -->
 
@@ -653,58 +653,6 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option id="log-file">log/file</option></term>
-          <listitem>
-            <para>type: <type>string</type></para>
-            <para>default: <literal>(empty string)</literal></para>
-            <para>
-              A string specifying the path to the log file.
-              Empty string means no logging to file.
-            </para>
-            <para>See <xref linkend="logging"/> for more information.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="log-level">log/level</option></term>
-          <listitem>
-            <para> type: <type>integer</type></para>
-            <para>default: <varname>0</varname></para>
-            <para>
-              An integer specifying the log level.
-              Defaults to 0, only fatal errors.
-            </para>
-            <para>See <xref linkend="logging"/> for more information</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="log-console_fd">log/console_fd</option></term>
-          <listitem>
-            <para>type: <type>integer</type></para>
-            <para>default: <varname>2</varname> (stderr)</para>
-            <para>
-              An integer specifying the console log file descriptor.
-              Defaults to 2, standard error.
-            </para>
-            <para>See <xref linkend="logging"/> for more information</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><option id="log-console-level">log/console_level</option></term>
-          <listitem>
-            <para> type: <type>integer</type></para>
-            <para>default: <varname>1</varname></para>
-            <para>
-              An integer specifying the log level.
-              Defaults to 1, only fatal errors and access violations.
-            </para>
-            <para>See <xref linkend="logging"/> for more information</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
           <term><option id="exec-resume_if_match">exec/resume_if_match</option></term>
           <listitem>
             <para>type: <type>string-array</type></para>
@@ -956,90 +904,6 @@
         </varlistentry>
       </variablelist>
     </refsect2>
-  </refsect1>
-
-  <refsect1 id="logging">
-    <title>Logging</title>
-
-    <para>
-      Sydbox has a simple logging system. There are two log targets, <option>log/file</option> and
-      <option>log/console_fd</option>. Messages matching level <option>log/level</option> are logged to
-      <option>log/file</option>. Messages matching level <option>log/console_level</option> are logged to
-      <option>log/console_fd</option>. Below is a list of log levels and corresponding integers representing these
-      levels:
-    </para>
-
-    <table frame='all'>
-      <title>Sydbox Log Levels</title>
-      <tgroup cols='3' align='left' colsep='1' rowsep='1'>
-        <colspec colname='name' />
-        <colspec colname='value' />
-        <colspec colname='description' />
-        <thead>
-          <row>
-            <entry>Name</entry>
-            <entry>Value</entry>
-            <entry>Description</entry>
-          </row>
-        </thead>
-        <tbody>
-          <row>
-            <entry><varname>WARNING</varname></entry>
-            <entry>1</entry>
-            <entry>Log warnings</entry>
-          </row>
-          <row>
-            <entry><varname>ACCESS_V</varname></entry>
-            <entry>2</entry>
-            <entry>Log access violations</entry>
-          </row>
-          <row>
-            <entry><varname>INFO</varname></entry>
-            <entry>4</entry>
-            <entry>Log messages about program workflow</entry>
-          </row>
-          <row>
-            <entry><varname>ACCESS</varname></entry>
-            <entry>8</entry>
-            <entry>Log denied/granted access</entry>
-          </row>
-          <row>
-            <entry><varname>MAGIC</varname></entry>
-            <entry>16</entry>
-            <entry>Log magic commands</entry>
-          </row>
-          <row>
-            <entry><varname>CHECK</varname></entry>
-            <entry>32</entry>
-            <entry>Log path/socket-address lookups and checks</entry>
-          </row>
-          <row>
-            <entry><varname>MATCH</varname></entry>
-            <entry>64</entry>
-            <entry>Log pattern matching, socket-address matching</entry>
-          </row>
-          <row>
-            <entry><varname>TRACE</varname></entry>
-            <entry>128</entry>
-            <entry>Log trace calls</entry>
-          </row>
-          <row>
-            <entry><varname>SYSCALL</varname></entry>
-            <entry>256</entry>
-            <entry>Log intercepted system calls</entry>
-          </row>
-          <row>
-            <entry><varname>SYS_ALL</varname></entry>
-            <entry>2048</entry>
-            <entry>Log all system calls</entry>
-          </row>
-        </tbody>
-      </tgroup>
-    </table>
-
-    <note>
-      <para>To select multiple debug levels, you can add them together.</para>
-    </note>
   </refsect1>
 
   <refsect1 id="sandboxing">
@@ -1440,7 +1304,7 @@
   <refsect1 id="copyright">
     <title>COPYRIGHT</title>
 
-    <para>Copyright &#169; 2010, 2011, 2012, 2013 Ali Polatel <email>alip@exherbo.org</email></para>
+    <para>Copyright &#169; 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <email>alip@exherbo.org</email></para>
   </refsect1>
 </refentry>
 <!-- vim: set ts=2 sts=2 sw=2 et tw=120 nowrap spell spelllang=en : -->

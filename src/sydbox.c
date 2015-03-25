@@ -1,7 +1,7 @@
 /*
  * sydbox/sydbox.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Based in part upon strace which is:
  *   Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
  *   Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
@@ -32,7 +32,6 @@
 #include "file.h"
 #include "pathlookup.h"
 #include "proc.h"
-#include "log.h"
 #include "util.h"
 #if SYDBOX_HAVE_SECCOMP
 #include "seccomp.h"
@@ -721,7 +720,6 @@ static void init_early(void)
 	config_init();
 	dump(DUMP_INIT);
 	syd_abort_func(kill_all);
-	log_init(NULL);
 }
 
 static void init_signals(void)
@@ -903,12 +901,9 @@ static int event_exec(syd_process_t *current)
 	const char *match;
 
 	if (sydbox->execve_wait) {
-		log_info("[wait_execve]: execve() ptrace trap");
 #if SYDBOX_HAVE_SECCOMP
-		if (sydbox->config.use_seccomp) {
-			log_info("[wait_execve]: sandboxing started");
+		if (sydbox->config.use_seccomp)
 			sydbox->execve_wait = false;
-		}
 #endif
 		return 0;
 	}
@@ -927,16 +922,16 @@ static int event_exec(syd_process_t *current)
 	r = 0;
 	if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_kill_if_match,
 			   current->abspath, &match)) {
-		log_warning("kill_if_match pattern=`%s' matches execve path=`%s'",
-			    match, current->abspath);
-		log_warning("killing process");
+		say("kill_if_match pattern=`%s' matches execve path=`%s'",
+		    match, current->abspath);
+		say("killing process");
 		syd_trace_kill(current, SIGKILL);
 		return -ESRCH;
 	} else if (acl_match_path(ACL_ACTION_NONE, &sydbox->config.exec_resume_if_match,
 				  current->abspath, &match)) {
-		log_warning("resume_if_match pattern=`%s' matches execve path=`%s'",
-			    match, current->abspath);
-		log_warning("detaching from process");
+		say("resume_if_match pattern=`%s' matches execve path=`%s'",
+		    match, current->abspath);
+		say("detaching from process");
 		syd_trace_detach(current, 0);
 		return -ESRCH;
 	}
@@ -994,10 +989,8 @@ static int event_syscall(syd_process_t *current)
 			return 0;
 #endif
 		if (entering(current)) {
-			log_info("[wait_execve]: entering execve()");
 			current->flags |= SYD_IN_SYSCALL;
 		} else {
-			log_info("[wait_execve]: exiting execve(), sandboxing started");
 			current->flags &= ~SYD_IN_SYSCALL;
 			sydbox->execve_wait = false;
 		}
@@ -1039,10 +1032,8 @@ static int event_seccomp(syd_process_t *current)
 {
 	int r;
 
-	if (sydbox->execve_wait) {
-		log_info("[wait_execve]: execve() seccomp trap");
-		return 0;
-	}
+	if (sydbox->execve_wait)
+		return 0; /* execve() seccomp trap */
 
 	if ((r = syd_regset_fill(current)) < 0)
 		return r; /* process dead */
@@ -1104,7 +1095,8 @@ static int trace(void)
 				 * fall through...
 				 */
 			default:
-				err_fatal(wait_errno, "wait failed");
+				errno = wait_errno;
+				die_errno("wait failed");
 				goto cleanup;
 			}
 		}
@@ -1113,7 +1105,7 @@ static int trace(void)
 			remove_process(pid, status);
 			continue;
 		} else if (!WIFSTOPPED(status)) {
-			log_fatal("PANIC: not stopped (status:0x%04x)", status);
+			say("PANIC: not stopped (status:0x%04x)", status);
 			panic(current);
 			continue;
 		}
@@ -1163,7 +1155,7 @@ static int trace(void)
 			if (os_release >= KERNEL_VERSION(3,0,0)) {
 				r = pink_trace_geteventmsg(pid, (unsigned long *) &old_tid);
 				if (r < 0 || old_tid <= 0)
-					err_fatal(-r, "old_pid not available after execve for pid:%u", pid);
+					die("old_pid not available after execve for pid:%u", pid);
 			}
 
 			if (old_tid > 0 && pid != old_tid) {
@@ -1314,8 +1306,6 @@ cleanup:
 			r = 128 + sydbox->exit_code;
 	}
 
-	log_info("return value %d (%s access violations)",
-		 r, sydbox->violation ? "due to" : "no");
 	return r;
 }
 
@@ -1420,7 +1410,6 @@ void cleanup(void)
 	sydbox = NULL;
 
 	systable_free();
-	log_close();
 }
 
 int main(int argc, char **argv)
@@ -1515,11 +1504,11 @@ int main(int argc, char **argv)
 			ptrace_options |= PINK_TRACE_OPTION_SECCOMP;
 			ptrace_default_step = SYD_STEP_RESUME;
 		} else {
-			log_warning("Linux-3.5.0 required for seccomp support, disabling");
+			/* say("Linux-3.5.0 required for seccomp support, disabling"); */
 			sydbox->config.use_seccomp = false;
 		}
 #else
-		log_info("seccomp not supported, disabling");
+		/* say("seccomp not supported, disabling"); */
 		sydbox->config.use_seccomp = false;
 #endif
 	}
@@ -1527,7 +1516,7 @@ int main(int argc, char **argv)
 #if PINK_HAVE_SEIZE
 		post_attach_sigstop = 0; /* this sets syd_use_seize to 1 */
 #else
-		log_info("seize not supported, disabling");
+		/* say("seize not supported, disabling"); */
 		sydbox->config.use_seize = false;
 #endif
 	}

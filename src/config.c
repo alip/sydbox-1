@@ -1,7 +1,7 @@
 /*
  * sydbox/config.c
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2015 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the 3-clause BSD license
  */
 
@@ -14,7 +14,6 @@
 #include <unistd.h>
 #include "file.h"
 #include "macro.h"
-#include "log.h"
 
 static int filename_api(const char *filename, unsigned *api)
 {
@@ -69,10 +68,6 @@ void config_init(void)
 
 void config_done(void)
 {
-	if (sydbox->config.log_file) {
-		free(sydbox->config.log_file);
-		sydbox->config.log_file = NULL;
-	}
 	sydbox->config.magic_core_allow = true;
 }
 

@@ -3,7 +3,7 @@
  *
  * /proc related utilities
  *
- * Copyright (c) 2010, 2011, 2012, 2013, 2014 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014, 2015 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright (C) 2010 Lennart Poettering
  * Distributed under the terms of the GNU Lesser General Public License v2.1 or later
@@ -27,7 +27,6 @@
 
 #include "file.h"
 #include "macro.h"
-#include "log.h"
 #include "util.h"
 #include "toolong.h"
 
