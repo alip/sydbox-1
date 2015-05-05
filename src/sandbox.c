@@ -469,7 +469,6 @@ int box_check_socket(syd_process_t *current, sysinfo_t *info)
 	assert(info->access_list);
 	assert(info->access_filter);
 
-	r = 0;
 	pid = current->pid;
 	abspath = NULL;
 	psa = xmalloc(sizeof(struct pink_sockaddr));

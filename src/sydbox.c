@@ -469,10 +469,8 @@ static void dump_clone_flags(int flags)
 	}
 #endif /* CLONE_VFORK */
 #ifdef CLONE_VM
-	if (flags & CLONE_VM) {
+	if (flags & CLONE_VM)
 		fprintf(stderr, "%sCLONE_VM", (r == 1) ? "|" : "");
-		r = 1;
-	}
 #endif /* CLONE_VM */
 }
 
@@ -532,10 +530,8 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "%sDENY_SYSCALL", (r == 1) ? "|" : "");
 		r = 1;
 	}
-	if (current->flags & SYD_STOP_AT_SYSEXIT) {
+	if (current->flags & SYD_STOP_AT_SYSEXIT)
 		fprintf(stderr, "%sSTOP_AT_SYSEXIT", (r == 1) ? "|" : "");
-		r = 1;
-	}
 	fprintf(stderr, "%s\n", CN);
 	if (current->clone_flags) {
 		fprintf(stderr, "\t%sClone flags: ", CN);
@@ -562,10 +558,8 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 				current->shm.clone_files ? current->shm.clone_files->refcnt : 0);
 			r = 1;
 		}
-		if (current->clone_flags & CLONE_VFORK) {
+		if (current->clone_flags & CLONE_VFORK)
 			fprintf(stderr, "%sCLONE_VFORK", (r == 1) ? "|" : "");
-			r = 1;
-		}
 		fprintf(stderr, "%s\n", CN);
 	}
 	if (current->new_clone_flags) {
