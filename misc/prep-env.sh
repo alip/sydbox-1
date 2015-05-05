@@ -12,7 +12,7 @@ CFLAGS="${CFLAGS} -D__PINK_IS_BEHIND_THE_WALL"
 export CFLAGS
 
 if [[ ! -e /etc/exherbo-release ]]; then
-    PKG_CONFIG_PATH="$HOME/pink/lib/pkgconfig:$PKG_CONFIG_PATH"
+    PKG_CONFIG_PATH="$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH"
     export PKG_CONFIG_PATH
 fi
 
