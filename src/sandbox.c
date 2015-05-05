@@ -247,7 +247,7 @@ static int box_check_ftype(const char *path, sysinfo_t *info)
 
 	if (info->cache_statbuf) {
 		/* use cached status information */
-		memcpy(&buf, info->cache_statbuf, 0);
+		memcpy(&buf, info->cache_statbuf, sizeof(struct stat));
 		stat_ret = 0;
 	} else {
 		stat_ret = rflags & RPATH_NOFOLLOW ? lstat(path, &buf)
