@@ -1081,16 +1081,7 @@ static int trace(void)
 			switch (wait_errno) {
 			case EINTR:
 				continue;
-			case ECHILD:
-				if (process_count() == 0)
-					goto cleanup;
-				/* If process count > 0, ECHILD is not expected,
-				 * treat it as any other error here.
-				 * fall through...
-				 */
 			default:
-				errno = wait_errno;
-				die_errno("wait failed");
 				goto cleanup;
 			}
 		}
