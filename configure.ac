@@ -270,7 +270,7 @@ PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],,
 		  AC_MSG_ERROR([sydbox requires pinktrace-$PINKTRACE_REQUIRED or newer]))
 
 AC_MSG_CHECKING([whether pinktrace supports PTRACE_SEIZE])
-PINKTRACE_HAVE_SEIZE=`pkg-config --variable=PINK_HAVE_SEIZE pinktrace`
+PINKTRACE_HAVE_SEIZE=`${PKG_CONFIG} --variable=PINK_HAVE_SEIZE pinktrace`
 if test x"$PINKTRACE_HAVE_SEIZE" = x"1"; then
 	AC_MSG_RESULT([yes])
 else
