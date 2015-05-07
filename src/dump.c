@@ -73,6 +73,7 @@ pink_wrap(trace_detach(pid_t pid, int sig), trace_detach, int, pid, sig)
 pink_wrap(trace_seize(pid_t pid, int options), trace_seize, int, pid, options)
 pink_wrap(trace_interrupt(pid_t pid), trace_interrupt, int, pid)
 pink_wrap(trace_listen(pid_t pid), trace_listen, int, pid)
+pink_wrap(write_syscall(pid_t pid, void *regset, long sysnum), write_syscall, int, pid, regset, sysnum)
 
 static void dump_flush(void)
 {
@@ -547,6 +548,23 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 
 		fprintf(fp, ","J(options));
 		dump_ptrace_options(options);
+	} else if (streq(name, "write_syscall")) {
+		const char *sysname;
+		struct pink_regset *regset = va_arg(ap, struct pink_regset *);
+		long sysnum = va_arg(ap, long);
+		syd_process_t *p = lookup_process(pid);
+
+		fprintf(fp, ","J(sysnum)"%ld", sysnum);
+		fprintf(fp, ","J(sysname));
+		if (p) {
+			sysname = pink_name_syscall(sysnum, p->abi);
+			if (sysname)
+				fprintf(fp, "\"%s\"", sysname);
+			else
+				dump_null();
+		} else {
+			dump_null();
+		}
 	}
 
 	fprintf(fp, "}");

@@ -143,7 +143,8 @@ DUMP_LINKER_FLAGS= \
 	  -Wl,--wrap=pink_trace_detach \
 	  -Wl,--wrap=pink_trace_seize \
 	  -Wl,--wrap=pink_trace_interrupt \
-	  -Wl,--wrap=pink_trace_listen
+	  -Wl,--wrap=pink_trace_listen \
+	  -Wl,--wrap=pink_write_syscall
 
 syddir=$(libexecdir)/$(PACKAGE)/dump
 syd_SCRIPTS= shoebox
