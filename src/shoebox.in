@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # coding: utf-8
 
 import os, sys, re, json, argparse
@@ -184,10 +184,10 @@ class ShoeBox:
 
     def readlines(self, limit = 0):
         if limit == 0:
-            for line in self.fp.readlines():
+            for line in self.fp:
                 yield line
         elif limit > 0:
-            for line in self.fp.readlines():
+            for line in self.fp:
                 yield line
                 limit -= 1
                 if limit == 0:
@@ -196,9 +196,11 @@ class ShoeBox:
             self.fp.seek(0, os.SEEK_END)
             fpos = self.fp.tell()
             self.fp.seek(max(fpos - (2048 * abs(limit)), self.head), os.SEEK_SET)
-            lines = self.fp.readlines()[limit:]
-            for line in lines:
+            for line in self.fp:
                 yield line
+                limit += 1
+                if limit == 0:
+                    break
 
     def read_events(self, limit = 0):
         for json_line in self.readlines(limit):
