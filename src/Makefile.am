@@ -170,7 +170,7 @@ sydbox_dump_LDFLAGS= $(DUMP_LINKER_FLAGS)
 # to use sydbox-dump
 install-data-hook:
 	cd $(DESTDIR)$(syddir) && \
-		$(LN_S) sydbox-dump sydbox
+		$(LN_S) -f sydbox-dump sydbox
 
 SPARSE=sparse
 SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \
