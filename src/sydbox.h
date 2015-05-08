@@ -49,7 +49,6 @@
 #define SYD_STOP_AT_SYSEXIT	00020 /* seccomp: stop at system call exit */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
-#define SYD_PPID_ORPHAN		-0xbad /* special parent process id for orphans */
 
 /* ANSI colour codes */
 #define ANSI_NORMAL		"[00;00m"
@@ -523,6 +522,9 @@ typedef struct {
 	pid_t execve_pid;
 	int exit_code;
 
+	/* Child called clone(2) */
+	pid_t clone_pid;
+
 	/* This is true if an access violation has occured, false otherwise. */
 	bool violation;
 
@@ -912,6 +914,8 @@ int sys_dup(syd_process_t *current);
 int sys_dup3(syd_process_t *current);
 int sys_fcntl(syd_process_t *current);
 
+int sys_fork(syd_process_t *current);
+int sys_vfork(syd_process_t *current);
 int sys_clone(syd_process_t *current);
 int sys_execve(syd_process_t *current);
 int sys_stat(syd_process_t *current);

@@ -162,7 +162,7 @@ static syd_process_t *new_thread(pid_t pid, short flags)
 		return NULL;
 
 	thread->pid = pid;
-	thread->ppid = SYD_PPID_ORPHAN;
+	thread->ppid = SYD_PPID_NONE;
 
 	if ((r = pink_regset_alloc(&thread->regset)) < 0) {
 		free(thread);
@@ -258,6 +258,66 @@ static inline void save_exit_status(int status)
 		save_exit_signal(SIGKILL); /* Assume SIGKILL */
 }
 
+static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
+{
+	bool share_thread, share_fs, share_files;
+
+	if (!parent) {
+		P_CWD(current) = xgetcwd(); /* FIXME: too long hack changes
+					       directories, this may not work! */
+		copy_sandbox(P_BOX(current), box_current(NULL));
+		return;
+	}
+
+	share_thread = share_fs = share_files = false;
+	if (parent->new_clone_flags & CLONE_THREAD)
+		share_thread = true;
+	if (parent->new_clone_flags & CLONE_FS)
+		share_fs = true;
+	if (parent->new_clone_flags & CLONE_FILES)
+		share_files = true;
+
+	/*
+	 * Link together for memory sharing, as necessary
+	 * Note: thread in this context is any process which shares memory.
+	 * (May not always be a real thread: (e.g. vfork)
+	 */
+	current->clone_flags = parent->new_clone_flags;
+
+	if (share_thread) {
+		current->shm.clone_thread = parent->shm.clone_thread;
+		P_CLONE_THREAD_RETAIN(current);
+	} else {
+		new_shared_memory_clone_thread(current);
+		copy_sandbox(P_BOX(current), box_current(parent));
+	}
+
+	if (share_fs) {
+		current->shm.clone_fs = parent->shm.clone_fs;
+		P_CLONE_FS_RETAIN(current);
+	} else {
+		new_shared_memory_clone_fs(current);
+		P_CWD(current) = xstrdup(P_CWD(parent));
+	}
+
+	if (share_files) {
+		current->shm.clone_files = parent->shm.clone_files;
+		P_CLONE_FILES_RETAIN(current);
+	} else {
+		new_shared_memory_clone_files(current);
+	}
+}
+
+static void init_process_data(syd_process_t *current, syd_process_t *parent)
+{
+	init_shareable_data(current, parent);
+
+	if (sydbox->config.whitelist_per_process_directories &&
+	    (!parent || current->pid != parent->pid)) {
+		procadd(&sydbox->config.hh_proc_pid_auto, current->pid);
+	}
+}
+
 void bury_process(syd_process_t *p)
 {
 	pid_t pid;
@@ -267,10 +327,14 @@ void bury_process(syd_process_t *p)
 	pid = p->pid;
 	dump(DUMP_THREAD_FREE, pid);
 
-	if (p->abspath)
+	if (p->abspath) {
 		free(p->abspath);
-	if (p->regset)
+		p->abspath = NULL;
+	}
+	if (p->regset) {
 		pink_regset_free(p->regset);
+		p->regset = NULL;
+	}
 
 	process_remove(p);
 
@@ -279,10 +343,36 @@ void bury_process(syd_process_t *p)
 	P_CLONE_FS_RELEASE(p);
 	P_CLONE_FILES_RELEASE(p);
 
-	free(p);
-
 	if (sydbox->config.whitelist_per_process_directories)
 		procdrop(&sydbox->config.hh_proc_pid_auto, pid);
+
+	free(p);
+}
+
+/* Drop leader, switch to the thread, reusing leader's tid */
+void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_thread)
+{
+	process_remove(leader);
+	process_remove(execve_thread);
+
+	P_CLONE_THREAD_RELEASE(leader);
+	P_CLONE_FS_RELEASE(leader);
+	P_CLONE_FILES_RELEASE(leader);
+	if (execve_thread->abspath)
+		free(execve_thread->abspath);
+	if (execve_thread->regset)
+		pink_regset_free(execve_thread->regset);
+	if (sydbox->config.whitelist_per_process_directories)
+		procdrop(&sydbox->config.hh_proc_pid_auto, execve_thread->pid);
+
+	execve_thread->pid = leader->pid;
+	execve_thread->ppid = leader->ppid;
+	execve_thread->clone_flags = leader->clone_flags;
+	execve_thread->abspath = leader->abspath;
+	execve_thread->regset = leader->regset;
+
+	free(leader);
+	process_add(execve_thread);
 }
 
 static void remove_process(pid_t pid, int status)
@@ -290,11 +380,8 @@ static void remove_process(pid_t pid, int status)
 	syd_process_t *p;
 
 	p = lookup_process(pid);
-	if (!p)
-		return;
-
-	bury_process(p);
-
+	if (p)
+		bury_process(p);
 	if (pid == sydbox->execve_pid)
 		save_exit_status(status);
 }
@@ -342,6 +429,10 @@ static void dump_clone_flags(int flags)
 {
 	int r = 0;
 
+	if (flags & SIGCHLD) {
+		fprintf(stderr, "SIGCHLD");
+		r = 1;
+	}
 #ifdef CLONE_CHILD_CLEARTID
 	if (flags & CLONE_CHILD_CLEARTID) {
 		fprintf(stderr, "%sCLONE_CHILD_CLEARTID", (r == 1) ? "|" : "");
@@ -711,6 +802,7 @@ static void init_early(void)
 	sydbox->violation = false;
 	sydbox->execve_wait = false;
 	sydbox->exit_code = EXIT_SUCCESS;
+	sydbox->clone_pid = 0;
 	config_init();
 	dump(DUMP_INIT);
 	syd_abort_func(kill_all);
@@ -790,66 +882,6 @@ static int check_interrupt(void)
 	return r;
 }
 
-static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
-{
-	bool share_thread, share_fs, share_files;
-
-	if (!parent) {
-		P_CWD(current) = xgetcwd(); /* FIXME: toolong hack changes
-					       directories, this may not work! */
-		copy_sandbox(P_BOX(current), box_current(NULL));
-		return;
-	}
-
-	share_thread = share_fs = share_files = false;
-	if (parent->new_clone_flags & CLONE_THREAD)
-		share_thread = true;
-	if (parent->new_clone_flags & CLONE_FS)
-		share_fs = true;
-	if (parent->new_clone_flags & CLONE_FILES)
-		share_files = true;
-
-	/*
-	 * Link together for memory sharing, as necessary
-	 * Note: thread in this context is any process which shares memory.
-	 * (May not always be a real thread: (e.g. vfork)
-	 */
-	current->clone_flags = parent->new_clone_flags;
-
-	if (share_thread) {
-		current->shm.clone_thread = parent->shm.clone_thread;
-		P_CLONE_THREAD_RETAIN(current);
-	} else {
-		new_shared_memory_clone_thread(current);
-		copy_sandbox(P_BOX(current), box_current(parent));
-	}
-
-	if (share_fs) {
-		current->shm.clone_fs = parent->shm.clone_fs;
-		P_CLONE_FS_RETAIN(current);
-	} else {
-		new_shared_memory_clone_fs(current);
-		P_CWD(current) = xstrdup(P_CWD(parent));
-	}
-
-	if (share_files) {
-		current->shm.clone_files = parent->shm.clone_files;
-		P_CLONE_FILES_RETAIN(current);
-	} else {
-		new_shared_memory_clone_files(current);
-	}
-}
-
-static void init_process_data(syd_process_t *current, syd_process_t *parent)
-{
-	init_shareable_data(current, parent);
-
-	if (sydbox->config.whitelist_per_process_directories &&
-	    (!parent || current->pid != parent->pid)) {
-		procadd(&sydbox->config.hh_proc_pid_auto, current->pid);
-	}
-}
-
 static int event_startup(syd_process_t *current)
 {
 	if (!(current->flags & SYD_STARTUP))
@@ -870,6 +902,11 @@ static int event_clone(syd_process_t *current)
 
 	assert(current);
 
+#if 0
+	if (!current->new_clone_flags)
+		return 0;
+#endif
+
 	r = pink_trace_geteventmsg(current->pid, (unsigned long *)&cpid_l);
 	if (r < 0 || cpid_l <= 0) {
 		bury_process(current);
@@ -877,13 +914,11 @@ static int event_clone(syd_process_t *current)
 	}
 
 	child = lookup_process(cpid_l);
-	if (child) { /* Orphan finds mother! */
-		child->ppid = current->pid;
-	} else { /* Baby not yet born! */
-		child = new_thread_or_kill(cpid_l, post_attach_sigstop);
-		child->ppid = current->pid;
-		init_process_data(child, current);
-	}
+	assert(!child);
+
+	child = new_thread_or_kill(cpid_l, post_attach_sigstop);
+	child->ppid = current->pid;
+	init_process_data(child, current);
 	current->new_clone_flags = 0;
 
 	return 0;
@@ -909,6 +944,15 @@ static int event_exec(syd_process_t *current)
 		P_BOX(current)->magic_lock = LOCK_SET;
 	}
 
+	/* Drop all threads except this one */
+	syd_process_t *node, *tmp;
+	process_iter(node, tmp) {
+		if (current->pid != node->pid &&
+		    current->shm.clone_thread == node->shm.clone_thread) {
+			bury_process(node); /* process_iter is delete-safe. */
+		}
+	}
+
 	if (!current->abspath) /* nothing left to do */
 		return 0;
 
@@ -930,42 +974,6 @@ static int event_exec(syd_process_t *current)
 		return -ESRCH;
 	}
 	/* execve path does not match if_match patterns */
-
-	char *new_cwd;
-
-	if (P_CLONE_THREAD_REFCNT(current) > 1) {
-		struct syd_process_shared_clone_thread *old = current->shm.clone_thread;
-		struct syd_process_shared_clone_thread *new;
-
-		/* XXX: This is way too ugly. */
-		new_shared_memory_clone_thread(current);
-		new = current->shm.clone_thread;
-		copy_sandbox(P_BOX(current), old->box);
-		current->shm.clone_thread = old;
-		P_CLONE_THREAD_RELEASE(current);
-		current->shm.clone_thread = new;
-	}
-
-	if (P_CLONE_FS_REFCNT(current) > 1) {
-		new_cwd = xstrdup(P_CWD(current));
-		P_CLONE_FS_RELEASE(current);
-		new_shared_memory_clone_fs(current);
-		P_CWD(current) = new_cwd;
-	}
-
-	if (P_CLONE_FILES_REFCNT(current) > 1) {
-		P_CLONE_FILES_RELEASE(current);
-		new_shared_memory_clone_files(current);
-	} else {
-		if (P_SAVEBIND(current)) {
-			free_sockinfo(P_SAVEBIND(current));
-			P_SAVEBIND(current) = NULL;
-		}
-		if (P_SOCKMAP(current)) {
-			sockmap_destroy(&P_SOCKMAP(current));
-			P_SOCKMAP(current) = NULL;
-		}
-	}
 
 	free(current->abspath);
 	current->abspath = NULL;
@@ -1048,7 +1056,7 @@ static int trace(void)
 	int r;
 	int status, sig;
 	unsigned event;
-	syd_process_t *current, *parent;
+	syd_process_t *current;
 	int syscall_trap_sig;
 
 	syscall_trap_sig = sydbox->trace_options & PINK_TRACE_OPTION_SYSGOOD
@@ -1067,11 +1075,17 @@ static int trace(void)
 		if ((r = check_interrupt()) != 0)
 			return r;
 
-		current = NULL;
+		if (!sydbox->clone_pid) {
+			current = NULL;
+		} else {
+			current = lookup_process(sydbox->clone_pid);
+			assert(current);
+			sydbox->clone_pid = 0;
+		}
 
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
 		errno = 0;
-		pid = waitpid(-1, &status, __WALL);
+		pid = waitpid(current ? current->pid : -1, &status, __WALL);
 		wait_errno = errno;
 		sigprocmask(SIG_SETMASK, &blocked_set, NULL);
 
@@ -1081,6 +1095,15 @@ static int trace(void)
 			switch (wait_errno) {
 			case EINTR:
 				continue;
+			case ECHILD:
+				if (current) {
+					/* Special case, clone process died.
+					 * (possibly due to SIGKILL)
+					 */
+					remove_process(current->pid, 0);
+					continue;
+				}
+				/* fall through */
 			default:
 				goto cleanup;
 			}
@@ -1098,25 +1121,9 @@ static int trace(void)
 		event = pink_event_decide(status);
 
 		/* If we are here we *must* have a process entry! */
-		current = lookup_process(pid);
 		if (!current) {
-			/* Process arrived before EVENT_CLONE.
-			 * For practical reasons, we inherit the sandbox from ppid.
-			 * FIXME: Do we need to assert SIGSTOP, EVENT_STOP here?
-			 */
-			current = new_thread_or_kill(pid, post_attach_sigstop);
-			if ((r = syd_proc_ppid(pid, &current->ppid)) < 0) {
-				/* Assume orphan = wait for EVENT_CLONE */
-				current->ppid = SYD_PPID_ORPHAN;
-			} else {
-				parent = lookup_process(current->ppid);
-				if (!parent) /* Assume orphan */
-					current->ppid = SYD_PPID_ORPHAN;
-				else {
-					init_process_data(current, parent);
-					parent->new_clone_flags = 0;
-				}
-			}
+			current = lookup_process(pid);
+			assert(current);
 		}
 
 		/* Under Linux, execve changes pid to thread leader's pid,
@@ -1147,10 +1154,7 @@ static int trace(void)
 				execve_thread = lookup_process(old_tid);
 				assert(execve_thread);
 
-				/* Drop leader, switch to the thread, reusing leader's tid */
-				execve_thread->pid = current->pid;
-				execve_thread->ppid = current->ppid;
-				execve_thread->clone_flags = current->clone_flags;
+				switch_execve_leader(current, execve_thread);
 				current = execve_thread;
 			}
 

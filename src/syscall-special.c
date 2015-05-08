@@ -408,14 +408,38 @@ int sysx_fcntl(syd_process_t *current)
 	return 0;
 }
 
+int sys_fork(syd_process_t *current)
+{
+	sydbox->clone_pid = current->pid;
+	if (current->new_clone_flags == 0)
+		current->new_clone_flags = SIGCHLD;
+	return 0;
+}
+
+int sys_vfork(syd_process_t *current)
+{
+	sydbox->clone_pid = current->pid;
+	if (current->new_clone_flags == 0)
+		current->new_clone_flags = (CLONE_VM|CLONE_VFORK|SIGCHLD);
+	return 0;
+}
+
 int sys_clone(syd_process_t *current)
 {
 	int r;
-	long flags;
+	unsigned long flags;
 
-	if ((r = syd_read_argument(current, 0, &flags)) < 0)
+	current->new_clone_flags = 0;
+	if ((r = syd_read_argument(current, 0, (long *)&flags)) < 0)
 		return r;
 	current->new_clone_flags = flags;
+
+	if (flags & CLONE_VFORK)
+		return sys_vfork(current);
+	else if ((flags & CSIGNAL) == SIGCHLD)
+		return sys_fork(current);
+
+	sydbox->clone_pid = current->pid;
 
 	return 0;
 }

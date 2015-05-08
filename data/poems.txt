@@ -23,3 +23,32 @@ Poem:
 	their unborn babies!
 
 		-alip
+
+From: zlin, kimrhh, moben and many more.
+Date: 2014-?-?
+Bug: Problems in sandbox inheritance & execve leader switch caused paludis tests' to fail (bad interpreter: ENOENT)
+Bug: ^^ caused parallel builds with waf to fail (Bug 411 on bugs.e.o)
+Poem:
+	-- Blind
+
+	I encouraged slavery
+	against firefly’s bravery
+	her light’s a cheap delivery
+	Dark murders the scenery
+
+	I bribed the sun
+	to bring the dawn
+	she’s crowned, no longer a pawn
+	yet torn apart, no longer one
+
+	I fooled the moon
+	not to wake up soon
+	behind my Eyes, her doom
+	a dream, at the brightest noon
+
+	above the shoulders of flowers
+	the questions planted answers
+	just what dissuaded the brightness
+	from filling my eyes with tears?
+
+		-alip
