@@ -29,6 +29,7 @@
 #define SYD_PID_MAX SYD_INT_MAX
 #define SYD_PROC_MAX (sizeof("/proc/%u") + SYD_PID_MAX)
 #define SYD_PROC_FD_MAX (SYD_PROC_MAX + sizeof("/fd") + SYD_PID_MAX)
+#define SYD_PROC_TASK_MAX (SYD_PROC_MAX + sizeof("/task") + SYD_PID_MAX)
 
 static void chomp(char *str)
 {
@@ -327,4 +328,19 @@ int syd_proc_environ(pid_t pid)
 
 	fclose(f);
 	return r;
+}
+
+int syd_proc_task_find(pid_t pid, pid_t pid_task)
+{
+	int r;
+	char p[SYD_PROC_TASK_MAX + 1 /* '/' */ + SYD_PID_MAX];
+
+	if (pid <= 0 || pid_task <= 0)
+		return -EINVAL;
+
+	r = snprintf(p, sizeof(p), "/proc/%u/task/%u", pid, pid_task);
+	if (r < 0 || (size_t)r >= sizeof(p))
+		return -EINVAL;
+
+	return -access(p, F_OK);
 }

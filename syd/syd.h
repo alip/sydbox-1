@@ -24,6 +24,8 @@ int syd_proc_environ(pid_t pid);
 int syd_proc_fd_open(pid_t pid);
 int syd_proc_fd_path(pid_t pid, int fd, char **dst);
 
+int syd_proc_task_find(pid_t pid, pid_t task_pid);
+
 typedef void (*syd_time_prof_func_t) (void);
 struct timespec syd_time_diff(const struct timespec *t1, const struct timespec *t2);
 
