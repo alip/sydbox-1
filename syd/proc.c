@@ -65,7 +65,7 @@ int syd_proc_open(pid_t pid)
 	if (r < 0 || (size_t)r >= sizeof(p))
 		return -EINVAL;
 
-	fd = open(p, O_PATH|O_DIRECTORY|O_NOFOLLOW);
+	fd = open(p, O_PATH|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
 	return (fd < 0) ? -errno : fd;
 }
 
