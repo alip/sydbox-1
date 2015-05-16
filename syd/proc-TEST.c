@@ -12,11 +12,49 @@
 static void test_setup(void)
 {
 	system("mkdir -p -m 700 ./tmp");
+	system("cp -p ./check-pause './tmp/check-Good Morning'");
 }
 
 static void test_teardown(void)
 {
 	system("rm -fr ./tmp");
+}
+
+static void test_proc_ppid(void)
+{
+	pid_t pid, ppid_real;
+	char comm_real[] = "./tmp/check-Good Morning";
+
+	ppid_real = getpid();
+	pid = fork();
+	if (pid < 0) {
+		fail_msg("fork failed: errno:%d %s", errno, strerror(errno));
+		return;
+	} else if (pid == 0) {
+		execl("./tmp/check-Good Morning", comm_real, (char *)NULL);
+		_exit(1);
+	} else {
+		pid_t ppid, cpid = -1;
+		int r, status;
+
+		cpid = waitpid(pid, &status, WUNTRACED);
+		if (cpid < 0) {
+			fail_msg("waitpid failed: errno:%d %s", errno, strerror(errno));
+			return;
+		} else if (!WIFSTOPPED(status)) {
+			fail_msg("process didn't stop: %#x", status);
+			return;
+		}
+
+		r = syd_proc_ppid(cpid, &ppid);
+		if (r < 0)
+			fail_msg("syd_proc_ppid failed: %d %s", errno, strerror(errno));
+		else if (ppid != ppid_real)
+			fail_msg("ppid: %d != %d(real)", ppid, ppid_real);
+
+		kill(cpid, SIGKILL);
+	}
+
 }
 
 static void test_proc_comm(void)
@@ -225,7 +263,6 @@ out:
 	}
 }
 
-
 static void test_fixture_proc(void)
 {
 	test_fixture_start();
@@ -233,6 +270,7 @@ static void test_fixture_proc(void)
 	fixture_setup(test_setup);
 	fixture_teardown(test_teardown);
 
+	run_test(test_proc_ppid);
 	run_test(test_proc_comm);
 	run_test(test_proc_cmdline);
 	run_test(test_proc_fd_path);

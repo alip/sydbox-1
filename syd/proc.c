@@ -109,12 +109,36 @@ int syd_proc_ppid(pid_t pid, pid_t *ppid)
 		return -save_errno;
 	}
 
-	if (fscanf(f,
-		   "%*d" /* pid */
-		   " %*32s" /* comm */
-		   " %*c" /* state */
-		   " %d", /* ppid ! */
-		   &ppid_r) != 1) {
+	/* Careful here: `comm' may have spaces or numbers ( or '()' ?) in it!
+	 * e.g: perl-5.10.2 test-suite t/op/magic.t -> "Good Morning"
+	 */
+	/* L_MAX is:
+	 * 2 * SYD_PID_MAX: Process PID + Process Parent PID
+	 * 16: `comm' maximum length (defined as char comm[17] in kernel
+	 *           task_struct
+	 * 6: The rest: PID + ' (' + comm + ') ' + state[1] + ' ' + PID
+	 * 1: '\0'
+	 */
+#define L_MAX ((2*SYD_PID_MAX) + 16 + 6 + 1)
+	int i;
+	char *c, l[L_MAX];
+
+	if (fgets(l, L_MAX - 2, f) == NULL) {
+		fclose(f);
+		return -EINVAL;
+	}
+	l[L_MAX - 1] = '\0';
+
+	/* Search for ')' from the end. */
+	for (i = L_MAX - 2; i > 0 && l[i] != ')'; i--);
+
+	if (i <= 0 || (i + 4 >= L_MAX)) {
+		fclose(f);
+		return -EINVAL;
+	}
+
+	c = l + (i + 4); /* Skip ' T ' -> space + state + space */
+	if (sscanf(c, "%d", &ppid_r) != 1) {
 		fclose(f);
 		return -EINVAL;
 	}
