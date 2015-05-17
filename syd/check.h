@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-extern char syd_fail_message[128];
+extern char syd_fail_message[256];
 #define fail_msg(...) \
 	do { \
 		snprintf(syd_fail_message, 256, __VA_ARGS__); \

@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-char syd_fail_message[128];
+char syd_fail_message[256];
 
 static void all_tests(void)
 {
