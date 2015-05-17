@@ -3,6 +3,7 @@ Poems to sydbox contributors
 
 This is an attempt to thank everyone involved in tackling sydbox bugs, writing patches.
 Peace & Love!
+Released under the terms of the WTFPL, version 2, as published by Sam Hocevar.
 
 From: woutershep
 Date: 2015-04-30
