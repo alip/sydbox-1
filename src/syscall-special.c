@@ -91,6 +91,12 @@ int sys_execve(syd_process_t *current)
 	int r;
 	char *path = NULL, *abspath = NULL;
 
+	if (sandbox_off_exec(current) &&
+	    ACLQ_EMPTY(&sydbox->config.exec_kill_if_match) &&
+	    ACLQ_EMPTY(&sydbox->config.exec_resume_if_match)) {
+		return 0;
+	}
+
 	r = path_decode(current, 0, &path);
 	if (r == -ESRCH)
 		return r;
