@@ -2,3 +2,5 @@ Do not call ptrace() from dump.c under any circumstances.
 Avoid unnecessary printf usage in dump.c
 Finish the rework on tests
 SIGUSR2 dumps sydcore
+Rework sandbox_t structure to decrease memory usage.
+Use a simpler hashtable instead of using uthash everywhere.
