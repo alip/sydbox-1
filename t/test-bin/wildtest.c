@@ -23,6 +23,7 @@
  * - Set output_iterations to 1
  * - Exit non-zero in case of errors, `exit_code' in main()
  * - Use TAP protocol!
+ * - Get rid of unused-but-set-parameter
  */
 
 /*#define COMPARE_WITH_FNMATCH*/
@@ -94,7 +95,7 @@ run_test(int line, bool matches, bool same_as_fnmatch,
     bool fn_matched;
     int flags = strstr(pattern, "**")? 0 : FNM_PATHNAME;
 #else
-    same_as_fnmatch = 0; /* Get rid of unused-variable compiler warning. */
+    (void)same_as_fnmatch; /* Get rid of unused-variable compiler warning. */
 #endif
 
     if (explode_mod) {

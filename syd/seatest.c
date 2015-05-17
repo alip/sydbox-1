@@ -244,6 +244,8 @@ void seatest_assert_string_doesnt_contain(char* expected, char* actual, const ch
 
 void seatest_run_test(char* fixture, char* test)
 {
+	(void)fixture;
+	(void)test;
 	sea_tests_run++; 
 }
 

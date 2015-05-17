@@ -11,13 +11,14 @@
 
 static void test_setup(void)
 {
-	system("mkdir -p -m 700 ./tmp");
-	system("cp -p ./check-pause './tmp/check-Good Morning'");
+	int ret = system("mkdir -p -m 700 ./tmp && cp -p ./check-pause './tmp/check-Good Morning'");
+	if (ret) fail_msg("failed test_setup");
 }
 
 static void test_teardown(void)
 {
-	system("rm -fr ./tmp");
+	int ret = system("rm -fr ./tmp");
+	if (ret) fail_msg("failed test_teardown");
 }
 
 static void test_proc_ppid(void)
@@ -220,6 +221,7 @@ static void test_proc_fd_path(void)
 		return;
 	} else if (pid == 0) {
 		int fdp, fdl;
+		ssize_t ret;
 
 		close(pfd[0]);
 
@@ -235,8 +237,17 @@ static void test_proc_fd_path(void)
 			_exit(3);
 		}
 
-		write(pfd[1], &fdp, sizeof(fdp));
-		write(pfd[1], &fdl, sizeof(fdl));
+		ret = write(pfd[1], &fdp, sizeof(fdp));
+		if (ret != sizeof(fdp)) {
+			perror("write(fdp)");
+			_exit(4);
+		}
+
+		ret = write(pfd[1], &fdl, sizeof(fdl));
+		if (ret != sizeof(fdl)) {
+			perror("write(fdl)");
+			_exit(5);
+		}
 
 		kill(getpid(), SIGSTOP);
 		_exit(1);
@@ -245,6 +256,7 @@ static void test_proc_fd_path(void)
 		int fdp, fdl, status;
 		int r;
 		char *path;
+		ssize_t ret;
 
 		close(pfd[1]);
 
@@ -257,8 +269,10 @@ static void test_proc_fd_path(void)
 			return;
 		}
 
-		read(pfd[0], &fdp, sizeof(fdp));
-		read(pfd[0], &fdl, sizeof(fdl));
+		ret = read(pfd[0], &fdp, sizeof(fdp));
+		if (ret != sizeof(fdp)) fail_msg("read fdp failed: errno:%d %s", errno, strerror(errno));
+		ret = read(pfd[0], &fdl, sizeof(fdl));
+		if (ret != sizeof(fdl)) fail_msg("read fdl failed: errno:%d %s", errno, strerror(errno));
 
 		close(pfd[0]);
 

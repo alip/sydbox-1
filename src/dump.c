@@ -550,7 +550,7 @@ static void dump_pink(const char *name, int retval, int save_errno, pid_t pid, v
 		dump_ptrace_options(options);
 	} else if (streq(name, "write_syscall")) {
 		const char *sysname;
-		struct pink_regset *regset = va_arg(ap, struct pink_regset *);
+		va_arg(ap, struct pink_regset *);
 		long sysnum = va_arg(ap, long);
 		syd_process_t *p = lookup_process(pid);
 
