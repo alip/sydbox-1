@@ -198,7 +198,7 @@ int acl_remove_pathmatch(enum acl_action action, const char *pattern, aclq_t *ac
 		}
 	}
 
-	for (; f > 0; f--)
+	for (; f >= 0; f--)
 		free(list[f]);
 	free(list);
 
