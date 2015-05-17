@@ -57,6 +57,44 @@ static void test_proc_ppid(void)
 
 }
 
+static void test_proc_parents(void)
+{
+	pid_t pid, ppid_real;
+	char comm[] = "./check-pause";
+
+	ppid_real = getpid();
+	pid = fork();
+	if (pid < 0) {
+		fail_msg("fork failed: errno:%d %s", errno, strerror(errno));
+		return;
+	} else if (pid == 0) {
+		execl("./check-pause", comm, (char *)NULL);
+		_exit(1);
+	} else {
+		pid_t ppid, tgid, cpid = -1;
+		int r, status;
+
+		cpid = waitpid(pid, &status, WUNTRACED);
+		if (cpid < 0) {
+			fail_msg("waitpid failed: errno:%d %s", errno, strerror(errno));
+			return;
+		} else if (!WIFSTOPPED(status)) {
+			fail_msg("process didn't stop: %#x", status);
+			return;
+		}
+
+		r = syd_proc_parents(cpid, &ppid, &tgid);
+		if (r < 0)
+			fail_msg("syd_proc_tgid failed: %d %s", errno, strerror(errno));
+		else if (ppid != ppid_real)
+			fail_msg("ppid: %d != %d(real)", ppid, ppid_real);
+		else if (tgid != cpid)
+			fail_msg("tgid: %d != %d(real)", tgid, cpid);
+
+		kill(cpid, SIGKILL);
+	}
+}
+
 static void test_proc_comm(void)
 {
 	pid_t pid;
@@ -271,6 +309,7 @@ static void test_fixture_proc(void)
 	fixture_teardown(test_teardown);
 
 	run_test(test_proc_ppid);
+	run_test(test_proc_parents);
 	run_test(test_proc_comm);
 	run_test(test_proc_cmdline);
 	run_test(test_proc_fd_path);

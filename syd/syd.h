@@ -16,6 +16,7 @@ size_t syd_strlcpy(char *dst, const char *src, size_t siz);
 
 int syd_proc_open(pid_t pid);
 int syd_proc_ppid(pid_t pid, pid_t *ppid);
+int syd_proc_parents(pid_t pid, pid_t *ppid, pid_t *tgid);
 int syd_proc_comm(pid_t pid, char *dst, size_t siz);
 int syd_proc_cmdline(pid_t pid, char *dst, size_t siz);
 

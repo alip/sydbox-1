@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #ifndef O_PATH /* hello glibc, I hate you. */
@@ -30,6 +31,7 @@
 #define SYD_PROC_MAX (sizeof("/proc/%u") + SYD_PID_MAX)
 #define SYD_PROC_FD_MAX (SYD_PROC_MAX + sizeof("/fd") + SYD_PID_MAX)
 #define SYD_PROC_TASK_MAX (SYD_PROC_MAX + sizeof("/task") + SYD_PID_MAX)
+#define SYD_PROC_STATUS_LINE_MAX sizeof("Tgid:") + SYD_INT_MAX + 16 /* padding */
 
 static void chomp(char *str)
 {
@@ -146,6 +148,82 @@ int syd_proc_ppid(pid_t pid, pid_t *ppid)
 
 	fclose(f);
 	*ppid = ppid_r;
+
+	return 0;
+}
+
+int syd_proc_parents(pid_t pid, pid_t *ppid, pid_t *tgid)
+{
+	int pfd, fd, save_errno;
+	pid_t ppid_r, tgid_r;
+	FILE *f;
+
+	if (pid <= 0)
+		return -EINVAL;
+	if (!ppid && !tgid)
+		return -EINVAL;
+
+	pfd = syd_proc_open(pid);
+	if (pfd < 0)
+		return -errno;
+	fd = openat(pfd, "status", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	save_errno = errno;
+	close(pfd);
+	if (fd < 0)
+		return -save_errno;
+	f = fdopen(fd, "r");
+	if (!f) {
+		save_errno = errno;
+		close(fd);
+		return -save_errno;
+	}
+
+	bool seen_ppid, seen_tgid;
+	char *c, l[SYD_PROC_STATUS_LINE_MAX];
+
+	ppid_r = 0, tgid_r = 0;
+	seen_ppid = false, seen_tgid = false;
+	while (fgets(l, SYD_PROC_STATUS_LINE_MAX - 1, f) != NULL) {
+		if (!seen_tgid && !strncmp(l, "Tgid:", sizeof("Tgid:") - 1)) {
+			seen_tgid = true;
+			if (tgid) {
+				for (c = l + sizeof("Tgid:") - 1;
+				     *c == ' ' || *c == '\t'; c++); /* skip space */
+				if (sscanf(c, "%d", &tgid_r) != 1) {
+					fclose(f);
+					return -EINVAL;
+				}
+			}
+			if (!ppid)
+				break;
+		} else if (!seen_ppid && !strncmp(l, "PPid:", sizeof("PPid:") - 1)) {
+			seen_ppid = true;
+			if (ppid) {
+				for (c = l + sizeof("PPid:") - 1;
+				     *c == ' ' || *c == '\t'; c++); /* skip space */
+				if (sscanf(c, "%d", &ppid_r) != 1) {
+					fclose(f);
+					return -EINVAL;
+				}
+			}
+			break;
+		}
+	}
+
+	fclose(f);
+
+	if (tgid) {
+		if (seen_tgid)
+			*tgid = tgid_r;
+		else
+			return -EINVAL;
+	}
+	if (ppid) {
+		if (seen_ppid)
+			*ppid = ppid_r;
+		else
+			return -EINVAL;
+	}
 
 	return 0;
 }
