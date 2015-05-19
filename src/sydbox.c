@@ -891,10 +891,13 @@ static int check_interrupt(void)
 
 static int event_startup(syd_process_t *current)
 {
+	int r;
+
 	if (!(current->flags & SYD_STARTUP))
 		return 0;
 
-	syd_trace_setup(current);
+	if ((r = syd_trace_setup(current)) < 0)
+		return r;
 
 	current->flags &= ~SYD_STARTUP;
 
