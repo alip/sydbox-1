@@ -180,6 +180,7 @@ int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argva
 
 ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t len)
 {
+	int r;
 	ssize_t rlen;
 
 	assert(current);
@@ -193,8 +194,8 @@ ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t le
 		dest[rlen] = '\0';
 	}
 
-	SYD_CHECK(current, -errno);
-	return rlen;
+	r = SYD_CHECK(current, -errno);
+	return r == 0 ? rlen : r;
 }
 
 int syd_read_socket_argument(syd_process_t *current, bool decode_socketcall,
