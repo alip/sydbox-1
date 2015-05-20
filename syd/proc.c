@@ -367,7 +367,7 @@ int syd_proc_fd_path(pid_t pid, int fd, char **dst)
 
 int syd_proc_environ(pid_t pid)
 {
-	int i, c, pfd, fd, save_errno;
+	int c, pfd, fd, save_errno;
 	FILE *f;
 	/* <linux/binfmts.h> states ARG_MAX_STRLEN is essentially random and
 	 * here (x86_64) defines it as (PAGE_SIZE * 32), I am more modest. */
@@ -391,16 +391,23 @@ int syd_proc_environ(pid_t pid)
 		return -save_errno;
 	}
 
-	int r = 0;
-	for (i = 0; (c = fgetc(f)) != EOF; i++) {
-		if (i >= 1024) {
-			r = -E2BIG;
-			break;
-		}
+	int i = 0, r = 0;
+	while ((c = fgetc(f)) != EOF) {
 		s[i] = c;
 
-		if (c == '\0' && putenv(s) != 0) { /* end of unit */
-			r = -ENOMEM;
+		if (c == '\0') { /* end of unit */
+			if (putenv(s) != 0) {
+				r = -ENOMEM;
+				break;
+			} else {
+				i = 0;
+				s[0] = '\0';
+				continue;
+			}
+		}
+
+		if (++i >= 1024) {
+			r = -E2BIG;
 			break;
 		}
 	}
