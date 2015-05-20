@@ -324,8 +324,10 @@ int syd_proc_fd_path(pid_t pid, int fd, char **dst)
 	if (pfd < 0)
 		return -errno;
 	r = snprintf(sfd, sizeof(sfd), "%u", fd);
-	if (r < 0 || (size_t)r >= sizeof(sfd))
+	if (r < 0 || (size_t)r >= sizeof(sfd)) {
+		close(pfd);
 		return -EINVAL;
+	}
 
 	char *path = NULL;
 	size_t len = 128; /* most paths are short */
