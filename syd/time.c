@@ -47,4 +47,5 @@ void syd_time_prof(unsigned loop, ...)
 		fprintf(stderr, "func %u (loop %u): %ld.%09ld\n",
 			i, loop, diff.tv_sec, diff.tv_nsec);
 	}
+	va_end(ap);
 }
