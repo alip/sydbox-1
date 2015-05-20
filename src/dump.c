@@ -110,23 +110,32 @@ static void dump_string(const char *s)
 		switch (s[i]) {
 		case '"':
 			fprintf(fp, "\\\"");
+			break;
 		case '\\':
 			fprintf(fp, "\\\\");
+			break;
 		case '/':
 			fprintf(fp, "\\/");
+			break;
 		case '\b':
 			fprintf(fp, "\\b");
+			break;
 		case '\f':
 			fprintf(fp, "\\f");
+			break;
 		case '\n':
 			fprintf(fp, "\\n");
+			break;
 		case '\r':
 			fprintf(fp, "\\r");
+			break;
 		case '\t':
 			fprintf(fp, "\\t");
+			break;
 		/* case '\u' + 4 hexadecimal digits! */
 		default:
 			fprintf(fp, "%c", s[i]);
+			break;
 		}
 	}
 }
