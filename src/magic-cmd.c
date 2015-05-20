@@ -97,7 +97,7 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 		err_no = execve_errno(errno);
 		say("fork failed (errno:%d %s)", errno, strerror(errno));
 		r = deny(current, err_no);
-		return r;
+		goto out;
 	} else if (childpid == 0) {
 		if (clearenv() != 0)
 			_exit(ENOMEM);
