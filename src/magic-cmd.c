@@ -61,7 +61,7 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 
 	/* Step 1: args -> argv[] */
 	i = 0;
-	argv = xmalloc(sizeof(char *) * i+2);
+	argv = xmalloc(sizeof(char *) * (i+2));
 	argv[i] = xmalloc(sizeof(char) * MAX_ARG_STRLEN);
 	argv[i][0] = '\0';
 	argv[i+1] = NULL;
@@ -101,8 +101,8 @@ int magic_cmd_exec(const void *val, syd_process_t *current)
 	} else if (childpid == 0) {
 		if (clearenv() != 0)
 			_exit(ENOMEM);
-		if (syd_proc_environ(current->pid) < 0)
-			_exit(errno);
+		if ((r = syd_proc_environ(current->pid)) < 0)
+			_exit(-r);
 		if (chdir(P_CWD(current)) < 0)
 			_exit(errno);
 		if (pink_trace_me() < 0)
