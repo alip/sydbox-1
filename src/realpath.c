@@ -203,7 +203,7 @@ int realpath_mode(const char * restrict path, unsigned mode, char **buf)
 
 		sm.rmode = mode;
 		sm.nofollow = nofollow;
-		if (p == NULL || left == NULL || left[strspn(left, "/")] == '\0')
+		if (p == NULL || left[strspn(left, "/")] == '\0')
 			sm.last_node = true;
 		else
 			sm.last_node = false;
