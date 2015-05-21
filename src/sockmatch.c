@@ -323,12 +323,10 @@ out:
 int sockmatch_parse(const char *src, struct sockmatch **buf)
 {
 	int r;
-	char *addr;
 	struct sockmatch *match;
 
 	assert(buf);
 
-	addr = NULL;
 	match = xmalloc(sizeof(struct sockmatch));
 
 	if (startswith(src, MATCH_UNIX)) {
@@ -362,8 +360,6 @@ int sockmatch_parse(const char *src, struct sockmatch **buf)
 	*buf = match;
 	return 0;
 fail:
-	if (addr)
-		free(addr);
 	free(match);
 	return r;
 }
