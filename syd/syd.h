@@ -16,6 +16,7 @@ size_t syd_strlcat(char *dst, const char *src, size_t siz);
 size_t syd_strlcpy(char *dst, const char *src, size_t siz);
 
 int syd_opendir(const char *dirname);
+int syd_fchdir(int fd);
 
 int syd_proc_open(pid_t pid);
 int syd_proc_ppid(pid_t pid, pid_t *ppid);

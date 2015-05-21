@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 static inline int syd_open_path(const char *pathname, int flags)
 {
@@ -27,4 +28,11 @@ static inline int syd_open_path(const char *pathname, int flags)
 int syd_opendir(const char *dirname)
 {
 	return syd_open_path(dirname, O_DIRECTORY);
+}
+
+int syd_fchdir(int fd)
+{
+	if (fchdir(fd) < 0)
+		return -errno;
+	return 0;
 }
