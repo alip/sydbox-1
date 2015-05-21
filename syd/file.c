@@ -36,3 +36,10 @@ int syd_fchdir(int fd)
 		return -errno;
 	return 0;
 }
+
+int syd_fstat(int fd, struct stat *buf)
+{
+	if (fstat(fd, buf) < 0)
+		return -errno;
+	return 0;
+}
