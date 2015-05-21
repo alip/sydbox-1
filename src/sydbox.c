@@ -641,7 +641,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "\t%sClone flag refs: ", CN);
 		r = 0;
 		if (current->clone_flags & CLONE_THREAD) {
-			fprintf(stderr, "%sCLONE_THREAD{ref=%u}", (r == 1) ? "|" : "",
+			fprintf(stderr, "CLONE_THREAD{ref=%u}",
 				current->shm.clone_thread ? current->shm.clone_thread->refcnt : 0);
 
 			r = 1;
