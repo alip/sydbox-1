@@ -10,6 +10,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdbool.h>
 #include <time.h>
 
 size_t syd_strlcat(char *dst, const char *src, size_t siz);
@@ -18,6 +19,15 @@ size_t syd_strlcpy(char *dst, const char *src, size_t siz);
 int syd_opendir(const char *dirname);
 int syd_fchdir(int fd);
 int syd_fstat(int fd, struct stat *buf);
+
+int syd_path_root_check(const char *path);
+int syd_path_stat(const char *path, int mode, bool last_node, struct stat *buf);
+
+#define SYD_REALPATH_EXIST	0 /* all components must exist */
+#define SYD_REALPATH_NOLAST	1 /* all but last component must exist */
+#define SYD_REALPATH_NOFOLLOW	4 /* do not dereference symbolic links */
+#define SYD_REALPATH_MASK	(SYD_REALPATH_EXIST|SYD_REALPATH_NOLAST)
+int syd_realpath_at(int fd, const char *pathname, char **buf, int mode);
 
 int syd_proc_open(pid_t pid);
 int syd_proc_ppid(pid_t pid, pid_t *ppid);
