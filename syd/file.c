@@ -99,6 +99,51 @@ static inline int syd_path_root_alloc(char **buf)
 }
 
 /*
+ * readlink() which allocates memory and appends zero-byte
+ */
+ssize_t syd_readlink_alloc(const char *path, char **buf)
+{
+	int fd;
+
+	fd = syd_open_path(path, O_NOFOLLOW);
+	if (fd < 0)
+		return fd; /* negated errno */
+
+	for (;;) {
+		size_t l = 128;
+		char *p = NULL, *m;
+
+		m = realloc(p, l * sizeof(char));
+		if (m == NULL) {
+			close(fd);
+			if (p != NULL)
+				free(p);
+			return -ENOMEM;
+		}
+		p = m;
+		p[0] = '\0';
+
+		ssize_t n = readlinkat(fd, "", p, l - 1);
+		if (n < 0) {
+			int r = -errno;
+			close(fd);
+			free(p);
+			return r;
+		}
+
+		if ((size_t)n < l - 1) {
+			p[n] = '\0';
+			*buf = p;
+			close(fd);
+			return 0;
+		}
+
+		l *= 2;
+	}
+	/* never reached */
+}
+
+/*
  * Requires absolute path.
  */
 int syd_path_stat(const char *path, int mode, bool last_node, struct stat *buf)

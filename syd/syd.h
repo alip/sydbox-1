@@ -20,6 +20,8 @@ int syd_opendir(const char *dirname);
 int syd_fchdir(int fd);
 int syd_fstat(int fd, struct stat *buf);
 
+ssize_t syd_readlink_alloc(const char *path, char **buf);
+
 int syd_path_root_check(const char *path);
 int syd_path_stat(const char *path, int mode, bool last_node, struct stat *buf);
 
