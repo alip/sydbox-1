@@ -282,6 +282,11 @@ static void test_syd_realpath_at_02(void)
 	free(buf);
 }
 
+static void test_syd_realpath_at_03(void)
+{
+	/* TODO */;
+}
+
 static void test_fixture_file(void)
 {
 	test_fixture_start();
@@ -289,10 +294,12 @@ static void test_fixture_file(void)
 	fixture_setup(test_setup);
 	fixture_teardown(test_teardown);
 
+	run_test(test_syd_readlink_alloc_01);
 	run_test(test_syd_path_root_check_01);
 	run_test(test_syd_path_stat_01);
 	run_test(test_syd_realpath_at_01);
 	run_test(test_syd_realpath_at_02);
+	run_test(test_syd_realpath_at_03);
 
 	test_fixture_end();
 }

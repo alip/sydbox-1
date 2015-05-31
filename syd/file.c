@@ -24,6 +24,16 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef LIBSYD_MAXSYMLINKS
+# if defined(SYMLOOP_MAX)
+#  define LIBSYD_MAXSYMLINKS SYMLOOP_MAX
+# elif defined(MAXSYMLINKS)
+#  define LIBSYD_MAXSYMLINKS MAXSYMLINKS
+# else
+#  define LIBSYD_MAXSYMLINKS 32
+# endif
+#endif
+
 static inline int syd_open_path(const char *pathname, int flags)
 {
 	int fd;
@@ -250,22 +260,17 @@ int syd_realpath_at(int fd, const char *path, char **buf, int mode)
 		break;
 	}
 
-	if (path[0] != '/')
-		goto out; /* ignore for now */
-
-#if 0
-	if (path[0] == '/') {
-	} else {
-		r = syd_opendir(".");
-		if (r >= 0 || r == -ENOENT)
-			save_fd = r;
-		else
-			return r;
-
-		if ((r = syd_fchdir(fd)) < 0)
+	if (path[0] != '/') {
+		if (fd == AT_FDCWD) {
+			r = syd_opendir(".");
+			if (r >= 0 || r == -ENOENT)
+				save_fd = r;
+			else
+				return r;
+		} else if ((r = syd_fchdir(fd)) < 0) {
 			goto out;
+		}
 	}
-#endif
 
 	bool nofollow;
 	short flags;
@@ -302,9 +307,10 @@ int syd_realpath_at(int fd, const char *path, char **buf, int mode)
 		 * Extract the next path component and adjust `left'
 		 * and its length.
 		 */
-		char *p, *q, *s;
+		char *m, *p, *q, *s;
 		char *next_token = NULL;
-		size_t ntlen;
+		size_t ntlen, nsymlinks = 0;
+		struct stat sb;
 
 		p = strchr(left, '/');
 		s = p ? p : left + llen;
@@ -325,13 +331,13 @@ int syd_realpath_at(int fd, const char *path, char **buf, int mode)
 		if (rpath[rlen - 1] != '/') {
 			if (rlen >= plen) {
 				plen += (rlen - plen) > 128 ? (rlen - plen) : 128;
-				rpath = realloc(rpath, sizeof(char) * (plen + 1));
-				if (rpath == NULL) {
+				m = realloc(rpath, sizeof(char) * (plen + 1));
+				if (m == NULL) {
 					r = -errno;
-					if (next_token != NULL)
-						free(next_token);
+					free(next_token);
 					goto out;
 				}
+				rpath = m;
 			}
 			rpath[rlen++] = '/';
 			rpath[rlen] = '\0';
@@ -346,9 +352,117 @@ int syd_realpath_at(int fd, const char *path, char **buf, int mode)
 			 * the prefix for any (rare) "//" or "/\0"
 			 * occurrence to not implement lookahead.
 			 */
-			;
+			if ((r = syd_path_stat(rpath, (mode|flags), true, &sb)) < 0) {
+				free(next_token);
+				goto out;
+			}
+			if (sb.st_mode == 0 && mode == SYD_REALPATH_NOLAST) {
+				r = 0;
+				break;
+			}
+			if (!S_ISDIR(sb.st_mode)) {
+				r = -ENOTDIR;
+				free(next_token);
+				goto out;
+			}
+			continue;
+		} else if (strcmp(next_token, ".") == 0) {
+			continue;
+		} else if (strcmp(next_token, "..") == 0) {
+			/*
+			 * Strip the last path component except when we have
+			 * single "/"
+			 */
+			if (rlen > 1) {
+				rpath[rlen - 1] = '\0';
+				q = strrchr(rpath, '/') + 1;
+				*q = '\0';
+				rlen = q - rpath;
+			}
+			continue;
+		}
+		if (plen <= rlen + ntlen) {
+			plen += ntlen;
+			m = realloc(rpath, sizeof(char) * (plen + 1));
+			if (m == NULL) {
+				r = -errno;
+				free(next_token);
+				goto out;
+			}
+			rpath = m;
+		}
+
+		if (p == NULL || left[strspn(left, "/")] == '\0')
+			r = syd_path_stat(rpath, (mode|flags), true, &sb);
+		else
+			r = syd_path_stat(rpath, (mode|flags), false, &sb);
+		if (r < 0) {
+			free(next_token);
+			goto out;
+		}
+		if (S_ISLNK(sb.st_mode)) {
+			ssize_t slen;
+			char *symlink;
+
+			/* FIXME: MAXSYMLINKS is stupid, handle this properly. */
+			if (++nsymlinks > LIBSYD_MAXSYMLINKS) {
+				r = -ELOOP;
+				free(next_token);
+				goto out;
+			}
+			if (!nofollow) {
+				slen = syd_readlink_alloc(rpath, &symlink);
+				if (slen < 0) {
+					r = slen; /* negated errno */
+					free(next_token);
+					goto out;
+				}
+				if (symlink[0] == '/') {
+					rpath[1] = '\0';
+					rlen = 1;
+				} else if (rlen > 1) {
+					/* Strip the last path component. */
+					rpath[rlen - 1] = '\0';
+					q = strrchr(rpath, '/') + 1;
+					*q = '\0';
+					rlen = q - rpath;
+				}
+			}
+			/*
+			 * If there are any path components left, then
+			 * append them to symlink. The result is placed
+			 * in `left'.
+			 */
+			if (p != NULL) {
+				m = realloc(symlink, (slen + llen + 2) * sizeof(char));
+				if (m == NULL) {
+					r = -errno;
+					free(next_token);
+					free(symlink);
+					goto out;
+				}
+				symlink = m;
+
+				if (symlink[slen - 1] != '/') {
+					symlink[slen] = '/';
+					symlink[slen + 1] = 0;
+				}
+			}
+			llen = syd_strlcpy(left, symlink, sizeof(left));
+			if (nofollow && p == NULL) {
+				r = 0;
+				rlen = syd_strlcat(rpath, left, rlen);
+				break;
+			}
 		}
 	}
+
+	/*
+	 * Remove trailing slash except when the resolved pathname
+	 * is a single "/".
+	 */
+	if (rlen > 1 && rpath[rlen - 1] == '/')
+		rpath[rlen - 1] = '\0';
 
 out:
 	if (save_fd >= 0) {
@@ -357,7 +471,11 @@ out:
 	}
 	if (left)
 		free(left);
-	if (r < 0 && rpath != NULL)
-		free(rpath);
+	if (r < 0) {
+		if (rpath != NULL)
+			free(rpath);
+	} else {
+		*buf = rpath;
+	}
 	return r;
 }
