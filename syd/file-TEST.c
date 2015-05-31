@@ -59,6 +59,14 @@ static void test_teardown(void)
 	;
 }
 
+static void test_syd_readlink_alloc_01(void)
+{
+	char *buf;
+
+	assert_int_equal(-EINVAL, syd_readlink_alloc(NULL, &buf));
+	assert_int_equal(-EINVAL, syd_readlink_alloc("root", NULL));
+}
+
 static void test_syd_path_root_check_01(void)
 {
 	assert_int_equal(-EINVAL, syd_path_root_check(NULL));
