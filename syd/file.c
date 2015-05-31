@@ -28,7 +28,7 @@ static inline int syd_open_path(const char *pathname, int flags)
 {
 	int fd;
 
-	fd = open(pathname, flags|O_PATH|O_CLOEXEC);
+	fd = open(pathname, flags|O_PATH|O_CLOEXEC|O_NOATIME);
 	return (fd >= 0) ? fd : -errno;
 }
 
@@ -155,7 +155,7 @@ int syd_path_stat(const char *path, int mode, bool last_node, struct stat *buf)
 	if (buf == NULL || path == NULL || path[0] != '/')
 		return -EINVAL;
 
-	flags = O_NOATIME;
+	flags = 0;
 	sflags = AT_EMPTY_PATH|AT_NO_AUTOMOUNT;
 	nofollow = mode & ~SYD_REALPATH_MASK & SYD_REALPATH_NOFOLLOW;
 	ignore_noent = last_node && (mode & SYD_REALPATH_NOLAST);
