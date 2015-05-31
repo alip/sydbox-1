@@ -105,6 +105,9 @@ ssize_t syd_readlink_alloc(const char *path, char **buf)
 {
 	int fd;
 
+	if (path == NULL || buf == NULL)
+		return -EINVAL;
+
 	fd = syd_open_path(path, O_NOFOLLOW);
 	if (fd < 0)
 		return fd; /* negated errno */
