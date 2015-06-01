@@ -145,10 +145,10 @@ ssize_t syd_readlink_alloc(const char *path, char **buf)
 		}
 
 		if ((size_t)n < l - 1) {
+			close(fd);
 			p[n] = '\0';
 			*buf = p;
-			close(fd);
-			return 0;
+			return (n + 1);
 		}
 
 		l *= 2;
