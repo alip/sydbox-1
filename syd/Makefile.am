@@ -8,7 +8,7 @@ libsyd_includedir = $(includedir)/syd-$(LIBSYD_PC_SLOT)/syd
 libsyd_include_HEADERS= syd.h
 
 noinst_HEADERS= seatest.h check.h
-syd_check_SOURCES= seatest.c check.c proc-TEST.c
+syd_check_SOURCES= seatest.c check.c file-TEST.c proc-TEST.c
 syd_check_CFLAGS= -I$(srcdir)
 syd_check_LDFLAGS= -lrt -lm \
 		   $(builddir)/libsyd_@LIBSYD_PC_SLOT@.la \
