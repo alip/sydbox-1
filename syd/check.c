@@ -15,6 +15,8 @@ static void all_tests(void)
 {
 	const char *skip = getenv("SYD_CHECK_SKIP");
 
+	if (!skip || !strstr(skip, "file"))
+		test_suite_file();
 	if (!skip || !strstr(skip, "proc"))
 		test_suite_proc();
 }

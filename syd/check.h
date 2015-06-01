@@ -39,6 +39,7 @@ extern char syd_fail_message[256];
 		} \
 	} while (0)
 
+void test_suite_file(void);
 void test_suite_proc(void);
 
 #endif
