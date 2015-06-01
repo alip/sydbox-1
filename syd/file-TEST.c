@@ -19,12 +19,13 @@
 #define INVALID_FD -128
 #endif
 
-#define TMPDIR		"./file-TEST-tmp"
-#define TMP_FILE	"file"
-#define TMP_VOID_FILE	"void"
-#define TMP_LINK	"link"
-#define TMP_DANG_LINK	"dang"
-#define TMP_LOOP_LINK	"loop"
+#define TMPDIR			"./file-TEST-tmp"
+#define TMP_FILE		"file"
+#define TMP_VOID_FILE		"void"
+#define TMP_LINK		"link"
+#define TMP_DANG_LINK		"dang"
+#define TMP_LOOP_LINK		"loop"
+#define TMP_LOOP_LOOP_LINK	"loop-loop"
 static char *tmpdir;
 static char *tmp_file;
 static char *tmp_void_file;
@@ -65,6 +66,21 @@ static void test_syd_readlink_alloc_01(void)
 
 	assert_int_equal(-EINVAL, syd_readlink_alloc(NULL, &buf));
 	assert_int_equal(-EINVAL, syd_readlink_alloc("root", NULL));
+
+	assert_int_equal(sizeof(TMP_FILE), syd_readlink_alloc(tmp_link, &buf));
+	assert_true(buf[sizeof(TMP_FILE) - 1] == '\0');
+	assert_string_equal(TMP_FILE, buf);
+	free(buf);
+
+	assert_int_equal(sizeof(TMP_VOID_FILE), syd_readlink_alloc(tmp_dang_link, &buf));
+	assert_true(buf[sizeof(TMP_VOID_FILE) - 1] == '\0');
+	assert_string_equal(TMP_VOID_FILE, buf);
+	free(buf);
+
+	assert_int_equal(sizeof(TMP_LOOP_LOOP_LINK), syd_readlink_alloc(tmp_loop_link, &buf));
+	assert_true(buf[sizeof(TMP_LOOP_LOOP_LINK) - 1] == '\0');
+	assert_string_equal(TMP_LOOP_LOOP_LINK, buf);
+	free(buf);
 }
 
 static void test_syd_path_root_check_01(void)
