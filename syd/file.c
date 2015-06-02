@@ -284,8 +284,8 @@ int syd_realpath_at(int fd, const char *path, char **buf, int mode)
 	left = malloc(sizeof(char) * plen);
 	if (left == NULL)
 		return -errno;
-	llen = syd_strlcpy(left, path + 1, sizeof(left));
-	if (llen >= sizeof(left)) {
+	llen = syd_strlcpy(left, path + 1, plen);
+	if (llen >= plen) {
 		r = -ENAMETOOLONG; /* Should not happen */
 		goto out;
 	}
