@@ -122,9 +122,10 @@ ssize_t syd_readlink_alloc(const char *path, char **buf)
 	if (fd < 0)
 		return fd; /* negated errno */
 
+	char *p = NULL;
+	size_t l = 128;
 	for (;;) {
-		size_t l = 128;
-		char *p = NULL, *m;
+		char *m;
 
 		m = realloc(p, l * sizeof(char));
 		if (m == NULL) {
@@ -142,9 +143,7 @@ ssize_t syd_readlink_alloc(const char *path, char **buf)
 			close(fd);
 			free(p);
 			return r;
-		}
-
-		if ((size_t)n < l - 1) {
+		} else if ((size_t)n < l - 1) {
 			close(fd);
 			p[n] = '\0';
 			*buf = p;
