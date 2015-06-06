@@ -52,3 +52,19 @@ Poem:
 	from filling my eyes with tears?
 
 		-alip
+
+From: kimrhh or zlin or either of the other
+Date: Not long ago than yesterday
+Bug: sydbox assertions due to incorrect assumptions about seccomp functionality
+	with all due respect to her synchrony.
+Poem:
+	-- On not being UNIX
+	I live the dream
+	Without ever seeing you.
+	whentherevolutioncomes
+	I use vi.
+	I sleep.
+	I use Emacs.
+	I wake up.
+	Oh, freedom.
+	Beer is much unlike thee.
