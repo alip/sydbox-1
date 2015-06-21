@@ -68,3 +68,165 @@ Poem:
 	I wake up.
 	Oh, freedom.
 	Beer is much unlike thee.
+
+From: "".
+Poem(:i8n => :tr) of ^^.
+
+	-- Son Mektup
+
+	Neler oldu o gece? Son gecende.
+	İkinci, üçüncü kez başına gelen
+	Her şeyden ötede. Cuma günü, akşamüstü.
+	Bana yazdığın mektubu yakıyordun küllükte,
+	Yüzünde o garip tebessümle.
+	Oyununu mu bozmuştum?
+	Düşündüğünden daha mı erken şaşırtmıştı beni?
+	Çok mu acele etmiştim sana geri dönerken?
+	Bir saat gecikseydim oysa, gitmiş olacaktın,
+	İzini süremeyeceğim o yere.
+	Açan olmayacaktı kilitli kırmızı kapını
+	Dönecektim geri, elimde mektubun,
+	Topraklanmamış bir yıldırım gibi
+	Elektroşok tedavisi olacaktı bana.
+	Her okuduğumda onu ve her düşündüğümde
+	Tekrar tekrar yinelenecekti, haftasonu boyunca.
+	Yeniden kuracaktı aklımı, hayatımı
+	Planladığın bu tedaviye biraz zaman lazımdı.
+	Aklım almıyor,
+	O hafta sonunu nasıl atlatacaktım.
+	Aklım almıyor. Sen mi planlamıştın hepsini?
+
+	Sabahında gönderdiğin mektup
+	Vaktinden evvel ulaşmıştı bana,
+	Aynı gün, cuma, öğleden sonra.
+	Şansı yaver gitmemişti postanede
+	Elini çabuk tutmuştu, aksi şeytan
+	Yetmezmiş gibi ben de
+	Hızla aşmıştım kar mavisi yolları
+	Londra'da, şubat ayında, gündoğumunda
+	Yaşlar boşanmıştı gözlerimden kapıyı açtığında.
+	Erken akan gözyaşlarım,
+	Çamura buladı, sürükledi bilmeceler yumağını,
+	Ama dökmedi içini, anlatamadı meramını.
+	Öyle dikkatli, öyle sakin parçaladığın mektubun
+	Dumanı tüterken daha
+	Bana ne söylemiştin de bırakıp gidiyordum seni.
+	Kurduğun planın külleri dökülürken küllüğe
+	Karşısında yaslanmış omzuma, arıyordun
+	Doktor'un numarasını.
+
+	Kaçışım
+	Peşimi hiç bırakmadı.
+	Uykusuz, umutsuz, bütün hayalleri yıkılmış,
+	Yalnızca hatırlanmak istiyor yeniden, yalnızca
+	Düşmek istiyor boşluğundan dışarıya
+	Hiçlikte salınan iki gün. Bilâ bedel iki gün.
+	İki gün, hiçbir takvimde yeri yok,
+	Çalıntı da değil hiçbir alemden.
+	Ne tinsel ne özdeksel, isimlerden öte.
+
+	Aşk hayatım yakaladı onu, uyuşmuş aşk hayatım.
+	İki deli iğnesiyle,
+	Allayıp pulladı onların gülünü,
+	Nakış gibi işledi kanlı dövmelerini,
+	Karnımın içine bir yere.
+	İki deli iğne,
+	Ayakları altına alıp yücelttikleri bataklığı,
+	Çapraz dikişler attılar sinirlerime.
+	Şeklimi değiştirecek renkleri,
+	Tenimin altında, her biri diğerine şekil verecek
+	Kendi karikatürünü çizerek.
+
+	O gece
+	Dilberimdi Susan. Yürüdüm
+	Fitil boyunca ilerleyen alev gibi tedbirli. Bütün öfkem
+	Patlamak için boşuna sarfedilmiş bir çabaydı.
+	Peşine düştüğüm küllerin sahte izleri,
+	Gölgelerin diz çöktüğü eski yerkürede.
+	Ardıma bakarak koşturdum oradan oraya,
+	Geriye saran bir film gibi,
+	Nereye doğru mu? Rugby Caddesi’ne gittik
+	Başladığımız yere.
+	Neden oraya gittik? O kadar yer varken
+	Neden oraya gittik? Sapıklıktı
+	Kaderimizin özel becerisi
+	Son rötuşlarını atmıştı, sen ve ben için
+	Ve Susan için. Falımızı açıyordu
+	Minos’un Boğası o çıkmaz labirentte
+	Giriş katındaydı, içerdeydi Helen de.
+	Farketmiştin onu, destanlara konu olacak kız.
+	Hiç tanışmadın onunla. Pek az insan bakabildi ona,
+	Kulaklarından asılı kuduz maskesini aşıp kurt köpeğinin.
+	Göz ucuyla dahi bakmamıştın ona. İrkilmiştin yalnızca
+	Kuduz köpeği çıkagelip dayandığında kapına.
+	Koridordan kaçarken parmaklarımızın ucunda,
+	Sonsuz Alman nefretiyle boğulduğunu duymuştuk.
+
+	O pazar akşamı araladı kapısını
+	Zinciri elverdiği kadar.
+	Susan selamladı siyah gözlerini,
+	O mutsuz, şişman ve tatlı yüzü
+	Kapı kapandı.
+	Gardiyanını avutuşunu dinledik.
+	Hücresinde, toplama kampında, günler sonra
+	Gaddar koğuş ağasını ve kendisini gazla boğacağı barınakta.
+
+	Susan ve ben geceyi evlendiğimiz evde,
+	Yatakta geçirdik. Farketmemiştim
+	Bütün gün yataktan kalkmamıştık, çünkü.
+	Onu kendi yatağıma götürmemiştim.
+	İçime doğdu birden, o haftasonu,
+	Birden çat kapı gelebilirdin, misafir gibi.
+	Gelip vurdun mu karanlık pencereme?
+	Senden saklanmak için Susan’a gittim ben de,
+	Kendi yatak odamıza, üç sene sonra
+	Buradan kaldıracaktım onu aynı hastaneye,
+	On iki saat sonra seni ölü bulacağım yere.
+
+	Pazartesi sabahı
+	Şehre inip işe bıraktım onu,
+	Park ettim sonra karavanımı Euston Caddesi’nin kuzeyine
+	ve telefonumu almak için geri döndüm.
+
+	Neler oldu o gece? Seninle akan saatlerde
+	Bir sır sanki hiç yaşanmamış gibi.
+	Hayat boyu biriktirdiğin,
+	Bilincinin altında yatan, doğum gibi,
+	Ağır akan her saniyenin çeperlerini
+	Bir sonrakine doğru iteleyen yaşantıların
+	Hangilerini yaşamıştın o gün?
+	Sanki hiç olamazmış gibi
+	Sanki hiç yaşanmayacakmış gibi. Kaç defa
+	Çaldı telefon boş odamda,
+	Kaç kez duydun zil sesini beyninde
+	Sanki çoktan ölmüş gibi. Sayıyorum
+	Kaç defa yürüdün
+	St. George’un terasının altındaki
+	Telefon kulübesine.
+	Ne zaman baksam orada oluyorsun,
+	Fitzroy Caddesi’nden çıkıyor,
+	Kirli kar yığınlarının arasından geçiyorsun.
+	Üzerinde uzun, siyah palton var.
+	Saçların arkadan örülü.
+	Kımıldamaktan, ayılmaktan aciz yürüyorsun
+	Ve etrafta yürüyen başka kimse yok.
+	Primrose Tepesi’nin aşağısındaki korkuluklar boyunca yürüyorsun
+	Ulaşılması imkansız telefon kulübesine doğru.
+	Gece yarısından önce. Gece yarısından sonra. Bir daha.
+	Bir daha. Bir daha. Ve gün doğarken bir daha.
+
+	Ne tarafa bakıyordu akrebi ile yelkovanı saatimin?
+	Son denemen, kulaklarımın duyabileceği yeri çoktan geçmişken,
+	Sarsmadı mı o boş yataktaki yastığı? Son bir kez olsun
+	Dokunmadı mı kitaplarıma, kağıtlarıma?
+	Ben oraya geldiğimde telefonun sesi kesilmişti,
+	Yastık da her şeyden habersizdi. Odam uykudaydı,
+	Karlardan yansıyan sabah ışıkları doldurmuştu içerisini.
+	Sigaramı yakmış, kağıtlarımı çıkarmıştım.
+	Yazmaya başlayacakken telefon uykusundan uyandı,
+	Hatırlayarak her şeyi aceleyle çalmaya başladı.
+	Ahizesi elime uzandı.
+	Diğer ucunda bir ses,
+	Özel seçilmiş bir silah gibi, ağır bir iğne gibi,
+	Usulca yolladı iki kelimeyi,
+	Kulağımın derinlerine: "Karın öldü."
