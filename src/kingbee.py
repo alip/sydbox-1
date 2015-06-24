@@ -6,8 +6,7 @@
 from __future__ import print_function
 
 import os, sys
-import re, subprocess, timeit
-import warnings
+import re, subprocess, timeit, warnings
 
 SYDBOX_OPTIONS = list()
 
@@ -44,10 +43,10 @@ def test():
         rd, wr = os.pipe()
         child = os.fork()
         if child == 0:
-            os.write(wr, "1")
+            os.write(wr, b"1")
             grandchild = os.fork()
             if grandchild == 0:
-                os.stat("/dev/null")
+                os.stat(b"/dev/null")
             else:
                 os.wait()
         else:
@@ -175,6 +174,8 @@ def eval_ext(expr, syd=None, syd_opts=[],
     args = list()
 
     if valgrind is not None:
+        args.append('libtool')
+        args.append('--mode=execute')
         args.append(valgrind)
         args.extend(valgrind_opts)
         args.append("--")
@@ -189,9 +190,7 @@ def eval_ext(expr, syd=None, syd_opts=[],
                 "-mcore/whitelist/successful_bind:true",
                 "-mcore/whitelist/unsupported_socket_families:true",
                 "-mcore/trace/follow_fork:true",
-                "-mcore/trace/exit_wait_all:true",
                 "-mcore/trace/magic_lock:off",
-                "-mcore/trace/interrupt:while_wait",
                 "-mcore/sandbox/write:deny",
                 "-mcore/sandbox/network:deny",
                 "-mwhitelist/write+/dev/stdout",
