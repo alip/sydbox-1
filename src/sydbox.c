@@ -281,17 +281,10 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 	 * Link together for memory sharing, as necessary
 	 * Note: thread in this context is any process which shares memory.
 	 * (May not always be a real thread: (e.g. vfork)
-	 *
-	 * Note: If the parent process has magic lock set, this means the
-	 * sandbox information can no longer be edited. Treat such cases as
-	 * `threads'. (Threads only share sandbox_t which is constant when
-	 * magic_lock is set.)
-	 * TODO: We need to simplify the sandbox data structure to take more
-	 * advantage of such cases and decrease memory usage.
 	 */
 	current->clone_flags = parent->new_clone_flags;
 
-	if (share_thread || P_BOX(parent)->magic_lock == LOCK_SET) {
+	if (share_thread) {
 		current->shm.clone_thread = parent->shm.clone_thread;
 		P_CLONE_THREAD_RETAIN(current);
 	} else {
@@ -958,7 +951,6 @@ static int event_exec(syd_process_t *current)
 	syd_process_t *node, *tmp;
 	process_iter(node, tmp) {
 		if (current->pid != node->pid &&
-		    (node->clone_flags & CLONE_THREAD) &&
 		    current->shm.clone_thread == node->shm.clone_thread) {
 			bury_process(node); /* process_iter is delete-safe. */
 		}
