@@ -4,7 +4,7 @@
  * file and path utilities
  *
  * Copyright (c) 2015 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the GNU Lesser General Public License v3 (or later)
+ * Released under the terms of the GNU General Public License v3 (or later)
  */
 
 #ifndef _GNU_SOURCE
@@ -19,6 +19,7 @@
 #include <limits.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -122,8 +123,10 @@ ssize_t syd_readlink_alloc(const char *path, char **buf)
 	if (fd < 0)
 		return fd; /* negated errno */
 
-	char *p = NULL;
+	int r;
+	ssize_t n;
 	size_t l = 128;
+	char *p = NULL;
 	for (;;) {
 		char *m;
 
@@ -137,22 +140,32 @@ ssize_t syd_readlink_alloc(const char *path, char **buf)
 		p = m;
 		p[0] = '\0';
 
-		ssize_t n = readlinkat(fd, "", p, l - 1);
-		if (n < 0) {
-			int r = -errno;
-			close(fd);
-			free(p);
-			return r;
+		n = readlinkat(fd, "", p, l - 1);
+		if (n < 0 && errno != ENAMETOOLONG) {
+			r = -errno;
+			goto out;
 		} else if ((size_t)n < l - 1) {
-			close(fd);
-			p[n] = '\0';
-			*buf = p;
-			return (n + 1);
+			r = 0;
+			goto out;
 		}
 
+		unsigned long ul = (l * 2);
+		if (ul >= INT_MAX) { /* everything has a limit. */
+			r = -ENAMETOOLONG;
+			goto out;
+		}
 		l *= 2;
 	}
-	/* never reached */
+out:
+	close(fd);
+	if (!r) { /* success */
+		p[n] = '\0';
+		*buf = p;
+		r = ++n;
+	} else { /* failure */
+		free(p);
+	}
+	return r;
 }
 
 /*
@@ -228,6 +241,39 @@ out:
 #undef ignore_last_node
 }
 
+int syd_prepath_at(int fd, const char *path, char **buf, int mode)
+{
+	int r, save_fd = -ENOENT;
+	char *left = NULL, *rpath = NULL;
+
+	/* Handle (very) quick cases */
+	if (path && path[0] == '\0')
+		return -ENOENT;
+
+	/* Validate arguments */
+	if (buf == NULL)
+		return -EINVAL;
+	if (fd < 0 && fd != AT_FDCWD)
+		return -EINVAL;
+
+	/* Handle quick cases */
+	r = syd_path_root_check(path);
+	switch (r) {
+	case -ENOENT:
+		return -ENOENT;
+	case 0: /* This is == '/' */
+		return syd_path_root_alloc(buf);
+	case -EINVAL:
+		r = 0;
+		break;
+	default: /* >0 absolute path */
+		path += r;
+		r = 0;
+		break;
+	}
+}
+
+#if 0
 int syd_realpath_at(int fd, const char *path, char **buf, int mode)
 {
 	int r, save_fd = -ENOENT;
@@ -259,18 +305,6 @@ int syd_realpath_at(int fd, const char *path, char **buf, int mode)
 		break;
 	}
 
-	if (path[0] != '/') {
-		if (fd == AT_FDCWD) {
-			r = syd_opendir(".");
-			if (r >= 0 || r == -ENOENT)
-				save_fd = r;
-			else
-				return r;
-		} else if ((r = syd_fchdir(fd)) < 0) {
-			goto out;
-		}
-	}
-
 	bool nofollow;
 	short flags;
 	size_t llen, plen, rlen;
@@ -283,31 +317,49 @@ int syd_realpath_at(int fd, const char *path, char **buf, int mode)
 	left = malloc(sizeof(char) * plen);
 	if (left == NULL)
 		return -errno;
-	llen = syd_strlcpy(left, path + 1, plen);
-	if (llen >= plen) {
-		r = -ENAMETOOLONG; /* Should not happen */
-		goto out;
-	}
-
 	rpath = malloc(sizeof(char) * (plen + 1));
 	if (rpath == NULL) {
 		r = -errno;
 		goto out;
 	}
-	rpath[0] = '/';
-	rpath[1] = '\0';
-	rlen = 1;
+
+	if (path[0] == '/') {
+		rpath[0] = '/';
+		rpath[1] = '\0';
+		if (path[1] == '\0') {
+			r = 0;
+			goto out;
+		}
+		rlen = 1;
+		llen = syd_strlcpy(left, path + 1, plen);
+	} else {
+		if (fd == AT_FDCWD) {
+			save_fd = syd_opendir(".");
+			if (r >= 0 || r == -ENOENT) {
+				save_fd = r;
+			} else {
+				r = save_fd; /* negated errno */
+				goto out;
+			}
+		} else if ((r = syd_fchdir(fd)) < 0) {
+			goto out;
+		}
+	}
+
+	if (llen >= plen) {
+		r = -ENAMETOOLONG; /* Should not happen */
+		goto out;
+	}
 
 	/*
 	 * Iterate over path components in `left'.
 	 */
-	while (llen != 0) {
+	for (char *next_token = NULL; llen != 0;) {
 		/*
 		 * Extract the next path component and adjust `left'
 		 * and its length.
 		 */
 		char *m, *p, *q, *s;
-		char *next_token = NULL;
 		size_t ntlen, nsymlinks = 0;
 		struct stat sb;
 
@@ -478,3 +530,4 @@ out:
 	}
 	return r;
 }
+#endif

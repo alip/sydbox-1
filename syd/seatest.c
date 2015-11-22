@@ -1,4 +1,5 @@
 #include "seatest.h"
+#include <errno.h>
 #include <string.h>
 #ifdef WIN32
 #include "windows.h"
@@ -156,7 +157,7 @@ void seatest_assert_false(int test, const char* function, unsigned int line)
 void seatest_assert_int_equal(int expected, int actual, const char* function, unsigned int line)
 {
 	char s[SEATEST_PRINT_BUFFER_SIZE];
-	sprintf(s, "Expected %d but was %d", expected, actual);
+	sprintf(s, "Expected %d but was %d (errno:%d %s)", expected, actual, -actual, strerror(-actual));
 	seatest_simple_test_result(expected==actual, s, function, line);	
 }
 

@@ -4,7 +4,7 @@
  * file and path utility tests
  *
  * Copyright (c) 2015 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the GNU Lesser General Public License v3 (or later)
+ * Released under the terms of the GNU General Public License v3 (or later)
  */
 
 #define _GNU_SOURCE 1
@@ -26,12 +26,19 @@
 #define TMP_DANG_LINK		"dang"
 #define TMP_LOOP_LINK		"loop"
 #define TMP_LOOP_LOOP_LINK	"loop-loop"
+#define TMP_LONG		"long"
+#define TMP_LONG_NAME		"3.141592653589793238462643383279502884197169" \
+				"39937510582097494459230781640628620899862803" \
+				"482534211706798214808651328230664709384"
+#define TMP_LONG_MAGIC		32
 static char *tmpdir;
 static char *tmp_file;
 static char *tmp_void_file;
 static char *tmp_link;
 static char *tmp_dang_link;
 static char *tmp_loop_link;
+
+static int test_cwd_fd;
 
 static void test_setup(void)
 {
@@ -49,15 +56,39 @@ static void test_setup(void)
 	assert_true(asprintf(&tmp_link, "%s/"TMP_LINK, tmpdir) != -1);
 	assert_true(asprintf(&tmp_dang_link, "%s/"TMP_DANG_LINK, tmpdir) != -1);
 	assert_true(asprintf(&tmp_loop_link, "%s/"TMP_LOOP_LINK, tmpdir) != -1);
+
+	assert_int_equal(0, system("mkdir -p -m700 "TMPDIR"/"TMP_LONG));
+	assert_int_equal(0, chdir(TMPDIR"/"TMP_LONG));
+	for (unsigned int i = 0; i < TMP_LONG_MAGIC; i++) {
+		assert_int_equal(0, system("mkdir -p -m700 "TMP_LONG_NAME));
+		assert_int_equal(0, chdir("./"TMP_LONG_NAME));
+	}
+	assert_int_equal(0, fchdir(test_cwd_fd));
 	;
 }
 
 static void test_teardown(void)
 {
-	assert_int_equal(0, system("rm -fr ./file-TEST-tmp"));
+	assert_int_equal(0, fchdir(test_cwd_fd));
+	assert_int_equal(0, system("rm -fr ./"TMPDIR));
 	if (tmpdir)
 		free(tmpdir);
-	;
+	if (tmp_file)
+		free(tmp_file);
+	if (tmp_void_file)
+		free(tmp_void_file);
+	if (tmp_link)
+		free(tmp_link);
+	if (tmp_dang_link)
+		free(tmp_dang_link);
+	if (tmp_loop_link)
+		free(tmp_loop_link);
+	tmpdir = NULL;
+	tmp_file = NULL;
+	tmp_void_file = NULL;
+	tmp_link = NULL;
+	tmp_dang_link = NULL;
+	tmp_loop_link = NULL;
 }
 
 static void test_syd_readlink_alloc_01(void)
@@ -81,6 +112,17 @@ static void test_syd_readlink_alloc_01(void)
 	assert_true(buf[sizeof(TMP_LOOP_LOOP_LINK) - 1] == '\0');
 	assert_string_equal(TMP_LOOP_LOOP_LINK, buf);
 	free(buf);
+}
+
+static void test_syd_readlink_alloc_02(void)
+{
+	char *buf;
+
+	assert_int_equal(0, chdir(TMPDIR"/"TMP_LONG));
+	for (unsigned int i = 0; i < TMP_LONG_MAGIC; i++)
+		assert_int_equal(0, chdir("./"TMP_LONG_NAME));
+	assert_int_equal(12, syd_readlink_alloc("/proc/self/cwd", &buf));
+	assert_string_equal("foo", buf);
 }
 
 static void test_syd_path_root_check_01(void)
@@ -154,6 +196,7 @@ static void test_syd_path_stat_01(void)
 	assert_true(sb.st_mode == 0);
 }
 
+#if 0
 static void test_syd_realpath_at_01(void)
 {
 	int r;
@@ -300,24 +343,46 @@ static void test_syd_realpath_at_02(void)
 
 static void test_syd_realpath_at_03(void)
 {
-	/* TODO */;
+	int ne;
+	char *r1, *r2;
+
+	r1 = realpath(TMPDIR"//./..//"TMPDIR"/"TMP_FILE, NULL);
+	ne = syd_realpath_at(AT_FDCWD, TMPDIR"//./..//"TMPDIR"/"TMP_FILE, &r2,
+			     SYD_REALPATH_EXIST);
+	assert_true(r1 != NULL);
+	assert_int_equal(0, ne);
+	assert_string_equal(r1, r2);
+	assert_true(strstr(r1, "/"TMPDIR"/"TMP_FILE) ==
+		    r1 + strlen(r1) - strlen("/"TMPDIR"/"TMP_FILE));
+	free(r1);
+	free(r2);
 }
+#endif
 
 static void test_fixture_file(void)
 {
+	test_cwd_fd = open(".", O_PATH|O_CLOEXEC|O_DIRECTORY);
+	if (test_cwd_fd < 0) {
+		perror("file-TEST: open");
+		return;
+	}
 	test_fixture_start();
 
 	fixture_setup(test_setup);
 	fixture_teardown(test_teardown);
 
 	run_test(test_syd_readlink_alloc_01);
+	run_test(test_syd_readlink_alloc_02);
 	run_test(test_syd_path_root_check_01);
 	run_test(test_syd_path_stat_01);
+#if 0
 	run_test(test_syd_realpath_at_01);
 	run_test(test_syd_realpath_at_02);
-	run_test(test_syd_realpath_at_03);
+	//run_test(test_syd_realpath_at_03);
+#endif
 
 	test_fixture_end();
+	close(test_cwd_fd);
 }
 
 void test_suite_file(void)

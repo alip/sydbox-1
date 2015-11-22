@@ -2,7 +2,7 @@
  * syd.h -- Syd's utility library
  *
  * Copyright (c) 2014, 2015 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the GNU Lesser General Public License v3 (or later)
+ * Released under the terms of the GNU General Public License v3 (or later)
  */
 
 #ifndef LIBSYD_SYD_H

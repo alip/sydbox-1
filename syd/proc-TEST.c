@@ -4,7 +4,7 @@
  * proc utility tests
  *
  * Copyright (c) 2014, 2015 Ali Polatel <alip@exherbo.org>
- * Released under the terms of the GNU Lesser General Public License v3 (or later)
+ * Released under the terms of the GNU General Public License v3 (or later)
  */
 
 #include "check.h"
