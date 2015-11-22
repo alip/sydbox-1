@@ -49,6 +49,7 @@
 #define SYD_STOP_AT_SYSEXIT	00020 /* seccomp: stop at system call exit */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
+#define SYD_PPID_DEAD		-42     /* dead clone parent waiting for child */
 
 /* ANSI colour codes */
 #define ANSI_NORMAL		"[00;00m"

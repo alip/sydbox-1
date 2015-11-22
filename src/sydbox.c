@@ -109,6 +109,47 @@ Attaching poems encourages consideration tremendously.\n");
 	exit(code);
 }
 
+#if SYDBOX_DEBUG
+static void print_addr_info(FILE *f, unw_word_t ip)
+{
+	char cmd[256];
+	char buf[LINE_MAX];
+	FILE *p;
+
+	snprintf(cmd, 256, "addr2line -pfasiC -e /proc/%u/exe %lx", getpid(), ip);
+	p = popen(cmd, "r");
+
+	if (p == NULL) {
+		fprintf(f, "%s: errno:%d %s\n", cmd, errno, strerror(errno));
+		return;
+	}
+
+	while (fgets(buf, LINE_MAX, p) != NULL) {
+		if (buf[0] == '\0')
+			fputs("?\n", f);
+		else
+			fprintf(f, "\t%s", buf);
+	}
+
+	pclose(p);
+}
+
+static void print_backtrace(FILE *f)
+{
+	unw_word_t ip;
+	unw_cursor_t cursor;
+	unw_context_t uc;
+
+	unw_getcontext(&uc);
+	unw_init_local(&cursor, &uc);
+
+	do {
+		unw_get_reg(&cursor, UNW_REG_IP, &ip);
+		print_addr_info(f, ip);
+	} while (unw_step(&cursor) > 0);
+}
+#endif
+
 static void kill_save_errno(pid_t pid, int sig)
 {
 	int saved_errno = errno;
@@ -318,6 +359,27 @@ static void init_process_data(syd_process_t *current, syd_process_t *parent)
 	}
 }
 
+static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
+{
+	syd_process_t *child;
+
+	child = lookup_process(cpid);
+	if (child == NULL)
+		child = new_thread_or_kill(cpid, post_attach_sigstop);
+	child->ppid = p->pid;
+	init_process_data(child, p);
+
+	/* clone OK: p->pid <-> cpid */
+	p->new_clone_flags = 0;
+
+	if (p->ppid == SYD_PPID_DEAD) /* parent already dead! */
+		bury_process(p);
+
+	sydbox->clone_pid = 0; /* unset clone pid so waitpid() waits for all. */
+
+	return child;
+}
+
 void bury_process(syd_process_t *p)
 {
 	pid_t pid;
@@ -346,7 +408,7 @@ void bury_process(syd_process_t *p)
 	if (sydbox->config.whitelist_per_process_directories)
 		procdrop(&sydbox->config.hh_proc_pid_auto, pid);
 
-	free(p);
+	free(p); /* good bye, good bye, good bye. */
 }
 
 /* Drop leader, switch to the thread, reusing leader's tid */
@@ -379,11 +441,21 @@ static void remove_process(pid_t pid, int status)
 {
 	syd_process_t *p;
 
-	p = lookup_process(pid);
-	if (p)
-		bury_process(p);
 	if (pid == sydbox->execve_pid)
 		save_exit_status(status);
+
+	p = lookup_process(pid);
+	if (!p)
+		return;
+	if (p->new_clone_flags) {
+		if (p->pid == sydbox->clone_pid) {
+			/* unset clone pid so waitpid() waits for all. */
+			sydbox->clone_pid = 0;
+		}
+		p->ppid = SYD_PPID_DEAD;
+		return;
+	}
+	bury_process(p);
 }
 
 static void interrupt(int sig)
@@ -724,47 +796,6 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	}
 }
 
-#if SYDBOX_DEBUG
-static void print_addr_info(FILE *f, unw_word_t ip)
-{
-	char cmd[256];
-	char buf[LINE_MAX];
-	FILE *p;
-
-	snprintf(cmd, 256, "addr2line -pfasiC -e /proc/%u/exe %lx", getpid(), ip);
-	p = popen(cmd, "r");
-
-	if (p == NULL) {
-		fprintf(f, "%s: errno:%d %s\n", cmd, errno, strerror(errno));
-		return;
-	}
-
-	while (fgets(buf, LINE_MAX, p) != NULL) {
-		if (buf[0] == '\0')
-			fputs("?\n", f);
-		else
-			fprintf(f, "\t%s", buf);
-	}
-
-	pclose(p);
-}
-
-static void print_backtrace(FILE *f)
-{
-	unw_word_t ip;
-	unw_cursor_t cursor;
-	unw_context_t uc;
-
-	unw_getcontext(&uc);
-	unw_init_local(&cursor, &uc);
-
-	do {
-		unw_get_reg(&cursor, UNW_REG_IP, &ip);
-		print_addr_info(f, ip);
-	} while (unw_step(&cursor) > 0);
-}
-#endif
-
 static void sig_usr(int sig)
 {
 	bool complete_dump;
@@ -899,30 +930,21 @@ static int event_startup(syd_process_t *current)
 
 static int event_clone(syd_process_t *current)
 {
-	int r = 0;
-	long cpid_l = -1;
-	syd_process_t *child;
-
 	assert(current);
 
-#if 0
 	if (!current->new_clone_flags)
 		return 0;
-#endif
 
-	r = pink_trace_geteventmsg(current->pid, (unsigned long *)&cpid_l);
-	if (r < 0 || cpid_l <= 0) {
+	int r;
+	long cpid = -1;
+
+	r = pink_trace_geteventmsg(current->pid, (unsigned long *)&cpid);
+	if (r < 0 || cpid <= 0) {
 		bury_process(current);
 		return (r < 0) ? r : -EINVAL;
 	}
 
-	child = lookup_process(cpid_l);
-	assert(!child);
-
-	child = new_thread_or_kill(cpid_l, post_attach_sigstop);
-	child->ppid = current->pid;
-	init_process_data(child, current);
-	current->new_clone_flags = 0;
+	clone_process(current, cpid);
 
 	return 0;
 }
@@ -1078,12 +1100,12 @@ static int trace(void)
 		if ((r = check_interrupt()) != 0)
 			return r;
 
-		if (!sydbox->clone_pid) {
-			current = NULL;
-		} else {
+		if (sydbox->clone_pid) {
+			say("look for %u", sydbox->clone_pid);
 			current = lookup_process(sydbox->clone_pid);
-			assert(current);
-			sydbox->clone_pid = 0;
+			bug_on(current);
+		} else {
+			current = NULL;
 		}
 
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
@@ -1126,7 +1148,7 @@ static int trace(void)
 		/* If we are here we *must* have a process entry! */
 		if (!current) {
 			current = lookup_process(pid);
-			assert(current);
+			bug_on(current); /* otherwise we have a bug! */
 		}
 
 		/* Under Linux, execve changes pid to thread leader's pid,

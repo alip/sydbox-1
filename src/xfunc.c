@@ -78,14 +78,19 @@ void say(const char *fmt, ...)
 	fputc('\n', stderr);
 }
 
-void assert_(const char *expr, const char *func,
+void assert_warn_(const char *expr, const char *func,
 	     const char *file, size_t line)
 {
 	fprintf(stderr, PACKAGE": Assertion '%s' failed at %s:%zu, function %s()\n",
 		expr, file, line, func);
 
 	dump(DUMP_ASSERT, expr, file, line, func);
+}
 
+void assert_(const char *expr, const char *func,
+	     const char *file, size_t line)
+{
+	assert_warn_(expr, func, file, line);
 	syd_abort(SIGABRT);
 }
 
