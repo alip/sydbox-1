@@ -322,10 +322,17 @@ static void init_shareable_data(syd_process_t *current, syd_process_t *parent)
 	 * Link together for memory sharing, as necessary
 	 * Note: thread in this context is any process which shares memory.
 	 * (May not always be a real thread: (e.g. vfork)
+	 *
+	 * Note: If the parent process has magic lock set, this means the
+	 * sandbox information can no longer be edited. Treat such cases as
+	 * `threads'. (Threads only share sandbox_t which is constant when
+	 * magic_lock is set.)
+	 * TODO: We need to simplify the sandbox data structure to take more
+	 * advantage of such cases and decrease memory usage.
 	 */
 	current->clone_flags = parent->new_clone_flags;
 
-	if (share_thread) {
+	if (share_thread || P_BOX(parent)->magic_lock == LOCK_SET) {
 		current->shm.clone_thread = parent->shm.clone_thread;
 		P_CLONE_THREAD_RETAIN(current);
 	} else {
@@ -973,6 +980,7 @@ static int event_exec(syd_process_t *current)
 	syd_process_t *node, *tmp;
 	process_iter(node, tmp) {
 		if (current->pid != node->pid &&
+		    (node->clone_flags & CLONE_THREAD) &&
 		    current->shm.clone_thread == node->shm.clone_thread) {
 			bury_process(node); /* process_iter is delete-safe. */
 		}
@@ -1100,13 +1108,11 @@ static int trace(void)
 		if ((r = check_interrupt()) != 0)
 			return r;
 
-		if (sydbox->clone_pid) {
-			say("look for %u", sydbox->clone_pid);
+		if (sydbox->clone_pid &&
+		    !waitpid(sydbox->clone_pid, NULL, WNOHANG|WNOWAIT|__WALL))
 			current = lookup_process(sydbox->clone_pid);
-			bug_on(current);
-		} else {
+		else
 			current = NULL;
-		}
 
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
 		errno = 0;
@@ -1145,11 +1151,44 @@ static int trace(void)
 
 		event = pink_event_decide(status);
 
-		/* If we are here we *must* have a process entry! */
+		/* If we are here we *must* have a process entry for the usual
+		 * cases however there is still a chance we may have the
+		 * new-born child of a clone()! */
+		current = lookup_process(pid);
 		if (!current) {
-			current = lookup_process(pid);
-			bug_on(current); /* otherwise we have a bug! */
+			pid_t ppid = -1;
+			syd_process_t *parent = NULL;
+
+			if (sydbox->clone_pid && sydbox->clone_pid != pid) {
+				ppid = sydbox->clone_pid;
+				sydbox->clone_pid = 0;
+			} else if ((r = syd_proc_ppid(pid, &ppid))) {
+				switch (r) {
+				case -ENOENT: /* Process is dead, stray SIGKILL? */
+					break;
+				default:
+					TELL_ON(0, "pid %u, status %#x, event %d|%s clone %u (-pent, errno:%d|%s)",
+						pid, status, event, pink_name_event(event), sydbox->clone_pid,
+						-r, pink_name_errno(-r, PINK_ABI_DEFAULT));
+					break;
+				}
+				sydbox->clone_pid = 0;
+				continue;
+			}
+
+			parent = lookup_process(ppid);
+			YELL_ON(parent, "pid %u, status %#x, event %d|%s parent %u (-pent)",
+				pid, status, event, pink_name_event(event), ppid);
+			current = clone_process(parent, pid);
+			BUG_ON(current); /* Just bizarre, no questions */
 		}
+#if 0
+		else {
+			TELL_ON(!current, "pid %u, status %#x, event %d|%s w/o pent",
+				pid, (unsigned)status,
+				event, pink_name_event(event));
+		}
+#endif
 
 		/* Under Linux, execve changes pid to thread leader's pid,
 		 * and we see this changed pid on EVENT_EXEC and later,

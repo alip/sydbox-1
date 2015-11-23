@@ -26,6 +26,8 @@
 #include "bsd-compat.h"
 #include "sockmap.h"
 
+#include <stdio.h>
+
 #include <fcntl.h>
 #include <sys/stat.h>
 #if PINK_ARCH_X86_64
@@ -414,38 +416,48 @@ int sysx_fcntl(syd_process_t *current)
 	return 0;
 }
 
+static int set_clone_flags(syd_process_t *current, unsigned long flags)
+{
+	unsigned long clone_flags;
+	current->new_clone_flags = 0;
+#if SYDBOX_HAVE_SECCOMP
+	if (sydbox->config.use_seccomp) {
+#endif
+		if (!flags) {
+			int r = 0;
+			if ((r = syd_read_argument(current, 0, (long *)&clone_flags)) < 0)
+				return r;
+			flags = clone_flags;
+		}
+		current->new_clone_flags = flags;
+#if SYDBOX_HAVE_SECCOMP
+	}
+#endif
+	return 0;
+}
+
 int sys_fork(syd_process_t *current)
 {
 	sydbox->clone_pid = current->pid;
-	if (current->new_clone_flags == 0)
-		current->new_clone_flags = SIGCHLD;
-	return 0;
+	return set_clone_flags(current, SIGCHLD);
 }
 
 int sys_vfork(syd_process_t *current)
 {
 	sydbox->clone_pid = current->pid;
-	if (current->new_clone_flags == 0)
-		current->new_clone_flags = (CLONE_VM|CLONE_VFORK|SIGCHLD);
-	return 0;
+	return set_clone_flags(current, CLONE_VM|CLONE_VFORK|SIGCHLD);
 }
 
 int sys_clone(syd_process_t *current)
 {
 	int r;
-	unsigned long flags;
 
-	current->new_clone_flags = 0;
-	if ((r = syd_read_argument(current, 0, (long *)&flags)) < 0)
-		return r;
-	current->new_clone_flags = flags;
-
-	if (flags & CLONE_VFORK)
+	r = set_clone_flags(current, 0);
+	if (current->new_clone_flags & CLONE_VFORK)
 		return sys_vfork(current);
-	else if ((flags & CSIGNAL) == SIGCHLD)
+	else if ((current->new_clone_flags & CSIGNAL) == SIGCHLD)
 		return sys_fork(current);
 
 	sydbox->clone_pid = current->pid;
-
-	return 0;
+	return r;
 }

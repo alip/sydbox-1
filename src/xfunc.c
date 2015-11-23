@@ -78,8 +78,38 @@ void say(const char *fmt, ...)
 	fputc('\n', stderr);
 }
 
-void assert_warn_(const char *expr, const char *func,
-	     const char *file, size_t line)
+void bug_on(const char *expr, const char *func, const char *file, size_t line,
+	    const char *fmt, ...)
+{
+	va_list ap;
+
+	if (fmt) {
+		fprintf(stderr, "BUG: %s:%s/%s:%zu: ", expr, file, func, line);
+		va_start(ap, fmt);
+		vsay(fmt, ap);
+		va_end(ap);
+		fputc('\n', stderr);
+	}
+	pause();
+	assert_(expr, func, file, line);
+}
+
+void warn_on(const char *expr, const char *func, const char *file, size_t line,
+	     const char *fmt, ...)
+{
+	va_list ap;
+
+	if (fmt) {
+		fprintf(stderr, "WARN: %s:%s/%s:%zu: ", expr, file, func, line);
+		va_start(ap, fmt);
+		vsay(fmt, ap);
+		va_end(ap);
+		fputc('\n', stderr);
+	}
+	assert_warn_(expr, func, file, line);
+}
+
+void assert_warn_(const char *expr, const char *func, const char *file, size_t line)
 {
 	fprintf(stderr, PACKAGE": Assertion '%s' failed at %s:%zu, function %s()\n",
 		expr, file, line, func);
@@ -87,8 +117,7 @@ void assert_warn_(const char *expr, const char *func,
 	dump(DUMP_ASSERT, expr, file, line, func);
 }
 
-void assert_(const char *expr, const char *func,
-	     const char *file, size_t line)
+void assert_(const char *expr, const char *func, const char *file, size_t line)
 {
 	assert_warn_(expr, func, file, line);
 	syd_abort(SIGABRT);

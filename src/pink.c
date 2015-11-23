@@ -143,7 +143,7 @@ int syd_read_syscall(syd_process_t *current, long *sysnum)
 	int r;
 
 	SYD_RETURN_IF_DEAD(current);
-	bug_on(sysnum);
+	BUG_ON(sysnum);
 
 	r = pink_read_syscall(current->pid, current->regset, sysnum);
 
@@ -166,7 +166,7 @@ int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
 	int r;
 
 	SYD_RETURN_IF_DEAD(current);
-	bug_on(argval);
+	BUG_ON(argval);
 
 	r = pink_read_argument(current->pid, current->regset, arg_index, argval);
 
@@ -179,7 +179,7 @@ int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argva
 	long arg_l;
 
 	SYD_RETURN_IF_DEAD(current);
-	bug_on(argval);
+	BUG_ON(argval);
 
 	r = pink_read_argument(current->pid, current->regset, arg_index, &arg_l);
 	if (r == 0) {
@@ -215,7 +215,7 @@ int syd_read_socket_argument(syd_process_t *current, bool decode_socketcall,
 	int r;
 
 	SYD_RETURN_IF_DEAD(current);
-	bug_on(argval);
+	BUG_ON(argval);
 
 	r = pink_read_socket_argument(current->pid, current->regset,
 				      decode_socketcall,
@@ -242,7 +242,7 @@ int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
 	int r;
 
 	SYD_RETURN_IF_DEAD(current);
-	bug_on(sockaddr);
+	BUG_ON(sockaddr);
 
 	r = pink_read_socket_address(current->pid, current->regset,
 				     decode_socketcall,

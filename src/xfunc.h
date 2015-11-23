@@ -15,18 +15,34 @@
 extern void syd_abort_func(void (*func)(int));
 
 /* bug_on & warn_on */
-#define bug_on(expr) \
+#define BUG_ON(expr) \
 	do { \
-		if (!(expr)) \
-			assert_(#expr, __func__, __FILE__, __LINE__); \
+		if (!(expr)) { \
+			bug_on(#expr, __func__, __FILE__, __LINE__, NULL); \
+		} \
 	} \
 	while (0)
-#define warn_on(expr) \
+#define YELL_ON(expr, ...) \
 	do { \
-		if (!(expr)) \
-			assert_warn_(#expr, __func__, __FILE__, __LINE__); \
+		if (!(expr)) { \
+			bug_on(#expr, __func__, __FILE__, __LINE__, __VA_ARGS__); \
+		} \
 	} \
 	while (0)
+
+#define WARN_ON(expr) \
+	do { \
+		if (!(expr)) \
+			warn_on(#expr, __func__, __FILE__, __LINE__, NULL); \
+	} \
+	while (0)
+#define TELL_ON(expr, ...) \
+	do { \
+		if (!(expr)) \
+			warn_on(#expr, __func__, __FILE__, __LINE__, __VA_ARGS__); \
+	} \
+	while (0)
+
 
 #define assert_not_reached() assert_not_reached_(__func__, __FILE__, __LINE__)
 /* Override assert() from assert.h */
@@ -34,13 +50,22 @@ extern void syd_abort_func(void (*func)(int));
 #ifdef NDEBUG
 #define assert(expr) do {} while (0)
 #else
-#define assert(expr) do { bug_on(expr); } while (0)
+#define assert(expr) do { BUG_ON(expr); } while (0)
 #endif
 
 extern void vsay(const char *fmt, va_list ap)
 	PINK_GCC_ATTR((format (printf, 1, 0)));
 extern void say(const char *fmt, ...)
 	PINK_GCC_ATTR((format (printf, 1, 2)));
+
+extern void bug_on(const char *expr,
+		   const char *func, const char *file, size_t line,
+		   const char *fmt, ...)
+	PINK_GCC_ATTR((noreturn, format (printf, 5, 6)));
+extern void warn_on(const char *expr,
+		    const char *func, const char *file, size_t line,
+		    const char *fmt, ...)
+	PINK_GCC_ATTR((format (printf, 5, 6)));
 
 extern void assert_warn_(const char *expr, const char *func, const char *file, size_t line);
 extern void assert_(const char *expr, const char *func, const char *file, size_t line)

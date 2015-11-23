@@ -69,7 +69,7 @@ def test():
         pid = os.fork()
         if pid == 0: # child
             child = os.getpid()
-            loops = @LOOP_COUNT@ / 10
+            loops = int(@LOOP_COUNT@ / 10)
             while loops >= 0:
                 pid = os.fork()
                 if pid == 0: # grandchild, kill child.
@@ -158,15 +158,19 @@ def find_valgrind():
     global VALGRIND
     global VALGRIND_OPTS
 
-    VALGRIND = which("valgrind")
+    if 'VALGRIND' not in os.environ or os.environ['VALGRIND'] != '0':
+        VALGRIND = which("valgrind")
+    else:
+        VALGRIND = None
+
     if VALGRIND is None:
         warnings.warn("valgrind not found", RuntimeWarning)
-    print("using valgrind `%s'" % VALGRIND)
-
-    VALGRIND_OPTS.extend(["--quiet",
-                          "--error-exitcode=126",
-                          "--leak-check=full",
-                          "--track-origins=yes"])
+    else:
+        print("using valgrind `%s'" % VALGRIND)
+        VALGRIND_OPTS.extend(["--quiet",
+                              "--error-exitcode=126",
+                              "--leak-check=full",
+                              "--track-origins=yes"])
 
 def eval_ext(expr, syd=None, syd_opts=[],
                    valgrind=None, valgrind_opts=[]):
@@ -195,10 +199,12 @@ def eval_ext(expr, syd=None, syd_opts=[],
                 "-mcore/sandbox/network:deny",
                 "-mwhitelist/write+/dev/stdout",
                 "-mwhitelist/write+/dev/stderr",
-                #"-mwhitelist/write+/dev/zero",
+                "-mwhitelist/write+/dev/zero",
                 "-mwhitelist/write+/dev/null",
                 "-mwhitelist/write+%s" % os.path.join(os.path.realpath("."), "kingbee.d", "***"),
-                "-mwhitelist/network/bind+LOOPBACK@0",])
+                "-mwhitelist/network/bind+LOOPBACK@0",
+                "-mwhitelist/network/connect+unix:/run/nscd/socket",
+                "-mwhitelist/network/connect+unix:/var/run/nscd/socket",])
         args.extend(syd_opts)
         args.append("--")
 
@@ -294,9 +300,10 @@ def main(argv):
         if not match(bee[0]):
             print("skip %r" % bee[0])
             continue
-        if len(bee) == 4:
+        tail = len(bee)
+        if tail == 4:
             run_test(bee[0], bee[1], threaded=bee[2], loops=bee[3])
-        elif len(bee) == 3:
+        elif tail == 3:
             run_test(bee[0], bee[1], threaded=bee[2])
         else:
             run_test(bee[0], bee[1])
