@@ -5,7 +5,7 @@
 
 from __future__ import print_function
 
-import os, sys
+import os, sys, shlex
 import re, subprocess, timeit, warnings
 
 SYDBOX_OPTIONS = list()
@@ -172,19 +172,66 @@ def find_valgrind():
                               "--leak-check=full",
                               "--track-origins=yes"])
 
-def eval_ext(expr, syd=None, syd_opts=[],
-                   valgrind=None, valgrind_opts=[]):
+GDB = None
+GDB_OPTS = []
+def find_gdb():
+    global GDB
+    global GDB_OPTS
+
+    if 'GDB' in os.environ and os.environ['GDB'] != '0':
+        GDB = which("cgdb") or which("gdb")
+        if GDB is None:
+            warnings.warn("gdb not found", RuntimeWarning)
+    else:
+        GDB = None
+
+    if GDB is not None:
+        print("using gdb `%s'" % GDB)
+        GDB_OPTS.extend(["--args"])
+
+STRACE = None
+STRACE_OPTS = []
+def find_strace():
+    global STRACE
+    global STRACE_OPTS
+
+    if 'STRACE' in os.environ or os.environ['STRACE'] != '0':
+        STRACE = which("strace")
+        if STRACE is None:
+            warnings.warn("strace not found", RuntimeWarning)
+    else:
+        STRACE = None
+
+    if STRACE is not None:
+        print("using strace `%s'" % STRACE)
+        STRACE_OPTS.extend(["-f"])
+        if os.environ['STRACE'] != '1':
+            STRACE_OPTS.extend(shlex.split(os.environ['STRACE']))
+
+def eval_ext(expr,
+             syd=None, syd_opts=[],
+             gdb=None, gdb_opts=[],
+             strace=None, strace_opts=[],
+             valgrind=None, valgrind_opts=[]):
     """ Call python to evaluate an expr, optionally under sydbox """
     args = list()
 
-    if valgrind is not None:
+    if gdb is not None or valgrind is not None:
         args.append('libtool')
         args.append('--mode=execute')
-        args.append(valgrind)
-        args.extend(valgrind_opts)
-        args.append("--")
+        if gdb is not None:
+            args.append(gdb)
+            args.extend(gdb_opts)
+        elif valgrind is not None:
+            args.append(valgrind)
+            args.extend(valgrind_opts)
+            args.append("--")
 
-    if syd is not None:
+    if strace is not None and gdb is None and valgrind is None:
+        args.append(strace)
+        args.extend(strace_opts)
+        args.append("--")
+    elif syd is not None:
         args.append(syd)
         if SYDBOX_OPTIONS:
             syd_opts.extend(SYDBOX_OPTIONS)
@@ -271,14 +318,27 @@ def run_test(name, expr, loops=100, threaded=True):
                                                                choice[0],
                                                                choice[1],
                                                                t))
-        print("\t%d: sydbox [seize:%d, seccomp:%d]: check with valgrind" %
-                (test_no, choice[0], choice[1]))
-        eval_ext(expr_once, syd=SYDBOX, syd_opts=[opt_seize, opt_seccomp],
-                valgrind=VALGRIND, valgrind_opts=VALGRIND_OPTS)
+        if STRACE is not None:
+            print("\t%d: under strace" % (test_no))
+            eval_ext(expr_once, syd=SYDBOX, syd_opts=[opt_seize, opt_seccomp],
+                     strace=STRACE, strace_opts=STRACE_OPTS)
+            break
+        elif GDB is not None:
+            print("\t%d: sydbox [seize:%d, seccomp:%d]: under gdb" %
+                    (test_no, choice[0], choice[1]))
+            eval_ext(expr_once, syd=SYDBOX, syd_opts=[opt_seize, opt_seccomp],
+                     gdb=GDB, gdb_opts=GDB_OPTS)
+        elif VALGRIND is not None:
+            print("\t%d: sydbox [seize:%d, seccomp:%d]: check with valgrind" %
+                    (test_no, choice[0], choice[1]))
+            eval_ext(expr_once, syd=SYDBOX, syd_opts=[opt_seize, opt_seccomp],
+                    valgrind=VALGRIND, valgrind_opts=VALGRIND_OPTS)
         test_no += 1
 
 def main(argv):
     find_sydbox()
+    find_gdb()
+    find_strace()
     find_valgrind()
 
     match = None
