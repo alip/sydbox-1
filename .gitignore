@@ -23,6 +23,7 @@
 *.shoebox
 core*
 sydcore*
+vgcore*
 
 #
 # git files that we don't want to ignore even it they are dot-files
@@ -97,6 +98,7 @@ Makefile
 /src/sydfmt
 /src/sydbox-dump
 /src/shoebox
+/src/kingbee.d/*
 
 /syd/syd-check
 /syd/check-pause
