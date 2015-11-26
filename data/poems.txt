@@ -5,6 +5,46 @@ This is an attempt to thank everyone involved in tackling sydbox bugs, writing p
 Peace & Love!
 Released under the terms of the WTFPL, version 2, as published by Sam Hocevar.
 
+From: everyone
+Date: phew, been a while
+Bug: yet another inheritance mambo jambo broken whilst optimisation for shm.
+Note: Looks fixing, tests pass, king bee buzzes, may need a check with what-libs/serf.
+Poem:
+
+# Heads or Tails?
+	Hacıosman, 2014
+
+	"When were you born?"
+	Asked the number one
+	To the curious child of dawn
+	Before you were here
+	There was no before or after
+	Anything that ever was
+	Would be forever.
+
+	When time didn't flow
+	To catch what we're after
+	Everything was one altogether.
+	Nothing
+	To tell one from another
+	Not even a melody
+	To tear day from night
+	How could a beam of light,
+	Become all that is bright?
+
+	When pure chance was wise,
+	Long before imprisoned by you
+	Were there any doors
+	Other than what senses let through?
+
+	Look at the mirror inside the mirror,
+	Would your eyes betray you?
+	Dream inside a dream,
+	Is it what they put them through?
+
+	Toss a coin to choose your way,
+	For it's luck's birthday today!
+
 From: woutershep
 Date: 2015-04-30
 Bug: syd_proc_ppid() breaks for processes with names which have spaces.
