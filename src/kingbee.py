@@ -195,7 +195,7 @@ def find_strace():
     global STRACE
     global STRACE_OPTS
 
-    if 'STRACE' in os.environ or os.environ['STRACE'] != '0':
+    if 'STRACE' in os.environ and os.environ['STRACE'] != '0':
         STRACE = which("strace")
         if STRACE is None:
             warnings.warn("strace not found", RuntimeWarning)
