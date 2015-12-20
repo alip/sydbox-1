@@ -5,6 +5,49 @@ This is an attempt to thank everyone involved in tackling sydbox bugs, writing p
 Peace & Love!
 Released under the terms of the WTFPL, version 2, as published by Sam Hocevar.
 
+From: myself
+Date: this moment
+Bug: I have not seen a scorpion in the house for a while, not much around this year.
+Note: etoN
+
+# Yell for Help
+
+Random was not random, having been uttered.
+Clouds of sky blue, nothing but bloom.
+
+First step,
+Take for granted.
+If one dreams x happens:
+Define x happened.
+
+Second step,
+If one dreams x happens,
+Before x happened:
+Define x will happen.
+
+Third step
+If one will dream x happens,
+Neither before nor after x happens:
+Define x is random.
+
+Fourth step
+Take for granted.
+If x is known.
+Define x is not random.
+
+Fifth step
+If one dreams a random x happens,
+After x happened, x was known:
+Define x is a positive random.
+
+Sixth step
+If one dreams x happens,
+X is negative,
+Define x is undefined.
+
+Seventh step
+If one dreams an undefined x happens,
+
 From: everyone
 Date: phew, been a while
 Bug: yet another inheritance mambo jambo broken whilst optimisation for shm.
