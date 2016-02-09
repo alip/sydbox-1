@@ -26,6 +26,7 @@ test-lib.sh: test-lib.sh.in
 CLEANFILES+= test-lib.sh
 EXTRA_DIST+= test-lib.sh.in
 nodist_check_SCRIPTS= test-lib.sh
+nodist_syd_SCRIPTS= $(nodist_check_SCRIPTS)
 
 TEST_EXTENSIONS= .sh
 SH_LOG_COMPILER= $(srcdir)/test-runner.sh
