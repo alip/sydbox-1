@@ -25,7 +25,7 @@ test-lib.sh: test-lib.sh.in
 		$< > $@
 CLEANFILES+= test-lib.sh
 EXTRA_DIST+= test-lib.sh.in
-check_SCRIPTS+= test-lib.sh
+nodist_check_SCRIPTS= test-lib.sh
 
 TEST_EXTENSIONS= .sh
 SH_LOG_COMPILER= $(srcdir)/test-runner.sh

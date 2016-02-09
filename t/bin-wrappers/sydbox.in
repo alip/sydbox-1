@@ -29,6 +29,6 @@ else
 	then
 		exec "@BINDIR@"/sydbox $SYDBOX_TEST_OPTIONS "$@"
 	else
-		exec "@LIBEXECDIR@"/sydbox-dump $SYDBOX_TEST_OPTIONS "$@"
+		exec "@LIBEXECDIR@"/sydbox/dump/sydbox-dump $SYDBOX_TEST_OPTIONS "$@"
 	fi
 fi
