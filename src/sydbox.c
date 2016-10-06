@@ -455,10 +455,7 @@ static void remove_process(pid_t pid, int status)
 	if (!p)
 		return;
 	if (p->new_clone_flags) {
-		if (p->pid == sydbox->clone_pid) {
-			/* unset clone pid so waitpid() waits for all. */
-			sydbox->clone_pid = 0;
-		}
+		/* Let's wait for children before the funeral. */
 		p->ppid = SYD_PPID_DEAD;
 		return;
 	}
@@ -1162,7 +1159,6 @@ static int trace(void)
 
 			if (sydbox->clone_pid && sydbox->clone_pid != pid) {
 				ppid = sydbox->clone_pid;
-				sydbox->clone_pid = 0;
 			} else if ((r = syd_proc_ppid(pid, &ppid))) {
 				switch (r) {
 				case -ENOENT: /* Process is dead, stray SIGKILL? */
@@ -1173,13 +1169,13 @@ static int trace(void)
 						-r, pink_name_errno(-r, PINK_ABI_DEFAULT));
 					break;
 				}
-				sydbox->clone_pid = 0;
 				continue;
 			}
 
 			parent = lookup_process(ppid);
-			YELL_ON(parent, "pid %u, status %#x, event %d|%s parent %u (-pent)",
-				pid, status, event, pink_name_event(event), ppid);
+			YELL_ON(parent, "pid %u, status %#x, event %d|%s parent %u/%u (-pent)",
+				pid, status, event, pink_name_event(event), ppid,
+				sydbox->clone_pid);
 			current = clone_process(parent, pid);
 			BUG_ON(current); /* Just bizarre, no questions */
 		}

@@ -419,20 +419,15 @@ int sysx_fcntl(syd_process_t *current)
 static int set_clone_flags(syd_process_t *current, unsigned long flags)
 {
 	unsigned long clone_flags;
+
 	current->new_clone_flags = 0;
-#if SYDBOX_HAVE_SECCOMP
-	if (sydbox->config.use_seccomp) {
-#endif
-		if (!flags) {
-			int r = 0;
-			if ((r = syd_read_argument(current, 0, (long *)&clone_flags)) < 0)
-				return r;
-			flags = clone_flags;
-		}
-		current->new_clone_flags = flags;
-#if SYDBOX_HAVE_SECCOMP
+	if (!flags) {
+		int r = 0;
+		if ((r = syd_read_argument(current, 0, (long *)&clone_flags)) < 0)
+			return r;
+		flags = clone_flags;
 	}
-#endif
+	current->new_clone_flags = flags;
 	return 0;
 }
 
