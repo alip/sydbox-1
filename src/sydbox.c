@@ -841,6 +841,7 @@ static void init_early(void)
 	sydbox->execve_wait = false;
 	sydbox->exit_code = EXIT_SUCCESS;
 	sydbox->clone_pid = 0;
+	sydbox->program_invocation_name = NULL;
 	config_init();
 	dump(DUMP_INIT);
 	syd_abort_func(kill_all);
@@ -1458,7 +1459,8 @@ void cleanup(void)
 	ACLQ_FREE(node, &sydbox->config.filter_write, free);
 	ACLQ_FREE(node, &sydbox->config.filter_network, free_sockmatch);
 
-	free(sydbox->program_invocation_name);
+	if (sydbox->program_invocation_name)
+		free(sydbox->program_invocation_name);
 	free(sydbox);
 	sydbox = NULL;
 
