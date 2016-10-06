@@ -19,6 +19,8 @@
 
 #include <syd.h>
 
+extern unsigned os_release;
+
 static inline int errno2retval(int err_no)
 {
 #if 0
@@ -131,10 +133,23 @@ static void report(syd_process_t *current, const char *fmt, va_list ap)
 
 int deny(syd_process_t *current, int err_no)
 {
-	current->flags |= SYD_DENY_SYSCALL | SYD_STOP_AT_SYSEXIT;
 	current->retval = errno2retval(err_no);
 
-	return syd_write_syscall(current, PINK_SYSCALL_INVALID);
+	if (os_release >= KERNEL_VERSION(3,8,0)) {
+		/* Linux-4.8 and later have a well defined way to deny
+		 * system calls (at last!). See seccomp(2).
+		 * Summary: We don't need to stop at system exit to write the return value.
+		 * We can write it here and be done with it.
+		 */
+		int r;
+
+		if ((r = restore(current)) < 0)
+			return r;
+		return syd_write_syscall(current, -1);
+	} else {
+		current->flags |= SYD_DENY_SYSCALL | SYD_STOP_AT_SYSEXIT;
+		return syd_write_syscall(current, PINK_SYSCALL_INVALID);
+	}
 }
 
 int restore(syd_process_t *current)
@@ -143,8 +158,10 @@ int restore(syd_process_t *current)
 	int retval, error;
 
 	/* restore system call number */
-	if ((r = syd_write_syscall(current, current->sysnum)) < 0)
-		return r;
+	if (os_release <= KERNEL_VERSION(3,8,0)) {
+		if ((r = syd_write_syscall(current, current->sysnum)) < 0)
+			return r;
+	}
 
 	/* return the saved return value */
 	if (current->retval < 0) { /* failure */

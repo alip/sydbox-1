@@ -5,6 +5,20 @@ This is an attempt to thank everyone involved in tackling sydbox bugs, writing p
 Peace & Love!
 Released under the terms of the WTFPL, version 2, as published by Sam Hocevar.
 
+From: keruspe
+Date: 2016-10-06
+Bug: Changes in Linux-3.8 wrt. seccomp broke sydbox' system call deny hack.
+Note: Change returns success, action brings good fortune.
+Poem:
+	-- Lasso for a Knight
+	The old man said,
+	When you have a bishop,
+	You can live with a knight.
+
+	The wise man said,
+	When you have a bishop,
+	Go after your rival's knight.
+
 From: myself
 Date: this moment
 Bug: I have not seen a scorpion in the house for a while, not much around this year.

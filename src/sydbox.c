@@ -56,7 +56,7 @@ static int post_attach_sigstop = SYD_IGNORE_ONE_SIGSTOP;
 #endif
 
 sydbox_t *sydbox;
-static unsigned os_release;
+unsigned os_release;
 static volatile sig_atomic_t interrupted;
 static sigset_t empty_set, blocked_set;
 
