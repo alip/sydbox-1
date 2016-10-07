@@ -62,6 +62,13 @@ int syd_fstat(int fd, struct stat *buf)
 	return 0;
 }
 
+int syd_fstatat(int fd, struct stat *buf, int flags)
+{
+	if (fstatat(fd, "", buf, AT_EMPTY_PATH|flags) < 0)
+		return -errno;
+	return 0;
+}
+
 /*
  * Returns -EINVAL: This is not /
  *	   -ENOENT: Does not exist e.g: /.../foo

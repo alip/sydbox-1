@@ -19,6 +19,7 @@ size_t syd_strlcpy(char *dst, const char *src, size_t siz);
 int syd_opendir(const char *dirname);
 int syd_fchdir(int fd);
 int syd_fstat(int fd, struct stat *buf);
+int syd_fstatat(int fd, struct stat *buf, int flags);
 
 ssize_t syd_readlink_alloc(const char *path, char **buf);
 
