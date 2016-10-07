@@ -460,7 +460,7 @@ int sysenter(syd_process_t *current)
 		current->sysname = entry->name;
 		if (entry->enter)
 			return entry->enter(current);
-		else if (entry->exit)
+		if (entry->exit)
 			current->flags |= SYD_STOP_AT_SYSEXIT;
 	}
 

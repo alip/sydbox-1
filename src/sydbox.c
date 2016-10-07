@@ -1068,7 +1068,7 @@ static int event_seccomp(syd_process_t *current)
 	r = sysenter(current);
 	if (current->flags & SYD_STOP_AT_SYSEXIT) {
 		/* step using PTRACE_SYSCALL until we hit sysexit. */
-		current->flags &= ~SYD_IN_SYSCALL;
+		current->flags |= SYD_IN_SYSCALL;
 		current->trace_step = SYD_STEP_SYSCALL;
 	}
 	return r;
