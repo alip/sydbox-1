@@ -32,9 +32,10 @@ TEST_EXTENSIONS= .sh
 SH_LOG_COMPILER= $(srcdir)/test-runner.sh
 TESTS= \
        t0000-basic.sh \
-       t0001-core-basic.sh \
-       t0002-path-wildmatch.sh \
-       t0003-path-realpath.sh
+       t0001-path-wildmatch.sh \
+       t0002-path-realpath.sh \
+       t0003-core-basic.sh \
+       t0004-core-chdir.sh
 check_SCRIPTS+= $(TESTS)
 
 syddir=$(libexecdir)/$(PACKAGE)/t

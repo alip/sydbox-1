@@ -1067,8 +1067,14 @@ static int event_seccomp(syd_process_t *current)
 		return r; /* process dead */
 	r = sysenter(current);
 	if (current->flags & SYD_STOP_AT_SYSEXIT) {
-		/* step using PTRACE_SYSCALL until we hit sysexit. */
-		current->flags |= SYD_IN_SYSCALL;
+		/* step using PTRACE_SYSCALL until we hit sysexit.
+		 * Appearently the order we receive the ptrace events
+		 * changed in Linux-4.8.0 so we need a conditional here.
+		 */
+		if (os_release >= KERNEL_VERSION(4,8,0))
+			current->flags |= SYD_IN_SYSCALL;
+		else
+			current->flags &= ~SYD_IN_SYSCALL;
 		current->trace_step = SYD_STEP_SYSCALL;
 	}
 	return r;
