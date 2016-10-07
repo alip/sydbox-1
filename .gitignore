@@ -19,6 +19,7 @@
 *.lzo
 *.xz
 *.patch
+*.gch
 *.gcno
 *.shoebox
 core*
