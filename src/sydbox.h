@@ -45,8 +45,7 @@
 #define SYD_STARTUP		00001 /* process attached, needs to be set up */
 #define SYD_IGNORE_ONE_SIGSTOP	00002 /* initial sigstop is to be ignored */
 #define SYD_IN_SYSCALL		00004 /* process is in system call */
-#define SYD_DENY_SYSCALL	00010 /* system call is to be denied */
-#define SYD_STOP_AT_SYSEXIT	00020 /* seccomp: stop at system call exit */
+#define SYD_STOP_AT_SYSEXIT	00010 /* seccomp: stop at system call exit */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
 #define SYD_PPID_DEAD		-42     /* dead clone parent waiting for child */
@@ -602,7 +601,7 @@ extern sydbox_t *sydbox;
 
 #define entering(p) (!((p)->flags & SYD_IN_SYSCALL))
 #define exiting(p) ((p)->flags & SYD_IN_SYSCALL)
-#define sysdeny(p) ((p)->flags & SYD_DENY_SYSCALL)
+#define sysdeny(p) ((p)->retval)
 #define hasparent(p) ((p)->ppid >= 0)
 
 #define sandbox_allow(p, box) (!!(P_BOX(p)->sandbox_ ## box == SANDBOX_ALLOW))

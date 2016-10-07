@@ -455,6 +455,7 @@ int sysenter(syd_process_t *current)
 
 	entry = systable_lookup(sysnum, current->abi);
 	if (entry) {
+		current->retval = 0;
 		current->sysnum = sysnum;
 		current->sysname = entry->name;
 		if (entry->enter)
@@ -473,14 +474,9 @@ int sysexit(syd_process_t *current)
 
 	assert(current);
 
-	if (sysdeny(current)) {
-		r = restore(current);
-		goto out;
-	}
-
 	entry = systable_lookup(current->sysnum, current->abi);
 	r = (entry && entry->exit) ? entry->exit(current) : 0;
-out:
+
 	reset_process(current);
 	return r;
 }

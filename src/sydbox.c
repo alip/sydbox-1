@@ -56,7 +56,7 @@ static int post_attach_sigstop = SYD_IGNORE_ONE_SIGSTOP;
 #endif
 
 sydbox_t *sydbox;
-unsigned os_release;
+static unsigned os_release;
 static volatile sig_atomic_t interrupted;
 static sigset_t empty_set, blocked_set;
 
@@ -269,7 +269,6 @@ void reset_process(syd_process_t *p)
 	memset(p->args, 0, sizeof(p->args));
 	p->subcall = 0;
 	p->retval = 0;
-	p->flags &= ~SYD_DENY_SYSCALL;
 	p->flags &= ~SYD_STOP_AT_SYSEXIT;
 
 	if (P_SAVEBIND(p)) {
@@ -691,10 +690,6 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	}
 	if (current->flags & SYD_IN_SYSCALL) {
 		fprintf(stderr, "%sIN_SYSCALL", (r == 1) ? "|" : "");
-		r = 1;
-	}
-	if (current->flags & SYD_DENY_SYSCALL) {
-		fprintf(stderr, "%sDENY_SYSCALL", (r == 1) ? "|" : "");
 		r = 1;
 	}
 	if (current->flags & SYD_STOP_AT_SYSEXIT)
