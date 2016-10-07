@@ -238,7 +238,7 @@ static int sockmatch_parse_ip(int family, const char *src,
 	if (p[0] == '\0')
 		return -EINVAL;
 
-	r = 0;
+	/* r = 0; */
 	ip = xstrdup(p);
 
 	/* Find out port */
