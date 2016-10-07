@@ -148,9 +148,12 @@ ssize_t syd_readlink_alloc(const char *path, char **buf)
 		p[0] = '\0';
 
 		n = readlinkat(fd, "", p, l - 1);
-		if (n < 0 && errno != ENAMETOOLONG) {
-			r = -errno;
-			goto out;
+		if (n < 0) {
+			if (errno != ENAMETOOLONG) {
+				r = -errno;
+				goto out;
+			}
+			/* Retry with a larger buffer. */
 		} else if ((size_t)n < l - 1) {
 			r = 0;
 			goto out;
