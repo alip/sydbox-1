@@ -443,6 +443,16 @@ void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_thread)
 	process_add(execve_thread);
 }
 
+static void remove_process_node(syd_process_t *p)
+{
+	if (p->new_clone_flags) {
+		/* Let's wait for children before the funeral. */
+		p->ppid = SYD_PPID_DEAD;
+		return;
+	}
+	bury_process(p);
+}
+
 static void remove_process(pid_t pid, int status)
 {
 	syd_process_t *p;
@@ -453,12 +463,7 @@ static void remove_process(pid_t pid, int status)
 	p = lookup_process(pid);
 	if (!p)
 		return;
-	if (p->new_clone_flags) {
-		/* Let's wait for children before the funeral. */
-		p->ppid = SYD_PPID_DEAD;
-		return;
-	}
-	bury_process(p);
+	remove_process_node(p);
 }
 
 static void interrupt(int sig)
@@ -975,7 +980,7 @@ static int event_exec(syd_process_t *current)
 		if (current->pid != node->pid &&
 		    (node->clone_flags & CLONE_THREAD) &&
 		    current->shm.clone_thread == node->shm.clone_thread) {
-			bury_process(node); /* process_iter is delete-safe. */
+			remove_process_node(node); /* process_iter is delete-safe. */
 		}
 	}
 
