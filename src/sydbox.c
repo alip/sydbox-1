@@ -428,8 +428,10 @@ void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_thread)
 	P_CLONE_FILES_RELEASE(leader);
 	if (execve_thread->abspath)
 		free(execve_thread->abspath);
-	if (execve_thread->regset)
+	if (execve_thread->regset) {
 		pink_regset_free(execve_thread->regset);
+		execve_thread->regset = NULL;
+	}
 	if (sydbox->config.whitelist_per_process_directories)
 		procdrop(&sydbox->config.hh_proc_pid_auto, execve_thread->pid);
 
