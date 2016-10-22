@@ -112,9 +112,6 @@ int syd_proc_ppid(pid_t pid, pid_t *ppid)
 		return -save_errno;
 	}
 
-	/* Careful here: `comm' may have spaces or numbers ( or '()' ?) in it!
-	 * e.g: perl-5.10.2 test-suite t/op/magic.t -> "Good Morning"
-	 */
 	/* L_MAX is:
 	 * 2 * SYD_PID_MAX: Process PID + Process Parent PID
 	 * 16: `comm' maximum length (defined as char comm[17] in kernel
@@ -122,7 +119,10 @@ int syd_proc_ppid(pid_t pid, pid_t *ppid)
 	 * 6: The rest: PID + ' (' + comm + ') ' + state[1] + ' ' + PID
 	 * 1: '\0'
 	 */
-#define L_MAX ((2*SYD_PID_MAX) + 16 + 6 + 1)
+#	define L_MAX ((2*SYD_PID_MAX) + 16 + 6 + 1)
+	/* Careful here: `comm' may have spaces or numbers ( or '()' ?) in it!
+	 * e.g: perl-5.10.2 test-suite t/op/magic.t -> "Good Morning"
+	 */
 	int i;
 	char *c, l[L_MAX];
 
@@ -309,6 +309,40 @@ int syd_proc_cmdline(pid_t pid, char *dst, size_t siz)
 	close(fd);
 	*s = '\0';
 	convert_zeroes(dst, s);
+	return 0;
+}
+
+int syd_proc_state(pid_t pid, char *state)
+{
+	int pfd, fd, save_errno;
+	char state_r;
+	FILE *f;
+
+	if (pid <= 0)
+		return -EINVAL;
+	pfd = syd_proc_open(pid);
+	if (pfd < 0)
+		return -errno;
+	fd = openat(pfd, "stat", O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+	save_errno = errno;
+	close(pfd);
+	if (fd < 0)
+		return -save_errno;
+	f = fdopen(fd, "r");
+	if (!f) {
+		save_errno = errno;
+		close(fd);
+		return -save_errno;
+	}
+
+	if (fscanf(f, "%*d %*s %c", &state_r) != 1) {
+		fclose(f);
+		return -EINVAL;
+	}
+
+	fclose(f);
+	*state = state_r;
+
 	return 0;
 }
 
