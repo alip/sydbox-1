@@ -468,3 +468,28 @@ int syd_proc_task_find(pid_t pid, pid_t pid_task)
 	access(p, F_OK);
 	return -errno;
 }
+
+int syd_proc_task_open(pid_t pid, DIR **task_dir)
+{
+	int r, fd;
+	char p[SYD_PROC_TASK_MAX];
+	DIR *d;
+
+	if (pid <= 0 || !task_dir)
+		return -EINVAL;
+
+	r = snprintf(p, sizeof(p), "/proc/%u/task", pid);
+	if (r < 0 || (size_t)r >= sizeof(p))
+		return -EINVAL;
+
+	fd = open(p, O_PATH|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
+	if (fd < 0)
+		return -errno;
+
+	d = fdopendir(fd);
+	if (!d)
+		return -errno;
+
+	*task_dir = d;
+	return 0;
+}

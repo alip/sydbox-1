@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include <dirent.h>
 #include <time.h>
 
 size_t syd_strlcat(char *dst, const char *src, size_t siz);
@@ -45,6 +46,7 @@ int syd_proc_fd_open(pid_t pid);
 int syd_proc_fd_path(pid_t pid, int fd, char **dst);
 
 int syd_proc_task_find(pid_t pid, pid_t task_pid);
+int syd_proc_task_open(pid_t pid, DIR **task_dir);
 
 typedef void (*syd_time_prof_func_t) (void);
 struct timespec syd_time_diff(const struct timespec *t1, const struct timespec *t2);
