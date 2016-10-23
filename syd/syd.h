@@ -1,7 +1,7 @@
 /*
  * syd.h -- Syd's utility library
  *
- * Copyright (c) 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2014, 2015, 2016 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the GNU General Public License v3 (or later)
  */
 
@@ -47,6 +47,7 @@ int syd_proc_fd_path(pid_t pid, int fd, char **dst);
 
 int syd_proc_task_find(pid_t pid, pid_t task_pid);
 int syd_proc_task_open(pid_t pid, DIR **task_dir);
+int syd_proc_task_next(DIR *task_dir, pid_t *task_pid);
 
 typedef void (*syd_time_prof_func_t) (void);
 struct timespec syd_time_diff(const struct timespec *t1, const struct timespec *t2);

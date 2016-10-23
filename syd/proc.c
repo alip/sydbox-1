@@ -3,7 +3,7 @@
  *
  * /proc utilities
  *
- * Copyright (c) 2014, 2015 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2014, 2015, 2016 Ali Polatel <alip@exherbo.org>
  * Released under the terms of the GNU General Public License v3 (or later)
  */
 
@@ -491,5 +491,31 @@ int syd_proc_task_open(pid_t pid, DIR **task_dir)
 		return -errno;
 
 	*task_dir = d;
+	return 0;
+}
+
+int syd_proc_task_next(DIR *task_dir, pid_t *task_pid)
+{
+	pid_t p;
+	struct dirent *dent;
+
+	if (!task_dir || !task_pid)
+		return -EINVAL;
+
+retry:
+	errno = 0;
+	dent = readdir(task_dir);
+	if (!dent) {
+		if (!errno)
+			p = 0;
+		else
+			return -errno;
+	} else if (dent->d_name[0] == '.') {
+		goto retry;
+	} else {
+		p = atol(dent->d_name);
+	}
+
+	*task_pid = p;
 	return 0;
 }
