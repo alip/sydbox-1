@@ -9,18 +9,19 @@
 
 #include "sydbox.h"
 #include "pink.h"
+#include "syd.h"
 #include <errno.h>
 #include <string.h>
 
-#define SYD_RETURN_IF_DEAD(current) do { \
-	if (current->ppid == SYD_PPID_DEAD) { \
+#define SYD_RETURN_IF_KILLED(current) do { \
+	if (current->flags & SYD_KILLED) { \
 		return 0; \
 	}} while (0)
 
 static int syd_check(syd_process_t *current, int retval, const char *func_name, size_t line_count)
 {
 	if (retval == -ESRCH) {
-		bury_process(current);
+		remove_process_node(current);
 	} else if (retval < 0) {
 		say("pink: %s:%zu failed for pid:%u", func_name, line_count, current->pid);
 		return panic(current);
@@ -34,7 +35,7 @@ int syd_trace_step(syd_process_t *current, int sig)
 	int r;
 	enum syd_step step;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 
 	step = current->trace_step == SYD_STEP_NOT_SET
 	       ? sydbox->trace_step
@@ -58,7 +59,7 @@ int syd_trace_listen(syd_process_t *current)
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 
 	r = pink_trace_listen(current->pid);
 
@@ -69,7 +70,7 @@ int syd_trace_detach(syd_process_t *current, int sig)
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 
 	if (sydbox->config.use_seccomp) {
 		/*
@@ -91,7 +92,7 @@ int syd_trace_kill(syd_process_t *current, int sig)
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 
 	r = pink_trace_kill(current->pid, -1, sig);
 
@@ -117,7 +118,7 @@ int syd_trace_geteventmsg(syd_process_t *current, unsigned long *data)
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 
 	r = pink_trace_geteventmsg(current->pid, data);
 
@@ -142,7 +143,7 @@ int syd_read_syscall(syd_process_t *current, long *sysnum)
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 	BUG_ON(sysnum);
 
 	r = pink_read_syscall(current->pid, current->regset, sysnum);
@@ -154,7 +155,7 @@ int syd_read_retval(syd_process_t *current, long *retval, int *error)
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 
 	r = pink_read_retval(current->pid, current->regset, retval, error);
 
@@ -165,7 +166,7 @@ int syd_read_argument(syd_process_t *current, unsigned arg_index, long *argval)
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 	BUG_ON(argval);
 
 	r = pink_read_argument(current->pid, current->regset, arg_index, argval);
@@ -178,7 +179,7 @@ int syd_read_argument_int(syd_process_t *current, unsigned arg_index, int *argva
 	int r;
 	long arg_l;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 	BUG_ON(argval);
 
 	r = pink_read_argument(current->pid, current->regset, arg_index, &arg_l);
@@ -194,7 +195,7 @@ ssize_t syd_read_string(syd_process_t *current, long addr, char *dest, size_t le
 	int r;
 	ssize_t rlen;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 
 	errno = 0;
 	rlen = pink_read_string(current->pid, current->regset, addr, dest, len);
@@ -214,7 +215,7 @@ int syd_read_socket_argument(syd_process_t *current, bool decode_socketcall,
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 	BUG_ON(argval);
 
 	r = pink_read_socket_argument(current->pid, current->regset,
@@ -228,7 +229,7 @@ int syd_read_socket_subcall(syd_process_t *current, bool decode_socketcall,
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 
 	r = pink_read_socket_subcall(current->pid, current->regset,
 				     decode_socketcall, subcall);
@@ -241,7 +242,7 @@ int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 	BUG_ON(sockaddr);
 
 	r = pink_read_socket_address(current->pid, current->regset,
@@ -254,7 +255,7 @@ int syd_write_syscall(syd_process_t *current, long sysnum)
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 
 	r = pink_write_syscall(current->pid, current->regset, sysnum);
 
@@ -265,7 +266,7 @@ int syd_write_retval(syd_process_t *current, long retval, int error)
 {
 	int r;
 
-	SYD_RETURN_IF_DEAD(current);
+	SYD_RETURN_IF_KILLED(current);
 
 	r = pink_write_retval(current->pid, current->regset, retval, error);
 

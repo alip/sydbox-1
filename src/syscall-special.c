@@ -433,13 +433,11 @@ static int set_clone_flags(syd_process_t *current, unsigned long flags)
 
 int sys_fork(syd_process_t *current)
 {
-	sydbox->clone_pid = current->pid;
 	return set_clone_flags(current, SIGCHLD);
 }
 
 int sys_vfork(syd_process_t *current)
 {
-	sydbox->clone_pid = current->pid;
 	return set_clone_flags(current, CLONE_VM|CLONE_VFORK|SIGCHLD);
 }
 
@@ -453,6 +451,5 @@ int sys_clone(syd_process_t *current)
 	else if ((current->new_clone_flags & CSIGNAL) == SIGCHLD)
 		return sys_fork(current);
 
-	sydbox->clone_pid = current->pid;
 	return r;
 }

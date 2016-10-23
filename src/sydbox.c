@@ -55,11 +55,14 @@ static int post_attach_sigstop = SYD_IGNORE_ONE_SIGSTOP;
 # define NR_OPEN 1024
 #endif
 
+#define switch_execve_flags(f) ((f) & ~(SYD_IN_CLONE|SYD_IN_EXECVE|SYD_IN_SYSCALL|SYD_KILLED))
+
 sydbox_t *sydbox;
 static unsigned os_release;
 static volatile sig_atomic_t interrupted;
 static sigset_t empty_set, blocked_set;
 
+static void dump_one_process(syd_process_t *current, bool verbose);
 static void sig_usr(int sig);
 
 static void about(void)
@@ -377,11 +380,12 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 
 	/* clone OK: p->pid <-> cpid */
 	p->new_clone_flags = 0;
-
-	if (p->ppid == SYD_PPID_DEAD) /* parent already dead! */
+	p->flags &= ~SYD_IN_CLONE;
+	if (p->flags & SYD_KILLED) {
+		/* Parent had died already and we do not need the process entry
+		 * anymore. Farewell. */
 		bury_process(p);
-
-	sydbox->clone_pid = 0; /* unset clone pid so waitpid() waits for all. */
+	}
 
 	return child;
 }
@@ -418,41 +422,49 @@ void bury_process(syd_process_t *p)
 }
 
 /* Drop leader, switch to the thread, reusing leader's tid */
-void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_thread)
+static void tweak_execve_thread(syd_process_t *execve_thread, pid_t leader_pid, short flags)
+{
+	if (sydbox->config.whitelist_per_process_directories)
+		procdrop(&sydbox->config.hh_proc_pid_auto, execve_thread->pid);
+	process_remove(execve_thread);
+
+	execve_thread->pid = leader_pid;
+	execve_thread->flags = switch_execve_flags(flags);
+
+	process_add(execve_thread);
+}
+
+static void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_thread)
 {
 	process_remove(leader);
-	process_remove(execve_thread);
 
 	P_CLONE_THREAD_RELEASE(leader);
 	P_CLONE_FS_RELEASE(leader);
 	P_CLONE_FILES_RELEASE(leader);
+
+	if (leader->regset)
+		pink_regset_free(leader->regset);
 	if (execve_thread->abspath)
 		free(execve_thread->abspath);
-	if (execve_thread->regset) {
-		pink_regset_free(execve_thread->regset);
-		execve_thread->regset = NULL;
-	}
-	if (sydbox->config.whitelist_per_process_directories)
-		procdrop(&sydbox->config.hh_proc_pid_auto, execve_thread->pid);
 
-	execve_thread->pid = leader->pid;
+	tweak_execve_thread(execve_thread, leader->pid, leader->flags);
 	execve_thread->ppid = leader->ppid;
 	execve_thread->clone_flags = leader->clone_flags;
 	execve_thread->abspath = leader->abspath;
-	execve_thread->regset = leader->regset;
 
 	free(leader);
-	process_add(execve_thread);
 }
 
-static void remove_process_node(syd_process_t *p)
+void remove_process_node(syd_process_t *p)
 {
-	if (p->new_clone_flags) {
-		/* Let's wait for children before the funeral. */
-		p->ppid = SYD_PPID_DEAD;
-		return;
+	if (p->flags & SYD_IN_CLONE || p->flags & SYD_IN_EXECVE) {
+		/* Let's wait for the children before the funeral. */
+		if (sydbox->config.whitelist_per_process_directories)
+			procdrop(&sydbox->config.hh_proc_pid_auto, p->pid);
+		p->flags |= SYD_KILLED;
+	} else if (!(p->flags & SYD_KILLED)) {
+		bury_process(p);
 	}
-	bury_process(p);
 }
 
 static void remove_process(pid_t pid, int status)
@@ -465,7 +477,44 @@ static void remove_process(pid_t pid, int status)
 	p = lookup_process(pid);
 	if (!p)
 		return;
+	/* This is a proper exit notification,
+	 * no more children expected, clear flags. */
+	p->flags &= ~(SYD_IN_CLONE|SYD_IN_EXECVE|SYD_KILLED);
+
 	remove_process_node(p);
+}
+
+static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
+{
+	syd_process_t *node;
+
+	/* Try (really) hard to find the parent process. */
+	if (p_task && p_task->ppid != 0) {
+		node = lookup_process(p_task->ppid);
+		if (node)
+			return node;
+		pid_task = p_task->pid;
+	}
+
+	unsigned short parent_count;
+	syd_process_t *parent_node, *tmp;
+
+	parent_count = 0;
+	process_iter(node, tmp) {
+		if (node->new_clone_flags) {
+			if (!syd_proc_task_find(node->pid, pid_task))
+				return node;
+			if (parent_count < 2) {
+				parent_count++;
+				parent_node = node;
+			}
+		}
+	}
+
+	if (parent_count == 1) /* We have the suspect! */
+		return parent_node;
+
+	return NULL;
 }
 
 static void interrupt(int sig)
@@ -699,6 +748,10 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "%sIN_SYSCALL", (r == 1) ? "|" : "");
 		r = 1;
 	}
+	if (current->flags & SYD_IN_CLONE) {
+		fprintf(stderr, "%sIN_CLONE", (r == 1) ? "|" : "");
+		r = 1;
+	}
 	if (current->flags & SYD_STOP_AT_SYSEXIT)
 		fprintf(stderr, "%sSTOP_AT_SYSEXIT", (r == 1) ? "|" : "");
 	fprintf(stderr, "%s\n", CN);
@@ -839,7 +892,6 @@ static void init_early(void)
 	sydbox->violation = false;
 	sydbox->execve_wait = false;
 	sydbox->exit_code = EXIT_SUCCESS;
-	sydbox->clone_pid = 0;
 	sydbox->program_invocation_name = NULL;
 	config_init();
 	dump(DUMP_INIT);
@@ -945,11 +997,9 @@ static int event_clone(syd_process_t *current)
 	int r;
 	long cpid = -1;
 
-	r = pink_trace_geteventmsg(current->pid, (unsigned long *)&cpid);
-	if (r < 0 || cpid <= 0) {
-		bury_process(current);
+	r = syd_trace_geteventmsg(current, (unsigned long *)&cpid);
+	if (r < 0 || cpid <= 0)
 		return (r < 0) ? r : -EINVAL;
-	}
 
 	clone_process(current, cpid);
 
@@ -1114,15 +1164,9 @@ static int trace(void)
 		if ((r = check_interrupt()) != 0)
 			return r;
 
-		if (sydbox->clone_pid &&
-		    !waitpid(sydbox->clone_pid, NULL, WNOHANG|WNOWAIT|__WALL))
-			current = lookup_process(sydbox->clone_pid);
-		else
-			current = NULL;
-
 		sigprocmask(SIG_SETMASK, &empty_set, NULL);
 		errno = 0;
-		pid = waitpid(current ? current->pid : -1, &status, __WALL);
+		pid = waitpid(-1, &status, __WALL);
 		wait_errno = errno;
 		sigprocmask(SIG_SETMASK, &blocked_set, NULL);
 
@@ -1132,68 +1176,23 @@ static int trace(void)
 			switch (wait_errno) {
 			case EINTR:
 				continue;
-			case ECHILD:
-				if (current) {
-					/* Special case, clone process died.
-					 * (possibly due to SIGKILL)
-					 */
-					remove_process(current->pid, 0);
-					continue;
-				}
-				/* fall through */
 			default:
 				goto cleanup;
 			}
 		}
+
 
 		if (WIFSIGNALED(status) || WIFEXITED(status)) {
 			remove_process(pid, status);
 			continue;
 		} else if (!WIFSTOPPED(status)) {
 			say("PANIC: not stopped (status:0x%04x)", status);
-			panic(current);
+			panic(current); /* FIXME: current not available here.*/
 			continue;
 		}
 
 		event = pink_event_decide(status);
-
-		/* If we are here we *must* have a process entry for the usual
-		 * cases however there is still a chance we may have the
-		 * new-born child of a clone()! */
 		current = lookup_process(pid);
-		if (!current) {
-			pid_t ppid = -1;
-			syd_process_t *parent = NULL;
-
-			if (sydbox->clone_pid && sydbox->clone_pid != pid) {
-				ppid = sydbox->clone_pid;
-			} else if ((r = syd_proc_ppid(pid, &ppid))) {
-				switch (r) {
-				case -ENOENT: /* Process is dead, stray SIGKILL? */
-					break;
-				default:
-					TELL_ON(0, "pid %u, status %#x, event %d|%s clone %u (-pent, errno:%d|%s)",
-						pid, status, event, pink_name_event(event), sydbox->clone_pid,
-						-r, pink_name_errno(-r, PINK_ABI_DEFAULT));
-					break;
-				}
-				continue;
-			}
-
-			parent = lookup_process(ppid);
-			YELL_ON(parent, "pid %u, status %#x, event %d|%s parent %u/%u (-pent)",
-				pid, status, event, pink_name_event(event), ppid,
-				sydbox->clone_pid);
-			current = clone_process(parent, pid);
-			BUG_ON(current); /* Just bizarre, no questions */
-		}
-#if 0
-		else {
-			TELL_ON(!current, "pid %u, status %#x, event %d|%s w/o pent",
-				pid, (unsigned)status,
-				event, pink_name_event(event));
-		}
-#endif
 
 		/* Under Linux, execve changes pid to thread leader's pid,
 		 * and we see this changed pid on EVENT_EXEC and later,
@@ -1223,7 +1222,11 @@ static int trace(void)
 				execve_thread = lookup_process(old_tid);
 				assert(execve_thread);
 
-				switch_execve_leader(current, execve_thread);
+				if (current)
+					switch_execve_leader(current, execve_thread);
+				else
+					tweak_execve_thread(execve_thread, pid,
+							    execve_thread->flags);
 				current = execve_thread;
 			}
 
@@ -1232,6 +1235,20 @@ static int trace(void)
 				goto restart_tracee_with_sig_0;
 			else if (r < 0) /* process dead */
 				continue;
+		}
+
+		/* If we are here we *must* have a process entry for the usual
+		 * cases however there is still a chance we may have the
+		 * new-born child of a clone()! */
+		if (!current) {
+			syd_process_t *parent;
+
+			parent = parent_process(pid, current);
+
+			YELL_ON(parent, "pid %u, status %#x, event %d|%s (-pent)",
+				pid, status, event, pink_name_event(event));
+			current = clone_process(parent, pid);
+			BUG_ON(current); /* Just bizarre, no questions */
 		}
 
 		if (current->flags & SYD_STARTUP) {
@@ -1244,13 +1261,6 @@ static int trace(void)
 		switch (event) {
 		case 0:
 			break;
-		case PINK_EVENT_FORK:
-		case PINK_EVENT_VFORK:
-		case PINK_EVENT_CLONE:
-			r = event_clone(current);
-			if (r < 0)
-				continue; /* process dead */
-			goto restart_tracee_with_sig_0;
 #if PINK_HAVE_SEIZE
 		case PINK_EVENT_STOP:
 			/*
@@ -1273,11 +1283,19 @@ static int trace(void)
 #endif
 #if SYDBOX_HAVE_SECCOMP
 		case PINK_EVENT_SECCOMP:
-			r = event_seccomp(current);
+#endif
+		case PINK_EVENT_FORK:
+		case PINK_EVENT_VFORK:
+		case PINK_EVENT_CLONE:
+#if SYDBOX_HAVE_SECCOMP
+			r = (event == PINK_EVENT_SECCOMP) ? event_seccomp(current)
+							  : event_clone(current);
+#else
+			r = event_clone(current);
+#endif
 			if (r < 0)
 				continue; /* process dead */
-			goto restart_tracee_with_sig_0;
-#endif
+			/* fall through */
 		default:
 			goto restart_tracee_with_sig_0;
 		}

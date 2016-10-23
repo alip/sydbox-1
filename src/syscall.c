@@ -453,18 +453,26 @@ int sysenter(syd_process_t *current)
 	if ((r = syd_read_syscall(current, &sysnum)) < 0)
 		return r;
 
+	r = 0;
 	entry = systable_lookup(sysnum, current->abi);
 	if (entry) {
 		current->retval = 0;
 		current->sysnum = sysnum;
 		current->sysname = entry->name;
-		if (entry->enter)
-			return entry->enter(current);
+		if (entry->enter) {
+			r = entry->enter(current);
+			if (entry->enter == sys_clone ||
+			    entry->enter == sys_fork ||
+			    entry->enter == sys_vfork)
+				current->flags |= SYD_IN_CLONE;
+			else if (entry->enter == sys_execve)
+				current->flags |= SYD_IN_EXECVE;
+		}
 		if (entry->exit)
 			current->flags |= SYD_STOP_AT_SYSEXIT;
 	}
 
-	return 0;
+	return r;
 }
 
 int sysexit(syd_process_t *current)

@@ -46,9 +46,11 @@
 #define SYD_IGNORE_ONE_SIGSTOP	00002 /* initial sigstop is to be ignored */
 #define SYD_IN_SYSCALL		00004 /* process is in system call */
 #define SYD_STOP_AT_SYSEXIT	00010 /* seccomp: stop at system call exit */
+#define SYD_IN_CLONE		00020 /* process called clone(2) */
+#define SYD_IN_EXECVE		00040 /* process called execve(2) */
+#define SYD_KILLED		00100 /* process is dead, keeping entry for child. */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
-#define SYD_PPID_DEAD		-42     /* dead clone parent waiting for child */
 
 /* ANSI colour codes */
 #define ANSI_NORMAL		"[00;00m"
@@ -522,9 +524,6 @@ typedef struct {
 	pid_t execve_pid;
 	int exit_code;
 
-	/* Child called clone(2) */
-	pid_t clone_pid;
-
 	/* This is true if an access violation has occured, false otherwise. */
 	bool violation;
 
@@ -656,6 +655,7 @@ int syd_read_socket_address(syd_process_t *current, bool decode_socketcall,
 
 void reset_process(syd_process_t *p);
 void bury_process(syd_process_t *p);
+void remove_process_node(syd_process_t *p);
 
 static inline syd_process_t *lookup_process(pid_t pid)
 {
