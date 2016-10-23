@@ -464,5 +464,7 @@ int syd_proc_task_find(pid_t pid, pid_t pid_task)
 	if (r < 0 || (size_t)r >= sizeof(p))
 		return -EINVAL;
 
-	return -access(p, F_OK);
+	errno = 0;
+	access(p, F_OK);
+	return -errno;
 }
