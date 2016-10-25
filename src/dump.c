@@ -662,6 +662,9 @@ static void dump_process(pid_t pid)
 		J(flag_IGNORE_ONE_SIGSTOP)"%s,"
 		J(flag_IN_SYSCALL)"%s,"
 		J(flag_STOP_AT_SYSEXIT)"%s,"
+		J(flag_IN_CLONE)"%s,"
+		J(flag_IN_EXECVE)"%s,"
+		J(flag_KILLED)"%s,"
 		J(ref_CLONE_THREAD)"%d,"
 		J(ref_CLONE_FS)"%d,"
 		J(ref_CLONE_FILES)"%d,"
@@ -674,6 +677,9 @@ static void dump_process(pid_t pid)
 		J_BOOL(p->flags & SYD_IGNORE_ONE_SIGSTOP),
 		J_BOOL(p->flags & SYD_IN_SYSCALL),
 		J_BOOL(p->flags & SYD_STOP_AT_SYSEXIT),
+		J_BOOL(p->flags & SYD_IN_CLONE),
+		J_BOOL(p->flags & SYD_IN_EXECVE),
+		J_BOOL(p->flags & SYD_KILLED),
 		p->shm.clone_thread ? p->shm.clone_thread->refcnt : 0,
 		p->shm.clone_fs ? p->shm.clone_fs->refcnt : 0,
 		p->shm.clone_files ? p->shm.clone_files->refcnt : 0,
