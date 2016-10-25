@@ -90,6 +90,7 @@ void bug_on(const char *expr, const char *func, const char *file, size_t line,
 		va_end(ap);
 		fputc('\n', stderr);
 	}
+	dump(DUMP_CLOSE);
 	pause();
 	assert_(expr, func, file, line);
 }
