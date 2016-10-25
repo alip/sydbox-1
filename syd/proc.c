@@ -124,7 +124,7 @@ int syd_proc_ppid(pid_t pid, pid_t *ppid)
 	 * e.g: perl-5.10.2 test-suite t/op/magic.t -> "Good Morning"
 	 */
 	int i;
-	char *c, l[L_MAX];
+	char *c, l[L_MAX] = { '\0' };
 
 	if (fgets(l, L_MAX - 2, f) == NULL) {
 		fclose(f);
