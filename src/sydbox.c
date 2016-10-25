@@ -507,7 +507,9 @@ static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
 			return parent_node;
 	}
 
-	/* Step 3: Check for IN_CLONE flags and /proc/$pid/task */
+	/* Step 3: Check for IN_CLONE|IN_EXECVE flags and /proc/$pid/task
+	 * We need IN_EXECVE for threaded exec -> leader lost case.
+	 */
 	parent_count = 0;
 	process_iter(node, tmp) {
 		if (node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)) {
