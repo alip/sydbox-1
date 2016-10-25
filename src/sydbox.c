@@ -486,9 +486,13 @@ static void remove_process(pid_t pid, int status)
 
 static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
 {
-	syd_process_t *node;
+	pid_t ppid;
+	unsigned short parent_count;
+	syd_process_t *parent_node, *node, *tmp;
 
 	/* Try (really) hard to find the parent process. */
+
+	/* Step 1: Check for ppid entry. */
 	if (p_task && p_task->ppid != 0) {
 		node = lookup_process(p_task->ppid);
 		if (node)
@@ -496,12 +500,17 @@ static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
 		pid_task = p_task->pid;
 	}
 
-	unsigned short parent_count;
-	syd_process_t *parent_node, *tmp;
+	/* Step 2: Check /proc/$pid/stat */
+	if (!syd_proc_ppid(pid_task, &ppid)) {
+		parent_node = lookup_process(ppid);
+		if (parent_node && parent_node->flags & SYD_IN_CLONE)
+			return parent_node;
+	}
 
+	/* Step 3: Check for IN_CLONE flags and /proc/$pid/task */
 	parent_count = 0;
 	process_iter(node, tmp) {
-		if (node->new_clone_flags) {
+		if (node->flags & (SYD_IN_CLONE|SYD_IN_EXECVE)) {
 			if (!syd_proc_task_find(node->pid, pid_task))
 				return node;
 			if (parent_count < 2) {
@@ -511,7 +520,8 @@ static syd_process_t *parent_process(pid_t pid_task, syd_process_t *p_task)
 		}
 	}
 
-	if (parent_count == 1) /* We have the suspect! */
+	if (parent_count == 1)
+		/* We have the suspect! */
 		return parent_node;
 
 	return NULL;
