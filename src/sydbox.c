@@ -207,6 +207,7 @@ static syd_process_t *new_thread(pid_t pid, short flags)
 
 	thread->pid = pid;
 	thread->ppid = SYD_PPID_NONE;
+	thread->tgid = SYD_TGID_NONE;
 
 	if ((r = pink_regset_alloc(&thread->regset)) < 0) {
 		free(thread);
@@ -231,6 +232,7 @@ static syd_process_t *new_process(pid_t pid, short flags)
 	process = new_thread(pid, flags);
 	if (!process)
 		return NULL;
+	process->tgid = process->pid;
 	new_shared_memory(process);
 
 	return process;
@@ -375,7 +377,13 @@ static syd_process_t *clone_process(syd_process_t *p, pid_t cpid)
 	child = lookup_process(cpid);
 	if (child == NULL)
 		child = new_thread_or_kill(cpid, post_attach_sigstop);
-	child->ppid = p->pid;
+	if (p->new_clone_flags & CLONE_THREAD) {
+		child->ppid = p->ppid;
+		child->tgid = p->tgid;
+	} else {
+		child->ppid = p->pid;
+		child->tgid = child->pid;
+	}
 	init_process_data(child, p);
 
 	/* clone OK: p->pid <-> cpid */
@@ -449,6 +457,7 @@ static void switch_execve_leader(syd_process_t *leader, syd_process_t *execve_th
 
 	tweak_execve_thread(execve_thread, leader->pid, leader->flags);
 	execve_thread->ppid = leader->ppid;
+	execve_thread->tgid = leader->tgid;
 	execve_thread->clone_flags = leader->clone_flags;
 	execve_thread->abspath = leader->abspath;
 
@@ -1039,7 +1048,7 @@ static int event_exec(syd_process_t *current)
 	syd_process_t *node, *tmp;
 	process_iter(node, tmp) {
 		if (current->pid != node->pid &&
-		    (node->clone_flags & CLONE_THREAD) &&
+		    current->tgid == node->tgid &&
 		    current->shm.clone_thread == node->shm.clone_thread) {
 			remove_process_node(node); /* process_iter is delete-safe. */
 		}

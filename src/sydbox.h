@@ -51,6 +51,7 @@
 #define SYD_KILLED		00100 /* process is dead, keeping entry for child. */
 
 #define SYD_PPID_NONE		0      /* no parent PID (yet) */
+#define SYD_TGID_NONE		0      /* no thread group ID (yet) */
 
 /* ANSI colour codes */
 #define ANSI_NORMAL		"[00;00m"
@@ -262,6 +263,9 @@ typedef struct syd_process {
 
 	/* Parent process ID */
 	pid_t ppid;
+
+	/* Thread group ID */
+	pid_t tgid;
 
 	/* Process registry set */
 	struct pink_regset *regset;
