@@ -724,6 +724,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 	pid_t pid = current->pid;
 	short abi = current->abi;
 	pid_t ppid = current->ppid;
+	pid_t tgid = current->tgid;
 	struct acl_node *node;
 	struct sockmatch *match;
 
@@ -744,6 +745,7 @@ static void dump_one_process(syd_process_t *current, bool verbose)
 		fprintf(stderr, "\t%sParent ID: %u%s\n", CN, ppid > 0 ? ppid : 0, CE);
 	else
 		fprintf(stderr, "\t%sParent ID: ? (Orphan)%s\n", CN, CE);
+	fprintf(stderr, "\t%sThread Group ID: %u%s\n", CN, tgid > 0 ? tgid : 0, CE);
 	if ((r = syd_proc_comm(current->pid, comm, sizeof(comm))) == 0)
 		fprintf(stderr, "\t%sComm: `%s'%s\n", CN, comm, CE);
 	else
